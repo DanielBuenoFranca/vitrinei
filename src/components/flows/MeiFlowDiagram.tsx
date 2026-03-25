@@ -12,22 +12,6 @@ const steps = [
   { label: 'Receita creditada no ERP', emoji: '💰', color: 'bg-primary/10 border-primary/30 text-primary' },
 ];
 
-const stepVariant = {
-  hidden: { opacity: 0, x: -30, scale: 0.9 },
-  visible: (i: number) => ({
-    opacity: 1, x: 0, scale: 1,
-    transition: { delay: i * 0.25, duration: 0.5, ease: 'easeOut' },
-  }),
-};
-
-const arrowVariant = {
-  hidden: { opacity: 0, scale: 0 },
-  visible: (i: number) => ({
-    opacity: 1, scale: 1,
-    transition: { delay: i * 0.25 + 0.15, duration: 0.3 },
-  }),
-};
-
 const MeiFlowDiagram = () => (
   <Card>
     <CardContent className="p-5 space-y-4">
@@ -41,18 +25,17 @@ const MeiFlowDiagram = () => (
         {steps.map((s, i) => (
           <div key={i} className="flex items-center gap-2 shrink-0">
             <motion.div
-              custom={i}
-              variants={stepVariant}
-              initial="hidden"
-              whileInView="visible"
+              initial={{ opacity: 0, x: -30, scale: 0.9 }}
+              whileInView={{ opacity: 1, x: 0, scale: 1 }}
               viewport={{ once: true }}
+              transition={{ delay: i * 0.25, duration: 0.5 }}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium ${s.color}`}
             >
               <span className="text-base">{s.emoji}</span>
               <span>{s.label}</span>
             </motion.div>
             {i < steps.length - 1 && (
-              <motion.div custom={i} variants={arrowVariant} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+              <motion.div initial={{ opacity: 0, scale: 0 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.25 + 0.15, duration: 0.3 }}>
                 <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
               </motion.div>
             )}
