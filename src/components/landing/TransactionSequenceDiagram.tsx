@@ -5,7 +5,7 @@ const actors = [
   { label: 'Cliente Final', icon: '👤' },
   { label: 'App Frontend', icon: '📱' },
   { label: 'Mini ERP', icon: '📊' },
-  { label: 'Dropchip', icon: '📦' },
+  { label: 'Drop-shipping', icon: '📦' },
   { label: 'Fornecedor', icon: '🏭' },
 ];
 

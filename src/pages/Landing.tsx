@@ -48,7 +48,7 @@ const Landing = () => {
             <span className="text-primary">Crescimento real.</span>
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-            Mini ERP + Marketplace de Serviços + Dropchip + Benefícios por Assinatura. 
+            Mini ERP + Marketplace de Serviços + Drop-shipping + Benefícios por Assinatura. 
             Tudo em uma plataforma SaaS pensada para o microempreendedor brasileiro.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -87,7 +87,7 @@ const Landing = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               { icon: BarChart3, title: 'Mini ERP', desc: 'Fluxo de caixa, DRE simplificado, contas a pagar/receber e relatórios automáticos.' },
-              { icon: ShoppingCart, title: 'Dropchip', desc: 'Catálogo unificado de fornecedores com envio automático e sync de estoque em tempo real.' },
+              { icon: ShoppingCart, title: 'Drop-shipping', desc: 'Catálogo unificado de fornecedores com envio automático e sync de estoque em tempo real.' },
               { icon: Users, title: 'Marketplace', desc: 'Listagem de serviços profissionais, agendamento, check-in e avaliações.' },
               { icon: Shield, title: 'Assinaturas', desc: 'Planos Bronze, Prata e Ouro com descontos progressivos e cobertura de serviços.' },
             ].map(({ icon: Icon, title, desc }) => (
@@ -114,7 +114,7 @@ const Landing = () => {
           </div>
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             {[
-              { step: '01', title: 'MEI cadastra e configura', desc: 'O MEI se cadastra, configura seu Mini ERP, lista produtos/serviços e conecta fornecedores dropchip.', icon: TrendingUp },
+              { step: '01', title: 'MEI cadastra e configura', desc: 'O MEI se cadastra, configura seu Mini ERP, lista produtos/serviços e conecta fornecedores de drop-shipping.', icon: TrendingUp },
               { step: '02', title: 'Cliente assina um plano', desc: 'O cliente final escolhe um plano (Bronze, Prata ou Ouro) e acessa o App de Benefícios com descontos.', icon: Star },
               { step: '03', title: 'Vendas e serviços fluem', desc: 'Pedidos são gerados automaticamente, fornecedores executam e o MEI acompanha tudo pelo ERP.', icon: Zap },
             ].map(({ step, title, desc, icon: Icon }) => (
