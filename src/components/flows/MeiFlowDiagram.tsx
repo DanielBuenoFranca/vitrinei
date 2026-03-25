@@ -48,10 +48,9 @@ const MeiFlowDiagram = () => (
         {steps.map((s, i) => (
           <motion.div
             key={i}
-            custom={i}
-            variants={{ hidden: { opacity: 0, y: 20 }, visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.2, duration: 0.4 } }) }}
-            initial="hidden"
-            whileInView="visible"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.2, duration: 0.4 }}
             viewport={{ once: true }}
             className="flex flex-col items-center w-full"
           >
