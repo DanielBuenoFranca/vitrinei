@@ -9,7 +9,7 @@ import { ArrowLeft, TrendingUp, Package, DollarSign, ShoppingCart, AlertTriangle
 
 const tabs = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'stock', label: 'Estoque Dropchip', icon: Box },
+  { id: 'stock', label: 'Estoque Drop-shipping', icon: Box },
   { id: 'financial', label: 'Financeiro', icon: Wallet },
 ];
 
@@ -89,7 +89,7 @@ const MeiPanel = () => {
           <div className="mb-8">
             <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">
               {activeTab === 'dashboard' && 'Dashboard'}
-              {activeTab === 'stock' && 'Estoque Dropchip'}
+              {activeTab === 'stock' && 'Estoque Drop-shipping'}
               {activeTab === 'financial' && 'Gestão Financeira'}
             </h1>
             <p className="text-muted-foreground mt-1">Bem-vindo, João — MEI Tecnologia & Acessórios</p>
