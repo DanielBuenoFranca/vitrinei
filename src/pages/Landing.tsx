@@ -5,6 +5,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { plans } from '@/data/mockData';
 import { BarChart3, ShoppingCart, Users, Shield, ArrowRight, Star, Zap, TrendingUp, CheckCircle2 } from 'lucide-react';
+import CoverageFlowDiagram from '@/components/landing/CoverageFlowDiagram';
+import TransactionSequenceDiagram from '@/components/landing/TransactionSequenceDiagram';
+import EcosystemMindmap from '@/components/landing/EcosystemMindmap';
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -128,8 +131,17 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* Flow Diagrams */}
+      <section className="py-20 px-4 bg-card">
+        <div className="container mx-auto space-y-20">
+          <CoverageFlowDiagram />
+          <TransactionSequenceDiagram />
+          <EcosystemMindmap />
+        </div>
+      </section>
+
       {/* Plans */}
-      <section id="plans" className="py-20 px-4 bg-card">
+      <section id="plans" className="py-20 px-4">
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">Planos para o Cliente Final</h2>
