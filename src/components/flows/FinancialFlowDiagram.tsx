@@ -1,6 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowDown } from 'lucide-react';
+import { ArrowDown, ArrowRight } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const steps = [
   { label: 'Receitas registradas', emoji: '💵', color: 'bg-primary/10 border-primary/30 text-primary' },
@@ -12,22 +13,37 @@ const steps = [
 const FinancialFlowDiagram = () => (
   <Card>
     <CardContent className="p-5 space-y-4">
-      <div className="flex items-center gap-2">
+      <motion.div className="flex items-center gap-2" initial={{ opacity: 0, y: -10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
         <Badge variant="secondary" className="text-xs">Fluxo Financeiro</Badge>
         <span className="text-xs text-muted-foreground">Ciclo de gestão financeira do MEI</span>
-      </div>
+      </motion.div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {steps.map((s, i) => (
-          <div key={i} className="flex flex-col items-center gap-1">
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 30, scale: 0.85 }}
+            whileInView={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: i * 0.3, duration: 0.5, type: 'spring', stiffness: 120 }}
+            viewport={{ once: true }}
+            className="flex flex-col items-center gap-1"
+          >
             <div className={`w-full flex flex-col items-center gap-1 px-3 py-3 rounded-lg border text-xs font-medium text-center ${s.color}`}>
               <span className="text-xl">{s.emoji}</span>
               <span>{s.label}</span>
             </div>
             {i < steps.length - 1 && (
-              <ArrowDown className="w-3.5 h-3.5 text-muted-foreground md:hidden" />
+              <motion.div
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                transition={{ delay: i * 0.3 + 0.2 }}
+                viewport={{ once: true }}
+              >
+                <ArrowDown className="w-3.5 h-3.5 text-muted-foreground md:hidden" />
+                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground hidden md:block" />
+              </motion.div>
             )}
-          </div>
+          </motion.div>
         ))}
       </div>
     </CardContent>
