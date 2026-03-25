@@ -6,6 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { meiDashboard } from '@/data/mockData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { ArrowLeft, TrendingUp, Package, DollarSign, ShoppingCart, AlertTriangle, CheckCircle, XCircle, Zap, LayoutDashboard, Box, Wallet, BarChart3 } from 'lucide-react';
+import MeiFlowDiagram from '@/components/flows/MeiFlowDiagram';
+import DropshippingFlowDiagram from '@/components/flows/DropshippingFlowDiagram';
+import FinancialFlowDiagram from '@/components/flows/FinancialFlowDiagram';
 
 const tabs = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -98,6 +101,8 @@ const MeiPanel = () => {
           {/* Dashboard Tab */}
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
+              {/* Flow Diagram */}
+              <MeiFlowDiagram />
               {/* KPI Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
@@ -167,6 +172,7 @@ const MeiPanel = () => {
           {/* Stock Tab */}
           {activeTab === 'stock' && (
             <div className="space-y-6">
+              <DropshippingFlowDiagram />
               <div className="grid grid-cols-3 gap-4">
                 <Card><CardContent className="p-4 text-center">
                   <Package className="w-6 h-6 text-primary mx-auto mb-2" />
@@ -219,6 +225,7 @@ const MeiPanel = () => {
           {/* Financial Tab */}
           {activeTab === 'financial' && (
             <div className="space-y-6">
+              <FinancialFlowDiagram />
               <div className="grid grid-cols-3 gap-4">
                 <Card><CardContent className="p-4">
                   <p className="text-xs font-medium text-muted-foreground mb-1">Saldo Atual</p>

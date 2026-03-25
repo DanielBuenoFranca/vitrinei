@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { plans, clientProducts, clientServices } from '@/data/mockData';
 import { ArrowLeft, Star, ShoppingBag, Wrench, CreditCard, Zap, CheckCircle2 } from 'lucide-react';
+import ClientFlowDiagram from '@/components/flows/ClientFlowDiagram';
 
 const tabs = [
   { id: 'plans', label: 'Planos', icon: CreditCard },
@@ -62,6 +63,7 @@ const ClientApp = () => {
         {/* Plans Tab */}
         {activeTab === 'plans' && (
           <>
+            <ClientFlowDiagram />
             <div className="text-center py-4">
               <h2 className="font-display text-xl font-bold text-foreground">Escolha seu plano</h2>
               <p className="text-sm text-muted-foreground mt-1">Benefícios exclusivos para assinantes</p>
