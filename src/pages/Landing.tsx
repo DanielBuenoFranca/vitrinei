@@ -28,6 +28,7 @@ const Landing = () => {
             <a href="#features" className="hover:text-foreground transition-colors">Funcionalidades</a>
             <a href="#plans" className="hover:text-foreground transition-colors">Planos</a>
             <a href="#ecosystem" className="hover:text-foreground transition-colors">Ecossistema</a>
+            <a href="/processos" className="hover:text-foreground transition-colors">Processos</a>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => navigate('/client')}>App Cliente</Button>

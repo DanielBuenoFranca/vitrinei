@@ -7,6 +7,7 @@ import Landing from "./pages/Landing.tsx";
 import MeiPanel from "./pages/MeiPanel.tsx";
 import ClientApp from "./pages/ClientApp.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import ProcessFlows from "./pages/ProcessFlows.tsx";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ const App = () => (
           <Route path="/" element={<Landing />} />
           <Route path="/mei" element={<MeiPanel />} />
           <Route path="/client" element={<ClientApp />} />
+          <Route path="/processos" element={<ProcessFlows />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
