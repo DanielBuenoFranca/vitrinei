@@ -8,6 +8,7 @@ import { BarChart3, ShoppingCart, Users, Shield, ArrowRight, Star, Zap, Trending
 import CoverageFlowDiagram from '@/components/landing/CoverageFlowDiagram';
 import TransactionSequenceDiagram from '@/components/landing/TransactionSequenceDiagram';
 import EcosystemMindmap from '@/components/landing/EcosystemMindmap';
+import DemoPortfolio from '@/components/landing/DemoPortfolio';
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -140,6 +141,9 @@ const Landing = () => {
           <EcosystemMindmap />
         </div>
       </section>
+
+      {/* Demo Portfolio */}
+      <DemoPortfolio />
 
       {/* Plans */}
       <section id="plans" className="py-20 px-4">
