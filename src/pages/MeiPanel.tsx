@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { meiDashboard } from '@/data/mockData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { ArrowLeft, TrendingUp, Package, DollarSign, ShoppingCart, AlertTriangle, CheckCircle, XCircle, Zap, LayoutDashboard, Box, Wallet, Wrench, Users, Lightbulb, Star } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Package, DollarSign, ShoppingCart, AlertTriangle, CheckCircle, XCircle, Zap, LayoutDashboard, Box, Wallet, Wrench, Users, Lightbulb, Star, ClipboardList } from 'lucide-react';
 import { motion } from 'framer-motion';
 import MeiFlowDiagram from '@/components/flows/MeiFlowDiagram';
 import DropshippingFlowDiagram from '@/components/flows/DropshippingFlowDiagram';
@@ -14,6 +14,7 @@ import FinancialFlowDiagram from '@/components/flows/FinancialFlowDiagram';
 
 const tabs = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'gestao', label: 'Gestão', icon: ClipboardList },
   { id: 'stock', label: 'Estoque', icon: Box },
   { id: 'financial', label: 'Financeiro', icon: Wallet },
   { id: 'services', label: 'Serviços', icon: Wrench },
