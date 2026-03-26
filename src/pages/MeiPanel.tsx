@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { meiDashboard } from '@/data/mockData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { ArrowLeft, TrendingUp, Package, DollarSign, ShoppingCart, AlertTriangle, CheckCircle, XCircle, Zap, LayoutDashboard, Box, Wallet, Wrench, Users, Lightbulb, Star } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Package, DollarSign, ShoppingCart, AlertTriangle, CheckCircle, XCircle, Zap, LayoutDashboard, Box, Wallet, Wrench, Users, Lightbulb, Star, ClipboardList } from 'lucide-react';
 import { motion } from 'framer-motion';
 import MeiFlowDiagram from '@/components/flows/MeiFlowDiagram';
 import DropshippingFlowDiagram from '@/components/flows/DropshippingFlowDiagram';
@@ -14,6 +14,7 @@ import FinancialFlowDiagram from '@/components/flows/FinancialFlowDiagram';
 
 const tabs = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'gestao', label: 'Gestão', icon: ClipboardList },
   { id: 'stock', label: 'Estoque', icon: Box },
   { id: 'financial', label: 'Financeiro', icon: Wallet },
   { id: 'services', label: 'Serviços', icon: Wrench },
@@ -108,6 +109,7 @@ const MeiPanel = () => {
           <div className="mb-8">
             <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">
               {activeTab === 'dashboard' && 'Dashboard'}
+              {activeTab === 'gestao' && 'Gestão de Chamados'}
               {activeTab === 'stock' && 'Estoque Drop-shipping'}
               {activeTab === 'financial' && 'Gestão Financeira'}
               {activeTab === 'services' && 'Serviços Prestados'}
@@ -115,6 +117,47 @@ const MeiPanel = () => {
             </h1>
             <p className="text-muted-foreground mt-1">Bem-vindo, João — MEI Tecnologia & Acessórios</p>
           </div>
+
+          {/* Gestão Tab */}
+          {activeTab === 'gestao' && (
+            <div className="space-y-6">
+              <Card className="border-primary/30 bg-primary/5">
+                <CardContent className="p-6 text-center">
+                  <ClipboardList className="w-10 h-10 text-primary mx-auto mb-3" />
+                  <h2 className="font-display text-lg font-bold text-foreground mb-2">Central de Gestão de Chamados</h2>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Gerencie solicitações, despache técnicos, acompanhe execução e controle pagamentos em tempo real.
+                  </p>
+                  <Button size="lg" onClick={() => navigate('/gestao')}>
+                    🚀 Abrir Demo Interativa
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    Simulação completa com visões do Cliente, Gestor MEI e Técnico
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Quick stats */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card><CardContent className="p-4 text-center">
+                  <p className="text-2xl font-bold text-foreground">8</p>
+                  <p className="text-xs text-muted-foreground">Chamados Pendentes</p>
+                </CardContent></Card>
+                <Card><CardContent className="p-4 text-center">
+                  <p className="text-2xl font-bold text-primary">3</p>
+                  <p className="text-xs text-muted-foreground">Em Execução</p>
+                </CardContent></Card>
+                <Card><CardContent className="p-4 text-center">
+                  <p className="text-2xl font-bold text-foreground">142</p>
+                  <p className="text-xs text-muted-foreground">Concluídos</p>
+                </CardContent></Card>
+                <Card><CardContent className="p-4 text-center">
+                  <p className="text-2xl font-bold text-accent">4.8 ⭐</p>
+                  <p className="text-xs text-muted-foreground">Avaliação Média</p>
+                </CardContent></Card>
+              </div>
+            </div>
+          )}
 
           {/* Dashboard Tab */}
           {activeTab === 'dashboard' && (
