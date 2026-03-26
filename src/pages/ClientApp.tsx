@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,8 +15,16 @@ const tabs = [
 
 const ClientApp = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState('plans');
   const [selectedPlan, setSelectedPlan] = useState<string | null>('prata');
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && ['plans', 'products', 'services'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const currentPlan = plans.find(p => p.id === selectedPlan);
   const discount = currentPlan?.discount || 0;
