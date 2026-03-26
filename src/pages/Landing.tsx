@@ -8,6 +8,7 @@ import { BarChart3, ShoppingCart, Users, Shield, ArrowRight, Star, Zap, Trending
 import CoverageFlowDiagram from '@/components/landing/CoverageFlowDiagram';
 import TransactionSequenceDiagram from '@/components/landing/TransactionSequenceDiagram';
 import EcosystemMindmap from '@/components/landing/EcosystemMindmap';
+import DemoPortfolio from '@/components/landing/DemoPortfolio';
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -26,6 +27,7 @@ const Landing = () => {
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
             <a href="#features" className="hover:text-foreground transition-colors">Funcionalidades</a>
+            <a href="#demos" className="hover:text-foreground transition-colors">Demos</a>
             <a href="#plans" className="hover:text-foreground transition-colors">Planos</a>
             <a href="#ecosystem" className="hover:text-foreground transition-colors">Ecossistema</a>
             <a href="/processos" className="hover:text-foreground transition-colors">Processos</a>
@@ -140,6 +142,9 @@ const Landing = () => {
           <EcosystemMindmap />
         </div>
       </section>
+
+      {/* Demo Portfolio */}
+      <DemoPortfolio />
 
       {/* Plans */}
       <section id="plans" className="py-20 px-4">

@@ -10,6 +10,8 @@ import NotFound from "./pages/NotFound.tsx";
 import ProcessFlows from "./pages/ProcessFlows.tsx";
 import ServiceManagementDemo from "./pages/ServiceManagementDemo.tsx";
 import ClientJourneyDemo from "./pages/ClientJourneyDemo.tsx";
+import MeiManagerDemo from "./pages/MeiManagerDemo.tsx";
+import DropshippingDemo from "./pages/DropshippingDemo.tsx";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +28,8 @@ const App = () => (
           <Route path="/processos" element={<ProcessFlows />} />
           <Route path="/gestao" element={<ServiceManagementDemo />} />
           <Route path="/jornada-cliente" element={<ClientJourneyDemo />} />
+          <Route path="/mei-acompanhamento" element={<MeiManagerDemo />} />
+          <Route path="/dropshipping" element={<DropshippingDemo />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
