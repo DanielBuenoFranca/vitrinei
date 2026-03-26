@@ -89,12 +89,30 @@ export interface ServiceItem {
 }
 
 export const clientServices: ServiceItem[] = [
-  { id: 1, name: 'Eletricista Residencial', icon: '⚡', category: 'Casa', provider: 'João Eletricista', rating: 4.9, creditCost: 80, minMonths: 2, minPlan: 'bronze', allowComplement: true, monetaryValue: 150.00, relatedProductIds: [7, 8, 9] },
-  { id: 2, name: 'Encanador', icon: '🔧', category: 'Casa', provider: 'Pedro Encanador', rating: 4.7, creditCost: 65, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 120.00, relatedProductIds: [10, 11] },
-  { id: 3, name: 'Designer Gráfico', icon: '🎨', category: 'Digital', provider: 'Ana Design', rating: 4.8, creditCost: 100, minMonths: 3, minPlan: 'prata', allowComplement: true, monetaryValue: 200.00, relatedProductIds: [] },
-  { id: 4, name: 'Montagem de Móveis', icon: '🪑', category: 'Casa', provider: 'Carlos Marceneiro', rating: 4.5, creditCost: 45, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 80.00, relatedProductIds: [12] },
-  { id: 5, name: 'Limpeza Residencial', icon: '🧹', category: 'Casa', provider: 'Maria Clean', rating: 4.6, creditCost: 55, minMonths: 2, minPlan: 'bronze', allowComplement: true, monetaryValue: 100.00, relatedProductIds: [13, 14, 15] },
-  { id: 6, name: 'Fotógrafo de Eventos', icon: '📸', category: 'Eventos', provider: 'Lucas Foto', rating: 4.9, creditCost: 180, minMonths: 6, minPlan: 'ouro', allowComplement: false, monetaryValue: 350.00, relatedProductIds: [] },
+  // Manutenção & Reparos (Marido de aluguel)
+  { id: 1, name: 'Eletricista Residencial', icon: '⚡', category: 'Manutenção & Reparos', provider: 'João Eletricista', rating: 4.9, creditCost: 80, minMonths: 2, minPlan: 'bronze', allowComplement: true, monetaryValue: 150.00, relatedProductIds: [7, 8, 9] },
+  { id: 2, name: 'Encanador', icon: '🔧', category: 'Manutenção & Reparos', provider: 'Pedro Encanador', rating: 4.7, creditCost: 65, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 120.00, relatedProductIds: [10, 11] },
+  { id: 4, name: 'Montagem de Móveis', icon: '🪑', category: 'Manutenção & Reparos', provider: 'Carlos Marceneiro', rating: 4.5, creditCost: 45, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 80.00, relatedProductIds: [12] },
+  { id: 16, name: 'Pintor Residencial', icon: '🎨', category: 'Manutenção & Reparos', provider: 'Marcos Pintura', rating: 4.6, creditCost: 90, minMonths: 2, minPlan: 'prata', allowComplement: true, monetaryValue: 180.00, relatedProductIds: [] },
+  // Bem-estar & Saúde
+  { id: 17, name: 'Personal Trainer', icon: '💪', category: 'Bem-estar & Saúde', provider: 'Fit Express', rating: 4.8, creditCost: 70, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 130.00, relatedProductIds: [] },
+  { id: 18, name: 'Nutricionista Online', icon: '🥗', category: 'Bem-estar & Saúde', provider: 'NutriVida', rating: 4.9, creditCost: 60, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 110.00, relatedProductIds: [] },
+  { id: 19, name: 'Fisioterapeuta', icon: '🏥', category: 'Bem-estar & Saúde', provider: 'FisioHome', rating: 4.7, creditCost: 95, minMonths: 3, minPlan: 'prata', allowComplement: true, monetaryValue: 190.00, relatedProductIds: [] },
+  // Estética & Beleza
+  { id: 20, name: 'Cabeleireiro em Casa', icon: '💇', category: 'Estética & Beleza', provider: 'Beauty Home', rating: 4.8, creditCost: 50, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 90.00, relatedProductIds: [] },
+  { id: 21, name: 'Manicure & Pedicure', icon: '💅', category: 'Estética & Beleza', provider: 'Nails Pro', rating: 4.6, creditCost: 35, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 60.00, relatedProductIds: [] },
+  { id: 22, name: 'Estética Facial', icon: '✨', category: 'Estética & Beleza', provider: 'Glow Skin', rating: 4.9, creditCost: 110, minMonths: 3, minPlan: 'prata', allowComplement: true, monetaryValue: 220.00, relatedProductIds: [] },
+  // Lar & Ambiente
+  { id: 5, name: 'Limpeza Residencial', icon: '🧹', category: 'Lar & Ambiente', provider: 'Maria Clean', rating: 4.6, creditCost: 55, minMonths: 2, minPlan: 'bronze', allowComplement: true, monetaryValue: 100.00, relatedProductIds: [13, 14, 15] },
+  { id: 23, name: 'Jardinagem', icon: '🌿', category: 'Lar & Ambiente', provider: 'Verde Vivo', rating: 4.5, creditCost: 40, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 70.00, relatedProductIds: [] },
+  { id: 24, name: 'Dedetização', icon: '🐜', category: 'Lar & Ambiente', provider: 'SafeHome', rating: 4.7, creditCost: 85, minMonths: 2, minPlan: 'prata', allowComplement: true, monetaryValue: 160.00, relatedProductIds: [] },
+  // Automotivo
+  { id: 25, name: 'Lavagem Automotiva', icon: '🚗', category: 'Automotivo', provider: 'Auto Brilho', rating: 4.4, creditCost: 30, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 50.00, relatedProductIds: [] },
+  { id: 26, name: 'Mecânico Domiciliar', icon: '🔩', category: 'Automotivo', provider: 'MecFix', rating: 4.7, creditCost: 100, minMonths: 3, minPlan: 'prata', allowComplement: true, monetaryValue: 200.00, relatedProductIds: [] },
+  { id: 27, name: 'Funilaria Express', icon: '🛠️', category: 'Automotivo', provider: 'AutoRestore', rating: 4.5, creditCost: 130, minMonths: 4, minPlan: 'prata', allowComplement: true, monetaryValue: 260.00, relatedProductIds: [] },
+  // Others
+  { id: 3, name: 'Designer Gráfico', icon: '🎨', category: 'Digital & Criativo', provider: 'Ana Design', rating: 4.8, creditCost: 100, minMonths: 3, minPlan: 'prata', allowComplement: true, monetaryValue: 200.00, relatedProductIds: [] },
+  { id: 6, name: 'Fotógrafo de Eventos', icon: '📸', category: 'Digital & Criativo', provider: 'Lucas Foto', rating: 4.9, creditCost: 180, minMonths: 6, minPlan: 'ouro', allowComplement: false, monetaryValue: 350.00, relatedProductIds: [] },
 ];
 
 /* ─── PRODUTOS (com correlação a serviços) ─── */
