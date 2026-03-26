@@ -1,14 +1,21 @@
 // Mock data for the demo app
 
+/* ─── PLANOS COM CRÉDITOS ─── */
+export type PlanTier = 'bronze' | 'prata' | 'ouro';
+
 export const plans = [
   {
-    id: 'bronze',
+    id: 'bronze' as PlanTier,
     name: 'Bronze',
     price: 29.90,
     color: '#CD7F32',
     discount: 5,
+    monthlyCredits: 50,
+    maxAccumulation: 100,
+    loyaltyBonusPercent: 2, // +2% créditos por mês ativo
     services: 'Taxa de visita grátis',
     features: [
+      '50 créditos mensais',
       '5% desconto em produtos',
       'Taxa de visita grátis',
       'Suporte por e-mail',
@@ -16,39 +23,182 @@ export const plans = [
     ],
   },
   {
-    id: 'prata',
+    id: 'prata' as PlanTier,
     name: 'Prata',
     price: 59.90,
     color: '#C0C0C0',
     discount: 10,
+    monthlyCredits: 120,
+    maxAccumulation: 300,
+    loyaltyBonusPercent: 5,
     services: '1 serviço mensal coberto',
     features: [
+      '120 créditos mensais',
       '10% desconto em produtos',
       '1 serviço mensal coberto',
       'Suporte prioritário',
-      'Acesso ao catálogo completo',
       'Carteira de pontos',
     ],
     popular: true,
   },
   {
-    id: 'ouro',
+    id: 'ouro' as PlanTier,
     name: 'Ouro',
     price: 99.90,
     color: '#FFD700',
     discount: 20,
+    monthlyCredits: 250,
+    maxAccumulation: 800,
+    loyaltyBonusPercent: 10,
     services: 'Serviços ilimitados',
     features: [
+      '250 créditos mensais',
       '20% desconto em produtos',
       'Serviços ilimitados',
       'Suporte VIP 24/7',
-      'Acesso premium total',
       'Carteira de pontos 2x',
       'Garantia estendida',
     ],
   },
 ];
 
+/* ─── USUÁRIO MOCK (CLIENTE) ─── */
+export const mockUser = {
+  name: 'Maria Silva',
+  plan: 'prata' as PlanTier,
+  monthsActive: 4,
+  credits: 95,
+  totalCreditsEarned: 480,
+  isActive: true, // adimplente
+};
+
+/* ─── SERVIÇOS COM REGRAS DE ELEGIBILIDADE ─── */
+export interface ServiceItem {
+  id: number;
+  name: string;
+  icon: string;
+  category: string;
+  provider: string;
+  rating: number;
+  creditCost: number;
+  minMonths: number;
+  minPlan: PlanTier;
+  allowComplement: boolean;
+  monetaryValue: number; // valor de referência em R$
+  relatedProductIds: number[];
+}
+
+export const clientServices: ServiceItem[] = [
+  { id: 1, name: 'Eletricista Residencial', icon: '⚡', category: 'Casa', provider: 'João Eletricista', rating: 4.9, creditCost: 80, minMonths: 2, minPlan: 'bronze', allowComplement: true, monetaryValue: 150.00, relatedProductIds: [7, 8, 9] },
+  { id: 2, name: 'Encanador', icon: '🔧', category: 'Casa', provider: 'Pedro Encanador', rating: 4.7, creditCost: 65, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 120.00, relatedProductIds: [10, 11] },
+  { id: 3, name: 'Designer Gráfico', icon: '🎨', category: 'Digital', provider: 'Ana Design', rating: 4.8, creditCost: 100, minMonths: 3, minPlan: 'prata', allowComplement: true, monetaryValue: 200.00, relatedProductIds: [] },
+  { id: 4, name: 'Montagem de Móveis', icon: '🪑', category: 'Casa', provider: 'Carlos Marceneiro', rating: 4.5, creditCost: 45, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 80.00, relatedProductIds: [12] },
+  { id: 5, name: 'Limpeza Residencial', icon: '🧹', category: 'Casa', provider: 'Maria Clean', rating: 4.6, creditCost: 55, minMonths: 2, minPlan: 'bronze', allowComplement: true, monetaryValue: 100.00, relatedProductIds: [13, 14, 15] },
+  { id: 6, name: 'Fotógrafo de Eventos', icon: '📸', category: 'Eventos', provider: 'Lucas Foto', rating: 4.9, creditCost: 180, minMonths: 6, minPlan: 'ouro', allowComplement: false, monetaryValue: 350.00, relatedProductIds: [] },
+];
+
+/* ─── PRODUTOS (com correlação a serviços) ─── */
+export interface ProductItem {
+  id: number;
+  name: string;
+  price: number;
+  category: string;
+  image: string;
+  rating: number;
+  supplier: string;
+  relatedServiceIds: number[];
+}
+
+export const clientProducts: ProductItem[] = [
+  // Eletrônicos gerais
+  { id: 1, name: 'Smartphone Xiaomi Redmi 13C', price: 899.90, category: 'Eletrônicos', image: '📱', rating: 4.5, supplier: 'TechDrop BR', relatedServiceIds: [] },
+  { id: 2, name: 'Fone Bluetooth TWS Pro', price: 79.90, category: 'Acessórios', image: '🎧', rating: 4.8, supplier: 'AudioMax', relatedServiceIds: [] },
+  { id: 3, name: 'Smartwatch Band 8', price: 199.90, category: 'Eletrônicos', image: '⌚', rating: 4.3, supplier: 'TechDrop BR', relatedServiceIds: [] },
+  { id: 4, name: 'Carregador Turbo USB-C', price: 89.90, category: 'Acessórios', image: '🔌', rating: 4.6, supplier: 'PowerTech', relatedServiceIds: [] },
+  { id: 5, name: 'Câmera de Segurança WiFi', price: 149.90, category: 'Casa', image: '📷', rating: 4.4, supplier: 'SecureTech', relatedServiceIds: [1] },
+  { id: 6, name: 'Echo Dot 5ª Geração', price: 349.90, category: 'Casa', image: '🔊', rating: 4.7, supplier: 'SmartHome BR', relatedServiceIds: [] },
+  // Produtos correlacionados com Eletricista (serviço 1)
+  { id: 7, name: 'Fio Elétrico 2.5mm (100m)', price: 89.90, category: 'Material Elétrico', image: '🔌', rating: 4.6, supplier: 'EletroParts', relatedServiceIds: [1] },
+  { id: 8, name: 'Fita Isolante Premium', price: 12.90, category: 'Material Elétrico', image: '🛠️', rating: 4.4, supplier: 'EletroParts', relatedServiceIds: [1] },
+  { id: 9, name: 'Kit Tomadas e Interruptores', price: 45.90, category: 'Material Elétrico', image: '💡', rating: 4.5, supplier: 'EletroParts', relatedServiceIds: [1] },
+  // Produtos correlacionados com Encanador (serviço 2)
+  { id: 10, name: 'Kit Conexões PVC', price: 34.90, category: 'Material Hidráulico', image: '🔧', rating: 4.3, supplier: 'HidroMax', relatedServiceIds: [2] },
+  { id: 11, name: 'Torneira Monocomando Inox', price: 129.90, category: 'Material Hidráulico', image: '🚿', rating: 4.7, supplier: 'HidroMax', relatedServiceIds: [2] },
+  // Produtos correlacionados com Montagem de Móveis (serviço 4)
+  { id: 12, name: 'Kit Parafusos e Buchas', price: 19.90, category: 'Ferramentas', image: '🔩', rating: 4.2, supplier: 'FerraTudo', relatedServiceIds: [4] },
+  // Produtos correlacionados com Limpeza (serviço 5)
+  { id: 13, name: 'Kit Limpeza Multiuso (5 itens)', price: 39.90, category: 'Limpeza', image: '🧴', rating: 4.5, supplier: 'CleanPro', relatedServiceIds: [5] },
+  { id: 14, name: 'Vassoura + Rodo Profissional', price: 49.90, category: 'Limpeza', image: '🧹', rating: 4.3, supplier: 'CleanPro', relatedServiceIds: [5] },
+  { id: 15, name: 'Desinfetante Concentrado 5L', price: 29.90, category: 'Limpeza', image: '🫧', rating: 4.6, supplier: 'CleanPro', relatedServiceIds: [5] },
+];
+
+/* ─── LÓGICA DE ELEGIBILIDADE ─── */
+export type EligibilityStatus = 'disponivel_total' | 'disponivel_parcial' | 'bloqueado';
+
+const planTierOrder: Record<PlanTier, number> = { bronze: 1, prata: 2, ouro: 3 };
+
+export function checkEligibility(
+  service: ServiceItem,
+  userCredits: number,
+  userMonths: number,
+  userPlan: PlanTier
+): {
+  status: EligibilityStatus;
+  creditsUsed: number;
+  extraValue: number;
+  monthsRemaining: number;
+  needsUpgrade: boolean;
+  suggestedPlan?: PlanTier;
+} {
+  const planOk = planTierOrder[userPlan] >= planTierOrder[service.minPlan];
+  const timeOk = userMonths >= service.minMonths;
+
+  if (!planOk || !timeOk) {
+    const monthsRemaining = timeOk ? 0 : service.minMonths - userMonths;
+    const suggestedPlan = !planOk ? service.minPlan : undefined;
+    return {
+      status: 'bloqueado',
+      creditsUsed: 0,
+      extraValue: service.monetaryValue,
+      monthsRemaining,
+      needsUpgrade: !planOk,
+      suggestedPlan,
+    };
+  }
+
+  if (userCredits >= service.creditCost) {
+    return {
+      status: 'disponivel_total',
+      creditsUsed: service.creditCost,
+      extraValue: 0,
+      monthsRemaining: 0,
+      needsUpgrade: false,
+    };
+  }
+
+  if (service.allowComplement && userCredits > 0) {
+    const creditsUsed = userCredits;
+    const remaining = service.creditCost - userCredits;
+    const extraValue = (remaining / service.creditCost) * service.monetaryValue;
+    return {
+      status: 'disponivel_parcial',
+      creditsUsed,
+      extraValue: Math.round(extraValue * 100) / 100,
+      monthsRemaining: 0,
+      needsUpgrade: false,
+    };
+  }
+
+  return {
+    status: 'bloqueado',
+    creditsUsed: 0,
+    extraValue: service.monetaryValue,
+    monthsRemaining: 0,
+    needsUpgrade: false,
+  };
+}
+
+/* ─── DASHBOARD MEI ─── */
 export const meiDashboard = {
   revenue: {
     total: 12450.00,
@@ -97,22 +247,16 @@ export const meiDashboard = {
     accountsPayable: 1890.00,
     balance: 8320.00,
   },
+  // MEI service performance
+  servicesPerformed: [
+    { serviceId: 1, name: 'Eletricista Residencial', completedJobs: 28, revenue: 4200, productsUpsold: 45, productRevenue: 2100, avgRating: 4.9 },
+    { serviceId: 5, name: 'Limpeza Residencial', completedJobs: 35, revenue: 3500, productsUpsold: 62, productRevenue: 1800, avgRating: 4.6 },
+    { serviceId: 4, name: 'Montagem de Móveis', completedJobs: 18, revenue: 1440, productsUpsold: 22, productRevenue: 440, avgRating: 4.5 },
+  ],
+  meiSuggestions: [
+    { type: 'upsell', message: 'Clientes de Eletricista compraram 45 produtos — ofereça kit de materiais junto ao serviço para +R$47/job', icon: '💡' },
+    { type: 'expansion', message: 'Há 12 pedidos de Encanamento na sua região sem MEI ativo — considere adicionar este serviço', icon: '📈' },
+    { type: 'retention', message: '8 clientes completaram 3 meses — momento ideal para sugerir upgrade de plano para Ouro', icon: '🎯' },
+    { type: 'pricing', message: 'Seu preço de Limpeza Residencial está 15% abaixo da média — considere reajuste para R$115', icon: '💰' },
+  ],
 };
-
-export const clientProducts = [
-  { id: 1, name: 'Smartphone Xiaomi Redmi 13C', price: 899.90, category: 'Eletrônicos', image: '📱', rating: 4.5 },
-  { id: 2, name: 'Fone Bluetooth TWS Pro', price: 79.90, category: 'Acessórios', image: '🎧', rating: 4.8 },
-  { id: 3, name: 'Smartwatch Band 8', price: 199.90, category: 'Eletrônicos', image: '⌚', rating: 4.3 },
-  { id: 4, name: 'Carregador Turbo USB-C', price: 89.90, category: 'Acessórios', image: '🔌', rating: 4.6 },
-  { id: 5, name: 'Câmera de Segurança WiFi', price: 149.90, category: 'Casa', image: '📷', rating: 4.4 },
-  { id: 6, name: 'Echo Dot 5ª Geração', price: 349.90, category: 'Casa', image: '🔊', rating: 4.7 },
-];
-
-export const clientServices = [
-  { id: 1, name: 'Eletricista Residencial', price: 150.00, category: 'Casa', icon: '⚡', rating: 4.9, provider: 'João Eletricista' },
-  { id: 2, name: 'Encanador', price: 120.00, category: 'Casa', icon: '🔧', rating: 4.7, provider: 'Pedro Encanador' },
-  { id: 3, name: 'Designer Gráfico', price: 200.00, category: 'Digital', icon: '🎨', rating: 4.8, provider: 'Ana Design' },
-  { id: 4, name: 'Montagem de Móveis', price: 80.00, category: 'Casa', icon: '🪑', rating: 4.5, provider: 'Carlos Marceneiro' },
-  { id: 5, name: 'Limpeza Residencial', price: 100.00, category: 'Casa', icon: '🧹', rating: 4.6, provider: 'Maria Clean' },
-  { id: 6, name: 'Fotógrafo de Eventos', price: 350.00, category: 'Eventos', icon: '📸', rating: 4.9, provider: 'Lucas Foto' },
-];
