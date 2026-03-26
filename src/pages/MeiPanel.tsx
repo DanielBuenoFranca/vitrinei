@@ -118,6 +118,47 @@ const MeiPanel = () => {
             <p className="text-muted-foreground mt-1">Bem-vindo, João — MEI Tecnologia & Acessórios</p>
           </div>
 
+          {/* Gestão Tab */}
+          {activeTab === 'gestao' && (
+            <div className="space-y-6">
+              <Card className="border-primary/30 bg-primary/5">
+                <CardContent className="p-6 text-center">
+                  <ClipboardList className="w-10 h-10 text-primary mx-auto mb-3" />
+                  <h2 className="font-display text-lg font-bold text-foreground mb-2">Central de Gestão de Chamados</h2>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Gerencie solicitações, despache técnicos, acompanhe execução e controle pagamentos em tempo real.
+                  </p>
+                  <Button size="lg" onClick={() => navigate('/gestao')}>
+                    🚀 Abrir Demo Interativa
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    Simulação completa com visões do Cliente, Gestor MEI e Técnico
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Quick stats */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card><CardContent className="p-4 text-center">
+                  <p className="text-2xl font-bold text-foreground">8</p>
+                  <p className="text-xs text-muted-foreground">Chamados Pendentes</p>
+                </CardContent></Card>
+                <Card><CardContent className="p-4 text-center">
+                  <p className="text-2xl font-bold text-primary">3</p>
+                  <p className="text-xs text-muted-foreground">Em Execução</p>
+                </CardContent></Card>
+                <Card><CardContent className="p-4 text-center">
+                  <p className="text-2xl font-bold text-foreground">142</p>
+                  <p className="text-xs text-muted-foreground">Concluídos</p>
+                </CardContent></Card>
+                <Card><CardContent className="p-4 text-center">
+                  <p className="text-2xl font-bold text-accent">4.8 ⭐</p>
+                  <p className="text-xs text-muted-foreground">Avaliação Média</p>
+                </CardContent></Card>
+              </div>
+            </div>
+          )}
+
           {/* Dashboard Tab */}
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
