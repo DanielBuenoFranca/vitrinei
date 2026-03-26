@@ -9,6 +9,7 @@ import ClientApp from "./pages/ClientApp.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import ProcessFlows from "./pages/ProcessFlows.tsx";
 import ServiceManagementDemo from "./pages/ServiceManagementDemo.tsx";
+import ClientJourneyDemo from "./pages/ClientJourneyDemo.tsx";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/client" element={<ClientApp />} />
           <Route path="/processos" element={<ProcessFlows />} />
           <Route path="/gestao" element={<ServiceManagementDemo />} />
+          <Route path="/jornada-cliente" element={<ClientJourneyDemo />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
