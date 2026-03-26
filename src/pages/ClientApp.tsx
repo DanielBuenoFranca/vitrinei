@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { plans, clientProducts, clientServices, mockUser, checkEligibility, type ServiceItem, type EligibilityStatus } from '@/data/mockData';
-import { ArrowLeft, Star, ShoppingBag, Wrench, CreditCard, Zap, CheckCircle2, Lock, Clock, ArrowUpCircle, Coins, ShieldCheck, Package, ChevronLeft, X } from 'lucide-react';
+import { ArrowLeft, Star, ShoppingBag, Wrench, CreditCard, Zap, CheckCircle2, Lock, Clock, ArrowUpCircle, Coins, ShieldCheck, Package, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ClientFlowDiagram from '@/components/flows/ClientFlowDiagram';
 
@@ -115,6 +115,17 @@ const ClientApp = () => {
 
       {/* Content */}
       <div className="p-4 pb-8 space-y-4">
+        {/* CTA Demo */}
+        <Card className="border-primary/30 bg-primary/5 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/jornada-cliente')}>
+          <CardContent className="p-3 flex items-center gap-3">
+            <span className="text-2xl">🎬</span>
+            <div className="flex-1">
+              <p className="text-xs font-bold text-foreground">Ver Demo Interativa</p>
+              <p className="text-[10px] text-muted-foreground">Jornada completa: escolha → agendamento → economia</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-primary" />
+          </CardContent>
+        </Card>
 
         {/* ═══ PLANS TAB ═══ */}
         {activeTab === 'plans' && (
