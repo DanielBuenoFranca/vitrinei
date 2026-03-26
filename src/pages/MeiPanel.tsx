@@ -109,6 +109,7 @@ const MeiPanel = () => {
           <div className="mb-8">
             <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">
               {activeTab === 'dashboard' && 'Dashboard'}
+              {activeTab === 'gestao' && 'Gestão de Chamados'}
               {activeTab === 'stock' && 'Estoque Drop-shipping'}
               {activeTab === 'financial' && 'Gestão Financeira'}
               {activeTab === 'services' && 'Serviços Prestados'}
