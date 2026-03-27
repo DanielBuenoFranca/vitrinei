@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -62,11 +62,18 @@ const PhoneFrame = ({ children }: { children: React.ReactNode }) => (
 
 const DropshippingDemo = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [currentStep, setCurrentStep] = useState(0);
   const [autoPlay, setAutoPlay] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [favorites, setFavorites] = useState<number[]>([1, 4]);
   const [sortBy, setSortBy] = useState<'price' | 'rating' | 'discount'>('discount');
+
+  // Context from URL params (when navigating from product click)
+  const contextProduct = searchParams.get('productName');
+  const contextType = searchParams.get('productType');
+  const contextPrice = searchParams.get('productPrice');
+  const contextProvider = searchParams.get('productProvider');
   const [deliveryProgress, setDeliveryProgress] = useState(0);
 
   const step = steps[currentStep];
