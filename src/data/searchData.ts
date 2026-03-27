@@ -498,71 +498,177 @@ export interface SearchResult {
   services: typeof mockResults;
   followUp?: string;
   needLabel?: string;
-  suggestedServices?: typeof mockResults; // AI-suggested services when only products match
+  suggestedServices?: typeof mockResults;
 }
 
-export function semanticSearch(query: string): SearchResult {
-  const q = query.toLowerCase().trim();
+// ── Helpers for universal fuzzy matching ──
+
+/** Normalize accents & lowercase */
+function normalize(s: string): string {
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+/** Break a phrase into meaningful tokens (2+ chars) */
+function tokenize(s: string): string[] {
+  return normalize(s).split(/\s+/).filter(t => t.length >= 2);
+}
+
+/** Score how well a set of tokens matches a target string */
+function tokenMatchScore(tokens: string[], target: string): number {
+  const t = normalize(target);
+  let score = 0;
+  for (const tok of tokens) {
+    if (t.includes(tok)) score += tok.length; // longer matches = higher score
+  }
+  return score;
+}
+
+/** Score a product against query tokens */
+function scoreProduct(p: ProductItem, tokens: string[]): number {
+  let score = 0;
+  score += tokenMatchScore(tokens, p.name) * 3;
+  score += tokenMatchScore(tokens, p.provider) * 1;
+  for (const tag of p.tags) {
+    score += tokenMatchScore(tokens, tag) * 2;
+  }
+  return score;
+}
+
+/** Score a service against query tokens */
+function scoreService(s: typeof mockResults[0], tokens: string[]): number {
+  let score = 0;
+  score += tokenMatchScore(tokens, s.name) * 3;
+  score += tokenMatchScore(tokens, s.provider) * 1;
+  for (const p of s.products) {
+    score += tokenMatchScore(tokens, p) * 2;
+  }
+  const seg = segments.find(sg => sg.id === s.segment);
+  if (seg) {
+    for (const kw of seg.keywords) {
+      score += tokenMatchScore(tokens, kw) * 1.5;
+    }
+  }
+  return score;
+}
+
+/** Generate a dynamic need label from matched segments */
+function generateNeedLabel(matchedSegs: string[], tokens: string[]): string {
+  const segLabels = matchedSegs
+    .map(id => segments.find(s => s.id === id)?.label)
+    .filter(Boolean)
+    .slice(0, 2);
+  if (segLabels.length > 0) return segLabels.join(' + ');
+  // Fallback: capitalize first meaningful token
+  const main = tokens.find(t => t.length >= 3);
+  return main ? main.charAt(0).toUpperCase() + main.slice(1) : 'Busca personalizada';
+}
+
+/** Generate dynamic AI follow-up */
+function generateFollowUp(needLabel: string, productCount: number, serviceCount: number): string {
+  if (productCount > 0 && serviceCount > 0) {
+    return `Identifiquei: **${needLabel}**. Separei ${productCount} produto(s) e ${serviceCount} serviço(s) relevantes para você.`;
+  }
+  if (productCount > 0) {
+    return `Identifiquei: **${needLabel}**. Encontrei ${productCount} produto(s) disponíveis. Veja abaixo:`;
+  }
+  if (serviceCount > 0) {
+    return `Identifiquei: **${needLabel}**. Encontrei ${serviceCount} serviço(s) profissional(is) para você.`;
+  }
+  return `Entendi sua necessidade! 🧠 Estou buscando as melhores opções...`;
+}
+
+/**
+ * Universal semantic search with optional conversation context.
+ * Pass previous user messages as `conversationContext` to enable
+ * multi-turn intelligence (e.g. "remédio" → "barriga" → combined).
+ */
+export function semanticSearch(query: string, conversationContext?: string[]): SearchResult {
+  const q = normalize(query.trim());
   if (!q) return { products: [], services: [] };
 
-  // 1. Match NL triggers
+  // ── Build enriched query from conversation context ──
+  const contextTokens: string[] = [];
+  if (conversationContext && conversationContext.length > 0) {
+    // Use last 5 user messages as context
+    const recent = conversationContext.slice(-5);
+    for (const msg of recent) {
+      contextTokens.push(...tokenize(msg));
+    }
+  }
+  const queryTokens = tokenize(q);
+  const allTokens = [...new Set([...queryTokens, ...contextTokens])];
+
+  // ── 1. Match NL triggers (exact match, using both current + context) ──
+  const combinedQuery = allTokens.join(' ');
   const matched = naturalLanguageMap.filter((nlm) =>
-    nlm.triggers.some((t) => q.includes(t) || t.includes(q))
+    nlm.triggers.some((t) => {
+      const nt = normalize(t);
+      return combinedQuery.includes(nt) || nt.includes(q);
+    })
   );
 
-  const followUp = matched.find((m) => m.aiFollowUp)?.aiFollowUp;
-  const needLabel = matched.find((m) => m.needLabel)?.needLabel;
+  let followUp = matched.find((m) => m.aiFollowUp)?.aiFollowUp;
+  let needLabel = matched.find((m) => m.needLabel)?.needLabel;
 
-  // 2. Find relevant PRODUCTS via tags + NL mapping
+  // ── 2. Find PRODUCTS ──
   let matchedProducts: ProductItem[] = [];
+
   if (matched.length > 0) {
+    // Precision: use NL-mapped IDs first
     const nlProductIds = matched.flatMap((m) => m.relevantProductIds || []);
-    // Products from NL mapping
     const fromNL = productInventory.filter((p) => nlProductIds.includes(p.id));
-    // Products matching tags
-    const fromTags = productInventory.filter((p) =>
-      !nlProductIds.includes(p.id) &&
-      p.tags.some((tag) => q.includes(tag) || tag.includes(q) || matched.some(m => m.triggers.some(t => tag.includes(t.split(' ')[0]))))
-    );
-    matchedProducts = [...fromNL, ...fromTags];
+    // Also fuzzy-match remaining products
+    const fromFuzzy = productInventory
+      .filter((p) => !nlProductIds.includes(p.id))
+      .map(p => ({ product: p, score: scoreProduct(p, allTokens) }))
+      .filter(x => x.score >= 4)
+      .sort((a, b) => b.score - a.score)
+      .map(x => x.product);
+    matchedProducts = [...fromNL, ...fromFuzzy];
   } else {
-    // Direct product search by name/tags
-    matchedProducts = productInventory.filter((p) =>
-      p.name.toLowerCase().includes(q) ||
-      p.tags.some((tag) => q.includes(tag) || tag.includes(q))
-    );
+    // Pure fuzzy search across all products
+    matchedProducts = productInventory
+      .map(p => ({ product: p, score: scoreProduct(p, allTokens) }))
+      .filter(x => x.score >= 4)
+      .sort((a, b) => b.score - a.score)
+      .map(x => x.product);
   }
 
   // Remove duplicates
   matchedProducts = [...new Map(matchedProducts.map(p => [p.id, p])).values()];
-  matchedProducts.sort((a, b) => b.rating - a.rating);
 
-  // 3. Find relevant SERVICES
+  // ── 3. Find SERVICES ──
   let matchedServices: typeof mockResults = [];
+
   if (matched.length > 0) {
     const nlServiceIds = matched.flatMap((m) => m.relevantServiceIds || []);
     if (nlServiceIds.length > 0) {
-      // Use specific service IDs from NL map — precision over broad segment
       matchedServices = mockResults.filter((r) => nlServiceIds.includes(r.id));
     } else {
-      // Fallback to segment match only if no specific IDs
       const nlSegments = matched.flatMap((m) => m.segments);
       matchedServices = mockResults.filter((r) => nlSegments.includes(r.segment));
     }
+    // Also add fuzzy-matched services not already included
+    const existingIds = new Set(matchedServices.map(s => s.id));
+    const fuzzyServices = mockResults
+      .filter(s => !existingIds.has(s.id))
+      .map(s => ({ service: s, score: scoreService(s, allTokens) }))
+      .filter(x => x.score >= 6)
+      .sort((a, b) => b.score - a.score)
+      .map(x => x.service);
+    matchedServices = [...matchedServices, ...fuzzyServices];
   } else {
-    // Direct search: name, provider, products, segment keywords
-    matchedServices = mockResults.filter((r) => {
-      if (r.name.toLowerCase().includes(q) || r.provider.toLowerCase().includes(q)) return true;
-      if (r.products.some((p) => p.toLowerCase().includes(q))) return true;
-      const seg = segments.find((s) => s.id === r.segment);
-      if (seg?.keywords.some((k) => k.includes(q) || q.includes(k))) return true;
-      return false;
-    });
+    // Pure fuzzy search across all services
+    matchedServices = mockResults
+      .map(s => ({ service: s, score: scoreService(s, allTokens) }))
+      .filter(x => x.score >= 4)
+      .sort((a, b) => b.score - a.score)
+      .map(x => x.service);
   }
 
   matchedServices.sort((a, b) => b.rating - a.rating);
 
-  // 4. Cross-suggestion: if only products found, suggest related services
+  // ── 4. Cross-suggestion ──
   let suggestedServices: typeof mockResults = [];
   if (matchedProducts.length > 0 && matchedServices.length === 0) {
     const relatedIds = [...new Set(matchedProducts.flatMap((p) => p.relatedServiceIds))];
@@ -570,17 +676,27 @@ export function semanticSearch(query: string): SearchResult {
     suggestedServices.sort((a, b) => b.rating - a.rating);
   }
 
-  // 5. If only services found, suggest products from those services
+  // ── 5. If services found but no products → pull related products ──
   if (matchedServices.length > 0 && matchedProducts.length === 0) {
     const serviceIds = matchedServices.map(s => s.id);
     matchedProducts = productInventory.filter(p => p.relatedServiceIds.some(id => serviceIds.includes(id)));
     matchedProducts.sort((a, b) => b.rating - a.rating);
   }
 
+  // ── 6. Generate dynamic labels if no NL match ──
+  if (!needLabel && (matchedProducts.length > 0 || matchedServices.length > 0)) {
+    const matchedSegIds = [...new Set(matchedServices.map(s => s.segment))];
+    needLabel = generateNeedLabel(matchedSegIds, queryTokens);
+  }
+
+  if (!followUp && (matchedProducts.length > 0 || matchedServices.length > 0)) {
+    followUp = generateFollowUp(needLabel || 'Sua busca', matchedProducts.length, matchedServices.length);
+  }
+
   return { products: matchedProducts, services: matchedServices, followUp, needLabel, suggestedServices };
 }
 
-// Legacy compat: returns combined results in old format
+// Legacy compat
 export function semanticSearchLegacy(query: string): { results: typeof mockResults; followUp?: string } {
   const { services, followUp } = semanticSearch(query);
   return { results: services, followUp };
