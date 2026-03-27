@@ -8,7 +8,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, ArrowRight, Zap, Sparkles, Clock, MapPin, DollarSign,
   Headphones, ShoppingCart, BarChart3, Send, Star,
-  Package, TrendingDown, Navigation, Users, Shield, MessageCircle
+  Package, TrendingDown, Navigation, Users, Shield, MessageCircle,
+  ChevronDown
 } from 'lucide-react';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
 import { segments, naturalLanguageMap, mockResults, semanticSearch } from '@/data/searchData';
