@@ -129,7 +129,14 @@ const Landing = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const placeholders = ['Eletricista na minha região...', 'Preciso de uma faxineira...', 'Manutenção do meu carro...', 'Consulta com nutricionista...'];
+  const placeholders = [
+    'Estou com dor de barriga...',
+    'Preciso cortar a grama do jardim...',
+    'Meu carro está fazendo barulho...',
+    'Preciso de uma faxineira...',
+    'Quero aprender violão...',
+    'Meu cachorro precisa de vacina...',
+  ];
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   useEffect(() => {
     const interval = setInterval(() => setPlaceholderIdx((p) => (p + 1) % placeholders.length), 3000);
@@ -140,11 +147,53 @@ const Landing = () => {
     setActiveSegments((prev) => prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]);
   };
 
-  const filteredResults = mockResults.filter((r) => {
-    const matchesSearch = !searchQuery || r.name.toLowerCase().includes(searchQuery.toLowerCase()) || r.provider.toLowerCase().includes(searchQuery.toLowerCase()) || segments.find((s) => s.id === r.segment)?.keywords.some((k) => k.includes(searchQuery.toLowerCase()));
-    const matchesSegment = activeSegments.length === 0 || activeSegments.includes(r.segment);
-    return matchesSearch && matchesSegment;
-  });
+  // ── Motor de busca semântica ──
+  const filteredResults = (() => {
+    const query = searchQuery.toLowerCase().trim();
+    if (!query && activeSegments.length === 0) return mockResults;
+
+    // 1. Verificar correspondência com linguagem natural
+    const matchedNLMaps = naturalLanguageMap.filter((nlm) =>
+      nlm.triggers.some((t) => query.includes(t) || t.includes(query))
+    );
+
+    // 2. Extrair segmentos e keywords da linguagem natural
+    const nlSegments = matchedNLMaps.flatMap((m) => m.segments);
+    const nlKeywords = matchedNLMaps.flatMap((m) => m.keywords);
+
+    return mockResults.filter((r) => {
+      // Filtro por segmento selecionado (chips)
+      const matchesSegment = activeSegments.length === 0 || activeSegments.includes(r.segment);
+      if (!matchesSegment) return false;
+
+      if (!query) return true;
+
+      // Match direto por nome/provider
+      const directMatch = r.name.toLowerCase().includes(query) || r.provider.toLowerCase().includes(query);
+      if (directMatch) return true;
+
+      // Match por keywords do segmento
+      const segmentKeywordMatch = segments.find((s) => s.id === r.segment)?.keywords.some((k) => k.includes(query) || query.includes(k));
+      if (segmentKeywordMatch) return true;
+
+      // Match semântico: segmento + keywords da linguagem natural
+      if (matchedNLMaps.length > 0) {
+        const inNLSegment = nlSegments.includes(r.segment);
+        const hasNLKeyword = nlKeywords.some((kw) =>
+          r.name.toLowerCase().includes(kw) ||
+          r.products.some((p) => p.toLowerCase().includes(kw)) ||
+          segments.find((s) => s.id === r.segment)?.keywords.some((sk) => sk.includes(kw))
+        );
+        if (inNLSegment || hasNLKeyword) return true;
+      }
+
+      // Match por produtos
+      const productMatch = r.products.some((p) => p.toLowerCase().includes(query) || query.includes(p.toLowerCase()));
+      if (productMatch) return true;
+
+      return false;
+    });
+  })();
 
   const handleAiSend = () => {
     if (!aiMessage.trim()) return;
