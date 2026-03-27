@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,19 +27,89 @@ const mockClient = {
   loyaltyBonus: 5,
 };
 
-const availableServices = [
-  { id: 1, name: 'Eletricista Residencial', icon: '⚡', provider: 'João Eletricista', rating: 4.9, creditCost: 80, monetaryValue: 150, category: 'Casa', estimatedTime: '1h30min', relatedProducts: 3 },
-  { id: 2, name: 'Encanador', icon: '🔧', provider: 'Pedro Encanador', rating: 4.7, creditCost: 65, monetaryValue: 120, category: 'Casa', estimatedTime: '1h', relatedProducts: 2 },
-  { id: 5, name: 'Limpeza Residencial', icon: '🧹', provider: 'Maria Clean', rating: 4.6, creditCost: 55, monetaryValue: 100, category: 'Casa', estimatedTime: '2h', relatedProducts: 3 },
-  { id: 4, name: 'Montagem de Móveis', icon: '🪑', provider: 'Carlos Marceneiro', rating: 4.5, creditCost: 45, monetaryValue: 80, category: 'Casa', estimatedTime: '1h30min', relatedProducts: 1 },
-];
+/* ── Ícones por segmento ── */
+const segmentEmojis: Record<string, string> = {
+  manutencao: '🔧', saude_clinica: '🩺', bem_estar: '💆', beleza: '💇',
+  casa: '🏠', auto: '🚗', digital: '💻', tech: '📱',
+  educacao: '📚', pet: '🐾', eventos: '🎉', musica: '🎵', natureza: '🌿',
+};
 
-const selectedServiceData = availableServices[0]; // Eletricista
+/* ── Produtos relacionados por segmento ── */
+const productsBySegment: Record<string, { id: number; name: string; price: number; image: string; supplier: string }[]> = {
+  manutencao: [
+    { id: 101, name: 'Fio Elétrico 2.5mm (100m)', price: 89.90, image: '🔌', supplier: 'EletroParts' },
+    { id: 102, name: 'Fita Isolante Premium', price: 12.90, image: '🛠️', supplier: 'EletroParts' },
+    { id: 103, name: 'Kit Tomadas e Interruptores', price: 45.90, image: '💡', supplier: 'EletroParts' },
+  ],
+  saude_clinica: [
+    { id: 201, name: 'Escova Dental Elétrica', price: 129.90, image: '🪥', supplier: 'OdontoShop' },
+    { id: 202, name: 'Kit Higiene Oral Premium', price: 39.90, image: '🦷', supplier: 'OdontoShop' },
+    { id: 203, name: 'Termômetro Digital', price: 24.90, image: '🌡️', supplier: 'FarmaExpress' },
+  ],
+  bem_estar: [
+    { id: 301, name: 'Tapete de Yoga Premium', price: 79.90, image: '🧘', supplier: 'ZenStore' },
+    { id: 302, name: 'Faixa Elástica Kit (5 peças)', price: 34.90, image: '💪', supplier: 'FitShop' },
+    { id: 303, name: 'Óleo Essencial Lavanda', price: 29.90, image: '🌸', supplier: 'NaturaVida' },
+  ],
+  beleza: [
+    { id: 401, name: 'Shampoo Profissional 500ml', price: 49.90, image: '🧴', supplier: 'BeautyPro' },
+    { id: 402, name: 'Kit Esmaltes (12 cores)', price: 59.90, image: '💅', supplier: 'BeautyPro' },
+    { id: 403, name: 'Secador de Cabelo 2200W', price: 189.90, image: '💇', supplier: 'BeautyPro' },
+  ],
+  casa: [
+    { id: 501, name: 'Kit Limpeza Completo', price: 34.90, image: '🧹', supplier: 'CleanShop' },
+    { id: 502, name: 'Desinfetante Concentrado 5L', price: 19.90, image: '🧴', supplier: 'CleanShop' },
+    { id: 503, name: 'Pano Microfibra Kit (10)', price: 29.90, image: '🧽', supplier: 'CleanShop' },
+  ],
+  auto: [
+    { id: 601, name: 'Óleo 5W30 Sintético', price: 42.90, image: '🛢️', supplier: 'AutoParts' },
+    { id: 602, name: 'Filtro de Óleo', price: 19.90, image: '⚙️', supplier: 'AutoParts' },
+    { id: 603, name: 'Cera Cristalizadora', price: 34.90, image: '✨', supplier: 'AutoParts' },
+  ],
+  digital: [
+    { id: 701, name: 'Kit Identidade Visual', price: 149.90, image: '🎨', supplier: 'DesignStore' },
+    { id: 702, name: 'Banco de Imagens (100 fotos)', price: 29.90, image: '📸', supplier: 'DesignStore' },
+    { id: 703, name: 'Template Website Premium', price: 79.90, image: '💻', supplier: 'DesignStore' },
+  ],
+  tech: [
+    { id: 801, name: 'Antivírus 1 Ano', price: 49.90, image: '🔒', supplier: 'TechShop' },
+    { id: 802, name: 'Película de Vidro', price: 14.90, image: '📱', supplier: 'TechShop' },
+    { id: 803, name: 'Cabo USB-C 2m', price: 19.90, image: '🔌', supplier: 'TechShop' },
+  ],
+  educacao: [
+    { id: 901, name: 'Dicionário Inglês-Português', price: 39.90, image: '📖', supplier: 'EduBooks' },
+    { id: 902, name: 'Apostila Preparatória', price: 29.90, image: '📝', supplier: 'EduBooks' },
+    { id: 903, name: 'Fone Bluetooth (aulas online)', price: 79.90, image: '🎧', supplier: 'TechShop' },
+  ],
+  pet: [
+    { id: 1001, name: 'Shampoo Pet Premium', price: 24.90, image: '🐕', supplier: 'PetStore' },
+    { id: 1002, name: 'Guia Retrátil 5m', price: 34.90, image: '🦮', supplier: 'PetStore' },
+    { id: 1003, name: 'Petiscos Training (500g)', price: 19.90, image: '🦴', supplier: 'PetStore' },
+  ],
+  eventos: [
+    { id: 1101, name: 'Kit Doces Finos (100 un)', price: 89.90, image: '🧁', supplier: 'DoceFesta' },
+    { id: 1102, name: 'Balões Metalizados Kit', price: 29.90, image: '🎈', supplier: 'DecorFesta' },
+    { id: 1103, name: 'Toalha de Mesa Premium', price: 49.90, image: '🎀', supplier: 'DecorFesta' },
+  ],
+  musica: [
+    { id: 1201, name: 'Encordoamento Nylon', price: 19.90, image: '🎸', supplier: 'SomShop' },
+    { id: 1202, name: 'Metrônomo Digital', price: 29.90, image: '🎵', supplier: 'SomShop' },
+    { id: 1203, name: 'Interface de Áudio USB', price: 249.90, image: '🎙️', supplier: 'SomShop' },
+  ],
+  natureza: [
+    { id: 1301, name: 'Chá Fitoterápico Mix', price: 24.90, image: '🍵', supplier: 'FitoNatural' },
+    { id: 1302, name: 'Sementes Orgânicas Kit', price: 19.90, image: '🌱', supplier: 'VerdeVida' },
+    { id: 1303, name: 'Kit Óleos Essenciais', price: 59.90, image: '🌿', supplier: 'AromaVida' },
+    { id: 1304, name: 'Vaso Autoirrigável', price: 34.90, image: '🪴', supplier: 'VerdeVida' },
+    { id: 1305, name: 'Adubo Orgânico 5kg', price: 22.90, image: '🌻', supplier: 'VerdeVida' },
+  ],
+};
 
-const relatedProducts = [
-  { id: 7, name: 'Fio Elétrico 2.5mm (100m)', price: 89.90, image: '🔌', supplier: 'EletroParts' },
-  { id: 8, name: 'Fita Isolante Premium', price: 12.90, image: '🛠️', supplier: 'EletroParts' },
-  { id: 9, name: 'Kit Tomadas e Interruptores', price: 45.90, image: '💡', supplier: 'EletroParts' },
+const defaultServices = [
+  { id: 1, name: 'Eletricista Residencial', icon: '⚡', provider: 'João Eletricista', rating: 4.9, creditCost: 80, monetaryValue: 150, category: 'Casa', estimatedTime: '1h30min', relatedProducts: 3, segment: 'manutencao' },
+  { id: 2, name: 'Encanador', icon: '🔧', provider: 'Pedro Encanador', rating: 4.7, creditCost: 65, monetaryValue: 120, category: 'Casa', estimatedTime: '1h', relatedProducts: 2, segment: 'manutencao' },
+  { id: 5, name: 'Limpeza Residencial', icon: '🧹', provider: 'Maria Clean', rating: 4.6, creditCost: 55, monetaryValue: 100, category: 'Casa', estimatedTime: '2h', relatedProducts: 3, segment: 'casa' },
+  { id: 4, name: 'Montagem de Móveis', icon: '🪑', provider: 'Carlos Marceneiro', rating: 4.5, creditCost: 45, monetaryValue: 80, category: 'Casa', estimatedTime: '1h30min', relatedProducts: 1, segment: 'casa' },
 ];
 
 const availableDates = [
