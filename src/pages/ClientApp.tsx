@@ -436,7 +436,7 @@ const ClientApp = () => {
                     onClick={() => {
                       const params = new URLSearchParams({
                         productName: product.name,
-                        productType: product.stockType || 'fisico',
+                        productType: (product as any).stockType || 'fisico',
                         productPrice: String(product.price),
                         productProvider: product.supplier,
                       });
