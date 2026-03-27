@@ -12,7 +12,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
-import { segments, naturalLanguageMap, mockResults, semanticSearch } from '@/data/searchData';
+import { segments, naturalLanguageMap, mockResults, semanticSearch, type ProductItem, type SearchResult } from '@/data/searchData';
 
 
 const aiSuggestions = [
