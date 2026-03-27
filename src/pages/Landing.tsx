@@ -505,13 +505,88 @@ const Landing = () => {
               )}
 
               {aiChat.map((msg, idx) => (
-                <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start gap-2'}`}>
-                  {msg.role === 'ai' && <AiAvatar size={28} speaking={false} />}
-                  <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
-                    msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted text-foreground rounded-bl-md'
-                  }`}>
-                    {msg.text}
+                <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                  className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                  <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start gap-2'}`}>
+                    {msg.role === 'ai' && <AiAvatar size={28} speaking={false} />}
+                    <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
+                      msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted text-foreground rounded-bl-md'
+                    }`}>
+                      {msg.text}
+                    </div>
                   </div>
+                  {/* Result cards */}
+                  {msg.results && msg.results.length > 0 && (
+                    <div className="w-full mt-2 space-y-2 pl-10">
+                      {(expandedMsgIdx === idx ? msg.results : msg.results.slice(0, 3)).map((r) => {
+                        const seg = segments.find((s) => s.id === r.segment);
+                        const SegIcon = seg?.icon || Sparkles;
+                        return (
+                          <motion.div key={r.id} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+                            <Card className="border-border/50 hover:border-primary/40 cursor-pointer transition-all group"
+                              onClick={() => navigateToDemo(r)}>
+                              <CardContent className="p-3">
+                                <div className="flex items-start justify-between mb-1">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                      <SegIcon className="w-3.5 h-3.5 text-primary" />
+                                    </div>
+                                    <div>
+                                      <h4 className="font-semibold text-xs text-foreground">{r.name}</h4>
+                                      <p className="text-[11px] text-muted-foreground">{r.provider}</p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-0.5 text-xs text-accent-foreground shrink-0">
+                                    <Star className="w-3 h-3 fill-accent text-accent" />
+                                    {r.rating}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3 text-[11px] text-muted-foreground mb-2">
+                                  <span className="flex items-center gap-0.5"><DollarSign className="w-3 h-3" /> R$ {r.price}</span>
+                                  <span className="flex items-center gap-0.5"><Clock className="w-3 h-3" /> {r.time}</span>
+                                  <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" /> {r.distance}</span>
+                                </div>
+                                {r.products.length > 0 && (
+                                  <div className="flex flex-wrap gap-1">
+                                    {r.products.slice(0, 3).map((p) => (
+                                      <Badge key={p} variant="secondary" className="text-[9px] px-1.5 py-0">
+                                        <Package className="w-2.5 h-2.5 mr-0.5" />{p}
+                                      </Badge>
+                                    ))}
+                                    {r.products.length > 3 && (
+                                      <Badge variant="secondary" className="text-[9px] px-1.5 py-0">+{r.products.length - 3}</Badge>
+                                    )}
+                                  </div>
+                                )}
+                                <div className="mt-1.5 flex items-center gap-1 text-[10px] text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <ArrowRight className="w-3 h-3" /> Contratar agora
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </motion.div>
+                        );
+                      })}
+                      {msg.results.length > 3 && expandedMsgIdx !== idx && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full text-xs h-8 text-muted-foreground hover:text-primary gap-1"
+                          onClick={() => setExpandedMsgIdx(idx)}>
+                          <ChevronDown className="w-3.5 h-3.5" />
+                          Ver todas as {msg.results.length} opções
+                        </Button>
+                      )}
+                      {expandedMsgIdx === idx && msg.results.length > 3 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full text-xs h-8 text-muted-foreground hover:text-primary"
+                          onClick={() => setExpandedMsgIdx(null)}>
+                          Mostrar menos
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </div>
