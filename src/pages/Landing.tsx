@@ -9,7 +9,7 @@ import {
   Search, ArrowRight, Zap, Sparkles, Clock, MapPin, DollarSign,
   Headphones, ShoppingCart, BarChart3, Send, Star,
   Package, TrendingDown, Navigation, Users, Shield, MessageCircle,
-  ChevronDown, ShoppingBag, Wrench as WrenchIcon, Store
+  ChevronDown, ShoppingBag, Wrench as WrenchIcon, Store, Plus, CheckCircle2, X, Trash2
 } from 'lucide-react';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
 import { segments, mockResults, semanticSearch, type ProductItem, type SearchResult } from '@/data/searchData';
@@ -35,7 +35,34 @@ const Landing = () => {
   const [expandedProducts, setExpandedProducts] = useState<number | null>(null);
   const [expandedServices, setExpandedServices] = useState<number | null>(null);
   const [showSearchProducts, setShowSearchProducts] = useState(false);
+  const [productCart, setProductCart] = useState<ProductItem[]>([]);
+  const [showProductCart, setShowProductCart] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+
+  const toggleProductInCart = (product: ProductItem) => {
+    setProductCart(prev => 
+      prev.some(p => p.id === product.id)
+        ? prev.filter(p => p.id !== product.id)
+        : [...prev, product]
+    );
+  };
+
+  const isInProductCart = (productId: number) => productCart.some(p => p.id === productId);
+
+  const navigateToProductDemo = () => {
+    if (productCart.length === 0) return;
+    const params = new URLSearchParams({
+      products: JSON.stringify(productCart.map(p => ({
+        name: p.name,
+        type: p.stockType,
+        price: p.price,
+        provider: p.provider,
+        rating: p.rating,
+        distance: p.distance,
+      }))),
+    });
+    navigate(`/dropshipping?${params.toString()}`);
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -347,22 +374,18 @@ const Landing = () => {
                         {(showSearchProducts ? searchResult.products : searchResult.products.slice(0, 6)).map((product, idx) => (
                           <motion.div key={product.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}>
                             <Card
-                              className="border-border/50 hover:border-success/40 hover:shadow-md transition-all duration-200 cursor-pointer group"
-                              onClick={() => {
-                                const params = new URLSearchParams({
-                                  productName: product.name,
-                                  productType: product.stockType,
-                                  productPrice: String(product.price),
-                                  productProvider: product.provider,
-                                });
-                                navigate(`/dropshipping?${params.toString()}`);
-                              }}
+                              className={`hover:shadow-md transition-all duration-200 cursor-pointer group ${
+                                isInProductCart(product.id) 
+                                  ? 'border-success bg-success/5 shadow-sm' 
+                                  : 'border-border/50 hover:border-success/40'
+                              }`}
+                              onClick={() => toggleProductInCart(product)}
                             >
                               <CardContent className="p-4">
                                 <div className="flex items-start justify-between mb-2">
                                   <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center">
-                                      <ShoppingBag className="w-4 h-4 text-success" />
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isInProductCart(product.id) ? 'bg-success/20' : 'bg-success/10'}`}>
+                                      {isInProductCart(product.id) ? <CheckCircle2 className="w-4 h-4 text-success" /> : <ShoppingBag className="w-4 h-4 text-success" />}
                                     </div>
                                     <div>
                                       <h4 className="font-semibold text-sm text-foreground">{product.name}</h4>
@@ -379,8 +402,12 @@ const Landing = () => {
                                   <span className="flex items-center gap-1"><Star className="w-3 h-3 fill-accent text-accent" /> {product.rating}</span>
                                   <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {product.distance}</span>
                                 </div>
-                                <div className="mt-2 flex items-center gap-1 text-[10px] text-success font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <ArrowRight className="w-3 h-3" /> Ver demonstração de compra
+                                <div className="mt-2 flex items-center gap-1 text-[10px] font-medium transition-opacity">
+                                  {isInProductCart(product.id) ? (
+                                    <span className="text-success flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Adicionado ao carrinho</span>
+                                  ) : (
+                                    <span className="text-success opacity-0 group-hover:opacity-100 flex items-center gap-1"><Plus className="w-3 h-3" /> Adicionar ao carrinho</span>
+                                  )}
                                 </div>
                               </CardContent>
                             </Card>
@@ -620,21 +647,13 @@ const Landing = () => {
                       <div className="space-y-2">
                         {(expandedProducts === idx ? msg.searchResult.products : msg.searchResult.products.slice(0, 3)).map((product) => (
                           <motion.div key={product.id} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
-                            <Card className="border-border/50 hover:border-success/40 cursor-pointer transition-all group"
-                              onClick={() => {
-                                const params = new URLSearchParams({
-                                  productName: product.name,
-                                  productType: product.stockType,
-                                  productPrice: String(product.price),
-                                  productProvider: product.provider,
-                                });
-                                navigate(`/dropshipping?${params.toString()}`);
-                              }}>
+                            <Card className={`cursor-pointer transition-all group ${isInProductCart(product.id) ? 'border-success bg-success/5' : 'border-border/50 hover:border-success/40'}`}
+                              onClick={() => toggleProductInCart(product)}>
                               <CardContent className="p-3">
                                 <div className="flex items-start justify-between mb-1">
                                   <div className="flex items-center gap-2">
-                                    <div className="w-7 h-7 rounded-lg bg-success/10 flex items-center justify-center shrink-0">
-                                      <ShoppingBag className="w-3.5 h-3.5 text-success" />
+                                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isInProductCart(product.id) ? 'bg-success/20' : 'bg-success/10'}`}>
+                                      {isInProductCart(product.id) ? <CheckCircle2 className="w-3.5 h-3.5 text-success" /> : <ShoppingBag className="w-3.5 h-3.5 text-success" />}
                                     </div>
                                     <div>
                                       <h4 className="font-semibold text-xs text-foreground">{product.name}</h4>
@@ -651,8 +670,10 @@ const Landing = () => {
                                   <span className="flex items-center gap-0.5"><Star className="w-3 h-3 fill-accent text-accent" /> {product.rating}</span>
                                   <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" /> {product.distance}</span>
                                 </div>
-                                <div className="mt-1 flex items-center gap-1 text-[10px] text-success font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <ArrowRight className="w-3 h-3" /> Comprar produto
+                                <div className="mt-1 flex items-center gap-1 text-[10px] font-medium">
+                                  {isInProductCart(product.id)
+                                    ? <span className="text-success flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> No carrinho</span>
+                                    : <span className="text-success opacity-0 group-hover:opacity-100 flex items-center gap-1"><Plus className="w-3 h-3" /> Adicionar</span>}
                                 </div>
                               </CardContent>
                             </Card>
@@ -806,6 +827,76 @@ const Landing = () => {
                 <Headphones className="w-3 h-3" /> Encaminhar para Central de Atendimento (SLA 24h)
               </button>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Floating Product Cart Bar */}
+      <AnimatePresence>
+        {productCart.length > 0 && (
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ type: 'spring', damping: 20 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-2xl"
+          >
+            <Card className="border-success shadow-2xl bg-card/95 backdrop-blur-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center shrink-0">
+                      <ShoppingCart className="w-5 h-5 text-success" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-foreground">
+                        {productCart.length} produto{productCart.length > 1 ? 's' : ''} selecionado{productCart.length > 1 ? 's' : ''}
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>R$ {productCart.reduce((s, p) => s + p.price, 0).toFixed(2)}</span>
+                        <span>•</span>
+                        <span>{productCart.filter(p => p.stockType === 'fisico').length} estoque</span>
+                        <span>{productCart.filter(p => p.stockType === 'drop').length} drop</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button variant="ghost" size="sm" className="text-xs text-muted-foreground h-8 px-2" onClick={() => setShowProductCart(!showProductCart)}>
+                      {showProductCart ? 'Fechar' : 'Ver itens'}
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => setProductCart([])}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button size="sm" className="gap-1 text-xs" onClick={navigateToProductDemo}>
+                      <ArrowRight className="w-3 h-3" /> Ver Demo
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Expanded cart items */}
+                <AnimatePresence>
+                  {showProductCart && (
+                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                      className="mt-3 pt-3 border-t border-border space-y-2 overflow-hidden">
+                      {productCart.map(product => (
+                        <div key={product.id} className="flex items-center justify-between text-xs bg-muted/50 rounded-lg px-3 py-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Badge variant={product.stockType === 'fisico' ? 'default' : 'secondary'} className="text-[8px] px-1.5 py-0 shrink-0">
+                              {product.stockType === 'fisico' ? '📦' : '🌍'}
+                            </Badge>
+                            <span className="font-medium text-foreground truncate">{product.name}</span>
+                            <span className="text-muted-foreground shrink-0">R$ {product.price}</span>
+                          </div>
+                          <button onClick={() => toggleProductInCart(product)} className="text-muted-foreground hover:text-destructive ml-2 shrink-0">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </CardContent>
+            </Card>
           </motion.div>
         )}
       </AnimatePresence>
