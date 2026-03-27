@@ -979,7 +979,7 @@ const DropshippingDemo = () => {
           <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={() => navigate(-1)}><ArrowLeft className="w-4 h-4" />Voltar</Button>
           <span className="font-display text-sm font-bold text-foreground">
             {isContextual
-              ? (isLocal ? '📦 Produto — Estoque Local' : '🌍 Produto — Dropshipping')
+              ? (isMultiProduct ? `🛒 ${contextProducts.length} Produtos` : (isLocal ? '📦 Produto — Estoque Local' : '🌍 Produto — Dropshipping'))
               : 'Dropshipping — Visão Cliente'}
           </span>
           <Button variant={autoPlay ? 'default' : 'outline'} size="sm" className="text-xs gap-1" onClick={() => { setAutoPlay(!autoPlay); if (!autoPlay && currentStep >= steps.length - 1) setCurrentStep(0); }}>
