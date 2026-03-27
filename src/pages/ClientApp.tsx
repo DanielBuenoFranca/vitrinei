@@ -25,6 +25,7 @@ const segments = [
   { id: 'educacao', label: 'Educação & Cursos', emoji: '🎓', category: 'Educação & Cursos', color: 'bg-orange-500/10 border-orange-500/20', desc: 'Idiomas, música, ENEM, programação' },
   { id: 'pet', label: 'Pet & Animais', emoji: '🐕', category: 'Pet & Animais', color: 'bg-lime-500/10 border-lime-500/20', desc: 'Banho, tosa, veterinário, adestramento' },
   { id: 'eventos', label: 'Eventos & Festas', emoji: '🎉', category: 'Eventos & Festas', color: 'bg-fuchsia-500/10 border-fuchsia-500/20', desc: 'Buffet, DJ, decoração, fotografia' },
+  { id: 'musica', label: 'Música', emoji: '🎵', category: 'Música', color: 'bg-rose-500/10 border-rose-500/20', desc: 'Violão, guitarra, piano, canto, produção' },
 ];
 
 /* ─── AI SUGGESTIONS ENGINE (simulated) ─── */
