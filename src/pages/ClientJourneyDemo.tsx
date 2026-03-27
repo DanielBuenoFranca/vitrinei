@@ -196,6 +196,7 @@ const TrackingMap = ({ progress }: { progress: number }) => (
 /* ─── MAIN COMPONENT ─── */
 const ClientJourneyDemo = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [currentStep, setCurrentStep] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
   const [selectedService, setSelectedService] = useState<number | null>(null);
@@ -205,6 +206,39 @@ const ClientJourneyDemo = () => {
   const [trackingProgress, setTrackingProgress] = useState(0);
   const [codeInput, setCodeInput] = useState('');
   const [codeVerified, setCodeVerified] = useState(false);
+
+  // ── Dados vindos da Landing Page ──
+  const fromLanding = searchParams.get('serviceName');
+  const landingSegment = searchParams.get('serviceSegment') || 'manutencao';
+  const landingProducts = (() => { try { return JSON.parse(searchParams.get('serviceProducts') || '[]') as string[]; } catch { return []; } })();
+
+  const landingService = fromLanding ? {
+    id: 99,
+    name: searchParams.get('serviceName') || '',
+    icon: segmentEmojis[landingSegment] || '⚡',
+    provider: searchParams.get('serviceProvider') || '',
+    rating: parseFloat(searchParams.get('serviceRating') || '4.8'),
+    creditCost: Math.round(parseFloat(searchParams.get('servicePrice') || '100') * 0.53),
+    monetaryValue: parseFloat(searchParams.get('servicePrice') || '100'),
+    category: landingSegment,
+    estimatedTime: searchParams.get('serviceTime') || '1h',
+    relatedProducts: (productsBySegment[landingSegment] || []).length,
+    segment: landingSegment,
+  } : null;
+
+  const availableServices = landingService
+    ? [landingService, ...defaultServices.filter(s => s.id !== 99).slice(0, 3)]
+    : defaultServices;
+
+  const activeService = availableServices.find(s => s.id === selectedService) || availableServices[0];
+  const relatedProducts = productsBySegment[landingService?.segment || activeService?.segment || 'manutencao'] || productsBySegment.manutencao;
+
+  // Auto-select landed service
+  useEffect(() => {
+    if (landingService && !selectedService) {
+      setSelectedService(landingService.id);
+    }
+  }, []);
 
   const step = steps[currentStep];
   const verificationCode = '8472';
@@ -235,13 +269,15 @@ const ClientJourneyDemo = () => {
 
   const goPrev = () => { if (currentStep > 0) setCurrentStep(prev => prev - 1); };
 
+  const selectedServiceData = activeService;
+
   const productTotal = addedProducts.reduce((sum, id) => {
     const p = relatedProducts.find(x => x.id === id);
     return sum + (p ? p.price * (1 - mockClient.discount / 100) : 0);
   }, 0);
 
   const savingsData = {
-    serviceSaved: selectedServiceData.monetaryValue - 0, // 100% covered by credits
+    serviceSaved: selectedServiceData.monetaryValue - 0,
     productDiscount: addedProducts.reduce((sum, id) => {
       const p = relatedProducts.find(x => x.id === id);
       return sum + (p ? p.price * mockClient.discount / 100 : 0);
