@@ -29,9 +29,10 @@ const Landing = () => {
   const [activeSegments, setActiveSegments] = useState<string[]>([]);
   const [showAiPanel, setShowAiPanel] = useState(false);
   const [aiMessage, setAiMessage] = useState('');
-  const [aiChat, setAiChat] = useState<{ role: 'user' | 'ai'; text: string }[]>([]);
+  const [aiChat, setAiChat] = useState<{ role: 'user' | 'ai'; text: string; results?: typeof mockResults }[]>([]);
   const [currentSuggestion, setCurrentSuggestion] = useState(0);
   const [aiSpeaking, setAiSpeaking] = useState(false);
+  const [expandedMsgIdx, setExpandedMsgIdx] = useState<number | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
