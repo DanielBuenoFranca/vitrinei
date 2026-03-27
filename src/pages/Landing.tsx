@@ -346,7 +346,18 @@ const Landing = () => {
                       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {(showSearchProducts ? searchResult.products : searchResult.products.slice(0, 6)).map((product, idx) => (
                           <motion.div key={product.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}>
-                            <Card className="border-border/50 hover:border-success/40 hover:shadow-md transition-all duration-200 cursor-pointer group">
+                            <Card
+                              className="border-border/50 hover:border-success/40 hover:shadow-md transition-all duration-200 cursor-pointer group"
+                              onClick={() => {
+                                const params = new URLSearchParams({
+                                  productName: product.name,
+                                  productType: product.stockType,
+                                  productPrice: String(product.price),
+                                  productProvider: product.provider,
+                                });
+                                navigate(`/dropshipping?${params.toString()}`);
+                              }}
+                            >
                               <CardContent className="p-4">
                                 <div className="flex items-start justify-between mb-2">
                                   <div className="flex items-center gap-2">
@@ -369,7 +380,7 @@ const Landing = () => {
                                   <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {product.distance}</span>
                                 </div>
                                 <div className="mt-2 flex items-center gap-1 text-[10px] text-success font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <ArrowRight className="w-3 h-3" /> Comprar produto
+                                  <ArrowRight className="w-3 h-3" /> Ver demonstração de compra
                                 </div>
                               </CardContent>
                             </Card>
