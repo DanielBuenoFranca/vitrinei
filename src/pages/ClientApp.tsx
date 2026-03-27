@@ -285,50 +285,122 @@ const ClientApp = () => {
               </div>
               <div className="p-4 space-y-3">
                 {cart.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Carrinho vazio — selecione serviços e produtos</p>}
-                {cart.map((item, idx) => (
-                  <div key={idx} className="bg-muted/50 rounded-xl p-3 space-y-2">
-                    {item.service && (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">{item.service.icon}</span>
-                          <div>
-                            <p className="text-xs font-semibold text-foreground">{item.service.name}</p>
-                            <p className="text-[10px] text-primary">{item.service.creditCost} créditos</p>
+                {cart.map((item, idx) => {
+                  const displayProducts = item.showAllProducts ? item.allProviderProducts : item.contextualProducts;
+                  return (
+                    <div key={idx} className="bg-muted/50 rounded-xl p-3 space-y-2">
+                      {item.service && (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">{item.service.icon}</span>
+                              <div>
+                                <p className="text-xs font-semibold text-foreground">{item.service.name}</p>
+                                <p className="text-[10px] text-primary">{item.service.creditCost} créditos • {item.service.provider}</p>
+                              </div>
+                            </div>
+                            <button onClick={() => removeFromCart(idx)}><X className="w-4 h-4 text-muted-foreground" /></button>
                           </div>
+
+                          {/* Per-service scheduling */}
+                          <div className="ml-6 p-2 bg-card rounded-lg border border-border space-y-1.5">
+                            <p className="text-[9px] font-bold text-muted-foreground flex items-center gap-1"><Calendar className="w-3 h-3" /> Agendar este serviço</p>
+                            <div className="flex gap-1.5">
+                              <input type="date" value={item.scheduledDate || ''} onChange={e => updateSchedule(idx, e.target.value, item.scheduledTime || '')}
+                                className="flex-1 text-[10px] px-2 py-1 rounded-md bg-muted border border-border text-foreground" />
+                              <input type="time" value={item.scheduledTime || ''} onChange={e => updateSchedule(idx, item.scheduledDate || '', e.target.value)}
+                                className="w-20 text-[10px] px-2 py-1 rounded-md bg-muted border border-border text-foreground" />
+                            </div>
+                            {item.scheduledDate && item.scheduledTime && (
+                              <p className="text-[9px] text-primary">✅ Agendado</p>
+                            )}
+                          </div>
+                        </>
+                      )}
+
+                      {/* Products already in cart */}
+                      {item.products.length > 0 && (
+                        <div className="space-y-1 ml-6">
+                          <p className="text-[9px] font-bold text-muted-foreground">📦 Produtos selecionados:</p>
+                          {item.products.map(p => (
+                            <div key={p.id} className="flex items-center justify-between text-[10px] bg-card/80 rounded-lg px-2 py-1">
+                              <span className="text-muted-foreground">{p.image} {p.name}</span>
+                              <div className="flex items-center gap-1">
+                                <span className="font-medium">R$ {(p.price * (1 - discount / 100)).toFixed(2)}</span>
+                                <button onClick={() => removeProductFromCartItem(idx, p.id)}><X className="w-3 h-3 text-muted-foreground hover:text-destructive" /></button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                        <button onClick={() => removeFromCart(idx)}><X className="w-4 h-4 text-muted-foreground" /></button>
-                      </div>
-                    )}
-                    {item.products.length > 0 && (
-                      <div className="space-y-1 ml-6">
-                        {item.products.map(p => (
-                          <div key={p.id} className="flex justify-between text-[10px]">
-                            <span className="text-muted-foreground">{p.image} {p.name}</span>
-                            <span className="font-medium">R$ {(p.price * (1 - discount / 100)).toFixed(2)}</span>
+                      )}
+
+                      {/* Contextual products suggestion */}
+                      {item.service && displayProducts.length > 0 && (
+                        <div className="ml-6 space-y-1">
+                          <p className="text-[9px] font-bold text-muted-foreground">
+                            {item.showAllProducts ? '🛒 Todos os produtos do profissional:' : '🎯 Produtos relacionados ao serviço:'}
+                          </p>
+                          <div className="max-h-32 overflow-y-auto space-y-1">
+                            {displayProducts.filter(p => !item.products.some(cp => cp.id === p.id)).slice(0, item.showAllProducts ? 20 : 6).map(p => (
+                              <div key={p.id} className="flex items-center justify-between text-[10px] bg-accent/10 rounded-lg px-2 py-1">
+                                <span className="text-muted-foreground truncate flex-1">{p.image} {p.name}</span>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <Badge variant="outline" className="text-[7px] h-3.5 px-1">{p.supplier?.includes('Drop') ? '🌍 Drop' : '📦 Local'}</Badge>
+                                  <span className="font-medium text-foreground">R$ {p.price.toFixed(2)}</span>
+                                  <button onClick={() => addProductToCartItem(idx, p)} className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20">
+                                    <Plus className="w-2.5 h-2.5 text-primary" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                          <button onClick={() => toggleShowAllProducts(idx)} className="text-[9px] text-primary font-medium hover:underline">
+                            {item.showAllProducts ? '← Voltar aos relacionados' : `Ver mais produtos (${item.allProviderProducts.length} disponíveis) →`}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
 
                 {cart.length > 0 && (
                   <>
+                    {/* Multi-service scheduling summary */}
+                    {cart.filter(c => c.service).length > 1 && (
+                      <div className="bg-primary/5 rounded-xl p-2.5 border border-primary/20">
+                        <p className="text-[10px] font-bold text-foreground flex items-center gap-1"><Calendar className="w-3.5 h-3.5 text-primary" /> Resumo de agendamentos</p>
+                        <div className="space-y-1 mt-1">
+                          {cart.filter(c => c.service).map((item, i) => (
+                            <div key={i} className="flex items-center justify-between text-[9px]">
+                              <span className="text-muted-foreground">{item.service!.icon} {item.service!.name}</span>
+                              <span className={item.scheduledDate ? 'text-primary' : 'text-destructive'}>
+                                {item.scheduledDate ? `${item.scheduledDate} ${item.scheduledTime || ''}` : '⚠️ Não agendado'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="border-t border-border pt-3 space-y-1.5 text-xs">
                       <div className="flex justify-between"><span className="text-muted-foreground">Créditos utilizados</span><span className="font-medium text-primary">{cartTotals.totalCredits} cr</span></div>
                       <div className="flex justify-between"><span className="text-muted-foreground">Produtos</span><span>R$ {cartTotals.totalProducts.toFixed(2)}</span></div>
-                      {cartTotals.totalDiscount > 0 && <div className="flex justify-between text-green-600"><span>Desconto {discount}%</span><span>-R$ {cartTotals.totalDiscount.toFixed(2)}</span></div>}
+                      {cartTotals.totalDiscount > 0 && <div className="flex justify-between text-accent"><span>Desconto {discount}%</span><span>-R$ {cartTotals.totalDiscount.toFixed(2)}</span></div>}
                       <div className="h-px bg-border" />
                       <div className="flex justify-between font-bold text-sm"><span>Total produtos</span><span>R$ {cartTotals.grandTotal.toFixed(2)}</span></div>
                       {user.credits >= cartTotals.totalCredits ? (
-                        <p className="text-[10px] text-green-600">✅ Créditos suficientes ({user.credits - cartTotals.totalCredits} restantes)</p>
+                        <p className="text-[10px] text-primary">✅ Créditos suficientes ({user.credits - cartTotals.totalCredits} restantes)</p>
                       ) : (
-                        <p className="text-[10px] text-amber-600">⚠️ Faltam {cartTotals.totalCredits - user.credits} créditos</p>
+                        <p className="text-[10px] text-accent">⚠️ Faltam {cartTotals.totalCredits - user.credits} créditos</p>
                       )}
                     </div>
-                    <Button className="w-full text-xs gap-1" onClick={() => navigate('/jornada-cliente')}>
-                      <Calendar className="w-3 h-3" /> Agendar e Finalizar
+                    <Button className="w-full text-xs gap-1" onClick={() => navigate('/jornada-cliente')}
+                      disabled={cart.filter(c => c.service).some(c => !c.scheduledDate || !c.scheduledTime)}>
+                      <Calendar className="w-3 h-3" /> {cart.filter(c => c.service).length > 1 ? 'Confirmar Agendamentos' : 'Agendar e Finalizar'}
                     </Button>
+                    {cart.filter(c => c.service).some(c => !c.scheduledDate || !c.scheduledTime) && (
+                      <p className="text-[9px] text-muted-foreground text-center">⚠️ Agende todos os serviços para prosseguir</p>
+                    )}
                   </>
                 )}
               </div>
