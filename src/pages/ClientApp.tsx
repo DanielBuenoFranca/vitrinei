@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { plans, clientProducts, clientServices, mockUser, checkEligibility, type ServiceItem, type ProductItem } from '@/data/mockData';
+import { plans, clientProducts, clientServices, mockUser, checkEligibility, meiProfessionals, getContextualProducts, type ServiceItem, type ProductItem } from '@/data/mockData';
 import {
   ArrowLeft, Star, ShoppingBag, Wrench, CreditCard, Zap, CheckCircle2, Lock,
   Clock, ArrowUpCircle, Coins, ShieldCheck, Package, ChevronRight, X, Search,
@@ -59,6 +59,9 @@ function getAiSuggestions(cart: CartItem[], userCredits: number, plan: string): 
 interface CartItem {
   service: ServiceItem | null;
   products: ProductItem[];
+  contextualProducts: ProductItem[];
+  allProviderProducts: ProductItem[];
+  showAllProducts: boolean;
   scheduledDate?: string;
   scheduledTime?: string;
 }
@@ -136,14 +139,41 @@ const ClientApp = () => {
 
   const addServiceToCart = (service: ServiceItem) => {
     if (cart.some(c => c.service?.id === service.id)) return;
-    const relatedProducts = clientProducts.filter(p => service.relatedProductIds.includes(p.id));
-    setCart(prev => [...prev, { service, products: relatedProducts }]);
+    
+    // Find relevant MEI providers for this service
+    const relevantMeis = meiProfessionals.filter(mei => mei.segment === service.category);
+    const allProducts = relevantMeis.flatMap(mei => [...mei.ownProducts, ...mei.dropshippingProducts]);
+    
+    // Filter products contextually by service theme
+    const contextual = getContextualProducts(service, allProducts);
+    
+    // Also get relatedProductIds from original data as fallback
+    const relatedProds = clientProducts.filter(p => service.relatedProductIds.includes(p.id));
+    
+    setCart(prev => [...prev, { 
+      service, 
+      products: relatedProds,
+      contextualProducts: contextual,
+      allProviderProducts: allProducts,
+      showAllProducts: false,
+    }]);
   };
 
   const removeFromCart = (index: number) => setCart(prev => prev.filter((_, i) => i !== index));
 
+  const toggleShowAllProducts = (index: number) => {
+    setCart(prev => prev.map((item, i) => 
+      i === index ? { ...item, showAllProducts: !item.showAllProducts } : item
+    ));
+  };
+
+  const updateSchedule = (index: number, date: string, time: string) => {
+    setCart(prev => prev.map((item, i) =>
+      i === index ? { ...item, scheduledDate: date, scheduledTime: time } : item
+    ));
+  };
+
   const addProductToCart = (product: ProductItem) => {
-    // Add to last cart item or create standalone
     setCart(prev => {
       if (prev.length > 0) {
         const updated = [...prev];
@@ -154,8 +184,23 @@ const ClientApp = () => {
         }
         return updated;
       }
-      return [{ service: null, products: [product] }];
+      return [{ service: null, products: [product], contextualProducts: [], allProviderProducts: [], showAllProducts: false }];
     });
+  };
+
+  const addProductToCartItem = (cartIndex: number, product: ProductItem) => {
+    setCart(prev => prev.map((item, i) => {
+      if (i !== cartIndex) return item;
+      if (item.products.some(p => p.id === product.id)) return item;
+      return { ...item, products: [...item.products, product] };
+    }));
+  };
+
+  const removeProductFromCartItem = (cartIndex: number, productId: number) => {
+    setCart(prev => prev.map((item, i) => {
+      if (i !== cartIndex) return item;
+      return { ...item, products: item.products.filter(p => p.id !== productId) };
+    }));
   };
 
   const toggleSegment = (id: string) => {
@@ -240,50 +285,122 @@ const ClientApp = () => {
               </div>
               <div className="p-4 space-y-3">
                 {cart.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Carrinho vazio — selecione serviços e produtos</p>}
-                {cart.map((item, idx) => (
-                  <div key={idx} className="bg-muted/50 rounded-xl p-3 space-y-2">
-                    {item.service && (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">{item.service.icon}</span>
-                          <div>
-                            <p className="text-xs font-semibold text-foreground">{item.service.name}</p>
-                            <p className="text-[10px] text-primary">{item.service.creditCost} créditos</p>
+                {cart.map((item, idx) => {
+                  const displayProducts = item.showAllProducts ? item.allProviderProducts : item.contextualProducts;
+                  return (
+                    <div key={idx} className="bg-muted/50 rounded-xl p-3 space-y-2">
+                      {item.service && (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">{item.service.icon}</span>
+                              <div>
+                                <p className="text-xs font-semibold text-foreground">{item.service.name}</p>
+                                <p className="text-[10px] text-primary">{item.service.creditCost} créditos • {item.service.provider}</p>
+                              </div>
+                            </div>
+                            <button onClick={() => removeFromCart(idx)}><X className="w-4 h-4 text-muted-foreground" /></button>
                           </div>
+
+                          {/* Per-service scheduling */}
+                          <div className="ml-6 p-2 bg-card rounded-lg border border-border space-y-1.5">
+                            <p className="text-[9px] font-bold text-muted-foreground flex items-center gap-1"><Calendar className="w-3 h-3" /> Agendar este serviço</p>
+                            <div className="flex gap-1.5">
+                              <input type="date" value={item.scheduledDate || ''} onChange={e => updateSchedule(idx, e.target.value, item.scheduledTime || '')}
+                                className="flex-1 text-[10px] px-2 py-1 rounded-md bg-muted border border-border text-foreground" />
+                              <input type="time" value={item.scheduledTime || ''} onChange={e => updateSchedule(idx, item.scheduledDate || '', e.target.value)}
+                                className="w-20 text-[10px] px-2 py-1 rounded-md bg-muted border border-border text-foreground" />
+                            </div>
+                            {item.scheduledDate && item.scheduledTime && (
+                              <p className="text-[9px] text-primary">✅ Agendado</p>
+                            )}
+                          </div>
+                        </>
+                      )}
+
+                      {/* Products already in cart */}
+                      {item.products.length > 0 && (
+                        <div className="space-y-1 ml-6">
+                          <p className="text-[9px] font-bold text-muted-foreground">📦 Produtos selecionados:</p>
+                          {item.products.map(p => (
+                            <div key={p.id} className="flex items-center justify-between text-[10px] bg-card/80 rounded-lg px-2 py-1">
+                              <span className="text-muted-foreground">{p.image} {p.name}</span>
+                              <div className="flex items-center gap-1">
+                                <span className="font-medium">R$ {(p.price * (1 - discount / 100)).toFixed(2)}</span>
+                                <button onClick={() => removeProductFromCartItem(idx, p.id)}><X className="w-3 h-3 text-muted-foreground hover:text-destructive" /></button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                        <button onClick={() => removeFromCart(idx)}><X className="w-4 h-4 text-muted-foreground" /></button>
-                      </div>
-                    )}
-                    {item.products.length > 0 && (
-                      <div className="space-y-1 ml-6">
-                        {item.products.map(p => (
-                          <div key={p.id} className="flex justify-between text-[10px]">
-                            <span className="text-muted-foreground">{p.image} {p.name}</span>
-                            <span className="font-medium">R$ {(p.price * (1 - discount / 100)).toFixed(2)}</span>
+                      )}
+
+                      {/* Contextual products suggestion */}
+                      {item.service && displayProducts.length > 0 && (
+                        <div className="ml-6 space-y-1">
+                          <p className="text-[9px] font-bold text-muted-foreground">
+                            {item.showAllProducts ? '🛒 Todos os produtos do profissional:' : '🎯 Produtos relacionados ao serviço:'}
+                          </p>
+                          <div className="max-h-32 overflow-y-auto space-y-1">
+                            {displayProducts.filter(p => !item.products.some(cp => cp.id === p.id)).slice(0, item.showAllProducts ? 20 : 6).map(p => (
+                              <div key={p.id} className="flex items-center justify-between text-[10px] bg-accent/10 rounded-lg px-2 py-1">
+                                <span className="text-muted-foreground truncate flex-1">{p.image} {p.name}</span>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <Badge variant="outline" className="text-[7px] h-3.5 px-1">{p.supplier?.includes('Drop') ? '🌍 Drop' : '📦 Local'}</Badge>
+                                  <span className="font-medium text-foreground">R$ {p.price.toFixed(2)}</span>
+                                  <button onClick={() => addProductToCartItem(idx, p)} className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20">
+                                    <Plus className="w-2.5 h-2.5 text-primary" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                          <button onClick={() => toggleShowAllProducts(idx)} className="text-[9px] text-primary font-medium hover:underline">
+                            {item.showAllProducts ? '← Voltar aos relacionados' : `Ver mais produtos (${item.allProviderProducts.length} disponíveis) →`}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
 
                 {cart.length > 0 && (
                   <>
+                    {/* Multi-service scheduling summary */}
+                    {cart.filter(c => c.service).length > 1 && (
+                      <div className="bg-primary/5 rounded-xl p-2.5 border border-primary/20">
+                        <p className="text-[10px] font-bold text-foreground flex items-center gap-1"><Calendar className="w-3.5 h-3.5 text-primary" /> Resumo de agendamentos</p>
+                        <div className="space-y-1 mt-1">
+                          {cart.filter(c => c.service).map((item, i) => (
+                            <div key={i} className="flex items-center justify-between text-[9px]">
+                              <span className="text-muted-foreground">{item.service!.icon} {item.service!.name}</span>
+                              <span className={item.scheduledDate ? 'text-primary' : 'text-destructive'}>
+                                {item.scheduledDate ? `${item.scheduledDate} ${item.scheduledTime || ''}` : '⚠️ Não agendado'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="border-t border-border pt-3 space-y-1.5 text-xs">
                       <div className="flex justify-between"><span className="text-muted-foreground">Créditos utilizados</span><span className="font-medium text-primary">{cartTotals.totalCredits} cr</span></div>
                       <div className="flex justify-between"><span className="text-muted-foreground">Produtos</span><span>R$ {cartTotals.totalProducts.toFixed(2)}</span></div>
-                      {cartTotals.totalDiscount > 0 && <div className="flex justify-between text-green-600"><span>Desconto {discount}%</span><span>-R$ {cartTotals.totalDiscount.toFixed(2)}</span></div>}
+                      {cartTotals.totalDiscount > 0 && <div className="flex justify-between text-accent"><span>Desconto {discount}%</span><span>-R$ {cartTotals.totalDiscount.toFixed(2)}</span></div>}
                       <div className="h-px bg-border" />
                       <div className="flex justify-between font-bold text-sm"><span>Total produtos</span><span>R$ {cartTotals.grandTotal.toFixed(2)}</span></div>
                       {user.credits >= cartTotals.totalCredits ? (
-                        <p className="text-[10px] text-green-600">✅ Créditos suficientes ({user.credits - cartTotals.totalCredits} restantes)</p>
+                        <p className="text-[10px] text-primary">✅ Créditos suficientes ({user.credits - cartTotals.totalCredits} restantes)</p>
                       ) : (
-                        <p className="text-[10px] text-amber-600">⚠️ Faltam {cartTotals.totalCredits - user.credits} créditos</p>
+                        <p className="text-[10px] text-accent">⚠️ Faltam {cartTotals.totalCredits - user.credits} créditos</p>
                       )}
                     </div>
-                    <Button className="w-full text-xs gap-1" onClick={() => navigate('/jornada-cliente')}>
-                      <Calendar className="w-3 h-3" /> Agendar e Finalizar
+                    <Button className="w-full text-xs gap-1" onClick={() => navigate('/jornada-cliente')}
+                      disabled={cart.filter(c => c.service).some(c => !c.scheduledDate || !c.scheduledTime)}>
+                      <Calendar className="w-3 h-3" /> {cart.filter(c => c.service).length > 1 ? 'Confirmar Agendamentos' : 'Agendar e Finalizar'}
                     </Button>
+                    {cart.filter(c => c.service).some(c => !c.scheduledDate || !c.scheduledTime) && (
+                      <p className="text-[9px] text-muted-foreground text-center">⚠️ Agende todos os serviços para prosseguir</p>
+                    )}
                   </>
                 )}
               </div>
@@ -362,7 +479,13 @@ const ClientApp = () => {
                         {services.map((svc, i) => {
                           const elig = checkEligibility(svc, user.credits, user.monthsActive, user.plan);
                           const inCart = isInCart(svc.id);
-                          const relatedProds = clientProducts.filter(p => svc.relatedProductIds.includes(p.id));
+                          const cartIdx = cart.findIndex(c => c.service?.id === svc.id);
+                          const cartItem = cartIdx >= 0 ? cart[cartIdx] : null;
+                          
+                          // Get contextual product count for preview
+                          const relevantMeis = meiProfessionals.filter(mei => mei.segment === svc.category);
+                          const allMeiProducts = relevantMeis.flatMap(mei => [...mei.ownProducts, ...mei.dropshippingProducts]);
+                          const contextualCount = getContextualProducts(svc, allMeiProducts).length;
 
                           return (
                             <motion.div key={svc.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
@@ -381,32 +504,44 @@ const ClientApp = () => {
                                   <p className="text-[10px] text-muted-foreground">{svc.provider} • <Star className="w-2.5 h-2.5 text-accent fill-accent inline" /> {svc.rating}</p>
                                   <div className="flex items-center gap-2 mt-1">
                                     <span className="text-[10px] font-medium text-primary flex items-center gap-0.5"><Coins className="w-2.5 h-2.5" />{svc.creditCost} cr</span>
-                                    {elig.status === 'disponivel_total' && <Badge className="text-[8px] h-3.5 bg-green-500/10 text-green-600 border-0">Coberto</Badge>}
-                                    {elig.status === 'disponivel_parcial' && <Badge className="text-[8px] h-3.5 bg-amber-500/10 text-amber-600 border-0">+R$ {elig.extraValue.toFixed(0)}</Badge>}
-                                    {elig.status === 'bloqueado' && <Badge className="text-[8px] h-3.5 bg-red-500/10 text-red-600 border-0"><Lock className="w-2 h-2 mr-0.5" />Bloqueado</Badge>}
-                                    {relatedProds.length > 0 && <span className="text-[9px] text-muted-foreground"><Package className="w-2.5 h-2.5 inline" /> {relatedProds.length}</span>}
+                                    {elig.status === 'disponivel_total' && <Badge className="text-[8px] h-3.5 bg-primary/10 text-primary border-0">Coberto</Badge>}
+                                    {elig.status === 'disponivel_parcial' && <Badge className="text-[8px] h-3.5 bg-accent/10 text-accent border-0">+R$ {elig.extraValue.toFixed(0)}</Badge>}
+                                    {elig.status === 'bloqueado' && <Badge className="text-[8px] h-3.5 bg-destructive/10 text-destructive border-0"><Lock className="w-2 h-2 mr-0.5" />Bloqueado</Badge>}
+                                    {contextualCount > 0 && <span className="text-[9px] text-muted-foreground"><Package className="w-2.5 h-2.5 inline" /> {contextualCount} produtos</span>}
                                   </div>
                                 </div>
                                 <Button size="sm" variant={inCart ? 'default' : 'outline'} className="text-[9px] h-7 px-2 shrink-0"
-                                  onClick={() => inCart ? removeFromCart(cart.findIndex(c => c.service?.id === svc.id)) : addServiceToCart(svc)}
+                                  onClick={() => inCart ? removeFromCart(cartIdx) : addServiceToCart(svc)}
                                   disabled={elig.status === 'bloqueado'}>
                                   {inCart ? <><CheckCircle2 className="w-3 h-3 mr-0.5" />Adicionado</> : <><Plus className="w-3 h-3 mr-0.5" />Adicionar</>}
                                 </Button>
                               </div>
 
-                              {/* Related products inline (show when in cart) */}
-                              {inCart && relatedProds.length > 0 && (
+                              {/* Contextual products inline (show when in cart) */}
+                              {inCart && cartItem && cartItem.contextualProducts.length > 0 && (
                                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-2 ml-12 space-y-1">
-                                  <p className="text-[9px] font-bold text-muted-foreground">📦 Produtos sugeridos:</p>
-                                  {relatedProds.map(p => (
+                                  <p className="text-[9px] font-bold text-muted-foreground">🎯 Produtos relacionados ao serviço:</p>
+                                  {cartItem.contextualProducts.slice(0, 4).map(p => (
                                     <div key={p.id} className="flex items-center justify-between text-[10px] bg-muted/50 rounded-lg px-2 py-1">
-                                      <span>{p.image} {p.name}</span>
-                                      <div className="flex items-center gap-1.5">
-                                        {discount > 0 && <span className="line-through text-muted-foreground">R$ {p.price.toFixed(2)}</span>}
+                                      <span className="truncate flex-1">{p.image} {p.name}</span>
+                                      <div className="flex items-center gap-1 shrink-0">
+                                        <Badge variant="outline" className="text-[7px] h-3 px-1">{p.supplier?.includes('Drop') ? '🌍' : '📦'}</Badge>
                                         <span className="font-medium text-foreground">R$ {(p.price * (1 - discount / 100)).toFixed(2)}</span>
+                                        {!cartItem.products.some(cp => cp.id === p.id) ? (
+                                          <button onClick={() => addProductToCartItem(cartIdx, p)} className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20">
+                                            <Plus className="w-2.5 h-2.5 text-primary" />
+                                          </button>
+                                        ) : (
+                                          <CheckCircle2 className="w-3 h-3 text-primary" />
+                                        )}
                                       </div>
                                     </div>
                                   ))}
+                                  {cartItem.contextualProducts.length > 4 && (
+                                    <button onClick={() => { setShowCart(true); }} className="text-[9px] text-primary font-medium hover:underline">
+                                      Ver mais {cartItem.contextualProducts.length - 4} produtos no carrinho →
+                                    </button>
+                                  )}
                                 </motion.div>
                               )}
                             </motion.div>
