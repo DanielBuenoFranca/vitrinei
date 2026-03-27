@@ -115,16 +115,31 @@ const Landing = () => {
     setAiChat((prev) => [...prev, { role: 'user', text: msg }]);
     setAiSpeaking(true);
 
-    const { results, followUp } = semanticSearch(msg);
+    const searchResult = semanticSearch(msg);
 
     setTimeout(() => {
-      if (results.length > 0) {
-        const contextMsg = followUp || 'Entendi sua necessidade! 🧠';
-        const top3 = results.slice(0, 3);
-        const aiText = results.length > 3
-          ? `${contextMsg}\n\nSelecionei as **${top3.length} melhores opções** de ${results.length} encontradas:`
-          : `${contextMsg}\n\nEncontrei ${results.length} resultado(s) para você:`;
-        setAiChat((prev) => [...prev, { role: 'ai', text: aiText, results }]);
+      const hasResults = searchResult.products.length > 0 || searchResult.services.length > 0;
+
+      if (hasResults) {
+        const contextMsg = searchResult.followUp || 'Entendi sua necessidade! 🧠';
+        const parts: string[] = [contextMsg];
+
+        if (searchResult.needLabel) {
+          parts.push(`\n\n🔍 Necessidade identificada: ${searchResult.needLabel}`);
+        }
+        if (searchResult.products.length > 0) {
+          const physCount = searchResult.products.filter(p => p.stockType === 'fisico').length;
+          const dropCount = searchResult.products.filter(p => p.stockType === 'drop').length;
+          parts.push(`\n\n📦 ${searchResult.products.length} produto(s) disponíveis (${physCount} estoque, ${dropCount} drop):`);
+        }
+        if (searchResult.services.length > 0) {
+          parts.push(`\n\n🔧 ${searchResult.services.length} serviço(s) relevantes:`);
+        }
+        if (searchResult.suggestedServices && searchResult.suggestedServices.length > 0) {
+          parts.push(`\n\n💡 Sugestão IA: ${searchResult.suggestedServices.length} serviço(s) relacionados:`);
+        }
+
+        setAiChat((prev) => [...prev, { role: 'ai', text: parts.join(''), searchResult }]);
         setSearchQuery(msg);
       } else {
         setAiChat((prev) => [...prev, {
