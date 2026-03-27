@@ -13,6 +13,7 @@ import ServiceManagementDemo from "./pages/ServiceManagementDemo.tsx";
 import ClientJourneyDemo from "./pages/ClientJourneyDemo.tsx";
 import MeiManagerDemo from "./pages/MeiManagerDemo.tsx";
 import DropshippingDemo from "./pages/DropshippingDemo.tsx";
+import Demos from "./pages/Demos.tsx";
 
 const FloatingAvatarWrapper = () => {
   const location = useLocation();
@@ -39,6 +40,7 @@ const App = () => (
           <Route path="/jornada-cliente" element={<ClientJourneyDemo />} />
           <Route path="/mei-acompanhamento" element={<MeiManagerDemo />} />
           <Route path="/dropshipping" element={<DropshippingDemo />} />
+          <Route path="/demos" element={<Demos />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
