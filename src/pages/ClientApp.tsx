@@ -15,11 +15,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 /* ─── SEGMENT DEFINITIONS ─── */
 const segments = [
   { id: 'manutencao', label: 'Manutenção & Reparos', emoji: '🔧', category: 'Manutenção & Reparos', color: 'bg-primary/10 border-primary/20', desc: 'Eletricista, encanador, pintor, montagem' },
-  { id: 'saude', label: 'Bem-estar & Saúde', emoji: '💪', category: 'Bem-estar & Saúde', color: 'bg-green-500/10 border-green-500/20', desc: 'Personal, nutricionista, fisioterapia' },
-  { id: 'beleza', label: 'Estética & Beleza', emoji: '✨', category: 'Estética & Beleza', color: 'bg-pink-500/10 border-pink-500/20', desc: 'Cabelo, unhas, estética facial' },
-  { id: 'lar', label: 'Lar & Ambiente', emoji: '🏠', category: 'Lar & Ambiente', color: 'bg-emerald-500/10 border-emerald-500/20', desc: 'Limpeza, jardinagem, dedetização' },
-  { id: 'auto', label: 'Automotivo', emoji: '🚗', category: 'Automotivo', color: 'bg-blue-500/10 border-blue-500/20', desc: 'Lavagem, mecânica, funilaria' },
-  { id: 'digital', label: 'Digital & Criativo', emoji: '💻', category: 'Digital & Criativo', color: 'bg-purple-500/10 border-purple-500/20', desc: 'Design, fotografia, marketing' },
+  { id: 'saude', label: 'Saúde', emoji: '🩺', category: 'Saúde', color: 'bg-red-500/10 border-red-500/20', desc: 'Dentista, médico, laboratório, medicina do trabalho' },
+  { id: 'bem_estar', label: 'Bem-estar & Saúde', emoji: '💪', category: 'Bem-estar & Saúde', color: 'bg-green-500/10 border-green-500/20', desc: 'Personal, nutricionista, yoga, massagem' },
+  { id: 'beleza', label: 'Estética & Beleza', emoji: '✨', category: 'Estética & Beleza', color: 'bg-pink-500/10 border-pink-500/20', desc: 'Cabelo, unhas, estética facial, depilação' },
+  { id: 'lar', label: 'Lar & Ambiente', emoji: '🏠', category: 'Lar & Ambiente', color: 'bg-emerald-500/10 border-emerald-500/20', desc: 'Limpeza, jardinagem, organização, piscina' },
+  { id: 'auto', label: 'Automotivo', emoji: '🚗', category: 'Automotivo', color: 'bg-blue-500/10 border-blue-500/20', desc: 'Lavagem, mecânica, funilaria, polimento' },
+  { id: 'digital', label: 'Digital & Criativo', emoji: '🎨', category: 'Digital & Criativo', color: 'bg-purple-500/10 border-purple-500/20', desc: 'Design, fotografia, marketing, vídeo' },
+  { id: 'tech', label: 'Tecnologia & Informática', emoji: '💻', category: 'Tecnologia & Informática', color: 'bg-cyan-500/10 border-cyan-500/20', desc: 'Computador, celular, CFTV, redes' },
+  { id: 'educacao', label: 'Educação & Cursos', emoji: '🎓', category: 'Educação & Cursos', color: 'bg-orange-500/10 border-orange-500/20', desc: 'Idiomas, música, ENEM, programação' },
+  { id: 'pet', label: 'Pet & Animais', emoji: '🐕', category: 'Pet & Animais', color: 'bg-lime-500/10 border-lime-500/20', desc: 'Banho, tosa, veterinário, adestramento' },
+  { id: 'eventos', label: 'Eventos & Festas', emoji: '🎉', category: 'Eventos & Festas', color: 'bg-fuchsia-500/10 border-fuchsia-500/20', desc: 'Buffet, DJ, decoração, fotografia' },
 ];
 
 /* ─── AI SUGGESTIONS ENGINE (simulated) ─── */
