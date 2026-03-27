@@ -7,37 +7,29 @@ All colors MUST be HSL.
 */
 
 @layer base {
-  :root {
+  /* ── Theme 1: Padrão (light, current) ── */
+  :root,
+  [data-theme="standard"] {
     --background: 210 20% 98%;
     --foreground: 220 30% 12%;
-
     --card: 0 0% 100%;
     --card-foreground: 220 30% 12%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 220 30% 12%;
-
     --primary: 200 80% 35%;
     --primary-foreground: 0 0% 100%;
-
     --secondary: 210 25% 93%;
     --secondary-foreground: 220 30% 12%;
-
     --muted: 210 20% 95%;
     --muted-foreground: 215 15% 50%;
-
     --accent: 43 96% 56%;
     --accent-foreground: 220 30% 12%;
-
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-
     --border: 214 20% 88%;
     --input: 214 20% 88%;
     --ring: 200 80% 35%;
-
     --radius: 0.75rem;
-
     --sidebar-background: 220 30% 8%;
     --sidebar-foreground: 210 20% 90%;
     --sidebar-primary: 200 80% 50%;
@@ -46,7 +38,6 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 210 20% 90%;
     --sidebar-border: 220 20% 18%;
     --sidebar-ring: 200 80% 50%;
-
     --success: 152 60% 42%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
@@ -54,6 +45,84 @@ All colors MUST be HSL.
     --gold: 43 96% 56%;
     --navy: 220 30% 12%;
     --teal: 200 80% 35%;
+  }
+
+  /* ── Theme 2: Tech Dark ── */
+  [data-theme="tech-dark"] {
+    --background: 220 25% 6%;
+    --foreground: 160 30% 90%;
+    --card: 220 25% 10%;
+    --card-foreground: 160 20% 92%;
+    --popover: 220 25% 10%;
+    --popover-foreground: 160 20% 92%;
+    --primary: 160 100% 45%;
+    --primary-foreground: 220 25% 6%;
+    --secondary: 220 20% 16%;
+    --secondary-foreground: 160 20% 85%;
+    --muted: 220 20% 14%;
+    --muted-foreground: 215 15% 55%;
+    --accent: 270 80% 60%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 20% 18%;
+    --input: 220 20% 18%;
+    --ring: 160 100% 45%;
+    --radius: 0.5rem;
+    --sidebar-background: 220 30% 4%;
+    --sidebar-foreground: 160 20% 85%;
+    --sidebar-primary: 160 100% 50%;
+    --sidebar-primary-foreground: 220 25% 6%;
+    --sidebar-accent: 220 25% 12%;
+    --sidebar-accent-foreground: 160 20% 85%;
+    --sidebar-border: 220 20% 14%;
+    --sidebar-ring: 160 100% 50%;
+    --success: 160 80% 45%;
+    --success-foreground: 220 25% 6%;
+    --warning: 45 100% 55%;
+    --warning-foreground: 220 25% 6%;
+    --gold: 45 100% 55%;
+    --navy: 220 25% 6%;
+    --teal: 160 100% 45%;
+  }
+
+  /* ── Theme 3: FastFood / Comercial ── */
+  [data-theme="fastfood"] {
+    --background: 40 100% 97%;
+    --foreground: 25 90% 15%;
+    --card: 40 60% 99%;
+    --card-foreground: 25 90% 15%;
+    --popover: 40 60% 99%;
+    --popover-foreground: 25 90% 15%;
+    --primary: 0 85% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 45 100% 90%;
+    --secondary-foreground: 25 90% 20%;
+    --muted: 40 40% 93%;
+    --muted-foreground: 25 30% 45%;
+    --accent: 45 100% 50%;
+    --accent-foreground: 25 90% 15%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 35 40% 85%;
+    --input: 35 40% 85%;
+    --ring: 0 85% 50%;
+    --radius: 1rem;
+    --sidebar-background: 0 70% 25%;
+    --sidebar-foreground: 40 100% 95%;
+    --sidebar-primary: 45 100% 55%;
+    --sidebar-primary-foreground: 25 90% 15%;
+    --sidebar-accent: 0 60% 30%;
+    --sidebar-accent-foreground: 40 100% 95%;
+    --sidebar-border: 0 50% 35%;
+    --sidebar-ring: 45 100% 55%;
+    --success: 152 60% 42%;
+    --success-foreground: 0 0% 100%;
+    --warning: 45 100% 50%;
+    --warning-foreground: 25 90% 15%;
+    --gold: 45 100% 50%;
+    --navy: 25 90% 15%;
+    --teal: 0 85% 50%;
   }
 }
 
