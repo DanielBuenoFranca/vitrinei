@@ -66,47 +66,25 @@ const Landing = () => {
     const query = searchQuery.toLowerCase().trim();
     if (!query && activeSegments.length === 0) return mockResults;
 
-    // 1. Verificar correspondência com linguagem natural
-    const matchedNLMaps = naturalLanguageMap.filter((nlm) =>
-      nlm.triggers.some((t) => query.includes(t) || t.includes(query))
-    );
+    // Use the universal semantic search engine
+    const { services: semanticServices } = semanticSearch(query);
 
-    // 2. Extrair segmentos e keywords da linguagem natural
-    const nlSegments = matchedNLMaps.flatMap((m) => m.segments);
-    const nlKeywords = matchedNLMaps.flatMap((m) => m.keywords);
+    // Apply segment filter on top
+    const filtered = activeSegments.length === 0
+      ? semanticServices
+      : semanticServices.filter(r => activeSegments.includes(r.segment));
 
-    return mockResults.filter((r) => {
-      // Filtro por segmento selecionado (chips)
-      const matchesSegment = activeSegments.length === 0 || activeSegments.includes(r.segment);
-      if (!matchesSegment) return false;
+    // If no semantic results but segments are active, show segment-filtered defaults
+    if (filtered.length === 0 && activeSegments.length > 0 && !query) {
+      return mockResults.filter(r => activeSegments.includes(r.segment));
+    }
 
-      if (!query) return true;
+    // If query produced no semantic results but segments are active, try segment fallback
+    if (filtered.length === 0 && activeSegments.length > 0) {
+      return mockResults.filter(r => activeSegments.includes(r.segment));
+    }
 
-      // Match direto por nome/provider
-      const directMatch = r.name.toLowerCase().includes(query) || r.provider.toLowerCase().includes(query);
-      if (directMatch) return true;
-
-      // Match por keywords do segmento
-      const segmentKeywordMatch = segments.find((s) => s.id === r.segment)?.keywords.some((k) => k.includes(query) || query.includes(k));
-      if (segmentKeywordMatch) return true;
-
-      // Match semântico: segmento + keywords da linguagem natural
-      if (matchedNLMaps.length > 0) {
-        const inNLSegment = nlSegments.includes(r.segment);
-        const hasNLKeyword = nlKeywords.some((kw) =>
-          r.name.toLowerCase().includes(kw) ||
-          r.products.some((p) => p.toLowerCase().includes(kw)) ||
-          segments.find((s) => s.id === r.segment)?.keywords.some((sk) => sk.includes(kw))
-        );
-        if (inNLSegment || hasNLKeyword) return true;
-      }
-
-      // Match por produtos
-      const productMatch = r.products.some((p) => p.toLowerCase().includes(query) || query.includes(p.toLowerCase()));
-      if (productMatch) return true;
-
-      return false;
-    });
+    return filtered.length > 0 ? filtered : (query ? [] : mockResults);
   })();
 
   const handleAiSend = () => {
