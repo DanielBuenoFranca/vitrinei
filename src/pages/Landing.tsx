@@ -8,8 +8,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, ArrowRight, Zap, Sparkles, Clock, MapPin, DollarSign,
   Wrench, Heart, Scissors, Home, Car, Monitor, Headphones,
-  ShoppingCart, BarChart3, ChevronRight, Bot, Send, Star,
-  Package, TrendingDown, Navigation, FileText, Users, Shield
+  ShoppingCart, BarChart3, ChevronRight, Send, Star,
+  Package, TrendingDown, Navigation, Users, Shield, MessageCircle
 } from 'lucide-react';
 
 const segments = [
@@ -39,6 +39,85 @@ const aiSuggestions = [
   '🚗 Seu carro está próximo da revisão dos 30.000 km — agende agora!',
 ];
 
+// Animated AI Avatar component
+const AiAvatar = ({ size = 64, speaking = false, onClick }: { size?: number; speaking?: boolean; onClick?: () => void }) => {
+  return (
+    <motion.div
+      onClick={onClick}
+      className="relative cursor-pointer select-none"
+      style={{ width: size, height: size }}
+      whileHover={{ scale: 1.1 }}
+      whileTap={{ scale: 0.95 }}
+    >
+      {/* Outer pulse rings */}
+      <motion.div
+        className="absolute inset-0 rounded-full bg-primary/20"
+        animate={{ scale: [1, 1.4, 1], opacity: [0.4, 0, 0.4] }}
+        transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        className="absolute inset-0 rounded-full bg-primary/15"
+        animate={{ scale: [1, 1.25, 1], opacity: [0.3, 0, 0.3] }}
+        transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut', delay: 0.4 }}
+      />
+
+      {/* Main avatar body */}
+      <motion.div
+        className="absolute inset-0 rounded-full bg-gradient-to-br from-primary via-primary to-teal flex items-center justify-center shadow-lg"
+        animate={{ y: [0, -3, 0] }}
+        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+        style={{
+          boxShadow: '0 8px 30px -8px hsl(var(--primary) / 0.5)',
+        }}
+      >
+        {/* Face container */}
+        <div className="relative flex flex-col items-center justify-center" style={{ width: size * 0.6, height: size * 0.5 }}>
+          {/* Eyes */}
+          <div className="flex gap-[20%] mb-[8%]">
+            <motion.div
+              className="bg-primary-foreground rounded-full"
+              style={{ width: size * 0.12, height: size * 0.14 }}
+              animate={{ scaleY: [1, 0.1, 1] }}
+              transition={{ duration: 0.2, repeat: Infinity, repeatDelay: 3.5 }}
+            />
+            <motion.div
+              className="bg-primary-foreground rounded-full"
+              style={{ width: size * 0.12, height: size * 0.14 }}
+              animate={{ scaleY: [1, 0.1, 1] }}
+              transition={{ duration: 0.2, repeat: Infinity, repeatDelay: 3.5 }}
+            />
+          </div>
+          {/* Mouth */}
+          <motion.div
+            className="bg-primary-foreground/90 rounded-full"
+            style={{ width: size * 0.22, height: speaking ? size * 0.1 : size * 0.06 }}
+            animate={speaking ? {
+              scaleY: [0.6, 1.2, 0.8, 1, 0.6],
+              scaleX: [1, 0.85, 1.1, 0.9, 1],
+            } : {
+              scaleX: [1, 1.1, 1],
+            }}
+            transition={speaking ? {
+              duration: 0.5, repeat: Infinity,
+            } : {
+              duration: 2, repeat: Infinity, ease: 'easeInOut',
+            }}
+          />
+        </div>
+      </motion.div>
+
+      {/* Sparkle accent */}
+      <motion.div
+        className="absolute -top-1 -right-1"
+        animate={{ rotate: [0, 360], scale: [0.8, 1.1, 0.8] }}
+        transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+      >
+        <Sparkles className="text-accent" style={{ width: size * 0.28, height: size * 0.28 }} />
+      </motion.div>
+    </motion.div>
+  );
+};
+
 const Landing = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
@@ -46,11 +125,10 @@ const Landing = () => {
   const [showAiPanel, setShowAiPanel] = useState(false);
   const [aiMessage, setAiMessage] = useState('');
   const [aiChat, setAiChat] = useState<{ role: 'user' | 'ai'; text: string }[]>([]);
-  const [typingText, setTypingText] = useState('');
   const [currentSuggestion, setCurrentSuggestion] = useState(0);
+  const [aiSpeaking, setAiSpeaking] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  // Rotate AI suggestions
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSuggestion((prev) => (prev + 1) % aiSuggestions.length);
@@ -58,7 +136,6 @@ const Landing = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Typing animation for search placeholder
   const placeholders = ['Eletricista na minha região...', 'Preciso de uma faxineira...', 'Manutenção do meu carro...', 'Consulta com nutricionista...'];
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   useEffect(() => {
@@ -79,6 +156,7 @@ const Landing = () => {
   const handleAiSend = () => {
     if (!aiMessage.trim()) return;
     setAiChat((prev) => [...prev, { role: 'user', text: aiMessage }]);
+    setAiSpeaking(true);
     const responses = [
       'Encontrei 3 opções na sua região! O mais próximo é o Carlos MEI, a 2.3 km, com avaliação 4.9⭐. Posso agendar para você?',
       'Analisando fornecedores cadastrados e estoque disponível via drop-shipping... Encontrei a melhor opção: preço 15% menor que a média, com entrega em 24h!',
@@ -86,13 +164,14 @@ const Landing = () => {
     ];
     setTimeout(() => {
       setAiChat((prev) => [...prev, { role: 'ai', text: responses[Math.floor(Math.random() * responses.length)] }]);
+      setTimeout(() => setAiSpeaking(false), 2000);
     }, 1200);
     setAiMessage('');
   };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navbar — minimal */}
+      {/* Navbar */}
       <nav className="fixed top-0 w-full z-50 bg-card/80 backdrop-blur-lg border-b border-border">
         <div className="container mx-auto flex items-center justify-between h-14 px-4">
           <div className="flex items-center gap-2">
@@ -108,7 +187,6 @@ const Landing = () => {
             <Button size="sm" onClick={() => navigate('/mei')}>
               <BarChart3 className="w-4 h-4 mr-1" /> Painel MEI
             </Button>
-            {/* More menu for hidden pages */}
             <div className="relative group">
               <Button variant="ghost" size="sm" className="text-muted-foreground">
                 Mais ▾
@@ -127,23 +205,22 @@ const Landing = () => {
         </div>
       </nav>
 
-      {/* Hero — Clean, focused */}
-      <section className="pt-24 pb-6 px-4 relative overflow-hidden">
+      {/* Hero */}
+      <section className="pt-24 pb-4 px-4 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-
         <div className="container mx-auto text-center relative max-w-4xl">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <h1 className="font-display text-3xl md:text-5xl lg:text-6xl font-extrabold text-foreground mb-3 leading-tight tracking-tight">
-              Encontre <span className="text-primary">qualquer serviço.</span><br />
-              A IA resolve o resto.
+              Seu problema, <span className="text-primary">nossa solução.</span><br />
+              <span className="text-muted-foreground text-2xl md:text-3xl lg:text-4xl font-bold">A inteligência que encontra tudo por você.</span>
             </h1>
-            <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto mb-6">
-              Busque, compare e contrate. Se não encontrar, nossa IA busca no ecossistema inteiro de MEIs e fornecedores por você.
+            <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-6">
+              Serviços, produtos, profissionais — tudo em um só lugar. Se não existir aqui, nossa IA vasculha o ecossistema inteiro e entrega a melhor opção.
             </p>
           </motion.div>
 
           {/* CTA buttons */}
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }} className="flex gap-3 justify-center mb-8">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }} className="flex gap-3 justify-center mb-6">
             <Button size="lg" className="gap-2 px-6" onClick={() => navigate('/mei')}>
               <BarChart3 className="w-4 h-4" /> Painel MEI
             </Button>
@@ -154,10 +231,32 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* SUPER SEARCH TOOL */}
+      {/* AI Avatar + Search Section */}
       <section className="px-4 pb-8">
         <div className="container mx-auto max-w-5xl">
-          <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4, duration: 0.5 }}>
+          {/* Avatar + greeting */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.4, duration: 0.6, type: 'spring' }}
+            className="flex flex-col items-center mb-6"
+          >
+            <AiAvatar size={80} speaking={aiSpeaking} onClick={() => setShowAiPanel(true)} />
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+              className="mt-4 bg-card border border-border rounded-2xl rounded-tl-md px-5 py-3 shadow-md max-w-md relative"
+            >
+              <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-card border-l border-t border-border rotate-45" />
+              <p className="text-sm text-foreground font-medium relative z-10">
+                Olá! 👋 O que você procura hoje?<br />
+                <span className="text-muted-foreground font-normal">Serviço, produto ou profissional — me conta que eu resolvo.</span>
+              </p>
+            </motion.div>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5, duration: 0.5 }}>
             {/* Search bar */}
             <div className="relative mb-6">
               <div className="relative flex items-center bg-card border-2 border-primary/30 rounded-2xl shadow-lg hover:shadow-xl hover:border-primary/50 transition-all duration-300 overflow-hidden">
@@ -171,8 +270,8 @@ const Landing = () => {
                 />
                 <div className="flex items-center gap-2 pr-3">
                   <Button size="sm" variant="ghost" className="gap-1 text-muted-foreground hover:text-primary" onClick={() => setShowAiPanel(!showAiPanel)}>
-                    <Bot className="w-4 h-4" />
-                    <span className="hidden sm:inline text-xs">Assistente IA</span>
+                    <MessageCircle className="w-4 h-4" />
+                    <span className="hidden sm:inline text-xs">Falar com IA</span>
                   </Button>
                   <Button size="sm" className="gap-1 rounded-xl">
                     <Search className="w-4 h-4" /> Buscar
@@ -270,13 +369,10 @@ const Landing = () => {
 
                   {filteredResults.length === 0 && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
-                      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                        <Bot className="w-8 h-8 text-primary" />
-                      </div>
-                      <h3 className="font-display font-bold text-lg text-foreground mb-2">Não encontrou? A IA resolve!</h3>
+                      <AiAvatar size={72} speaking={true} onClick={() => setShowAiPanel(true)} />
+                      <h3 className="font-display font-bold text-lg text-foreground mb-2 mt-4">Não encontrou? Deixa comigo!</h3>
                       <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
-                        Nossa inteligência artificial está buscando em todos os fornecedores cadastrados,
-                        estoques próprios e produtos via drop-shipping para encontrar a melhor opção por <strong>preço, tempo e proximidade</strong>.
+                        Estou buscando em todos os fornecedores, estoques próprios e catálogos drop-shipping para encontrar a melhor opção por <strong>preço, tempo e proximidade</strong>.
                       </p>
                       <div className="flex flex-col sm:flex-row gap-3 justify-center">
                         <Button className="gap-2" onClick={() => setShowAiPanel(true)}>
@@ -286,7 +382,7 @@ const Landing = () => {
                           setShowAiPanel(true);
                           setAiChat((prev) => [...prev,
                             { role: 'user', text: `Preciso de: ${searchQuery}` },
-                            { role: 'ai', text: 'Encaminhando sua solicitação para a Central de Atendimento EcoMEI. Prazo de resposta: até 24 horas. Você será notificado assim que encontrarmos a solução ideal! 📩' },
+                            { role: 'ai', text: 'Encaminhando para a Central de Atendimento EcoMEI. Prazo: até 24 horas. Você será notificado assim que encontrarmos a solução ideal! 📩' },
                           ]);
                         }}>
                           <Headphones className="w-4 h-4" /> Central de Atendimento (SLA 24h)
@@ -298,10 +394,9 @@ const Landing = () => {
               )}
             </AnimatePresence>
 
-            {/* Idle state — animated showcase */}
+            {/* Idle state */}
             {!searchQuery && activeSegments.length === 0 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-center py-8">
-                {/* Animated feature highlights */}
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-center py-6">
                 <div className="grid sm:grid-cols-3 gap-4 max-w-3xl mx-auto mb-8">
                   {[
                     { icon: TrendingDown, title: 'Melhor Preço', desc: 'IA compara todos os fornecedores e acha o menor preço do ecossistema', color: 'text-primary' },
@@ -339,7 +434,7 @@ const Landing = () => {
                   <span className="flex items-center gap-1.5"><Headphones className="w-4 h-4 text-primary" /> Suporte 24h</span>
                 </motion.div>
 
-                {/* Não encontrou banner */}
+                {/* Not found CTA */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -348,22 +443,16 @@ const Landing = () => {
                 >
                   <Card className="border-primary/20 bg-primary/5 overflow-hidden relative">
                     <CardContent className="p-6 flex flex-col sm:flex-row items-center gap-4">
-                      <motion.div
-                        animate={{ rotate: [0, 10, -10, 0] }}
-                        transition={{ duration: 3, repeat: Infinity }}
-                        className="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center shrink-0"
-                      >
-                        <Bot className="w-7 h-7 text-primary" />
-                      </motion.div>
+                      <AiAvatar size={56} speaking={false} onClick={() => setShowAiPanel(true)} />
                       <div className="text-left">
-                        <h3 className="font-display font-bold text-foreground mb-1">Não encontrou o que procura?</h3>
+                        <h3 className="font-display font-bold text-foreground mb-1">Não achou o que precisa?</h3>
                         <p className="text-sm text-muted-foreground">
-                          Nossa IA cruza <strong>todos os fornecedores</strong>, estoques próprios e catálogos drop-shipping do ecossistema para encontrar exatamente o que você precisa. 
-                          Caso não encontre, encaminhamos para a <strong>Central de Atendimento</strong> com resposta em até <strong>24 horas</strong>.
+                          Fale comigo! Eu cruzo <strong>todos os fornecedores</strong>, estoques e catálogos drop-shipping do ecossistema.
+                          Se eu não encontrar, a <strong>Central de Atendimento</strong> resolve em até <strong>24 horas</strong>.
                         </p>
                       </div>
                       <Button variant="outline" className="shrink-0 gap-1" onClick={() => setShowAiPanel(true)}>
-                        <Sparkles className="w-4 h-4" /> Testar
+                        <Sparkles className="w-4 h-4" /> Conversar
                       </Button>
                     </CardContent>
                   </Card>
@@ -385,36 +474,41 @@ const Landing = () => {
             className="fixed right-0 top-14 bottom-0 w-full sm:w-96 bg-card border-l border-border shadow-2xl z-50 flex flex-col"
           >
             <div className="p-4 border-b border-border flex items-center justify-between bg-primary/5">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-primary-foreground" />
-                </div>
+              <div className="flex items-center gap-3">
+                <AiAvatar size={40} speaking={aiSpeaking} />
                 <div>
                   <h3 className="font-display font-bold text-sm text-foreground">Assistente EcoMEI</h3>
-                  <p className="text-xs text-muted-foreground">IA • Online agora</p>
+                  <div className="flex items-center gap-1.5">
+                    <motion.div
+                      className="w-2 h-2 rounded-full bg-success"
+                      animate={{ scale: [1, 1.3, 1] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    />
+                    <p className="text-xs text-muted-foreground">IA • Online agora</p>
+                  </div>
                 </div>
               </div>
               <Button variant="ghost" size="sm" onClick={() => setShowAiPanel(false)}>✕</Button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {/* Welcome message */}
               {aiChat.length === 0 && (
                 <div className="bg-muted/50 rounded-xl p-4 text-sm text-muted-foreground">
                   <p className="font-medium text-foreground mb-2">👋 Olá! Sou a IA do EcoMEI.</p>
-                  <p className="mb-3">Posso ajudar você a encontrar qualquer serviço ou produto. Descreva o que precisa e eu busco a melhor opção por:</p>
+                  <p className="mb-3">Me conta o que você precisa — eu busco a melhor opção por:</p>
                   <ul className="space-y-1.5">
                     <li className="flex items-center gap-2"><DollarSign className="w-3.5 h-3.5 text-primary" /> Melhor preço</li>
                     <li className="flex items-center gap-2"><Clock className="w-3.5 h-3.5 text-primary" /> Menor tempo de atendimento</li>
                     <li className="flex items-center gap-2"><MapPin className="w-3.5 h-3.5 text-primary" /> Proximidade da sua região</li>
                   </ul>
-                  <p className="mt-3 text-xs">Se não encontrarmos, encaminhamos para a <strong>Central de Atendimento</strong> (SLA 24h).</p>
+                  <p className="mt-3 text-xs">Se não encontrar, encaminho para a <strong>Central de Atendimento</strong> (SLA 24h).</p>
                 </div>
               )}
 
               {aiChat.map((msg, idx) => (
-                <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
+                <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start gap-2'}`}>
+                  {msg.role === 'ai' && <AiAvatar size={28} speaking={false} />}
+                  <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
                     msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted text-foreground rounded-bl-md'
                   }`}>
                     {msg.text}
@@ -438,10 +532,12 @@ const Landing = () => {
               </div>
               <button
                 onClick={() => {
+                  setAiSpeaking(true);
                   setAiChat((prev) => [...prev,
                     { role: 'user', text: 'Não encontrei o que preciso, podem me ajudar?' },
-                    { role: 'ai', text: 'Claro! Encaminhando para a Central de Atendimento EcoMEI. Nosso SLA é de no máximo 24 horas. Você receberá uma notificação com a melhor solução encontrada! 📩✅' },
+                    { role: 'ai', text: 'Claro! Encaminhando para a Central de Atendimento EcoMEI. Nosso SLA é de no máximo 24 horas. Você receberá uma notificação com a melhor solução! 📩✅' },
                   ]);
+                  setTimeout(() => setAiSpeaking(false), 2000);
                 }}
                 className="w-full mt-2 text-xs text-muted-foreground hover:text-primary transition-colors flex items-center justify-center gap-1 py-1.5"
               >
@@ -452,7 +548,7 @@ const Landing = () => {
         )}
       </AnimatePresence>
 
-      {/* Minimal Footer */}
+      {/* Footer */}
       <footer className="border-t border-border py-6 px-4">
         <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
