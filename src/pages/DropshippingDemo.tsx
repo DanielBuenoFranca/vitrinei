@@ -53,6 +53,23 @@ const dropSteps = [
   { id: 'done', label: 'Concluído', icon: Gift, emoji: '🎉', desc: 'Produto recebido com sucesso' },
 ];
 
+const multiProductSteps = [
+  { id: 'select', label: 'Produtos Selecionados', icon: ShoppingBag, emoji: '🛒', desc: 'Seus produtos escolhidos' },
+  { id: 'confirm', label: 'Confirmação', icon: CheckCircle2, emoji: '✅', desc: 'Pedido com SLAs separados' },
+  { id: 'processing', label: 'Processamento', icon: Globe, emoji: '⚙️', desc: 'Cada produto segue seu SLA' },
+  { id: 'tracking', label: 'Rastreio', icon: Truck, emoji: '📦', desc: 'Acompanhe cada entrega' },
+  { id: 'done', label: 'Concluído', icon: Gift, emoji: '🎉', desc: 'Todos os produtos entregues' },
+];
+
+interface ContextProduct {
+  name: string;
+  type: 'fisico' | 'drop';
+  price: number;
+  provider: string;
+  rating?: number;
+  distance?: string;
+}
+
 const genericSteps = [
   { id: 'browse', label: 'Explorar', icon: Search, emoji: '🔍', desc: 'Catálogo global de produtos' },
   { id: 'compare', label: 'Comparar', icon: ArrowUpDown, emoji: '⚖️', desc: 'Preços e fornecedores' },
