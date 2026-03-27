@@ -13,6 +13,7 @@ import ServiceManagementDemo from "./pages/ServiceManagementDemo.tsx";
 import ClientJourneyDemo from "./pages/ClientJourneyDemo.tsx";
 import MeiManagerDemo from "./pages/MeiManagerDemo.tsx";
 import DropshippingDemo from "./pages/DropshippingDemo.tsx";
+import Demos from "./pages/Demos.tsx";
 
 const FloatingAvatarWrapper = () => {
   const location = useLocation();
