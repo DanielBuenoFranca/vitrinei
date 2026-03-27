@@ -685,7 +685,7 @@ const DropshippingDemo = () => {
               <p className="text-sm font-bold text-green-700 mt-2">{contextProducts.length} Produtos Finalizados!</p>
             </motion.div>
 
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity....y: 0 }} transition={{ delay: 0.3 }} className="grid grid-cols-2 gap-2">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="grid grid-cols-2 gap-2">
               {[
                 { icon: '🛒', label: 'Produtos', value: String(contextProducts.length), sub: `${localProducts.length} local + ${dropProducts.length} drop` },
                 { icon: '💰', label: 'Economizado', value: `R$ ${(totalPrice * 0.1).toFixed(2)}`, sub: 'Plano Prata -10%' },
