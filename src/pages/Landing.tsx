@@ -12,7 +12,7 @@ import {
   ChevronDown, ShoppingBag, Wrench as WrenchIcon, Store
 } from 'lucide-react';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
-import { segments, naturalLanguageMap, mockResults, semanticSearch, type ProductItem, type SearchResult } from '@/data/searchData';
+import { segments, mockResults, semanticSearch, type ProductItem, type SearchResult } from '@/data/searchData';
 
 
 const aiSuggestions = [
