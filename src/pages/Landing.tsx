@@ -30,6 +30,37 @@ const segments = [
   { id: 'natureza', label: 'Natureza & Vida Natural', icon: Leaf, color: 'hsl(145 60% 35%)', keywords: ['jardinagem', 'horta', 'fitoterapia', 'comida natural', 'vegano', 'orgânico', 'plantas medicinais', 'aromaterapia', 'permacultura', 'compostagem', 'floral'] },
 ];
 
+// ── Mapeamento semântico: expressões naturais → segmentos + keywords ──
+const naturalLanguageMap: { triggers: string[]; segments: string[]; keywords: string[] }[] = [
+  // Saúde / Fitoterapia / Dor
+  { triggers: ['dor de barriga', 'dor de estômago', 'dor abdominal', 'mal estar', 'enjoo', 'náusea', 'azia', 'gastrite', 'indigestão'], segments: ['natureza', 'saude_clinica'], keywords: ['fitoterapia', 'fitoterápico', 'chá', 'plantas medicinais', 'clínico', 'consulta'] },
+  { triggers: ['dor de cabeça', 'enxaqueca', 'cefaleia', 'dor no corpo', 'febre', 'gripe', 'resfriado'], segments: ['natureza', 'saude_clinica'], keywords: ['fitoterapia', 'aromaterapia', 'consulta', 'clínico', 'chá'] },
+  { triggers: ['insônia', 'não consigo dormir', 'ansiedade', 'estresse', 'nervoso', 'cansaço'], segments: ['natureza', 'bem_estar'], keywords: ['aromaterapia', 'fitoterapia', 'floral', 'massagem', 'yoga', 'meditação'] },
+  { triggers: ['alergia', 'coceira', 'irritação na pele', 'dermatite'], segments: ['natureza', 'saude_clinica'], keywords: ['fitoterapia', 'plantas medicinais', 'consulta'] },
+  // Jardinagem / Grama / Plantas
+  { triggers: ['cortar grama', 'grama alta', 'capinar', 'jardim sujo', 'podar', 'mato alto', 'limpar jardim', 'quintal sujo', 'aparar grama'], segments: ['natureza', 'casa'], keywords: ['jardinagem', 'jardineiro', 'poda', 'grama', 'paisagismo'] },
+  { triggers: ['plantar', 'horta', 'vaso', 'muda', 'semente', 'adubo', 'terra', 'fertilizante'], segments: ['natureza'], keywords: ['horta', 'jardinagem', 'sementes', 'orgânico', 'permacultura'] },
+  // Automotivo
+  { triggers: ['carro não liga', 'carro falhando', 'barulho no carro', 'freio ruim', 'pneu furado'], segments: ['auto'], keywords: ['mecânico', 'guincho', 'pneu', 'auto'] },
+  { triggers: ['lavar carro', 'carro sujo', 'polir carro'], segments: ['auto'], keywords: ['lavagem', 'polimento', 'auto'] },
+  // Casa / Limpeza
+  { triggers: ['casa suja', 'preciso limpar', 'faxina', 'limpeza pesada', 'vidros sujos'], segments: ['casa'], keywords: ['limpeza', 'faxina', 'casa'] },
+  { triggers: ['torneira vazando', 'cano furado', 'entupiu', 'vaso entupido', 'descarga quebrou'], segments: ['manutencao'], keywords: ['encanador', 'reparo', 'manutenção'] },
+  { triggers: ['tomada não funciona', 'luz apagou', 'curto circuito', 'chuveiro queimou', 'fiação'], segments: ['manutencao'], keywords: ['eletricista', 'instalação', 'manutenção'] },
+  // Beleza
+  { triggers: ['cabelo feio', 'preciso cortar cabelo', 'tintura', 'pintar cabelo'], segments: ['beleza'], keywords: ['cabelo', 'corte', 'barbeiro'] },
+  { triggers: ['unha quebrou', 'fazer unha', 'pé e mão'], segments: ['beleza'], keywords: ['manicure', 'estética'] },
+  // Pet
+  { triggers: ['meu cachorro', 'meu gato', 'meu pet', 'animal doente', 'vacina pet', 'pulga', 'carrapato'], segments: ['pet'], keywords: ['veterinário', 'pet', 'banho', 'tosa'] },
+  // Educação / Música
+  { triggers: ['aprender inglês', 'aula particular', 'reforço escolar', 'estudar para concurso'], segments: ['educacao'], keywords: ['professor', 'aula', 'inglês', 'concurso'] },
+  { triggers: ['aprender violão', 'aprender guitarra', 'aula de piano', 'aprender música', 'tocar bateria'], segments: ['musica'], keywords: ['violão', 'guitarra', 'piano', 'bateria', 'aula de música'] },
+  // Tecnologia
+  { triggers: ['computador lento', 'pc travando', 'vírus no pc', 'celular quebrou', 'tela quebrada'], segments: ['tech'], keywords: ['formatação', 'computador', 'celular', 'conserto'] },
+  // Eventos
+  { triggers: ['festa de aniversário', 'casamento', 'organizar festa', 'buffet', 'precisamos de dj'], segments: ['eventos'], keywords: ['festa', 'buffet', 'dj', 'casamento', 'decoração'] },
+];
+
 const mockResults = [
   { id: 1, name: 'Eletricista Residencial', segment: 'manutencao', provider: 'João Eletricista', price: 150, rating: 4.9, distance: '2.3 km', time: '30 min', products: ['Disjuntor 20A', 'Fio 2.5mm'] },
   { id: 2, name: 'Instalação de Câmeras', segment: 'tech', provider: 'VigiTech MEI', price: 350, rating: 4.7, distance: '4.1 km', time: '1h', products: ['Câmera IP WiFi', 'Cabo Cat6'] },
@@ -59,6 +90,17 @@ const mockResults = [
   { id: 26, name: 'Montagem de Horta Urbana', segment: 'natureza', provider: 'UrbanGreen', price: 130, rating: 4.9, distance: '3 km', time: '2h', products: ['Sementes Orgânicas', 'Vaso Autoirrigável'] },
   { id: 27, name: 'Fitoterapia — Consulta', segment: 'natureza', provider: 'FitoSaúde', price: 110, rating: 4.8, distance: '2.5 km', time: '45 min', products: ['Chá Fitoterápico Mix'] },
   { id: 28, name: 'Chef de Comida Natural / Vegana', segment: 'natureza', provider: 'ChefVerde', price: 160, rating: 4.8, distance: '4 km', time: '3h', products: ['Granola Artesanal', 'Mel Orgânico'] },
+  // Jardinagem específica
+  { id: 29, name: 'Jardineiro — Corte de Grama', segment: 'natureza', provider: 'VerdeVivo', price: 80, rating: 4.7, distance: '1.8 km', time: '1.5h', products: ['Adubo Orgânico', 'Semente de Grama'] },
+  { id: 30, name: 'Poda e Paisagismo', segment: 'natureza', provider: 'GardenPro', price: 150, rating: 4.9, distance: '3.5 km', time: '3h', products: ['Tesoura de Poda', 'Luva de Jardinagem'] },
+  { id: 31, name: 'Aromaterapia — Sessão', segment: 'natureza', provider: 'AromaVida', price: 90, rating: 4.8, distance: '2 km', time: '1h', products: ['Kit Óleos Essenciais', 'Difusor Ultrassônico'] },
+  { id: 32, name: 'Encanador Residencial', segment: 'manutencao', provider: 'Pedro Encanador', price: 120, rating: 4.7, distance: '3.1 km', time: '1h', products: ['Fita Veda-Rosca', 'Sifão Universal'] },
+  { id: 33, name: 'Mecânico Domiciliar', segment: 'auto', provider: 'MecFácil', price: 200, rating: 4.6, distance: '5 km', time: '2h', products: ['Vela de Ignição', 'Filtro de Ar'] },
+  { id: 34, name: 'Yoga & Meditação', segment: 'bem_estar', provider: 'ZenFlow', price: 80, rating: 4.9, distance: '1 km', time: '1h', products: ['Tapete de Yoga', 'Incenso Natural'] },
+  { id: 35, name: 'Manicure & Pedicure', segment: 'beleza', provider: 'NailArt', price: 50, rating: 4.8, distance: '600 m', time: '1h', products: ['Kit Esmaltes'] },
+  { id: 36, name: 'Adestramento de Cães', segment: 'pet', provider: 'DogTrainer', price: 120, rating: 4.8, distance: '4 km', time: '1h', products: ['Guia Retrátil', 'Petiscos Training'] },
+  { id: 37, name: 'Aula de Guitarra Elétrica', segment: 'musica', provider: 'RockSchool', price: 90, rating: 4.7, distance: '2 km', time: '1h', products: ['Palhetas Kit', 'Cabo P10'] },
+  { id: 38, name: 'Consulta Naturista — Florais', segment: 'natureza', provider: 'FloralVida', price: 95, rating: 4.7, distance: '2.8 km', time: '45 min', products: ['Floral de Bach Kit', 'Tintura Fitoterápica'] },
 ];
 
 const aiSuggestions = [
