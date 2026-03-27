@@ -10,9 +10,9 @@ interface ThemeInfo {
 }
 
 export const themes: ThemeInfo[] = [
-  { id: 'standard', label: 'Padrão', description: 'Limpo e profissional', icon: '☀️' },
-  { id: 'tech-dark', label: 'Tech', description: 'Futurista e imersivo', icon: '⚡' },
-  { id: 'fastfood', label: 'Comercial', description: 'Amigável e vibrante', icon: '🎯' },
+  { id: 'standard', label: 'Profissional', description: 'Clean, moderno e confiável', icon: '💎' },
+  { id: 'tech-dark', label: 'Futurista', description: 'Cyberpunk com neon e terminais', icon: '⚡' },
+  { id: 'fastfood', label: 'Comercial', description: 'Amigável, 3D e vibrante', icon: '🎯' },
 ];
 
 interface ThemeContextType {
