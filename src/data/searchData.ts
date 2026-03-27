@@ -19,39 +19,260 @@ export const segments = [
   { id: 'natureza', label: 'Natureza & Vida Natural', icon: Leaf, color: 'hsl(145 60% 35%)', keywords: ['jardinagem', 'horta', 'fitoterapia', 'comida natural', 'vegano', 'orgânico', 'plantas medicinais', 'aromaterapia', 'permacultura', 'compostagem', 'floral'] },
 ];
 
-export const naturalLanguageMap: { triggers: string[]; segments: string[]; keywords: string[]; aiFollowUp?: string }[] = [
-  { triggers: ['dor de barriga', 'dor de estômago', 'dor abdominal', 'mal estar', 'enjoo', 'náusea', 'azia', 'gastrite', 'indigestão'], segments: ['natureza', 'saude_clinica'], keywords: ['fitoterapia', 'fitoterápico', 'chá', 'plantas medicinais', 'clínico', 'consulta', 'remédio'], aiFollowUp: 'Entendi que você está com desconforto abdominal. Vou buscar fitoterápicos e profissionais de saúde para te ajudar!' },
-  { triggers: ['dor de cabeça', 'enxaqueca', 'cefaleia', 'dor no corpo', 'febre', 'gripe', 'resfriado'], segments: ['natureza', 'saude_clinica'], keywords: ['fitoterapia', 'aromaterapia', 'consulta', 'clínico', 'chá', 'remédio'], aiFollowUp: 'Vou buscar remédios e profissionais para aliviar sua dor.' },
-  { triggers: ['insônia', 'não consigo dormir', 'ansiedade', 'estresse', 'nervoso', 'cansaço'], segments: ['natureza', 'bem_estar'], keywords: ['aromaterapia', 'fitoterapia', 'floral', 'massagem', 'yoga', 'meditação'] },
-  { triggers: ['alergia', 'coceira', 'irritação na pele', 'dermatite'], segments: ['natureza', 'saude_clinica'], keywords: ['fitoterapia', 'plantas medicinais', 'consulta', 'remédio'] },
-  { triggers: ['remédio', 'remedio', 'medicamento', 'preciso de remédio', 'farmácia', 'farmacia'], segments: ['natureza', 'saude_clinica'], keywords: ['fitoterapia', 'fitoterápico', 'chá', 'consulta', 'clínico', 'remédio'], aiFollowUp: 'Você precisa de um remédio! Pode me dizer onde está doendo ou qual o sintoma? Enquanto isso, vou listar opções fitoterápicas e profissionais de saúde.' },
-  { triggers: ['machuquei o pé', 'machuquei', 'torci o pé', 'torção', 'dor no pé', 'pé inchado', 'dor no tornozelo', 'entorse'], segments: ['saude_clinica', 'natureza'], keywords: ['consulta', 'clínico', 'fisioterapia', 'fitoterapia', 'anti-inflamatório', 'remédio'], aiFollowUp: 'Parece que você se machucou! Vou buscar profissionais de saúde e produtos para aliviar a dor e inflamação.' },
-  { triggers: ['dor nas costas', 'dor lombar', 'coluna', 'dor muscular', 'câimbra', 'contratura'], segments: ['saude_clinica', 'bem_estar', 'natureza'], keywords: ['fisioterapia', 'massagem', 'consulta', 'fitoterapia', 'anti-inflamatório'] },
-  { triggers: ['dor de dente', 'dente doendo', 'gengiva', 'dor na boca'], segments: ['saude_clinica'], keywords: ['dentista', 'consulta', 'remédio'] },
-  { triggers: ['tosse', 'garganta inflamada', 'dor de garganta', 'rouquidão'], segments: ['natureza', 'saude_clinica'], keywords: ['chá', 'mel', 'fitoterapia', 'consulta', 'remédio'], aiFollowUp: 'Vou buscar chás, fitoterápicos e profissionais para cuidar da sua garganta!' },
-  { triggers: ['blusa', 'camiseta', 'camisa', 'regata', 'top', 'cropped', 'moletom', 'jaqueta', 'casaco', 'blazer', 'suéter'], segments: ['moda', 'vestuario'], keywords: ['blusa', 'camiseta', 'camisa', 'roupa', 'moda', 'vestuário'], aiFollowUp: 'Buscando profissionais com essa peça em estoque para você!' },
-  { triggers: ['calça', 'calça jeans', 'legging', 'bermuda', 'short', 'saia', 'shorts'], segments: ['moda', 'vestuario'], keywords: ['calça', 'jeans', 'legging', 'bermuda', 'saia', 'roupa', 'moda'] },
-  { triggers: ['vestido', 'macacão', 'conjunto', 'roupa', 'look', 'outfit', 'moda'], segments: ['moda', 'vestuario'], keywords: ['vestido', 'roupa', 'moda', 'vestuário', 'look'] },
-  { triggers: ['sapato', 'tênis', 'sandália', 'bota', 'chinelo', 'salto', 'calçado'], segments: ['moda', 'vestuario'], keywords: ['sapato', 'tênis', 'sandália', 'calçado', 'moda'] },
-  { triggers: ['jóia', 'joia', 'anel', 'aliança', 'brinco', 'colar', 'pulseira', 'corrente', 'pingente', 'cordão'], segments: ['acessorios', 'moda'], keywords: ['jóia', 'anel', 'brinco', 'colar', 'pulseira', 'ouro', 'prata', 'bijuteria'] },
-  { triggers: ['relógio', 'óculos', 'bolsa', 'carteira', 'cinto', 'chapéu', 'boné', 'lenço', 'cachecol', 'gravata'], segments: ['acessorios', 'moda'], keywords: ['relógio', 'óculos', 'bolsa', 'acessório', 'moda'] },
-  { triggers: ['bijuteria', 'piercing', 'adereço', 'broche', 'presilha', 'tiara', 'faixa de cabelo'], segments: ['acessorios', 'moda'], keywords: ['bijuteria', 'acessório', 'adereço', 'moda'] },
-  { triggers: ['cortar grama', 'grama alta', 'capinar', 'jardim sujo', 'podar', 'mato alto', 'limpar jardim', 'quintal sujo', 'aparar grama'], segments: ['natureza', 'casa'], keywords: ['jardinagem', 'jardineiro', 'poda', 'grama', 'paisagismo'] },
-  { triggers: ['plantar', 'horta', 'vaso', 'muda', 'semente', 'adubo', 'terra', 'fertilizante'], segments: ['natureza'], keywords: ['horta', 'jardinagem', 'sementes', 'orgânico', 'permacultura'] },
-  { triggers: ['carro não liga', 'carro falhando', 'barulho no carro', 'freio ruim', 'pneu furado'], segments: ['auto'], keywords: ['mecânico', 'guincho', 'pneu', 'auto'] },
-  { triggers: ['lavar carro', 'carro sujo', 'polir carro'], segments: ['auto'], keywords: ['lavagem', 'polimento', 'auto'] },
-  { triggers: ['casa suja', 'preciso limpar', 'faxina', 'limpeza pesada', 'vidros sujos'], segments: ['casa'], keywords: ['limpeza', 'faxina', 'casa'] },
-  { triggers: ['torneira vazando', 'cano furado', 'entupiu', 'vaso entupido', 'descarga quebrou'], segments: ['manutencao'], keywords: ['encanador', 'reparo', 'manutenção'] },
-  { triggers: ['tomada não funciona', 'luz apagou', 'curto circuito', 'chuveiro queimou', 'fiação'], segments: ['manutencao'], keywords: ['eletricista', 'instalação', 'manutenção'] },
-  { triggers: ['cabelo feio', 'preciso cortar cabelo', 'tintura', 'pintar cabelo'], segments: ['beleza'], keywords: ['cabelo', 'corte', 'barbeiro'] },
-  { triggers: ['unha quebrou', 'fazer unha', 'pé e mão'], segments: ['beleza'], keywords: ['manicure', 'estética'] },
-  { triggers: ['meu cachorro', 'meu gato', 'meu pet', 'animal doente', 'vacina pet', 'pulga', 'carrapato'], segments: ['pet'], keywords: ['veterinário', 'pet', 'banho', 'tosa'] },
-  { triggers: ['aprender inglês', 'aula particular', 'reforço escolar', 'estudar para concurso'], segments: ['educacao'], keywords: ['professor', 'aula', 'inglês', 'concurso'] },
-  { triggers: ['aprender violão', 'aprender guitarra', 'aula de piano', 'aprender música', 'tocar bateria'], segments: ['musica'], keywords: ['violão', 'guitarra', 'piano', 'bateria', 'aula de música'] },
-  { triggers: ['computador lento', 'pc travando', 'vírus no pc', 'celular quebrou', 'tela quebrada'], segments: ['tech'], keywords: ['formatação', 'computador', 'celular', 'conserto'] },
-  { triggers: ['festa de aniversário', 'casamento', 'organizar festa', 'buffet', 'precisamos de dj'], segments: ['eventos'], keywords: ['festa', 'buffet', 'dj', 'casamento', 'decoração'] },
+// ── NL Map: now with specific service & product IDs for precision ──
+export const naturalLanguageMap: {
+  triggers: string[];
+  segments: string[];
+  keywords: string[];
+  relevantServiceIds?: number[];
+  relevantProductIds?: number[];
+  aiFollowUp?: string;
+  needLabel?: string;
+}[] = [
+  {
+    triggers: ['dor de barriga', 'dor de estômago', 'dor abdominal', 'mal estar', 'enjoo', 'náusea', 'azia', 'gastrite', 'indigestão'],
+    segments: ['natureza', 'saude_clinica'], keywords: ['fitoterapia', 'fitoterápico', 'chá', 'remédio', 'abdominal'],
+    relevantServiceIds: [27, 38, 4], // Fitoterapia, Florais, Teleconsulta
+    relevantProductIds: [101, 102, 103, 104, 105, 106],
+    needLabel: 'Desconforto abdominal',
+    aiFollowUp: 'Identifiquei: **Desconforto abdominal**. Separei produtos para alívio imediato e profissionais especializados.'
+  },
+  {
+    triggers: ['dor de cabeça', 'enxaqueca', 'cefaleia'],
+    segments: ['natureza', 'saude_clinica'], keywords: ['fitoterapia', 'aromaterapia', 'remédio', 'analgésico'],
+    relevantServiceIds: [31, 27, 4],
+    relevantProductIds: [107, 108, 109, 103],
+    needLabel: 'Dor de cabeça',
+    aiFollowUp: 'Identifiquei: **Dor de cabeça**. Separei produtos para alívio e profissionais que podem ajudar.'
+  },
+  {
+    triggers: ['dor no corpo', 'febre', 'gripe', 'resfriado'],
+    segments: ['natureza', 'saude_clinica'], keywords: ['fitoterapia', 'chá', 'remédio'],
+    relevantServiceIds: [27, 4, 38],
+    relevantProductIds: [110, 103, 104, 111],
+    needLabel: 'Gripe / Resfriado',
+    aiFollowUp: 'Identifiquei: **Gripe/Resfriado**. Veja produtos para alívio dos sintomas e profissionais disponíveis.'
+  },
+  {
+    triggers: ['insônia', 'não consigo dormir', 'ansiedade', 'estresse', 'nervoso', 'cansaço'],
+    segments: ['natureza', 'bem_estar'], keywords: ['aromaterapia', 'fitoterapia', 'floral', 'massagem', 'yoga', 'meditação'],
+    relevantServiceIds: [31, 38, 34, 7],
+    relevantProductIds: [112, 113, 114, 115],
+    needLabel: 'Ansiedade / Insônia',
+    aiFollowUp: 'Identifiquei: **Ansiedade/Insônia**. Separei produtos calmantes e serviços de relaxamento.'
+  },
+  {
+    triggers: ['alergia', 'coceira', 'irritação na pele', 'dermatite'],
+    segments: ['natureza', 'saude_clinica'], keywords: ['fitoterapia', 'plantas medicinais', 'remédio'],
+    relevantServiceIds: [27, 4, 38],
+    relevantProductIds: [116, 117, 104],
+    needLabel: 'Alergia / Irritação',
+    aiFollowUp: 'Identifiquei: **Alergia/Irritação na pele**. Veja produtos naturais e profissionais para consulta.'
+  },
+  {
+    triggers: ['remédio', 'remedio', 'medicamento', 'preciso de remédio', 'farmácia', 'farmacia'],
+    segments: ['natureza', 'saude_clinica'], keywords: ['fitoterapia', 'fitoterápico', 'chá', 'remédio'],
+    relevantServiceIds: [27, 38, 4],
+    relevantProductIds: [101, 102, 103, 104, 105, 106, 107, 108],
+    needLabel: 'Remédios',
+    aiFollowUp: 'Você precisa de um remédio! Pode me dizer **onde está doendo ou qual o sintoma**? Enquanto isso, veja opções fitoterápicas disponíveis:'
+  },
+  {
+    triggers: ['machuquei o pé', 'machuquei', 'torci o pé', 'torção', 'dor no pé', 'pé inchado', 'dor no tornozelo', 'entorse'],
+    segments: ['saude_clinica', 'natureza'], keywords: ['fisioterapia', 'anti-inflamatório', 'remédio'],
+    relevantServiceIds: [49, 4],
+    relevantProductIds: [118, 119, 105],
+    needLabel: 'Lesão / Torção',
+    aiFollowUp: 'Identifiquei: **Lesão/Torção**. Separei anti-inflamatórios, compressas e profissionais especializados.'
+  },
+  {
+    triggers: ['dor nas costas', 'dor lombar', 'coluna', 'dor muscular', 'câimbra', 'contratura'],
+    segments: ['saude_clinica', 'bem_estar', 'natureza'], keywords: ['fisioterapia', 'massagem', 'anti-inflamatório'],
+    relevantServiceIds: [49, 7, 27],
+    relevantProductIds: [118, 119, 120],
+    needLabel: 'Dor muscular / Lombar',
+    aiFollowUp: 'Identifiquei: **Dor muscular/lombar**. Veja produtos para alívio e profissionais disponíveis.'
+  },
+  {
+    triggers: ['dor de dente', 'dente doendo', 'gengiva', 'dor na boca'],
+    segments: ['saude_clinica'], keywords: ['dentista', 'consulta', 'remédio'],
+    relevantServiceIds: [3],
+    relevantProductIds: [121, 105],
+    needLabel: 'Dor de dente',
+    aiFollowUp: 'Identifiquei: **Dor de dente**. Veja um analgésico para alívio imediato e agende uma consulta.'
+  },
+  {
+    triggers: ['tosse', 'garganta inflamada', 'dor de garganta', 'rouquidão'],
+    segments: ['natureza', 'saude_clinica'], keywords: ['chá', 'mel', 'fitoterapia', 'remédio'],
+    relevantServiceIds: [27, 4],
+    relevantProductIds: [110, 111, 103, 122],
+    needLabel: 'Dor de garganta / Tosse',
+    aiFollowUp: 'Identifiquei: **Dor de garganta/Tosse**. Separei chás, mel e pastilhas para alívio.'
+  },
+  {
+    triggers: ['blusa', 'camiseta', 'camisa', 'regata', 'top', 'cropped', 'moletom', 'jaqueta', 'casaco', 'blazer', 'suéter'],
+    segments: ['moda', 'vestuario'], keywords: ['blusa', 'camiseta', 'roupa', 'moda'],
+    relevantServiceIds: [39],
+    aiFollowUp: 'Encontrei opções de peças para você! Veja o estoque disponível:'
+  },
+  {
+    triggers: ['calça', 'calça jeans', 'legging', 'bermuda', 'short', 'saia', 'shorts'],
+    segments: ['moda', 'vestuario'], keywords: ['calça', 'jeans', 'legging', 'bermuda', 'roupa'],
+    relevantServiceIds: [40],
+  },
+  {
+    triggers: ['vestido', 'macacão', 'conjunto', 'roupa', 'look', 'outfit', 'moda'],
+    segments: ['moda', 'vestuario'], keywords: ['vestido', 'roupa', 'moda', 'look'],
+    relevantServiceIds: [41],
+  },
+  {
+    triggers: ['sapato', 'tênis', 'sandália', 'bota', 'chinelo', 'salto', 'calçado'],
+    segments: ['moda', 'vestuario'], keywords: ['sapato', 'tênis', 'sandália', 'calçado'],
+    relevantServiceIds: [42],
+  },
+  {
+    triggers: ['jóia', 'joia', 'anel', 'aliança', 'brinco', 'colar', 'pulseira', 'corrente', 'pingente', 'cordão'],
+    segments: ['acessorios', 'moda'], keywords: ['jóia', 'anel', 'brinco', 'colar', 'pulseira'],
+    relevantServiceIds: [44],
+  },
+  {
+    triggers: ['relógio', 'óculos', 'bolsa', 'carteira', 'cinto', 'chapéu', 'boné', 'lenço', 'cachecol', 'gravata'],
+    segments: ['acessorios', 'moda'], keywords: ['relógio', 'óculos', 'bolsa', 'acessório'],
+    relevantServiceIds: [46, 47],
+  },
+  {
+    triggers: ['bijuteria', 'piercing', 'adereço', 'broche', 'presilha', 'tiara', 'faixa de cabelo'],
+    segments: ['acessorios', 'moda'], keywords: ['bijuteria', 'acessório'],
+    relevantServiceIds: [45],
+  },
+  {
+    triggers: ['cortar grama', 'grama alta', 'capinar', 'jardim sujo', 'podar', 'mato alto', 'limpar jardim', 'quintal sujo', 'aparar grama'],
+    segments: ['natureza', 'casa'], keywords: ['jardinagem', 'jardineiro', 'poda', 'grama'],
+    relevantServiceIds: [29, 30],
+  },
+  {
+    triggers: ['plantar', 'horta', 'vaso', 'muda', 'semente', 'adubo', 'terra', 'fertilizante'],
+    segments: ['natureza'], keywords: ['horta', 'jardinagem', 'sementes'],
+    relevantServiceIds: [26],
+  },
+  {
+    triggers: ['carro não liga', 'carro falhando', 'barulho no carro', 'freio ruim', 'pneu furado'],
+    segments: ['auto'], keywords: ['mecânico', 'guincho', 'pneu'],
+    relevantServiceIds: [33, 11],
+  },
+  {
+    triggers: ['lavar carro', 'carro sujo', 'polir carro'],
+    segments: ['auto'], keywords: ['lavagem', 'polimento'],
+    relevantServiceIds: [12],
+  },
+  {
+    triggers: ['casa suja', 'preciso limpar', 'faxina', 'limpeza pesada', 'vidros sujos'],
+    segments: ['casa'], keywords: ['limpeza', 'faxina'],
+    relevantServiceIds: [10],
+  },
+  {
+    triggers: ['torneira vazando', 'cano furado', 'entupiu', 'vaso entupido', 'descarga quebrou'],
+    segments: ['manutencao'], keywords: ['encanador', 'reparo'],
+    relevantServiceIds: [32],
+  },
+  {
+    triggers: ['tomada não funciona', 'luz apagou', 'curto circuito', 'chuveiro queimou', 'fiação'],
+    segments: ['manutencao'], keywords: ['eletricista', 'instalação'],
+    relevantServiceIds: [1],
+  },
+  {
+    triggers: ['cabelo feio', 'preciso cortar cabelo', 'tintura', 'pintar cabelo'],
+    segments: ['beleza'], keywords: ['cabelo', 'corte', 'barbeiro'],
+    relevantServiceIds: [8],
+  },
+  {
+    triggers: ['unha quebrou', 'fazer unha', 'pé e mão'],
+    segments: ['beleza'], keywords: ['manicure', 'estética'],
+    relevantServiceIds: [35],
+  },
+  {
+    triggers: ['meu cachorro', 'meu gato', 'meu pet', 'animal doente', 'vacina pet', 'pulga', 'carrapato'],
+    segments: ['pet'], keywords: ['veterinário', 'pet', 'banho', 'tosa'],
+    relevantServiceIds: [18, 19, 36],
+  },
+  {
+    triggers: ['aprender inglês', 'aula particular', 'reforço escolar', 'estudar para concurso'],
+    segments: ['educacao'], keywords: ['professor', 'aula', 'inglês'],
+    relevantServiceIds: [16, 17],
+  },
+  {
+    triggers: ['aprender violão', 'aprender guitarra', 'aula de piano', 'aprender música', 'tocar bateria'],
+    segments: ['musica'], keywords: ['violão', 'guitarra', 'piano', 'bateria'],
+    relevantServiceIds: [23, 24, 25, 37],
+  },
+  {
+    triggers: ['computador lento', 'pc travando', 'vírus no pc', 'celular quebrou', 'tela quebrada'],
+    segments: ['tech'], keywords: ['formatação', 'computador', 'celular'],
+    relevantServiceIds: [14, 15],
+  },
+  {
+    triggers: ['festa de aniversário', 'casamento', 'organizar festa', 'buffet', 'precisamos de dj'],
+    segments: ['eventos'], keywords: ['festa', 'buffet', 'dj', 'casamento'],
+    relevantServiceIds: [20, 21],
+  },
 ];
 
+// ── Product Inventory (individual products with stock type) ──
+export type StockType = 'fisico' | 'drop';
+
+export interface ProductItem {
+  id: number;
+  name: string;
+  price: number;
+  provider: string;
+  stockType: StockType;
+  rating: number;
+  distance: string;
+  relatedServiceIds: number[];
+  tags: string[]; // for matching symptoms/needs
+}
+
+export const productInventory: ProductItem[] = [
+  // ── Abdominal / Estômago ──
+  { id: 101, name: 'Chá Camomila Orgânico 30g', price: 12, provider: 'NaturalFarma MEI', stockType: 'fisico', rating: 4.8, distance: '1 km', relatedServiceIds: [27, 38], tags: ['dor de barriga', 'estômago', 'calmante', 'digestivo', 'abdominal', 'azia', 'gastrite'] },
+  { id: 102, name: 'Chá Boldo 20 sachês', price: 9, provider: 'NaturalFarma MEI', stockType: 'fisico', rating: 4.7, distance: '1 km', relatedServiceIds: [27], tags: ['dor de barriga', 'fígado', 'digestão', 'abdominal', 'enjoo', 'mal estar'] },
+  { id: 103, name: 'Própolis Spray 30ml', price: 18, provider: 'NaturalFarma MEI', stockType: 'fisico', rating: 4.9, distance: '1 km', relatedServiceIds: [27, 4], tags: ['imunidade', 'garganta', 'gripe', 'anti-inflamatório'] },
+  { id: 104, name: 'Pomada Calêndula 50g', price: 22, provider: 'NaturalFarma MEI', stockType: 'fisico', rating: 4.7, distance: '1 km', relatedServiceIds: [27], tags: ['pele', 'irritação', 'alergia', 'cicatrizante'] },
+  { id: 105, name: 'Arnica Gel 60g', price: 25, provider: 'FitoSaúde', stockType: 'fisico', rating: 4.8, distance: '2.5 km', relatedServiceIds: [27, 49], tags: ['dor', 'inflamação', 'muscular', 'torção', 'pancada', 'hematoma'] },
+  { id: 106, name: 'Digestivo Fitoterápico Gotas', price: 28, provider: 'FloralVida', stockType: 'fisico', rating: 4.6, distance: '2.8 km', relatedServiceIds: [38, 27], tags: ['dor de barriga', 'digestão', 'estômago', 'abdominal', 'indigestão', 'azia', 'gastrite'] },
+
+  // ── Dor de cabeça ──
+  { id: 107, name: 'Óleo Essencial Lavanda 10ml', price: 32, provider: 'AromaVida', stockType: 'fisico', rating: 4.9, distance: '2 km', relatedServiceIds: [31], tags: ['dor de cabeça', 'enxaqueca', 'relaxante', 'calmante', 'ansiedade'] },
+  { id: 108, name: 'Roll-On Alívio Cabeça (Menta+Lavanda)', price: 24, provider: 'AromaVida', stockType: 'fisico', rating: 4.8, distance: '2 km', relatedServiceIds: [31], tags: ['dor de cabeça', 'enxaqueca', 'cefaleia', 'alívio rápido'] },
+  { id: 109, name: 'Chá Erva-Cidreira 30g', price: 10, provider: 'NaturalFarma MEI', stockType: 'fisico', rating: 4.7, distance: '1 km', relatedServiceIds: [27], tags: ['dor de cabeça', 'calmante', 'nervoso', 'ansiedade', 'insônia'] },
+
+  // ── Gripe / Resfriado ──
+  { id: 110, name: 'Mel Orgânico 300g', price: 28, provider: 'ChefVerde', stockType: 'fisico', rating: 4.9, distance: '4 km', relatedServiceIds: [28], tags: ['gripe', 'tosse', 'garganta', 'imunidade', 'resfriado'] },
+  { id: 111, name: 'Chá de Gengibre + Limão 20 sachês', price: 14, provider: 'NaturalFarma MEI', stockType: 'fisico', rating: 4.7, distance: '1 km', relatedServiceIds: [27], tags: ['gripe', 'resfriado', 'tosse', 'garganta', 'imunidade', 'febre'] },
+
+  // ── Ansiedade / Insônia ──
+  { id: 112, name: 'Floral de Bach - Rescue 20ml', price: 45, provider: 'FloralVida', stockType: 'fisico', rating: 4.8, distance: '2.8 km', relatedServiceIds: [38], tags: ['ansiedade', 'estresse', 'nervoso', 'pânico', 'calmante'] },
+  { id: 113, name: 'Kit Óleos Essenciais Relaxamento', price: 65, provider: 'AromaVida', stockType: 'fisico', rating: 4.9, distance: '2 km', relatedServiceIds: [31], tags: ['insônia', 'ansiedade', 'relaxamento', 'calmante', 'estresse'] },
+  { id: 114, name: 'Chá Passiflora + Mulungu 30g', price: 16, provider: 'NaturalFarma MEI', stockType: 'fisico', rating: 4.7, distance: '1 km', relatedServiceIds: [27], tags: ['insônia', 'ansiedade', 'calmante', 'nervoso'] },
+  { id: 115, name: 'Difusor Ultrassônico Aromaterapia', price: 89, provider: 'AromaVida', stockType: 'drop', rating: 4.8, distance: '2 km', relatedServiceIds: [31], tags: ['aromaterapia', 'relaxamento', 'insônia', 'bem-estar'] },
+
+  // ── Alergia / Pele ──
+  { id: 116, name: 'Sabonete Calêndula Natural', price: 15, provider: 'NaturalFarma MEI', stockType: 'fisico', rating: 4.6, distance: '1 km', relatedServiceIds: [27], tags: ['alergia', 'coceira', 'pele', 'irritação', 'dermatite'] },
+  { id: 117, name: 'Loção Calmante Aloe Vera 200ml', price: 35, provider: 'NaturalFarma MEI', stockType: 'drop', rating: 4.7, distance: '1 km', relatedServiceIds: [27], tags: ['alergia', 'irritação', 'pele', 'coceira', 'queimadura'] },
+
+  // ── Lesão / Muscular ──
+  { id: 118, name: 'Bolsa Térmica Gel Quente/Frio', price: 30, provider: 'FisioHome', stockType: 'fisico', rating: 4.8, distance: '2 km', relatedServiceIds: [49], tags: ['dor muscular', 'torção', 'lombar', 'costas', 'inflamação', 'lesão'] },
+  { id: 119, name: 'Faixa Elástica Compressão', price: 22, provider: 'FisioHome', stockType: 'fisico', rating: 4.7, distance: '2 km', relatedServiceIds: [49], tags: ['torção', 'entorse', 'pé', 'tornozelo', 'compressão', 'lesão'] },
+  { id: 120, name: 'Spray Relaxante Muscular 100ml', price: 38, provider: 'FitoSaúde', stockType: 'drop', rating: 4.6, distance: '2.5 km', relatedServiceIds: [27, 49], tags: ['dor muscular', 'câimbra', 'costas', 'lombar', 'contratura'] },
+
+  // ── Dor de dente ──
+  { id: 121, name: 'Gel Anestésico Oral 10g', price: 18, provider: 'NaturalFarma MEI', stockType: 'fisico', rating: 4.5, distance: '1 km', relatedServiceIds: [3], tags: ['dor de dente', 'gengiva', 'boca', 'anestésico'] },
+
+  // ── Garganta / Tosse ──
+  { id: 122, name: 'Pastilha Própolis + Mel 10un', price: 12, provider: 'NaturalFarma MEI', stockType: 'fisico', rating: 4.8, distance: '1 km', relatedServiceIds: [27, 4], tags: ['garganta', 'tosse', 'rouquidão', 'inflamação'] },
+];
+
+// ── Service results (original mock) ──
 export const mockResults = [
   { id: 1, name: 'Eletricista Residencial', segment: 'manutencao', provider: 'João Eletricista', price: 150, rating: 4.9, distance: '2.3 km', time: '30 min', products: ['Disjuntor 20A', 'Fio 2.5mm'] },
   { id: 2, name: 'Instalação de Câmeras', segment: 'tech', provider: 'VigiTech MEI', price: 350, rating: 4.7, distance: '4.1 km', time: '1h', products: ['Câmera IP WiFi', 'Cabo Cat6'] },
@@ -104,44 +325,97 @@ export const mockResults = [
   { id: 49, name: 'Fisioterapia Domiciliar', segment: 'saude_clinica', provider: 'FisioHome', price: 140, rating: 4.9, distance: '2 km', time: '1h', products: ['Faixa Elástica Reabilitação', 'Bolsa Térmica Gel'] },
 ];
 
-/** Search mockResults using the semantic engine */
-export function semanticSearch(query: string): { results: typeof mockResults; followUp?: string } {
-  const q = query.toLowerCase().trim();
-  if (!q) return { results: [] };
+// ── Intelligent Search Engine ──
 
+export interface SearchResult {
+  products: ProductItem[];
+  services: typeof mockResults;
+  followUp?: string;
+  needLabel?: string;
+  suggestedServices?: typeof mockResults; // AI-suggested services when only products match
+}
+
+export function semanticSearch(query: string): SearchResult {
+  const q = query.toLowerCase().trim();
+  if (!q) return { products: [], services: [] };
+
+  // 1. Match NL triggers
   const matched = naturalLanguageMap.filter((nlm) =>
     nlm.triggers.some((t) => q.includes(t) || t.includes(q))
   );
 
-  const nlSegments = matched.flatMap((m) => m.segments);
-  const nlKeywords = matched.flatMap((m) => m.keywords);
   const followUp = matched.find((m) => m.aiFollowUp)?.aiFollowUp;
+  const needLabel = matched.find((m) => m.needLabel)?.needLabel;
 
-  const results = mockResults.filter((r) => {
-    const directMatch = r.name.toLowerCase().includes(q) || r.provider.toLowerCase().includes(q);
-    if (directMatch) return true;
+  // 2. Find relevant PRODUCTS via tags + NL mapping
+  let matchedProducts: ProductItem[] = [];
+  if (matched.length > 0) {
+    const nlProductIds = matched.flatMap((m) => m.relevantProductIds || []);
+    // Products from NL mapping
+    const fromNL = productInventory.filter((p) => nlProductIds.includes(p.id));
+    // Products matching tags
+    const fromTags = productInventory.filter((p) =>
+      !nlProductIds.includes(p.id) &&
+      p.tags.some((tag) => q.includes(tag) || tag.includes(q) || matched.some(m => m.triggers.some(t => tag.includes(t.split(' ')[0]))))
+    );
+    matchedProducts = [...fromNL, ...fromTags];
+  } else {
+    // Direct product search by name/tags
+    matchedProducts = productInventory.filter((p) =>
+      p.name.toLowerCase().includes(q) ||
+      p.tags.some((tag) => q.includes(tag) || tag.includes(q))
+    );
+  }
 
-    const segmentKeywordMatch = segments.find((s) => s.id === r.segment)?.keywords.some((k) => k.includes(q) || q.includes(k));
-    if (segmentKeywordMatch) return true;
+  // Remove duplicates
+  matchedProducts = [...new Map(matchedProducts.map(p => [p.id, p])).values()];
+  matchedProducts.sort((a, b) => b.rating - a.rating);
 
-    if (matched.length > 0) {
-      const inNLSegment = nlSegments.includes(r.segment);
-      const hasNLKeyword = nlKeywords.some((kw) =>
-        r.name.toLowerCase().includes(kw) ||
-        r.products.some((p) => p.toLowerCase().includes(kw)) ||
-        segments.find((s) => s.id === r.segment)?.keywords.some((sk) => sk.includes(kw))
-      );
-      if (inNLSegment || hasNLKeyword) return true;
+  // 3. Find relevant SERVICES
+  let matchedServices: typeof mockResults = [];
+  if (matched.length > 0) {
+    const nlServiceIds = matched.flatMap((m) => m.relevantServiceIds || []);
+    if (nlServiceIds.length > 0) {
+      // Use specific service IDs from NL map — precision over broad segment
+      matchedServices = mockResults.filter((r) => nlServiceIds.includes(r.id));
+    } else {
+      // Fallback to segment match only if no specific IDs
+      const nlSegments = matched.flatMap((m) => m.segments);
+      matchedServices = mockResults.filter((r) => nlSegments.includes(r.segment));
     }
+  } else {
+    // Direct search: name, provider, products, segment keywords
+    matchedServices = mockResults.filter((r) => {
+      if (r.name.toLowerCase().includes(q) || r.provider.toLowerCase().includes(q)) return true;
+      if (r.products.some((p) => p.toLowerCase().includes(q))) return true;
+      const seg = segments.find((s) => s.id === r.segment);
+      if (seg?.keywords.some((k) => k.includes(q) || q.includes(k))) return true;
+      return false;
+    });
+  }
 
-    const productMatch = r.products.some((p) => p.toLowerCase().includes(q) || q.includes(p.toLowerCase()));
-    if (productMatch) return true;
+  matchedServices.sort((a, b) => b.rating - a.rating);
 
-    return false;
-  });
+  // 4. Cross-suggestion: if only products found, suggest related services
+  let suggestedServices: typeof mockResults = [];
+  if (matchedProducts.length > 0 && matchedServices.length === 0) {
+    const relatedIds = [...new Set(matchedProducts.flatMap((p) => p.relatedServiceIds))];
+    suggestedServices = mockResults.filter((r) => relatedIds.includes(r.id));
+    suggestedServices.sort((a, b) => b.rating - a.rating);
+  }
 
-  // Sort by rating desc then distance
-  results.sort((a, b) => b.rating - a.rating);
+  // 5. If only services found, suggest products from those services
+  if (matchedServices.length > 0 && matchedProducts.length === 0) {
+    const serviceIds = matchedServices.map(s => s.id);
+    matchedProducts = productInventory.filter(p => p.relatedServiceIds.some(id => serviceIds.includes(id)));
+    matchedProducts.sort((a, b) => b.rating - a.rating);
+  }
 
-  return { results, followUp };
+  return { products: matchedProducts, services: matchedServices, followUp, needLabel, suggestedServices };
+}
+
+// Legacy compat: returns combined results in old format
+export function semanticSearchLegacy(query: string): { results: typeof mockResults; followUp?: string } {
+  const { services, followUp } = semanticSearch(query);
+  return { results: services, followUp };
 }
