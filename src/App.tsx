@@ -1,8 +1,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { FloatingAiAvatar } from "@/components/AiAvatarGlobal";
 import Landing from "./pages/Landing.tsx";
 import MeiPanel from "./pages/MeiPanel.tsx";
 import ClientApp from "./pages/ClientApp.tsx";
@@ -13,6 +14,13 @@ import ClientJourneyDemo from "./pages/ClientJourneyDemo.tsx";
 import MeiManagerDemo from "./pages/MeiManagerDemo.tsx";
 import DropshippingDemo from "./pages/DropshippingDemo.tsx";
 
+const FloatingAvatarWrapper = () => {
+  const location = useLocation();
+  // Only show floating avatar on non-landing pages (landing has its own inline avatar)
+  if (location.pathname === '/') return null;
+  return <FloatingAiAvatar />;
+};
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -21,6 +29,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <FloatingAvatarWrapper />
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/mei" element={<MeiPanel />} />

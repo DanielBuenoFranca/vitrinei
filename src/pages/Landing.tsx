@@ -11,6 +11,7 @@ import {
   ShoppingCart, BarChart3, ChevronRight, Send, Star,
   Package, TrendingDown, Navigation, Users, Shield, MessageCircle
 } from 'lucide-react';
+import { AiAvatar } from '@/components/AiAvatarGlobal';
 
 const segments = [
   { id: 'manutencao', label: 'Manutenção & Reparos', icon: Wrench, color: 'hsl(var(--primary))', keywords: ['eletricista', 'encanador', 'pintor', 'marido de aluguel', 'reparo', 'instalação', 'manutenção'] },
@@ -39,84 +40,6 @@ const aiSuggestions = [
   '🚗 Seu carro está próximo da revisão dos 30.000 km — agende agora!',
 ];
 
-// Animated AI Avatar component
-const AiAvatar = ({ size = 64, speaking = false, onClick }: { size?: number; speaking?: boolean; onClick?: () => void }) => {
-  return (
-    <motion.div
-      onClick={onClick}
-      className="relative cursor-pointer select-none"
-      style={{ width: size, height: size }}
-      whileHover={{ scale: 1.1 }}
-      whileTap={{ scale: 0.95 }}
-    >
-      {/* Outer pulse rings */}
-      <motion.div
-        className="absolute inset-0 rounded-full bg-primary/20"
-        animate={{ scale: [1, 1.4, 1], opacity: [0.4, 0, 0.4] }}
-        transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-      />
-      <motion.div
-        className="absolute inset-0 rounded-full bg-primary/15"
-        animate={{ scale: [1, 1.25, 1], opacity: [0.3, 0, 0.3] }}
-        transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut', delay: 0.4 }}
-      />
-
-      {/* Main avatar body */}
-      <motion.div
-        className="absolute inset-0 rounded-full bg-gradient-to-br from-primary via-primary to-teal flex items-center justify-center shadow-lg"
-        animate={{ y: [0, -3, 0] }}
-        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-        style={{
-          boxShadow: '0 8px 30px -8px hsl(var(--primary) / 0.5)',
-        }}
-      >
-        {/* Face container */}
-        <div className="relative flex flex-col items-center justify-center" style={{ width: size * 0.6, height: size * 0.5 }}>
-          {/* Eyes */}
-          <div className="flex gap-[20%] mb-[8%]">
-            <motion.div
-              className="bg-primary-foreground rounded-full"
-              style={{ width: size * 0.12, height: size * 0.14 }}
-              animate={{ scaleY: [1, 0.1, 1] }}
-              transition={{ duration: 0.2, repeat: Infinity, repeatDelay: 3.5 }}
-            />
-            <motion.div
-              className="bg-primary-foreground rounded-full"
-              style={{ width: size * 0.12, height: size * 0.14 }}
-              animate={{ scaleY: [1, 0.1, 1] }}
-              transition={{ duration: 0.2, repeat: Infinity, repeatDelay: 3.5 }}
-            />
-          </div>
-          {/* Mouth */}
-          <motion.div
-            className="bg-primary-foreground/90 rounded-full"
-            style={{ width: size * 0.22, height: speaking ? size * 0.1 : size * 0.06 }}
-            animate={speaking ? {
-              scaleY: [0.6, 1.2, 0.8, 1, 0.6],
-              scaleX: [1, 0.85, 1.1, 0.9, 1],
-            } : {
-              scaleX: [1, 1.1, 1],
-            }}
-            transition={speaking ? {
-              duration: 0.5, repeat: Infinity,
-            } : {
-              duration: 2, repeat: Infinity, ease: 'easeInOut',
-            }}
-          />
-        </div>
-      </motion.div>
-
-      {/* Sparkle accent */}
-      <motion.div
-        className="absolute -top-1 -right-1"
-        animate={{ rotate: [0, 360], scale: [0.8, 1.1, 0.8] }}
-        transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
-      >
-        <Sparkles className="text-accent" style={{ width: size * 0.28, height: size * 0.28 }} />
-      </motion.div>
-    </motion.div>
-  );
-};
 
 const Landing = () => {
   const navigate = useNavigate();
