@@ -161,11 +161,11 @@ const DropshippingDemo = () => {
   const servicesTotal = cartItems.filter(p => p.withService).reduce((s, p) => s + p.servicePrice, 0);
   const planDiscount = (cartTotal + servicesTotal) * 0.1;
 
-  /* ─── CONTEXTUAL RENDER (estoque local ou drop) ─── */
+  /* ─── CONTEXTUAL RENDER (single or multi product) ─── */
   const renderContextualStep = () => {
-    const productName = contextProduct || 'Produto';
-    const productPrice = contextPrice ? parseFloat(contextPrice) : 99.90;
-    const provider = contextProvider || 'Fornecedor';
+    const productName = contextProducts[0]?.name || 'Produto';
+    const productPrice = contextProducts[0]?.price || 99.90;
+    const provider = contextProducts[0]?.provider || 'Fornecedor';
 
     switch (step.id) {
       case 'select':
