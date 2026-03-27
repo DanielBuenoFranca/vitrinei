@@ -647,21 +647,13 @@ const Landing = () => {
                       <div className="space-y-2">
                         {(expandedProducts === idx ? msg.searchResult.products : msg.searchResult.products.slice(0, 3)).map((product) => (
                           <motion.div key={product.id} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
-                            <Card className="border-border/50 hover:border-success/40 cursor-pointer transition-all group"
-                              onClick={() => {
-                                const params = new URLSearchParams({
-                                  productName: product.name,
-                                  productType: product.stockType,
-                                  productPrice: String(product.price),
-                                  productProvider: product.provider,
-                                });
-                                navigate(`/dropshipping?${params.toString()}`);
-                              }}>
+                            <Card className={`cursor-pointer transition-all group ${isInProductCart(product.id) ? 'border-success bg-success/5' : 'border-border/50 hover:border-success/40'}`}
+                              onClick={() => toggleProductInCart(product)}>
                               <CardContent className="p-3">
                                 <div className="flex items-start justify-between mb-1">
                                   <div className="flex items-center gap-2">
-                                    <div className="w-7 h-7 rounded-lg bg-success/10 flex items-center justify-center shrink-0">
-                                      <ShoppingBag className="w-3.5 h-3.5 text-success" />
+                                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isInProductCart(product.id) ? 'bg-success/20' : 'bg-success/10'}`}>
+                                      {isInProductCart(product.id) ? <CheckCircle2 className="w-3.5 h-3.5 text-success" /> : <ShoppingBag className="w-3.5 h-3.5 text-success" />}
                                     </div>
                                     <div>
                                       <h4 className="font-semibold text-xs text-foreground">{product.name}</h4>
@@ -678,8 +670,10 @@ const Landing = () => {
                                   <span className="flex items-center gap-0.5"><Star className="w-3 h-3 fill-accent text-accent" /> {product.rating}</span>
                                   <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" /> {product.distance}</span>
                                 </div>
-                                <div className="mt-1 flex items-center gap-1 text-[10px] text-success font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <ArrowRight className="w-3 h-3" /> Comprar produto
+                                <div className="mt-1 flex items-center gap-1 text-[10px] font-medium">
+                                  {isInProductCart(product.id)
+                                    ? <span className="text-success flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> No carrinho</span>
+                                    : <span className="text-success opacity-0 group-hover:opacity-100 flex items-center gap-1"><Plus className="w-3 h-3" /> Adicionar</span>}
                                 </div>
                               </CardContent>
                             </Card>
