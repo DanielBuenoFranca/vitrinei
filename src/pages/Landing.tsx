@@ -34,6 +34,7 @@ const Landing = () => {
   const [aiSpeaking, setAiSpeaking] = useState(false);
   const [expandedProducts, setExpandedProducts] = useState<number | null>(null);
   const [expandedServices, setExpandedServices] = useState<number | null>(null);
+  const [showSearchProducts, setShowSearchProducts] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -61,31 +62,28 @@ const Landing = () => {
     setActiveSegments((prev) => prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]);
   };
 
-  // ── Motor de busca semântica ──
-  const filteredResults = (() => {
+  // ── Motor de busca semântica universal ──
+  const searchResult = (() => {
     const query = searchQuery.toLowerCase().trim();
-    if (!query && activeSegments.length === 0) return mockResults;
+    if (!query && activeSegments.length === 0) return { products: [], services: mockResults, followUp: undefined, needLabel: undefined, suggestedServices: undefined };
+    if (!query && activeSegments.length > 0) return { products: [], services: mockResults.filter(r => activeSegments.includes(r.segment)), followUp: undefined, needLabel: undefined, suggestedServices: undefined };
 
-    // Use the universal semantic search engine
-    const { services: semanticServices } = semanticSearch(query);
+    const result = semanticSearch(query);
 
     // Apply segment filter on top
-    const filtered = activeSegments.length === 0
-      ? semanticServices
-      : semanticServices.filter(r => activeSegments.includes(r.segment));
+    const filteredServices = activeSegments.length === 0
+      ? result.services
+      : result.services.filter(r => activeSegments.includes(r.segment));
 
-    // If no semantic results but segments are active, show segment-filtered defaults
-    if (filtered.length === 0 && activeSegments.length > 0 && !query) {
-      return mockResults.filter(r => activeSegments.includes(r.segment));
+    // Fallback to segment-filtered defaults
+    if (filteredServices.length === 0 && activeSegments.length > 0) {
+      return { ...result, services: mockResults.filter(r => activeSegments.includes(r.segment)) };
     }
 
-    // If query produced no semantic results but segments are active, try segment fallback
-    if (filtered.length === 0 && activeSegments.length > 0) {
-      return mockResults.filter(r => activeSegments.includes(r.segment));
-    }
-
-    return filtered.length > 0 ? filtered : (query ? [] : mockResults);
+    return { ...result, services: filteredServices.length > 0 ? filteredServices : (query ? [] : mockResults) };
   })();
+
+  const filteredResults = searchResult.services;
 
   const handleAiSend = () => {
     if (!aiMessage.trim()) return;
