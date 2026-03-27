@@ -831,6 +831,76 @@ const Landing = () => {
         )}
       </AnimatePresence>
 
+      {/* Floating Product Cart Bar */}
+      <AnimatePresence>
+        {productCart.length > 0 && (
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ type: 'spring', damping: 20 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-2xl"
+          >
+            <Card className="border-success shadow-2xl bg-card/95 backdrop-blur-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center shrink-0">
+                      <ShoppingCart className="w-5 h-5 text-success" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-foreground">
+                        {productCart.length} produto{productCart.length > 1 ? 's' : ''} selecionado{productCart.length > 1 ? 's' : ''}
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>R$ {productCart.reduce((s, p) => s + p.price, 0).toFixed(2)}</span>
+                        <span>•</span>
+                        <span>{productCart.filter(p => p.stockType === 'fisico').length} estoque</span>
+                        <span>{productCart.filter(p => p.stockType === 'drop').length} drop</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button variant="ghost" size="sm" className="text-xs text-muted-foreground h-8 px-2" onClick={() => setShowProductCart(!showProductCart)}>
+                      {showProductCart ? 'Fechar' : 'Ver itens'}
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => setProductCart([])}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button size="sm" className="gap-1 text-xs" onClick={navigateToProductDemo}>
+                      <ArrowRight className="w-3 h-3" /> Ver Demo
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Expanded cart items */}
+                <AnimatePresence>
+                  {showProductCart && (
+                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                      className="mt-3 pt-3 border-t border-border space-y-2 overflow-hidden">
+                      {productCart.map(product => (
+                        <div key={product.id} className="flex items-center justify-between text-xs bg-muted/50 rounded-lg px-3 py-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Badge variant={product.stockType === 'fisico' ? 'default' : 'secondary'} className="text-[8px] px-1.5 py-0 shrink-0">
+                              {product.stockType === 'fisico' ? '📦' : '🌍'}
+                            </Badge>
+                            <span className="font-medium text-foreground truncate">{product.name}</span>
+                            <span className="text-muted-foreground shrink-0">R$ {product.price}</span>
+                          </div>
+                          <button onClick={() => toggleProductInCart(product)} className="text-muted-foreground hover:text-destructive ml-2 shrink-0">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Footer */}
       <footer className="border-t border-border py-6 px-4">
         <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
