@@ -374,22 +374,18 @@ const Landing = () => {
                         {(showSearchProducts ? searchResult.products : searchResult.products.slice(0, 6)).map((product, idx) => (
                           <motion.div key={product.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}>
                             <Card
-                              className="border-border/50 hover:border-success/40 hover:shadow-md transition-all duration-200 cursor-pointer group"
-                              onClick={() => {
-                                const params = new URLSearchParams({
-                                  productName: product.name,
-                                  productType: product.stockType,
-                                  productPrice: String(product.price),
-                                  productProvider: product.provider,
-                                });
-                                navigate(`/dropshipping?${params.toString()}`);
-                              }}
+                              className={`hover:shadow-md transition-all duration-200 cursor-pointer group ${
+                                isInProductCart(product.id) 
+                                  ? 'border-success bg-success/5 shadow-sm' 
+                                  : 'border-border/50 hover:border-success/40'
+                              }`}
+                              onClick={() => toggleProductInCart(product)}
                             >
                               <CardContent className="p-4">
                                 <div className="flex items-start justify-between mb-2">
                                   <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center">
-                                      <ShoppingBag className="w-4 h-4 text-success" />
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isInProductCart(product.id) ? 'bg-success/20' : 'bg-success/10'}`}>
+                                      {isInProductCart(product.id) ? <CheckCircle2 className="w-4 h-4 text-success" /> : <ShoppingBag className="w-4 h-4 text-success" />}
                                     </div>
                                     <div>
                                       <h4 className="font-semibold text-sm text-foreground">{product.name}</h4>
@@ -406,8 +402,13 @@ const Landing = () => {
                                   <span className="flex items-center gap-1"><Star className="w-3 h-3 fill-accent text-accent" /> {product.rating}</span>
                                   <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {product.distance}</span>
                                 </div>
-                                <div className="mt-2 flex items-center gap-1 text-[10px] text-success font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <ArrowRight className="w-3 h-3" /> Ver demonstração de compra
+                                <div className="mt-2 flex items-center gap-1 text-[10px] font-medium transition-opacity">
+                                  {isInProductCart(product.id) ? (
+                                    <span className="text-success flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Adicionado ao carrinho</span>
+                                  ) : (
+                                    <span className="text-success opacity-0 group-hover:opacity-100 flex items-center gap-1"><Plus className="w-3 h-3" /> Adicionar ao carrinho</span>
+                                  )}
+                                </div>
                                 </div>
                               </CardContent>
                             </Card>
