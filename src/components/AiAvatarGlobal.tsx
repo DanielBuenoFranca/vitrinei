@@ -204,7 +204,9 @@ export const FloatingAiAvatar = () => {
     setMessage('');
     setThinking(true);
 
-    const searchResult = semanticSearch(msg);
+    // Build conversation context from previous user messages
+    const userMsgs = chat.filter(m => m.role === 'user').map(m => m.text);
+    const searchResult = semanticSearch(msg, [...userMsgs, msg]);
 
     setTimeout(() => {
       setThinking(false);
