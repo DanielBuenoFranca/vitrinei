@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { FloatingAiAvatar } from "@/components/AiAvatarGlobal";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import Landing from "./pages/Landing.tsx";
 import MeiPanel from "./pages/MeiPanel.tsx";
 import ClientApp from "./pages/ClientApp.tsx";
@@ -17,7 +18,6 @@ import Demos from "./pages/Demos.tsx";
 
 const FloatingAvatarWrapper = () => {
   const location = useLocation();
-  // Only show floating avatar on non-landing pages (landing has its own inline avatar)
   if (location.pathname === '/') return null;
   return <FloatingAiAvatar />;
 };
@@ -25,6 +25,7 @@ const FloatingAvatarWrapper = () => {
 const queryClient = new QueryClient();
 
 const App = () => (
+  <ThemeProvider>
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
@@ -46,6 +47,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
+  </ThemeProvider>
 );
 
 export default App;

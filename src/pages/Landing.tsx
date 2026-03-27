@@ -12,6 +12,7 @@ import {
   ChevronDown, ShoppingBag, Wrench as WrenchIcon, Store, Plus, CheckCircle2, X, Trash2
 } from 'lucide-react';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
+import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { segments, mockResults, semanticSearch, type ProductItem, type SearchResult } from '@/data/searchData';
 
 
@@ -181,6 +182,7 @@ const Landing = () => {
               <Zap className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="font-display text-xl font-bold text-foreground">EcoMEI</span>
+            <ThemeSwitcher />
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => navigate('/client')}>
