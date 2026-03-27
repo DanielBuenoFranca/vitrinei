@@ -202,6 +202,8 @@ const ClientApp = () => {
       return { ...item, products: item.products.filter(p => p.id !== productId) };
     }));
   };
+
+  const toggleSegment = (id: string) => {
     setSelectedSegments(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
   };
 
