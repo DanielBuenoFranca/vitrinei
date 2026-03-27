@@ -31,13 +31,28 @@ const segments = [
 ];
 
 // ── Mapeamento semântico: expressões naturais → segmentos + keywords ──
-const naturalLanguageMap: { triggers: string[]; segments: string[]; keywords: string[] }[] = [
-  // Saúde / Fitoterapia / Dor
-  { triggers: ['dor de barriga', 'dor de estômago', 'dor abdominal', 'mal estar', 'enjoo', 'náusea', 'azia', 'gastrite', 'indigestão'], segments: ['natureza', 'saude_clinica'], keywords: ['fitoterapia', 'fitoterápico', 'chá', 'plantas medicinais', 'clínico', 'consulta'] },
-  { triggers: ['dor de cabeça', 'enxaqueca', 'cefaleia', 'dor no corpo', 'febre', 'gripe', 'resfriado'], segments: ['natureza', 'saude_clinica'], keywords: ['fitoterapia', 'aromaterapia', 'consulta', 'clínico', 'chá'] },
+const naturalLanguageMap: { triggers: string[]; segments: string[]; keywords: string[]; aiFollowUp?: string }[] = [
+  // ── Saúde / Fitoterapia / Dor ──
+  { triggers: ['dor de barriga', 'dor de estômago', 'dor abdominal', 'mal estar', 'enjoo', 'náusea', 'azia', 'gastrite', 'indigestão'], segments: ['natureza', 'saude_clinica'], keywords: ['fitoterapia', 'fitoterápico', 'chá', 'plantas medicinais', 'clínico', 'consulta', 'remédio'], aiFollowUp: 'Entendi que você está com desconforto abdominal. Vou buscar fitoterápicos e profissionais de saúde para te ajudar!' },
+  { triggers: ['dor de cabeça', 'enxaqueca', 'cefaleia', 'dor no corpo', 'febre', 'gripe', 'resfriado'], segments: ['natureza', 'saude_clinica'], keywords: ['fitoterapia', 'aromaterapia', 'consulta', 'clínico', 'chá', 'remédio'], aiFollowUp: 'Vou buscar remédios e profissionais para aliviar sua dor.' },
   { triggers: ['insônia', 'não consigo dormir', 'ansiedade', 'estresse', 'nervoso', 'cansaço'], segments: ['natureza', 'bem_estar'], keywords: ['aromaterapia', 'fitoterapia', 'floral', 'massagem', 'yoga', 'meditação'] },
-  { triggers: ['alergia', 'coceira', 'irritação na pele', 'dermatite'], segments: ['natureza', 'saude_clinica'], keywords: ['fitoterapia', 'plantas medicinais', 'consulta'] },
-  // Jardinagem / Grama / Plantas
+  { triggers: ['alergia', 'coceira', 'irritação na pele', 'dermatite'], segments: ['natureza', 'saude_clinica'], keywords: ['fitoterapia', 'plantas medicinais', 'consulta', 'remédio'] },
+  // Remédios / Medicamentos / Dores genéricas
+  { triggers: ['remédio', 'remedio', 'medicamento', 'preciso de remédio', 'farmácia', 'farmacia'], segments: ['natureza', 'saude_clinica'], keywords: ['fitoterapia', 'fitoterápico', 'chá', 'consulta', 'clínico', 'remédio'], aiFollowUp: 'Você precisa de um remédio! Pode me dizer onde está doendo ou qual o sintoma? Enquanto isso, vou listar opções fitoterápicas e profissionais de saúde.' },
+  { triggers: ['machuquei o pé', 'machuquei', 'torci o pé', 'torção', 'dor no pé', 'pé inchado', 'dor no tornozelo', 'entorse'], segments: ['saude_clinica', 'natureza'], keywords: ['consulta', 'clínico', 'fisioterapia', 'fitoterapia', 'anti-inflamatório', 'remédio'], aiFollowUp: 'Parece que você se machucou! Vou buscar profissionais de saúde e produtos para aliviar a dor e inflamação.' },
+  { triggers: ['dor nas costas', 'dor lombar', 'coluna', 'dor muscular', 'câimbra', 'contratura'], segments: ['saude_clinica', 'bem_estar', 'natureza'], keywords: ['fisioterapia', 'massagem', 'consulta', 'fitoterapia', 'anti-inflamatório'] },
+  { triggers: ['dor de dente', 'dente doendo', 'gengiva', 'dor na boca'], segments: ['saude_clinica'], keywords: ['dentista', 'consulta', 'remédio'] },
+  { triggers: ['tosse', 'garganta inflamada', 'dor de garganta', 'rouquidão'], segments: ['natureza', 'saude_clinica'], keywords: ['chá', 'mel', 'fitoterapia', 'consulta', 'remédio'], aiFollowUp: 'Vou buscar chás, fitoterápicos e profissionais para cuidar da sua garganta!' },
+  // ── Vestuário / Roupas / Moda ──
+  { triggers: ['blusa', 'camiseta', 'camisa', 'regata', 'top', 'cropped', 'moletom', 'jaqueta', 'casaco', 'blazer', 'suéter'], segments: ['moda', 'vestuario'], keywords: ['blusa', 'camiseta', 'camisa', 'roupa', 'moda', 'vestuário'], aiFollowUp: 'Buscando profissionais com essa peça em estoque para você!' },
+  { triggers: ['calça', 'calça jeans', 'legging', 'bermuda', 'short', 'saia', 'shorts'], segments: ['moda', 'vestuario'], keywords: ['calça', 'jeans', 'legging', 'bermuda', 'saia', 'roupa', 'moda'] },
+  { triggers: ['vestido', 'macacão', 'conjunto', 'roupa', 'look', 'outfit', 'moda'], segments: ['moda', 'vestuario'], keywords: ['vestido', 'roupa', 'moda', 'vestuário', 'look'] },
+  { triggers: ['sapato', 'tênis', 'sandália', 'bota', 'chinelo', 'salto', 'calçado'], segments: ['moda', 'vestuario'], keywords: ['sapato', 'tênis', 'sandália', 'calçado', 'moda'] },
+  // ── Jóias / Acessórios / Adereços ──
+  { triggers: ['jóia', 'joia', 'anel', 'aliança', 'brinco', 'colar', 'pulseira', 'corrente', 'pingente', 'cordão'], segments: ['acessorios', 'moda'], keywords: ['jóia', 'anel', 'brinco', 'colar', 'pulseira', 'ouro', 'prata', 'bijuteria'] },
+  { triggers: ['relógio', 'óculos', 'bolsa', 'carteira', 'cinto', 'chapéu', 'boné', 'lenço', 'cachecol', 'gravata'], segments: ['acessorios', 'moda'], keywords: ['relógio', 'óculos', 'bolsa', 'acessório', 'moda'] },
+  { triggers: ['bijuteria', 'piercing', 'adereço', 'broche', 'presilha', 'tiara', 'faixa de cabelo'], segments: ['acessorios', 'moda'], keywords: ['bijuteria', 'acessório', 'adereço', 'moda'] },
+  // ── Jardinagem / Grama / Plantas ──
   { triggers: ['cortar grama', 'grama alta', 'capinar', 'jardim sujo', 'podar', 'mato alto', 'limpar jardim', 'quintal sujo', 'aparar grama'], segments: ['natureza', 'casa'], keywords: ['jardinagem', 'jardineiro', 'poda', 'grama', 'paisagismo'] },
   { triggers: ['plantar', 'horta', 'vaso', 'muda', 'semente', 'adubo', 'terra', 'fertilizante'], segments: ['natureza'], keywords: ['horta', 'jardinagem', 'sementes', 'orgânico', 'permacultura'] },
   // Automotivo
