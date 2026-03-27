@@ -86,6 +86,31 @@ export interface ServiceItem {
   allowComplement: boolean;
   monetaryValue: number;
   relatedProductIds: number[];
+  themeTags: string[];
+}
+
+/**
+ * Filtra produtos de um MEI pelo tema do serviço selecionado.
+ * Compara themeTags do serviço contra category + name dos produtos.
+ */
+export function getContextualProducts(
+  service: ServiceItem,
+  products: ProductItem[]
+): ProductItem[] {
+  if (!service.themeTags || service.themeTags.length === 0) return products;
+  const tags = service.themeTags.map(t => t.toLowerCase());
+  return products.filter(p => {
+    const pName = p.name.toLowerCase();
+    const pCat = p.category.toLowerCase();
+    return tags.some(tag => pName.includes(tag) || pCat.includes(tag));
+  });
+}
+
+/**
+ * Encontra MEIs relevantes para um serviço baseado no segmento/categoria.
+ */
+export function findRelevantMeis(service: ServiceItem): MeiProfessional[] {
+  return meiProfessionals.filter(mei => mei.segment === service.category);
 }
 
 // ══════════════════════════════════════════════════
