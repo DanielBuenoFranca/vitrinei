@@ -35,7 +35,34 @@ const Landing = () => {
   const [expandedProducts, setExpandedProducts] = useState<number | null>(null);
   const [expandedServices, setExpandedServices] = useState<number | null>(null);
   const [showSearchProducts, setShowSearchProducts] = useState(false);
+  const [productCart, setProductCart] = useState<ProductItem[]>([]);
+  const [showProductCart, setShowProductCart] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+
+  const toggleProductInCart = (product: ProductItem) => {
+    setProductCart(prev => 
+      prev.some(p => p.id === product.id)
+        ? prev.filter(p => p.id !== product.id)
+        : [...prev, product]
+    );
+  };
+
+  const isInProductCart = (productId: number) => productCart.some(p => p.id === productId);
+
+  const navigateToProductDemo = () => {
+    if (productCart.length === 0) return;
+    const params = new URLSearchParams({
+      products: JSON.stringify(productCart.map(p => ({
+        name: p.name,
+        type: p.stockType,
+        price: p.price,
+        provider: p.provider,
+        rating: p.rating,
+        distance: p.distance,
+      }))),
+    });
+    navigate(`/dropshipping?${params.toString()}`);
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
