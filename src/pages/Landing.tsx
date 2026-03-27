@@ -115,7 +115,9 @@ const Landing = () => {
     setAiChat((prev) => [...prev, { role: 'user', text: msg }]);
     setAiSpeaking(true);
 
-    const searchResult = semanticSearch(msg);
+    // Build conversation context from previous user messages
+    const userMsgs = aiChat.filter(m => m.role === 'user').map(m => m.text);
+    const searchResult = semanticSearch(msg, [...userMsgs, msg]);
 
     setTimeout(() => {
       const hasResults = searchResult.products.length > 0 || searchResult.services.length > 0;
