@@ -136,6 +136,7 @@ const DropshippingDemo = () => {
     ? (isMultiProduct ? multiProductSteps : (isSingleLocal ? localSteps : dropSteps))
     : genericSteps;
   const step = steps[currentStep];
+  const isLocal = isSingleLocal;
 
   useEffect(() => {
     if (!autoPlay) return;
