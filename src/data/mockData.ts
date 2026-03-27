@@ -379,6 +379,30 @@ export const clientServices: ServiceItem[] = [
   { id: 1217, name: 'Mixagem e Masterização', icon: '🔊', category: 'Música', provider: 'MixMaster', rating: 4.8, creditCost: 130, minMonths: 3, minPlan: 'prata', allowComplement: true, monetaryValue: 260.00, relatedProductIds: [] },
   { id: 1218, name: 'Aula de Percussão / Cajon', icon: '🥁', category: 'Música', provider: 'PercussãoBR', rating: 4.6, creditCost: 45, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 80.00, relatedProductIds: [] },
   { id: 1219, name: 'Sonorização de Eventos', icon: '🔈', category: 'Música', provider: 'SomTotal', rating: 4.7, creditCost: 110, minMonths: 2, minPlan: 'prata', allowComplement: true, monetaryValue: 220.00, relatedProductIds: [] },
+
+  // ────────────────────────────────────────────────
+  // 13. NATUREZA & VIDA NATURAL (20 serviços) — NOVO
+  // ────────────────────────────────────────────────
+  { id: 1300, name: 'Jardinagem Orgânica', icon: '🌱', category: 'Natureza & Vida Natural', provider: 'HortaViva', rating: 4.8, creditCost: 50, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 90.00, relatedProductIds: [] },
+  { id: 1301, name: 'Montagem de Horta Urbana', icon: '🥬', category: 'Natureza & Vida Natural', provider: 'UrbanGreen', rating: 4.9, creditCost: 70, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 130.00, relatedProductIds: [] },
+  { id: 1302, name: 'Paisagismo Sustentável', icon: '🌳', category: 'Natureza & Vida Natural', provider: 'EcoPaisagem', rating: 4.7, creditCost: 120, minMonths: 2, minPlan: 'prata', allowComplement: true, monetaryValue: 240.00, relatedProductIds: [] },
+  { id: 1303, name: 'Jardineiro — Manutenção Mensal', icon: '🌿', category: 'Natureza & Vida Natural', provider: 'JardimFeliz', rating: 4.6, creditCost: 40, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 70.00, relatedProductIds: [] },
+  { id: 1304, name: 'Poda e Topiaria Artística', icon: '✂️', category: 'Natureza & Vida Natural', provider: 'ArtVerde', rating: 4.5, creditCost: 65, minMonths: 2, minPlan: 'bronze', allowComplement: true, monetaryValue: 120.00, relatedProductIds: [] },
+  { id: 1305, name: 'Compostagem Doméstica', icon: '♻️', category: 'Natureza & Vida Natural', provider: 'CompostaBR', rating: 4.7, creditCost: 45, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 80.00, relatedProductIds: [] },
+  { id: 1306, name: 'Alimentação Natural — Consulta', icon: '🥗', category: 'Natureza & Vida Natural', provider: 'NutriNatural', rating: 4.9, creditCost: 65, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 120.00, relatedProductIds: [] },
+  { id: 1307, name: 'Chef de Comida Natural / Vegana', icon: '👨‍🍳', category: 'Natureza & Vida Natural', provider: 'ChefVerde', rating: 4.8, creditCost: 80, minMonths: 2, minPlan: 'prata', allowComplement: true, monetaryValue: 160.00, relatedProductIds: [] },
+  { id: 1308, name: 'Marmita Fit / Natural — Delivery', icon: '🍱', category: 'Natureza & Vida Natural', provider: 'FitFood', rating: 4.7, creditCost: 35, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 60.00, relatedProductIds: [] },
+  { id: 1309, name: 'Fitoterapia — Consulta', icon: '🌿', category: 'Natureza & Vida Natural', provider: 'FitoSaúde', rating: 4.8, creditCost: 60, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 110.00, relatedProductIds: [] },
+  { id: 1310, name: 'Manipulação de Fitoterápicos', icon: '💊', category: 'Natureza & Vida Natural', provider: 'HerbFarmácia', rating: 4.6, creditCost: 50, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 90.00, relatedProductIds: [] },
+  { id: 1311, name: 'Aromaterapia Clínica', icon: '🌸', category: 'Natureza & Vida Natural', provider: 'AromaVida', rating: 4.7, creditCost: 55, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 100.00, relatedProductIds: [] },
+  { id: 1312, name: 'Naturopatia — Consulta', icon: '🍃', category: 'Natureza & Vida Natural', provider: 'NaturoVita', rating: 4.5, creditCost: 70, minMonths: 2, minPlan: 'prata', allowComplement: true, monetaryValue: 130.00, relatedProductIds: [] },
+  { id: 1313, name: 'Cultivo de Plantas Medicinais', icon: '🌱', category: 'Natureza & Vida Natural', provider: 'PlantaMedic', rating: 4.8, creditCost: 45, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 80.00, relatedProductIds: [] },
+  { id: 1314, name: 'Apicultura Urbana', icon: '🐝', category: 'Natureza & Vida Natural', provider: 'MelUrbano', rating: 4.6, creditCost: 90, minMonths: 2, minPlan: 'prata', allowComplement: true, monetaryValue: 180.00, relatedProductIds: [] },
+  { id: 1315, name: 'Irrigação Automatizada', icon: '💧', category: 'Natureza & Vida Natural', provider: 'AquaJardim', rating: 4.7, creditCost: 100, minMonths: 2, minPlan: 'prata', allowComplement: true, monetaryValue: 200.00, relatedProductIds: [] },
+  { id: 1316, name: 'Curso de Permacultura', icon: '🌍', category: 'Natureza & Vida Natural', provider: 'PermaVida', rating: 4.9, creditCost: 80, minMonths: 2, minPlan: 'prata', allowComplement: true, monetaryValue: 160.00, relatedProductIds: [] },
+  { id: 1317, name: 'Terapia Floral de Bach', icon: '🌺', category: 'Natureza & Vida Natural', provider: 'FloralVida', rating: 4.6, creditCost: 50, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 90.00, relatedProductIds: [] },
+  { id: 1318, name: 'Desidratação de Alimentos', icon: '🍎', category: 'Natureza & Vida Natural', provider: 'NaturalDry', rating: 4.5, creditCost: 40, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 70.00, relatedProductIds: [] },
+  { id: 1319, name: 'Jardim Vertical — Instalação', icon: '🌿', category: 'Natureza & Vida Natural', provider: 'VertGreen', rating: 4.8, creditCost: 110, minMonths: 2, minPlan: 'prata', allowComplement: true, monetaryValue: 220.00, relatedProductIds: [] },
 ];
 
 /* ─── PROFISSIONAIS MEI POR SEGMENTO ─── */
@@ -972,6 +996,52 @@ export const meiProfessionals: MeiProfessional[] = [
       { name: 'Ukulele Concert com Bag', price: 149.90, category: 'Instrumentos', image: '🪕', platform: 'Shopee' },
     ]),
   })),
+
+  // ══════════════════════════════════════════
+  // NATUREZA & VIDA NATURAL — 10 MEIs
+  // ══════════════════════════════════════════
+  ...[
+    { id: 140, name: 'José Horta — Jardineiro Orgânico', specialty: 'Hortas Urbanas e Orgânicas', city: 'São Paulo, SP' },
+    { id: 141, name: 'Ana Verde — Paisagista', specialty: 'Paisagismo Sustentável', city: 'Rio de Janeiro, RJ' },
+    { id: 142, name: 'Chef Renata — Comida Natural', specialty: 'Culinária Vegana e Natural', city: 'Belo Horizonte, MG' },
+    { id: 143, name: 'Dra. Cláudia — Fitoterapeuta', specialty: 'Fitoterapia e Plantas Medicinais', city: 'Curitiba, PR' },
+    { id: 144, name: 'Paulo Mel — Apicultor', specialty: 'Apicultura Urbana e Mel Artesanal', city: 'Salvador, BA' },
+    { id: 145, name: 'Marina Floral — Terapeuta', specialty: 'Florais de Bach e Aromaterapia', city: 'Brasília, DF' },
+    { id: 146, name: 'Roberto Perma — Permacultor', specialty: 'Permacultura e Agrofloresta', city: 'Fortaleza, CE' },
+    { id: 147, name: 'Lúcia Nutri — Naturista', specialty: 'Nutrição Natural e Detox', city: 'Porto Alegre, RS' },
+    { id: 148, name: 'Carlos Irrigação — Jardins', specialty: 'Irrigação e Automação de Jardins', city: 'Recife, PE' },
+    { id: 149, name: 'Fernanda Fit — Marmitas', specialty: 'Marmitas Fit e Alimentação Natural', city: 'Goiânia, GO' },
+  ].map(mei => ({
+    ...mei,
+    segment: 'Natureza & Vida Natural',
+    rating: 4.5 + Math.round(Math.random() * 4) / 10,
+    completedJobs: 40 + Math.floor(Math.random() * 180),
+    avatar: '🌿',
+    ownProducts: createOwnProducts(mei.id, 'Natureza', [
+      { name: 'Adubo Orgânico Premium 5kg', price: 29.90, category: 'Jardinagem', image: '🌱' },
+      { name: 'Sementes Orgânicas Kit (10 tipos)', price: 34.90, category: 'Jardinagem', image: '🌿' },
+      { name: 'Chá Fitoterápico Mix (10 sachês)', price: 19.90, category: 'Fitoterapia', image: '🍵' },
+      { name: 'Óleo Essencial Melaleuca 10ml', price: 24.90, category: 'Aromaterapia', image: '🌸' },
+      { name: 'Tintura de Própolis 30ml', price: 14.90, category: 'Fitoterapia', image: '🍯' },
+      { name: 'Kit Florais de Bach (5 essências)', price: 49.90, category: 'Florais', image: '🌺' },
+      { name: 'Mel Orgânico Silvestre 500g', price: 39.90, category: 'Alimentação', image: '🍯' },
+      { name: 'Granola Artesanal 1kg', price: 29.90, category: 'Alimentação', image: '🥣' },
+      { name: 'Vaso Autoirrigável (kit 3)', price: 44.90, category: 'Jardinagem', image: '🪴' },
+      { name: 'Substrato Orgânico 10L', price: 19.90, category: 'Jardinagem', image: '🌍' },
+    ]),
+    dropshippingProducts: createDropProducts(mei.id, 'Natureza', [
+      { name: 'Composteira Doméstica 3 Caixas', price: 149.90, category: 'Compostagem', image: '♻️', platform: 'Mercado Livre' },
+      { name: 'Kit Horta Vertical 5 Módulos', price: 199.90, category: 'Jardinagem', image: '🌿', platform: 'Shopee' },
+      { name: 'Desidratador de Alimentos 5 Bandejas', price: 299.90, category: 'Cozinha', image: '🍎', platform: 'Mercado Livre' },
+      { name: 'Extrator de Suco a Frio', price: 349.90, category: 'Cozinha', image: '🥤', platform: 'OLX' },
+      { name: 'Irrigação por Gotejamento Kit', price: 89.90, category: 'Jardinagem', image: '💧', platform: 'Shopee' },
+      { name: 'Difusor Ultrassônico Aromaterapia', price: 69.90, category: 'Aromaterapia', image: '🌸', platform: 'Mercado Livre' },
+      { name: 'Kit Óleos Essenciais (12 frascos)', price: 129.90, category: 'Aromaterapia', image: '🧴', platform: 'Shopee' },
+      { name: 'Estufa para Mudas 120x60cm', price: 179.90, category: 'Jardinagem', image: '🌱', platform: 'OLX' },
+      { name: 'Panela de Barro Artesanal Kit', price: 99.90, category: 'Cozinha', image: '🍲', platform: 'Mercado Livre' },
+      { name: 'Germinador de Brotos Automático', price: 89.90, category: 'Alimentação', image: '🌱', platform: 'Shopee' },
+    ]),
+  })),
 ];
 
 /* ─── PRODUTOS LEGADO (mantido para compatibilidade) ─── */
@@ -1084,6 +1154,7 @@ export const serviceCategories = [
   { name: 'Pet & Animais', icon: '🐕', color: '#84CC16' },
   { name: 'Eventos & Festas', icon: '🎉', color: '#D946EF' },
   { name: 'Música', icon: '🎵', color: '#E11D48' },
+  { name: 'Natureza & Vida Natural', icon: '🌿', color: '#15803D' },
 ];
 
 /* ─── DASHBOARD MEI ─── */

@@ -26,6 +26,7 @@ const segments = [
   { id: 'pet', label: 'Pet & Animais', emoji: '🐕', category: 'Pet & Animais', color: 'bg-lime-500/10 border-lime-500/20', desc: 'Banho, tosa, veterinário, adestramento' },
   { id: 'eventos', label: 'Eventos & Festas', emoji: '🎉', category: 'Eventos & Festas', color: 'bg-fuchsia-500/10 border-fuchsia-500/20', desc: 'Buffet, DJ, decoração, fotografia' },
   { id: 'musica', label: 'Música', emoji: '🎵', category: 'Música', color: 'bg-rose-500/10 border-rose-500/20', desc: 'Violão, guitarra, piano, canto, produção' },
+  { id: 'natureza', label: 'Natureza & Vida Natural', emoji: '🌿', category: 'Natureza & Vida Natural', color: 'bg-green-700/10 border-green-700/20', desc: 'Jardinagem, fitoterapia, comida natural, horta' },
 ];
 
 /* ─── AI SUGGESTIONS ENGINE (simulated) ─── */
