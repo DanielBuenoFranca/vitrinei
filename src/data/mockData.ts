@@ -355,6 +355,30 @@ export const clientServices: ServiceItem[] = [
   { id: 1117, name: 'Segurança para Eventos', icon: '🛡️', category: 'Eventos & Festas', provider: 'GuardaEvento', rating: 4.6, creditCost: 100, minMonths: 2, minPlan: 'prata', allowComplement: true, monetaryValue: 200.00, relatedProductIds: [] },
   { id: 1118, name: 'Convites Personalizados', icon: '💌', category: 'Eventos & Festas', provider: 'ConviteArt', rating: 4.7, creditCost: 30, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 55.00, relatedProductIds: [] },
   { id: 1119, name: 'Mágico para Eventos', icon: '🎩', category: 'Eventos & Festas', provider: 'MagiaPura', rating: 4.8, creditCost: 85, minMonths: 2, minPlan: 'prata', allowComplement: true, monetaryValue: 170.00, relatedProductIds: [] },
+
+  // ────────────────────────────────────────────────
+  // 12. MÚSICA (20 serviços) — NOVO
+  // ────────────────────────────────────────────────
+  { id: 1200, name: 'Aula de Violão', icon: '🎸', category: 'Música', provider: 'ViolãoMaster', rating: 4.8, creditCost: 45, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 80.00, relatedProductIds: [] },
+  { id: 1201, name: 'Aula de Guitarra', icon: '🎸', category: 'Música', provider: 'GuitarPro', rating: 4.7, creditCost: 50, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 90.00, relatedProductIds: [] },
+  { id: 1202, name: 'Aula de Piano / Teclado', icon: '🎹', category: 'Música', provider: 'PianoClass', rating: 4.9, creditCost: 55, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 100.00, relatedProductIds: [] },
+  { id: 1203, name: 'Aula de Bateria', icon: '🥁', category: 'Música', provider: 'DrumBeat', rating: 4.6, creditCost: 55, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 100.00, relatedProductIds: [] },
+  { id: 1204, name: 'Aula de Baixo Elétrico', icon: '🎸', category: 'Música', provider: 'BassLine', rating: 4.5, creditCost: 50, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 90.00, relatedProductIds: [] },
+  { id: 1205, name: 'Aula de Canto / Vocal Coach', icon: '🎤', category: 'Música', provider: 'VocalPro', rating: 4.9, creditCost: 60, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 110.00, relatedProductIds: [] },
+  { id: 1206, name: 'Aula de Ukulele', icon: '🪕', category: 'Música', provider: 'UkeFun', rating: 4.7, creditCost: 40, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 70.00, relatedProductIds: [] },
+  { id: 1207, name: 'Aula de Violino', icon: '🎻', category: 'Música', provider: 'ViolinArte', rating: 4.8, creditCost: 65, minMonths: 2, minPlan: 'prata', allowComplement: true, monetaryValue: 120.00, relatedProductIds: [] },
+  { id: 1208, name: 'Aula de Saxofone', icon: '🎷', category: 'Música', provider: 'SaxMaster', rating: 4.6, creditCost: 60, minMonths: 2, minPlan: 'prata', allowComplement: true, monetaryValue: 110.00, relatedProductIds: [] },
+  { id: 1209, name: 'Aula de Flauta Transversal', icon: '🪈', category: 'Música', provider: 'FlautaPro', rating: 4.5, creditCost: 50, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 90.00, relatedProductIds: [] },
+  { id: 1210, name: 'Aula de Acordeão / Sanfona', icon: '🪗', category: 'Música', provider: 'SanfonaViva', rating: 4.7, creditCost: 55, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 100.00, relatedProductIds: [] },
+  { id: 1211, name: 'Produção Musical / Home Studio', icon: '🎧', category: 'Música', provider: 'BeatMaker', rating: 4.8, creditCost: 100, minMonths: 2, minPlan: 'prata', allowComplement: true, monetaryValue: 200.00, relatedProductIds: [] },
+  { id: 1212, name: 'Aula de DJ / Mixagem', icon: '🎧', category: 'Música', provider: 'DJSchool', rating: 4.7, creditCost: 80, minMonths: 2, minPlan: 'prata', allowComplement: true, monetaryValue: 160.00, relatedProductIds: [] },
+  { id: 1213, name: 'Teoria Musical e Harmonia', icon: '🎼', category: 'Música', provider: 'MúsicaTeoria', rating: 4.6, creditCost: 40, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 70.00, relatedProductIds: [] },
+  { id: 1214, name: 'Afinação e Manutenção de Piano', icon: '🎹', category: 'Música', provider: 'AfinaPiano', rating: 4.9, creditCost: 90, minMonths: 2, minPlan: 'prata', allowComplement: true, monetaryValue: 180.00, relatedProductIds: [] },
+  { id: 1215, name: 'Músico para Eventos', icon: '🎵', category: 'Música', provider: 'ShowBand', rating: 4.8, creditCost: 150, minMonths: 3, minPlan: 'prata', allowComplement: true, monetaryValue: 300.00, relatedProductIds: [] },
+  { id: 1216, name: 'Gravação em Estúdio', icon: '🎙️', category: 'Música', provider: 'StudioRec', rating: 4.7, creditCost: 120, minMonths: 2, minPlan: 'prata', allowComplement: true, monetaryValue: 240.00, relatedProductIds: [] },
+  { id: 1217, name: 'Mixagem e Masterização', icon: '🔊', category: 'Música', provider: 'MixMaster', rating: 4.8, creditCost: 130, minMonths: 3, minPlan: 'prata', allowComplement: true, monetaryValue: 260.00, relatedProductIds: [] },
+  { id: 1218, name: 'Aula de Percussão / Cajon', icon: '🥁', category: 'Música', provider: 'PercussãoBR', rating: 4.6, creditCost: 45, minMonths: 1, minPlan: 'bronze', allowComplement: true, monetaryValue: 80.00, relatedProductIds: [] },
+  { id: 1219, name: 'Sonorização de Eventos', icon: '🔈', category: 'Música', provider: 'SomTotal', rating: 4.7, creditCost: 110, minMonths: 2, minPlan: 'prata', allowComplement: true, monetaryValue: 220.00, relatedProductIds: [] },
 ];
 
 /* ─── PROFISSIONAIS MEI POR SEGMENTO ─── */
@@ -902,6 +926,52 @@ export const meiProfessionals: MeiProfessional[] = [
       { name: 'Painel de LED Letreiro', price: 199.90, category: 'Decoração', image: '💡', platform: 'Shopee' },
     ]),
   })),
+
+  // ══════════════════════════════════════════
+  // MÚSICA — 10 MEIs
+  // ══════════════════════════════════════════
+  ...[
+    { id: 130, name: 'Prof. Rodrigo — Violão', specialty: 'Violão Popular e Clássico', city: 'São Paulo, SP' },
+    { id: 131, name: 'Prof. Beatriz — Piano', specialty: 'Piano Clássico e Popular', city: 'Rio de Janeiro, RJ' },
+    { id: 132, name: 'Prof. Caio — Guitarra', specialty: 'Rock, Blues e Jazz', city: 'Belo Horizonte, MG' },
+    { id: 133, name: 'Prof. Daniela — Canto', specialty: 'Técnica Vocal e Performance', city: 'Curitiba, PR' },
+    { id: 134, name: 'Prof. Eduardo — Bateria', specialty: 'Bateria e Percussão', city: 'Salvador, BA' },
+    { id: 135, name: 'Prof. Fábio — Produção', specialty: 'Produção Musical e Home Studio', city: 'Brasília, DF' },
+    { id: 136, name: 'Prof. Giovana — Violino', specialty: 'Violino Clássico e MPB', city: 'Fortaleza, CE' },
+    { id: 137, name: 'Prof. Henrique — Saxofone', specialty: 'Saxofone e Sopros', city: 'Porto Alegre, RS' },
+    { id: 138, name: 'Prof. Igor — DJ', specialty: 'DJ, Mixagem e Produção Eletrônica', city: 'Recife, PE' },
+    { id: 139, name: 'Prof. Juliana — Ukulele', specialty: 'Ukulele e Musicalização Infantil', city: 'Goiânia, GO' },
+  ].map(mei => ({
+    ...mei,
+    segment: 'Música',
+    rating: 4.5 + Math.round(Math.random() * 4) / 10,
+    completedJobs: 40 + Math.floor(Math.random() * 180),
+    avatar: '🎵',
+    ownProducts: createOwnProducts(mei.id, 'Música', [
+      { name: 'Encordoamento Violão Nylon', price: 24.90, category: 'Cordas', image: '🎸' },
+      { name: 'Encordoamento Guitarra 0.10', price: 29.90, category: 'Cordas', image: '🎸' },
+      { name: 'Palhetas Kit 12un', price: 14.90, category: 'Acessórios', image: '🎵' },
+      { name: 'Afinador Cromático Clip-on', price: 34.90, category: 'Acessórios', image: '🎼' },
+      { name: 'Capotraste Violão', price: 19.90, category: 'Acessórios', image: '🎸' },
+      { name: 'Metrônomo Digital', price: 44.90, category: 'Acessórios', image: '⏱️' },
+      { name: 'Baquetas 5A (par)', price: 29.90, category: 'Percussão', image: '🥁' },
+      { name: 'Cabo P10 Guitarra 3m', price: 34.90, category: 'Cabos', image: '🔌' },
+      { name: 'Palheta Cajon Vassourinha', price: 24.90, category: 'Percussão', image: '🥁' },
+      { name: 'Método de Violão Livro', price: 39.90, category: 'Didático', image: '📚' },
+    ]),
+    dropshippingProducts: createDropProducts(mei.id, 'Música', [
+      { name: 'Violão Clássico Nylon Iniciante', price: 249.90, category: 'Instrumentos', image: '🎸', platform: 'Mercado Livre' },
+      { name: 'Guitarra Stratocaster Iniciante', price: 599.90, category: 'Instrumentos', image: '🎸', platform: 'OLX' },
+      { name: 'Teclado Musical 61 Teclas', price: 399.90, category: 'Instrumentos', image: '🎹', platform: 'Mercado Livre' },
+      { name: 'Bateria Eletrônica Compacta', price: 1299.90, category: 'Instrumentos', image: '🥁', platform: 'OLX' },
+      { name: 'Microfone Condensador USB', price: 199.90, category: 'Áudio', image: '🎙️', platform: 'Shopee' },
+      { name: 'Fone de Ouvido Studio Monitor', price: 249.90, category: 'Áudio', image: '🎧', platform: 'Mercado Livre' },
+      { name: 'Interface de Áudio USB 2 Canais', price: 349.90, category: 'Áudio', image: '🎛️', platform: 'Shopee' },
+      { name: 'Controladora MIDI 25 Teclas', price: 299.90, category: 'Produção', image: '🎹', platform: 'Mercado Livre' },
+      { name: 'Amplificador Guitarra 15W', price: 399.90, category: 'Amplificação', image: '🔊', platform: 'OLX' },
+      { name: 'Ukulele Concert com Bag', price: 149.90, category: 'Instrumentos', image: '🪕', platform: 'Shopee' },
+    ]),
+  })),
 ];
 
 /* ─── PRODUTOS LEGADO (mantido para compatibilidade) ─── */
@@ -1013,6 +1083,7 @@ export const serviceCategories = [
   { name: 'Educação & Cursos', icon: '🎓', color: '#F97316' },
   { name: 'Pet & Animais', icon: '🐕', color: '#84CC16' },
   { name: 'Eventos & Festas', icon: '🎉', color: '#D946EF' },
+  { name: 'Música', icon: '🎵', color: '#E11D48' },
 ];
 
 /* ─── DASHBOARD MEI ─── */
