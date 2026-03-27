@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { plans, clientProducts, clientServices, mockUser, checkEligibility, type ServiceItem, type ProductItem } from '@/data/mockData';
+import { plans, clientProducts, clientServices, mockUser, checkEligibility, meiProfessionals, getContextualProducts, type ServiceItem, type ProductItem } from '@/data/mockData';
 import {
   ArrowLeft, Star, ShoppingBag, Wrench, CreditCard, Zap, CheckCircle2, Lock,
   Clock, ArrowUpCircle, Coins, ShieldCheck, Package, ChevronRight, X, Search,
