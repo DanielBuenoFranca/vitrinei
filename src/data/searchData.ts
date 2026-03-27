@@ -113,107 +113,169 @@ export const naturalLanguageMap: {
     triggers: ['blusa', 'camiseta', 'camisa', 'regata', 'top', 'cropped', 'moletom', 'jaqueta', 'casaco', 'blazer', 'suéter'],
     segments: ['moda', 'vestuario'], keywords: ['blusa', 'camiseta', 'roupa', 'moda'],
     relevantServiceIds: [39],
-    aiFollowUp: 'Encontrei opções de peças para você! Veja o estoque disponível:'
+    relevantProductIds: [201, 202, 203],
+    needLabel: 'Vestuário - Tops',
+    aiFollowUp: 'Encontrei peças para você! Veja o estoque disponível com opções físicas e drop-shipping:'
   },
   {
     triggers: ['calça', 'calça jeans', 'legging', 'bermuda', 'short', 'saia', 'shorts'],
     segments: ['moda', 'vestuario'], keywords: ['calça', 'jeans', 'legging', 'bermuda', 'roupa'],
     relevantServiceIds: [40],
+    relevantProductIds: [204, 205, 206],
+    needLabel: 'Vestuário - Calças',
+    aiFollowUp: 'Separei opções de calças e shorts para você:'
   },
   {
     triggers: ['vestido', 'macacão', 'conjunto', 'roupa', 'look', 'outfit', 'moda'],
     segments: ['moda', 'vestuario'], keywords: ['vestido', 'roupa', 'moda', 'look'],
     relevantServiceIds: [41],
+    relevantProductIds: [207, 208, 209],
+    needLabel: 'Moda - Looks',
+    aiFollowUp: 'Veja as melhores opções de looks completos:'
   },
   {
     triggers: ['sapato', 'tênis', 'sandália', 'bota', 'chinelo', 'salto', 'calçado'],
     segments: ['moda', 'vestuario'], keywords: ['sapato', 'tênis', 'sandália', 'calçado'],
     relevantServiceIds: [42],
+    relevantProductIds: [210, 211, 212],
+    needLabel: 'Calçados',
+    aiFollowUp: 'Encontrei calçados disponíveis para você:'
   },
   {
     triggers: ['jóia', 'joia', 'anel', 'aliança', 'brinco', 'colar', 'pulseira', 'corrente', 'pingente', 'cordão'],
     segments: ['acessorios', 'moda'], keywords: ['jóia', 'anel', 'brinco', 'colar', 'pulseira'],
     relevantServiceIds: [44],
+    relevantProductIds: [213, 214, 215, 216],
+    needLabel: 'Jóias & Acessórios',
+    aiFollowUp: 'Separei jóias e acessórios disponíveis:'
   },
   {
     triggers: ['relógio', 'óculos', 'bolsa', 'carteira', 'cinto', 'chapéu', 'boné', 'lenço', 'cachecol', 'gravata'],
     segments: ['acessorios', 'moda'], keywords: ['relógio', 'óculos', 'bolsa', 'acessório'],
     relevantServiceIds: [46, 47],
+    relevantProductIds: [217, 218, 219],
+    needLabel: 'Acessórios',
+    aiFollowUp: 'Encontrei acessórios disponíveis para você:'
   },
   {
     triggers: ['bijuteria', 'piercing', 'adereço', 'broche', 'presilha', 'tiara', 'faixa de cabelo'],
     segments: ['acessorios', 'moda'], keywords: ['bijuteria', 'acessório'],
     relevantServiceIds: [45],
+    relevantProductIds: [220, 221],
+    needLabel: 'Bijuterias',
+    aiFollowUp: 'Separei bijuterias e adereços para você:'
   },
   {
     triggers: ['cortar grama', 'grama alta', 'capinar', 'jardim sujo', 'podar', 'mato alto', 'limpar jardim', 'quintal sujo', 'aparar grama'],
     segments: ['natureza', 'casa'], keywords: ['jardinagem', 'jardineiro', 'poda', 'grama'],
     relevantServiceIds: [29, 30],
+    relevantProductIds: [301, 302, 303],
+    needLabel: 'Jardinagem',
+    aiFollowUp: 'Identifiquei: **Jardinagem**. Separei ferramentas, insumos e profissionais para cuidar do seu jardim.'
   },
   {
     triggers: ['plantar', 'horta', 'vaso', 'muda', 'semente', 'adubo', 'terra', 'fertilizante'],
     segments: ['natureza'], keywords: ['horta', 'jardinagem', 'sementes'],
     relevantServiceIds: [26],
+    relevantProductIds: [304, 305, 306],
+    needLabel: 'Horta & Plantio',
+    aiFollowUp: 'Identifiquei: **Horta/Plantio**. Veja sementes, vasos e profissionais especializados.'
   },
   {
     triggers: ['carro não liga', 'carro falhando', 'barulho no carro', 'freio ruim', 'pneu furado'],
     segments: ['auto'], keywords: ['mecânico', 'guincho', 'pneu'],
     relevantServiceIds: [33, 11],
+    relevantProductIds: [401, 402, 403, 404],
+    needLabel: 'Problema no carro',
+    aiFollowUp: 'Identifiquei: **Problema automotivo**. Separei peças para reparos e mecânicos disponíveis.'
   },
   {
     triggers: ['lavar carro', 'carro sujo', 'polir carro'],
     segments: ['auto'], keywords: ['lavagem', 'polimento'],
     relevantServiceIds: [12],
+    relevantProductIds: [405, 406],
+    needLabel: 'Lavagem automotiva',
+    aiFollowUp: 'Identifiquei: **Lavagem/Polimento**. Veja produtos e serviço profissional:'
   },
   {
     triggers: ['casa suja', 'preciso limpar', 'faxina', 'limpeza pesada', 'vidros sujos'],
     segments: ['casa'], keywords: ['limpeza', 'faxina'],
     relevantServiceIds: [10],
+    relevantProductIds: [501, 502, 503],
+    needLabel: 'Limpeza residencial',
+    aiFollowUp: 'Identifiquei: **Limpeza**. Separei produtos de limpeza e profissionais disponíveis.'
   },
   {
     triggers: ['torneira vazando', 'cano furado', 'entupiu', 'vaso entupido', 'descarga quebrou'],
     segments: ['manutencao'], keywords: ['encanador', 'reparo'],
     relevantServiceIds: [32],
+    relevantProductIds: [601, 602, 603],
+    needLabel: 'Problema hidráulico',
+    aiFollowUp: 'Identifiquei: **Problema hidráulico**. Separei materiais e encanador disponível.'
   },
   {
     triggers: ['tomada não funciona', 'luz apagou', 'curto circuito', 'chuveiro queimou', 'fiação'],
     segments: ['manutencao'], keywords: ['eletricista', 'instalação'],
     relevantServiceIds: [1],
+    relevantProductIds: [604, 605, 606],
+    needLabel: 'Problema elétrico',
+    aiFollowUp: 'Identifiquei: **Problema elétrico**. Separei materiais elétricos e eletricista disponível.'
   },
   {
     triggers: ['cabelo feio', 'preciso cortar cabelo', 'tintura', 'pintar cabelo'],
     segments: ['beleza'], keywords: ['cabelo', 'corte', 'barbeiro'],
     relevantServiceIds: [8],
+    relevantProductIds: [701, 702, 703],
+    needLabel: 'Cuidados com cabelo',
+    aiFollowUp: 'Identifiquei: **Cuidados capilares**. Veja produtos e profissionais disponíveis.'
   },
   {
     triggers: ['unha quebrou', 'fazer unha', 'pé e mão'],
     segments: ['beleza'], keywords: ['manicure', 'estética'],
     relevantServiceIds: [35],
+    relevantProductIds: [704, 705],
+    needLabel: 'Unhas & Estética',
+    aiFollowUp: 'Identifiquei: **Unhas/Estética**. Veja kits e profissionais.'
   },
   {
     triggers: ['meu cachorro', 'meu gato', 'meu pet', 'animal doente', 'vacina pet', 'pulga', 'carrapato'],
     segments: ['pet'], keywords: ['veterinário', 'pet', 'banho', 'tosa'],
     relevantServiceIds: [18, 19, 36],
+    relevantProductIds: [801, 802, 803, 804],
+    needLabel: 'Cuidados com Pet',
+    aiFollowUp: 'Identifiquei: **Cuidados com Pet**. Separei produtos e profissionais especializados.'
   },
   {
     triggers: ['aprender inglês', 'aula particular', 'reforço escolar', 'estudar para concurso'],
     segments: ['educacao'], keywords: ['professor', 'aula', 'inglês'],
     relevantServiceIds: [16, 17],
+    relevantProductIds: [901, 902, 903],
+    needLabel: 'Educação',
+    aiFollowUp: 'Identifiquei: **Educação**. Veja materiais didáticos e professores disponíveis.'
   },
   {
     triggers: ['aprender violão', 'aprender guitarra', 'aula de piano', 'aprender música', 'tocar bateria'],
     segments: ['musica'], keywords: ['violão', 'guitarra', 'piano', 'bateria'],
     relevantServiceIds: [23, 24, 25, 37],
+    relevantProductIds: [1001, 1002, 1003, 1004],
+    needLabel: 'Aulas de Música',
+    aiFollowUp: 'Identifiquei: **Música**. Separei instrumentos, acessórios e professores.'
   },
   {
     triggers: ['computador lento', 'pc travando', 'vírus no pc', 'celular quebrou', 'tela quebrada'],
     segments: ['tech'], keywords: ['formatação', 'computador', 'celular'],
     relevantServiceIds: [14, 15],
+    relevantProductIds: [1101, 1102, 1103],
+    needLabel: 'Problema tecnológico',
+    aiFollowUp: 'Identifiquei: **Problema com dispositivo**. Veja acessórios e técnicos disponíveis.'
   },
   {
     triggers: ['festa de aniversário', 'casamento', 'organizar festa', 'buffet', 'precisamos de dj'],
     segments: ['eventos'], keywords: ['festa', 'buffet', 'dj', 'casamento'],
     relevantServiceIds: [20, 21],
+    relevantProductIds: [1201, 1202, 1203],
+    needLabel: 'Evento / Festa',
+    aiFollowUp: 'Identifiquei: **Evento/Festa**. Separei itens de decoração/doces e profissionais.'
   },
 ];
 
