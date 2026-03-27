@@ -7,14 +7,13 @@ import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, ArrowRight, Zap, Sparkles, Clock, MapPin, DollarSign,
-  Wrench, Heart, Scissors, Home, Car, Monitor, Headphones,
-  ShoppingCart, BarChart3, ChevronRight, Send, Star,
-  Package, TrendingDown, Navigation, Users, Shield, MessageCircle,
-  Stethoscope, GraduationCap, PawPrint, PartyPopper, Cpu, Leaf
+  Headphones, ShoppingCart, BarChart3, Send, Star,
+  Package, TrendingDown, Navigation, Users, Shield, MessageCircle
 } from 'lucide-react';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
+import { segments, naturalLanguageMap, mockResults, semanticSearch } from '@/data/searchData';
 
-const segments = [
+// segments is now imported from searchData
   { id: 'manutencao', label: 'Manutenção & Reparos', icon: Wrench, color: 'hsl(var(--primary))', keywords: ['eletricista', 'encanador', 'pintor', 'marido de aluguel', 'reparo', 'instalação', 'manutenção', 'gesseiro', 'serralheiro', 'pedreiro'] },
   { id: 'saude_clinica', label: 'Saúde', icon: Stethoscope, color: 'hsl(0 84% 60%)', keywords: ['médico', 'dentista', 'odontologia', 'laboratório', 'exame', 'consulta', 'clínico', 'ortodontia', 'psicólogo', 'enfermeiro', 'medicina do trabalho'] },
   { id: 'bem_estar', label: 'Bem-estar & Saúde', icon: Heart, color: 'hsl(var(--success))', keywords: ['personal', 'yoga', 'pilates', 'massagem', 'fisioterapia', 'nutricionista', 'meditação', 'crossfit'] },
