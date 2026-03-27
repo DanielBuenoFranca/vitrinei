@@ -114,45 +114,40 @@ const Landing = () => {
     setAiChat((prev) => [...prev, { role: 'user', text: msg }]);
     setAiSpeaking(true);
 
-    // IA semântica: buscar resultados relevantes baseado na mensagem
-    const msgLower = msg.toLowerCase();
-    const matched = naturalLanguageMap.filter((nlm) =>
-      nlm.triggers.some((t) => msgLower.includes(t) || t.includes(msgLower))
-    );
-
-    let aiResponse = '';
-    if (matched.length > 0) {
-      const matchedSegmentIds = matched.flatMap((m) => m.segments);
-      const matchedKeywords = matched.flatMap((m) => m.keywords);
-      const relevantResults = mockResults.filter((r) =>
-        matchedSegmentIds.includes(r.segment) ||
-        matchedKeywords.some((kw) => r.name.toLowerCase().includes(kw) || r.products.some((p) => p.toLowerCase().includes(kw)))
-      );
-
-      if (relevantResults.length > 0) {
-        const top = relevantResults.slice(0, 5);
-        const serviceList = top.map((r) => `• **${r.name}** — ${r.provider} (${r.distance}, ⭐${r.rating})${r.products.length > 0 ? ` | Produtos: ${r.products.join(', ')}` : ''}`).join('\n');
-        const contextMsg = matched.find((m) => m.aiFollowUp)?.aiFollowUp || 'Entendi sua necessidade! 🧠';
-        aiResponse = `${contextMsg}\n\nEncontrei ${relevantResults.length} resultado(s):\n\n${serviceList}\n\n${relevantResults.length > 5 ? `E mais ${relevantResults.length - 5} opções! ` : ''}Clique em um resultado na lista para iniciar a contratação! 👆`;
-        // Atualizar busca automaticamente
-        setSearchQuery(msg);
-      } else {
-        aiResponse = `Entendi o que você precisa! 🔍 Estou buscando profissionais e produtos para atender sua solicitação. Encaminhando para a Central de Atendimento — SLA de 24h para encontrar a melhor solução!`;
-      }
-    } else {
-      const fallbackResponses = [
-        'Encontrei 3 opções na sua região! O mais próximo é o Carlos MEI, a 2.3 km, com avaliação 4.9⭐. Posso agendar para você?',
-        'Analisando fornecedores cadastrados e estoque disponível via drop-shipping... Encontrei a melhor opção: preço 15% menor que a média, com entrega em 24h!',
-        'Encaminhando sua solicitação para a Central de Atendimento. SLA de resposta: máximo 24 horas. Você receberá uma notificação assim que tivermos a solução!',
-      ];
-      aiResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
-    }
+    const { results, followUp } = semanticSearch(msg);
 
     setTimeout(() => {
-      setAiChat((prev) => [...prev, { role: 'ai', text: aiResponse }]);
+      if (results.length > 0) {
+        const contextMsg = followUp || 'Entendi sua necessidade! 🧠';
+        const top3 = results.slice(0, 3);
+        const aiText = results.length > 3
+          ? `${contextMsg}\n\nSelecionei as **${top3.length} melhores opções** de ${results.length} encontradas:`
+          : `${contextMsg}\n\nEncontrei ${results.length} resultado(s) para você:`;
+        setAiChat((prev) => [...prev, { role: 'ai', text: aiText, results }]);
+        setSearchQuery(msg);
+      } else {
+        setAiChat((prev) => [...prev, {
+          role: 'ai',
+          text: 'Não encontrei resultados exatos, mas estou encaminhando para a Central de Atendimento. SLA: 24h para encontrar a melhor solução! 📩'
+        }]);
+      }
       setTimeout(() => setAiSpeaking(false), 2000);
     }, 1200);
     setAiMessage('');
+  };
+
+  const navigateToDemo = (result: typeof mockResults[0]) => {
+    const params = new URLSearchParams({
+      serviceName: result.name,
+      serviceProvider: result.provider,
+      servicePrice: String(result.price),
+      serviceRating: String(result.rating),
+      serviceDistance: result.distance,
+      serviceTime: result.time,
+      serviceSegment: result.segment,
+      serviceProducts: JSON.stringify(result.products),
+    });
+    navigate(`/jornada-cliente?${params.toString()}`);
   };
 
   return (
