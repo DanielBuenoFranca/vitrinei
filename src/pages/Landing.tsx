@@ -9,10 +9,10 @@ import {
   Search, ArrowRight, Zap, Sparkles, Clock, MapPin, DollarSign,
   Headphones, ShoppingCart, BarChart3, Send, Star,
   Package, TrendingDown, Navigation, Users, Shield, MessageCircle,
-  ChevronDown
+  ChevronDown, ShoppingBag, Wrench as WrenchIcon, Store
 } from 'lucide-react';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
-import { segments, naturalLanguageMap, mockResults, semanticSearch } from '@/data/searchData';
+import { segments, naturalLanguageMap, mockResults, semanticSearch, type ProductItem, type SearchResult } from '@/data/searchData';
 
 
 const aiSuggestions = [
@@ -29,10 +29,11 @@ const Landing = () => {
   const [activeSegments, setActiveSegments] = useState<string[]>([]);
   const [showAiPanel, setShowAiPanel] = useState(false);
   const [aiMessage, setAiMessage] = useState('');
-  const [aiChat, setAiChat] = useState<{ role: 'user' | 'ai'; text: string; results?: typeof mockResults }[]>([]);
+  const [aiChat, setAiChat] = useState<{ role: 'user' | 'ai'; text: string; searchResult?: SearchResult }[]>([]);
   const [currentSuggestion, setCurrentSuggestion] = useState(0);
   const [aiSpeaking, setAiSpeaking] = useState(false);
-  const [expandedMsgIdx, setExpandedMsgIdx] = useState<number | null>(null);
+  const [expandedProducts, setExpandedProducts] = useState<number | null>(null);
+  const [expandedServices, setExpandedServices] = useState<number | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -114,16 +115,31 @@ const Landing = () => {
     setAiChat((prev) => [...prev, { role: 'user', text: msg }]);
     setAiSpeaking(true);
 
-    const { results, followUp } = semanticSearch(msg);
+    const searchResult = semanticSearch(msg);
 
     setTimeout(() => {
-      if (results.length > 0) {
-        const contextMsg = followUp || 'Entendi sua necessidade! 🧠';
-        const top3 = results.slice(0, 3);
-        const aiText = results.length > 3
-          ? `${contextMsg}\n\nSelecionei as **${top3.length} melhores opções** de ${results.length} encontradas:`
-          : `${contextMsg}\n\nEncontrei ${results.length} resultado(s) para você:`;
-        setAiChat((prev) => [...prev, { role: 'ai', text: aiText, results }]);
+      const hasResults = searchResult.products.length > 0 || searchResult.services.length > 0;
+
+      if (hasResults) {
+        const contextMsg = searchResult.followUp || 'Entendi sua necessidade! 🧠';
+        const parts: string[] = [contextMsg];
+
+        if (searchResult.needLabel) {
+          parts.push(`\n\n🔍 Necessidade identificada: ${searchResult.needLabel}`);
+        }
+        if (searchResult.products.length > 0) {
+          const physCount = searchResult.products.filter(p => p.stockType === 'fisico').length;
+          const dropCount = searchResult.products.filter(p => p.stockType === 'drop').length;
+          parts.push(`\n\n📦 ${searchResult.products.length} produto(s) disponíveis (${physCount} estoque, ${dropCount} drop):`);
+        }
+        if (searchResult.services.length > 0) {
+          parts.push(`\n\n🔧 ${searchResult.services.length} serviço(s) relevantes:`);
+        }
+        if (searchResult.suggestedServices && searchResult.suggestedServices.length > 0) {
+          parts.push(`\n\n💡 Sugestão IA: ${searchResult.suggestedServices.length} serviço(s) relacionados:`);
+        }
+
+        setAiChat((prev) => [...prev, { role: 'ai', text: parts.join(''), searchResult }]);
         setSearchQuery(msg);
       } else {
         setAiChat((prev) => [...prev, {
@@ -515,76 +531,159 @@ const Landing = () => {
                       {msg.text}
                     </div>
                   </div>
-                  {/* Result cards */}
-                  {msg.results && msg.results.length > 0 && (
-                    <div className="w-full mt-2 space-y-2 pl-10">
-                      {(expandedMsgIdx === idx ? msg.results : msg.results.slice(0, 3)).map((r) => {
-                        const seg = segments.find((s) => s.id === r.segment);
-                        const SegIcon = seg?.icon || Sparkles;
-                        return (
-                          <motion.div key={r.id} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
-                            <Card className="border-border/50 hover:border-primary/40 cursor-pointer transition-all group"
-                              onClick={() => navigateToDemo(r)}>
+                  {/* Product cards */}
+                  {msg.searchResult && msg.searchResult.products.length > 0 && (
+                    <div className="w-full mt-2 pl-10">
+                      <p className="text-[11px] font-semibold text-success mb-1.5 flex items-center gap-1">
+                        <ShoppingBag className="w-3.5 h-3.5" /> Produtos disponíveis
+                      </p>
+                      <div className="space-y-2">
+                        {(expandedProducts === idx ? msg.searchResult.products : msg.searchResult.products.slice(0, 3)).map((product) => (
+                          <motion.div key={product.id} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+                            <Card className="border-border/50 hover:border-success/40 cursor-pointer transition-all group">
                               <CardContent className="p-3">
                                 <div className="flex items-start justify-between mb-1">
                                   <div className="flex items-center gap-2">
-                                    <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                                      <SegIcon className="w-3.5 h-3.5 text-primary" />
+                                    <div className="w-7 h-7 rounded-lg bg-success/10 flex items-center justify-center shrink-0">
+                                      <ShoppingBag className="w-3.5 h-3.5 text-success" />
                                     </div>
                                     <div>
-                                      <h4 className="font-semibold text-xs text-foreground">{r.name}</h4>
-                                      <p className="text-[11px] text-muted-foreground">{r.provider}</p>
+                                      <h4 className="font-semibold text-xs text-foreground">{product.name}</h4>
+                                      <p className="text-[11px] text-muted-foreground">{product.provider}</p>
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-0.5 text-xs text-accent-foreground shrink-0">
-                                    <Star className="w-3 h-3 fill-accent text-accent" />
-                                    {r.rating}
-                                  </div>
+                                  <Badge variant={product.stockType === 'fisico' ? 'default' : 'secondary'} className="text-[9px] px-1.5 py-0 shrink-0">
+                                    <Store className="w-2.5 h-2.5 mr-0.5" />
+                                    {product.stockType === 'fisico' ? 'Estoque' : 'Drop'}
+                                  </Badge>
                                 </div>
-                                <div className="flex items-center gap-3 text-[11px] text-muted-foreground mb-2">
-                                  <span className="flex items-center gap-0.5"><DollarSign className="w-3 h-3" /> R$ {r.price}</span>
-                                  <span className="flex items-center gap-0.5"><Clock className="w-3 h-3" /> {r.time}</span>
-                                  <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" /> {r.distance}</span>
+                                <div className="flex items-center gap-3 text-[11px] text-muted-foreground mb-1">
+                                  <span className="flex items-center gap-0.5 font-semibold text-foreground"><DollarSign className="w-3 h-3" /> R$ {product.price}</span>
+                                  <span className="flex items-center gap-0.5"><Star className="w-3 h-3 fill-accent text-accent" /> {product.rating}</span>
+                                  <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" /> {product.distance}</span>
                                 </div>
-                                {r.products.length > 0 && (
-                                  <div className="flex flex-wrap gap-1">
-                                    {r.products.slice(0, 3).map((p) => (
-                                      <Badge key={p} variant="secondary" className="text-[9px] px-1.5 py-0">
-                                        <Package className="w-2.5 h-2.5 mr-0.5" />{p}
-                                      </Badge>
-                                    ))}
-                                    {r.products.length > 3 && (
-                                      <Badge variant="secondary" className="text-[9px] px-1.5 py-0">+{r.products.length - 3}</Badge>
-                                    )}
-                                  </div>
-                                )}
-                                <div className="mt-1.5 flex items-center gap-1 text-[10px] text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <ArrowRight className="w-3 h-3" /> Contratar agora
+                                <div className="mt-1 flex items-center gap-1 text-[10px] text-success font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <ArrowRight className="w-3 h-3" /> Comprar produto
                                 </div>
                               </CardContent>
                             </Card>
                           </motion.div>
-                        );
-                      })}
-                      {msg.results.length > 3 && expandedMsgIdx !== idx && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full text-xs h-8 text-muted-foreground hover:text-primary gap-1"
-                          onClick={() => setExpandedMsgIdx(idx)}>
-                          <ChevronDown className="w-3.5 h-3.5" />
-                          Ver todas as {msg.results.length} opções
-                        </Button>
-                      )}
-                      {expandedMsgIdx === idx && msg.results.length > 3 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full text-xs h-8 text-muted-foreground hover:text-primary"
-                          onClick={() => setExpandedMsgIdx(null)}>
-                          Mostrar menos
-                        </Button>
-                      )}
+                        ))}
+                        {msg.searchResult.products.length > 3 && expandedProducts !== idx && (
+                          <Button variant="ghost" size="sm" className="w-full text-xs h-8 text-muted-foreground hover:text-primary gap-1"
+                            onClick={() => setExpandedProducts(idx)}>
+                            <ChevronDown className="w-3.5 h-3.5" />
+                            Ver todos os {msg.searchResult.products.length} produtos
+                          </Button>
+                        )}
+                        {expandedProducts === idx && msg.searchResult.products.length > 3 && (
+                          <Button variant="ghost" size="sm" className="w-full text-xs h-8 text-muted-foreground hover:text-primary"
+                            onClick={() => setExpandedProducts(null)}>Mostrar menos</Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Service cards */}
+                  {msg.searchResult && msg.searchResult.services.length > 0 && (
+                    <div className="w-full mt-2 pl-10">
+                      <p className="text-[11px] font-semibold text-primary mb-1.5 flex items-center gap-1">
+                        <WrenchIcon className="w-3.5 h-3.5" /> Serviços profissionais
+                      </p>
+                      <div className="space-y-2">
+                        {(expandedServices === idx ? msg.searchResult.services : msg.searchResult.services.slice(0, 3)).map((r) => {
+                          const seg = segments.find((s) => s.id === r.segment);
+                          const SegIcon = seg?.icon || Sparkles;
+                          return (
+                            <motion.div key={r.id} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+                              <Card className="border-border/50 hover:border-primary/40 cursor-pointer transition-all group"
+                                onClick={() => navigateToDemo(r)}>
+                                <CardContent className="p-3">
+                                  <div className="flex items-start justify-between mb-1">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                        <SegIcon className="w-3.5 h-3.5 text-primary" />
+                                      </div>
+                                      <div>
+                                        <h4 className="font-semibold text-xs text-foreground">{r.name}</h4>
+                                        <p className="text-[11px] text-muted-foreground">{r.provider}</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-0.5 text-xs text-accent-foreground shrink-0">
+                                      <Star className="w-3 h-3 fill-accent text-accent" />
+                                      {r.rating}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-3 text-[11px] text-muted-foreground mb-2">
+                                    <span className="flex items-center gap-0.5"><DollarSign className="w-3 h-3" /> R$ {r.price}</span>
+                                    <span className="flex items-center gap-0.5"><Clock className="w-3 h-3" /> {r.time}</span>
+                                    <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" /> {r.distance}</span>
+                                  </div>
+                                  {r.products.length > 0 && (
+                                    <div className="flex flex-wrap gap-1">
+                                      {r.products.slice(0, 3).map((p) => (
+                                        <Badge key={p} variant="secondary" className="text-[9px] px-1.5 py-0">
+                                          <Package className="w-2.5 h-2.5 mr-0.5" />{p}
+                                        </Badge>
+                                      ))}
+                                      {r.products.length > 3 && (
+                                        <Badge variant="secondary" className="text-[9px] px-1.5 py-0">+{r.products.length - 3}</Badge>
+                                      )}
+                                    </div>
+                                  )}
+                                  <div className="mt-1.5 flex items-center gap-1 text-[10px] text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <ArrowRight className="w-3 h-3" /> Contratar agora
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </motion.div>
+                          );
+                        })}
+                        {msg.searchResult.services.length > 3 && expandedServices !== idx && (
+                          <Button variant="ghost" size="sm" className="w-full text-xs h-8 text-muted-foreground hover:text-primary gap-1"
+                            onClick={() => setExpandedServices(idx)}>
+                            <ChevronDown className="w-3.5 h-3.5" />
+                            Ver todos os {msg.searchResult.services.length} serviços
+                          </Button>
+                        )}
+                        {expandedServices === idx && msg.searchResult.services.length > 3 && (
+                          <Button variant="ghost" size="sm" className="w-full text-xs h-8 text-muted-foreground hover:text-primary"
+                            onClick={() => setExpandedServices(null)}>Mostrar menos</Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* AI-suggested services */}
+                  {msg.searchResult?.suggestedServices && msg.searchResult.suggestedServices.length > 0 && (
+                    <div className="w-full mt-2 pl-10">
+                      <p className="text-[11px] font-semibold text-accent-foreground mb-1.5 flex items-center gap-1">
+                        <Sparkles className="w-3.5 h-3.5 text-accent" /> Serviços sugeridos pela IA
+                      </p>
+                      <div className="space-y-2">
+                        {msg.searchResult.suggestedServices.slice(0, 2).map((r) => {
+                          const seg = segments.find((s) => s.id === r.segment);
+                          const SegIcon = seg?.icon || Sparkles;
+                          return (
+                            <motion.div key={r.id} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+                              <Card className="border-accent/30 hover:border-accent/50 cursor-pointer transition-all group"
+                                onClick={() => navigateToDemo(r)}>
+                                <CardContent className="p-3">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-7 h-7 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+                                      <SegIcon className="w-3.5 h-3.5 text-accent-foreground" />
+                                    </div>
+                                    <div>
+                                      <h4 className="font-semibold text-xs text-foreground">{r.name}</h4>
+                                      <p className="text-[11px] text-muted-foreground">{r.provider} • R$ {r.price}</p>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </motion.div>

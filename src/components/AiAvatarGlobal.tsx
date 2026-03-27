@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Send, Headphones, DollarSign, Clock, MapPin, Star, Package, ArrowRight, ChevronDown } from 'lucide-react';
+import { Sparkles, Send, Headphones, DollarSign, Clock, MapPin, Star, Package, ArrowRight, ChevronDown, ShoppingBag, Wrench as WrenchIcon, Store } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import avatarImg from '@/assets/ai-avatar.png';
-import { segments, semanticSearch, mockResults } from '@/data/searchData';
+import { segments, semanticSearch, mockResults, type ProductItem, type SearchResult } from '@/data/searchData';
 
 interface AiAvatarProps {
   size?: number;
@@ -84,10 +84,47 @@ export const AiAvatar = ({ size = 64, speaking = false, thinking = false, onClic
   );
 };
 
-type ChatMsg = { role: 'user' | 'ai'; text: string; results?: typeof mockResults };
+type ChatMsg = {
+  role: 'user' | 'ai';
+  text: string;
+  searchResult?: SearchResult;
+};
 
-/** Result card inside chat */
-const ChatResultCard = ({ result, onClick }: { result: typeof mockResults[0]; onClick: () => void }) => {
+/** Product card in chat */
+const ChatProductCard = ({ product, onServiceSuggest }: { product: ProductItem; onServiceSuggest?: (p: ProductItem) => void }) => (
+  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+    <Card className="border-border/50 hover:border-primary/40 cursor-pointer transition-all group" onClick={() => onServiceSuggest?.(product)}>
+      <CardContent className="p-2.5">
+        <div className="flex items-start justify-between mb-1">
+          <div className="flex items-center gap-1.5">
+            <div className="w-6 h-6 rounded-md bg-success/10 flex items-center justify-center shrink-0">
+              <ShoppingBag className="w-3 h-3 text-success" />
+            </div>
+            <div className="min-w-0">
+              <h4 className="font-semibold text-[11px] text-foreground truncate">{product.name}</h4>
+              <p className="text-[10px] text-muted-foreground truncate">{product.provider}</p>
+            </div>
+          </div>
+          <Badge variant={product.stockType === 'fisico' ? 'default' : 'secondary'} className="text-[8px] px-1.5 py-0 shrink-0">
+            <Store className="w-2 h-2 mr-0.5" />
+            {product.stockType === 'fisico' ? 'Estoque' : 'Drop'}
+          </Badge>
+        </div>
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-1">
+          <span className="flex items-center gap-0.5 font-semibold text-foreground"><DollarSign className="w-2.5 h-2.5" /> R$ {product.price}</span>
+          <span className="flex items-center gap-0.5"><Star className="w-2.5 h-2.5 fill-accent text-accent" /> {product.rating}</span>
+          <span className="flex items-center gap-0.5"><MapPin className="w-2.5 h-2.5" /> {product.distance}</span>
+        </div>
+        <div className="flex items-center gap-0.5 text-[9px] text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+          <ArrowRight className="w-2.5 h-2.5" /> Comprar produto
+        </div>
+      </CardContent>
+    </Card>
+  </motion.div>
+);
+
+/** Service card in chat */
+const ChatServiceCard = ({ result, onClick }: { result: typeof mockResults[0]; onClick: () => void }) => {
   const seg = segments.find((s) => s.id === result.segment);
   const SegIcon = seg?.icon || Sparkles;
   return (
@@ -109,7 +146,7 @@ const ChatResultCard = ({ result, onClick }: { result: typeof mockResults[0]; on
               {result.rating}
             </div>
           </div>
-          <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-1.5">
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-1">
             <span className="flex items-center gap-0.5"><DollarSign className="w-2.5 h-2.5" /> R$ {result.price}</span>
             <span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" /> {result.time}</span>
             <span className="flex items-center gap-0.5"><MapPin className="w-2.5 h-2.5" /> {result.distance}</span>
@@ -143,7 +180,8 @@ export const FloatingAiAvatar = () => {
   const [chat, setChat] = useState<ChatMsg[]>([]);
   const [speaking, setSpeaking] = useState(false);
   const [thinking, setThinking] = useState(false);
-  const [expandedMsgIdx, setExpandedMsgIdx] = useState<number | null>(null);
+  const [expandedProducts, setExpandedProducts] = useState<number | null>(null);
+  const [expandedServices, setExpandedServices] = useState<number | null>(null);
 
   const navigateToDemo = (result: typeof mockResults[0]) => {
     const params = new URLSearchParams({
@@ -166,20 +204,37 @@ export const FloatingAiAvatar = () => {
     setMessage('');
     setThinking(true);
 
-    const { results, followUp } = semanticSearch(msg);
+    const searchResult = semanticSearch(msg);
 
     setTimeout(() => {
       setThinking(false);
       setSpeaking(true);
 
-      if (results.length > 0) {
-        const contextMsg = followUp || 'Entendi sua necessidade! 🧠';
-        const top3 = results.slice(0, 3);
-        const totalCount = results.length;
-        const aiText = totalCount > 3
-          ? `${contextMsg}\n\nSelecionei as **${top3.length} melhores opções** de ${totalCount} encontradas:`
-          : `${contextMsg}\n\nEncontrei ${totalCount} resultado(s) para você:`;
-        setChat(prev => [...prev, { role: 'ai', text: aiText, results }]);
+      const hasResults = searchResult.products.length > 0 || searchResult.services.length > 0;
+
+      if (hasResults) {
+        const contextMsg = searchResult.followUp || 'Entendi sua necessidade! 🧠';
+        const parts: string[] = [contextMsg];
+
+        if (searchResult.needLabel) {
+          parts.push(`\n\n🔍 **Necessidade identificada:** ${searchResult.needLabel}`);
+        }
+
+        if (searchResult.products.length > 0) {
+          const physCount = searchResult.products.filter(p => p.stockType === 'fisico').length;
+          const dropCount = searchResult.products.filter(p => p.stockType === 'drop').length;
+          parts.push(`\n\n📦 **${searchResult.products.length} produto(s)** disponíveis (${physCount} em estoque, ${dropCount} drop-shipping):`);
+        }
+
+        if (searchResult.services.length > 0) {
+          parts.push(`\n\n🔧 **${searchResult.services.length} serviço(s)** relevantes:`);
+        }
+
+        if (searchResult.suggestedServices && searchResult.suggestedServices.length > 0) {
+          parts.push(`\n\n💡 **Sugestão da IA:** ${searchResult.suggestedServices.length} serviço(s) relacionados:`);
+        }
+
+        setChat(prev => [...prev, { role: 'ai', text: parts.join(''), searchResult }]);
       } else {
         setChat(prev => [...prev, {
           role: 'ai',
@@ -242,11 +297,11 @@ export const FloatingAiAvatar = () => {
               {chat.length === 0 && (
                 <div className="bg-muted/50 rounded-xl p-3 text-xs text-muted-foreground">
                   <p className="font-medium text-foreground mb-1.5">👋 Olá! Sou a IA do EcoMEI.</p>
-                  <p className="mb-2">Me conta o que você precisa:</p>
+                  <p className="mb-2">Me conta o que você precisa — produto ou serviço:</p>
                   <ul className="space-y-1">
-                    <li className="flex items-center gap-1.5"><DollarSign className="w-3 h-3 text-primary" /> Melhor preço</li>
-                    <li className="flex items-center gap-1.5"><Clock className="w-3 h-3 text-primary" /> Menor tempo</li>
-                    <li className="flex items-center gap-1.5"><MapPin className="w-3 h-3 text-primary" /> Mais próximo</li>
+                    <li className="flex items-center gap-1.5"><ShoppingBag className="w-3 h-3 text-success" /> Produtos com estoque real</li>
+                    <li className="flex items-center gap-1.5"><WrenchIcon className="w-3 h-3 text-primary" /> Serviços profissionais</li>
+                    <li className="flex items-center gap-1.5"><Sparkles className="w-3 h-3 text-accent" /> IA cruza tudo por você</li>
                   </ul>
                 </div>
               )}
@@ -261,31 +316,68 @@ export const FloatingAiAvatar = () => {
                       {msg.text}
                     </div>
                   </div>
-                  {/* Result cards */}
-                  {msg.results && msg.results.length > 0 && (
-                    <div className="w-full mt-1.5 space-y-1.5 pl-8">
-                      {(expandedMsgIdx === idx ? msg.results : msg.results.slice(0, 3)).map((r) => (
-                        <ChatResultCard key={r.id} result={r} onClick={() => navigateToDemo(r)} />
-                      ))}
-                      {msg.results.length > 3 && expandedMsgIdx !== idx && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full text-[10px] h-7 text-muted-foreground hover:text-primary gap-1"
-                          onClick={() => setExpandedMsgIdx(idx)}>
-                          <ChevronDown className="w-3 h-3" />
-                          Ver todas as {msg.results.length} opções
-                        </Button>
-                      )}
-                      {expandedMsgIdx === idx && msg.results.length > 3 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full text-[10px] h-7 text-muted-foreground hover:text-primary"
-                          onClick={() => setExpandedMsgIdx(null)}>
-                          Mostrar menos
-                        </Button>
-                      )}
+
+                  {/* Product cards */}
+                  {msg.searchResult && msg.searchResult.products.length > 0 && (
+                    <div className="w-full mt-1.5 pl-8">
+                      <p className="text-[10px] font-semibold text-success mb-1 flex items-center gap-1">
+                        <ShoppingBag className="w-3 h-3" /> Produtos disponíveis
+                      </p>
+                      <div className="space-y-1.5">
+                        {(expandedProducts === idx ? msg.searchResult.products : msg.searchResult.products.slice(0, 3)).map((p) => (
+                          <ChatProductCard key={p.id} product={p} />
+                        ))}
+                        {msg.searchResult.products.length > 3 && expandedProducts !== idx && (
+                          <Button variant="ghost" size="sm" className="w-full text-[10px] h-6 text-muted-foreground hover:text-primary gap-1"
+                            onClick={() => setExpandedProducts(idx)}>
+                            <ChevronDown className="w-3 h-3" />
+                            Ver todos os {msg.searchResult.products.length} produtos
+                          </Button>
+                        )}
+                        {expandedProducts === idx && msg.searchResult.products.length > 3 && (
+                          <Button variant="ghost" size="sm" className="w-full text-[10px] h-6 text-muted-foreground hover:text-primary"
+                            onClick={() => setExpandedProducts(null)}>Mostrar menos</Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Service cards */}
+                  {msg.searchResult && msg.searchResult.services.length > 0 && (
+                    <div className="w-full mt-1.5 pl-8">
+                      <p className="text-[10px] font-semibold text-primary mb-1 flex items-center gap-1">
+                        <WrenchIcon className="w-3 h-3" /> Serviços profissionais
+                      </p>
+                      <div className="space-y-1.5">
+                        {(expandedServices === idx ? msg.searchResult.services : msg.searchResult.services.slice(0, 3)).map((r) => (
+                          <ChatServiceCard key={r.id} result={r} onClick={() => navigateToDemo(r)} />
+                        ))}
+                        {msg.searchResult.services.length > 3 && expandedServices !== idx && (
+                          <Button variant="ghost" size="sm" className="w-full text-[10px] h-6 text-muted-foreground hover:text-primary gap-1"
+                            onClick={() => setExpandedServices(idx)}>
+                            <ChevronDown className="w-3 h-3" />
+                            Ver todos os {msg.searchResult.services.length} serviços
+                          </Button>
+                        )}
+                        {expandedServices === idx && msg.searchResult.services.length > 3 && (
+                          <Button variant="ghost" size="sm" className="w-full text-[10px] h-6 text-muted-foreground hover:text-primary"
+                            onClick={() => setExpandedServices(null)}>Mostrar menos</Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* AI-suggested services (when only products matched) */}
+                  {msg.searchResult?.suggestedServices && msg.searchResult.suggestedServices.length > 0 && (
+                    <div className="w-full mt-1.5 pl-8">
+                      <p className="text-[10px] font-semibold text-accent-foreground mb-1 flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-accent" /> Serviços sugeridos pela IA
+                      </p>
+                      <div className="space-y-1.5">
+                        {msg.searchResult.suggestedServices.slice(0, 2).map((r) => (
+                          <ChatServiceCard key={r.id} result={r} onClick={() => navigateToDemo(r)} />
+                        ))}
+                      </div>
                     </div>
                   )}
                 </motion.div>
@@ -294,7 +386,7 @@ export const FloatingAiAvatar = () => {
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-1.5">
                   <AiAvatar size={24} thinking={true} />
                   <div className="bg-muted rounded-2xl rounded-bl-md px-3 py-2 text-xs text-muted-foreground">
-                    Analisando fornecedores e estoque...
+                    Analisando estoque e fornecedores...
                   </div>
                 </motion.div>
               )}
@@ -307,7 +399,7 @@ export const FloatingAiAvatar = () => {
                   value={message}
                   onChange={e => setMessage(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSend()}
-                  placeholder="Ex: blusa, remédio, dor de barriga..."
+                  placeholder="Ex: dor de barriga, blusa, remédio..."
                   className="rounded-xl text-xs h-8"
                 />
                 <Button size="icon" className="rounded-xl shrink-0 h-8 w-8" onClick={handleSend}>
