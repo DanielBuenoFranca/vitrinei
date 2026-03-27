@@ -197,15 +197,45 @@ const Landing = () => {
 
   const handleAiSend = () => {
     if (!aiMessage.trim()) return;
-    setAiChat((prev) => [...prev, { role: 'user', text: aiMessage }]);
+    const msg = aiMessage.trim();
+    setAiChat((prev) => [...prev, { role: 'user', text: msg }]);
     setAiSpeaking(true);
-    const responses = [
-      'Encontrei 3 opções na sua região! O mais próximo é o Carlos MEI, a 2.3 km, com avaliação 4.9⭐. Posso agendar para você?',
-      'Analisando fornecedores cadastrados e estoque disponível via drop-shipping... Encontrei a melhor opção: preço 15% menor que a média, com entrega em 24h!',
-      'Encaminhando sua solicitação para a Central de Atendimento. SLA de resposta: máximo 24 horas. Você receberá uma notificação assim que tivermos a solução!',
-    ];
+
+    // IA semântica: buscar resultados relevantes baseado na mensagem
+    const msgLower = msg.toLowerCase();
+    const matched = naturalLanguageMap.filter((nlm) =>
+      nlm.triggers.some((t) => msgLower.includes(t) || t.includes(msgLower))
+    );
+
+    let aiResponse = '';
+    if (matched.length > 0) {
+      const matchedSegmentIds = matched.flatMap((m) => m.segments);
+      const matchedKeywords = matched.flatMap((m) => m.keywords);
+      const relevantResults = mockResults.filter((r) =>
+        matchedSegmentIds.includes(r.segment) ||
+        matchedKeywords.some((kw) => r.name.toLowerCase().includes(kw) || r.products.some((p) => p.toLowerCase().includes(kw)))
+      );
+
+      if (relevantResults.length > 0) {
+        const top = relevantResults.slice(0, 3);
+        const serviceList = top.map((r) => `• **${r.name}** — ${r.provider} (${r.distance}, ⭐${r.rating})${r.products.length > 0 ? ` | Produtos: ${r.products.join(', ')}` : ''}`).join('\n');
+        aiResponse = `Entendi sua necessidade! 🧠 Encontrei ${relevantResults.length} resultado(s) relevante(s):\n\n${serviceList}\n\n${relevantResults.length > 3 ? `E mais ${relevantResults.length - 3} opções! ` : ''}Posso agendar o mais próximo para você?`;
+        // Atualizar busca automaticamente
+        setSearchQuery(msg);
+      } else {
+        aiResponse = `Entendi o que você precisa! 🔍 Estou buscando profissionais e produtos para atender sua solicitação. Encaminhando para a Central de Atendimento — SLA de 24h para encontrar a melhor solução!`;
+      }
+    } else {
+      const fallbackResponses = [
+        'Encontrei 3 opções na sua região! O mais próximo é o Carlos MEI, a 2.3 km, com avaliação 4.9⭐. Posso agendar para você?',
+        'Analisando fornecedores cadastrados e estoque disponível via drop-shipping... Encontrei a melhor opção: preço 15% menor que a média, com entrega em 24h!',
+        'Encaminhando sua solicitação para a Central de Atendimento. SLA de resposta: máximo 24 horas. Você receberá uma notificação assim que tivermos a solução!',
+      ];
+      aiResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+    }
+
     setTimeout(() => {
-      setAiChat((prev) => [...prev, { role: 'ai', text: responses[Math.floor(Math.random() * responses.length)] }]);
+      setAiChat((prev) => [...prev, { role: 'ai', text: aiResponse }]);
       setTimeout(() => setAiSpeaking(false), 2000);
     }, 1200);
     setAiMessage('');
