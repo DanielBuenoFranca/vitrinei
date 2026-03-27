@@ -620,7 +620,16 @@ const Landing = () => {
                       <div className="space-y-2">
                         {(expandedProducts === idx ? msg.searchResult.products : msg.searchResult.products.slice(0, 3)).map((product) => (
                           <motion.div key={product.id} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
-                            <Card className="border-border/50 hover:border-success/40 cursor-pointer transition-all group">
+                            <Card className="border-border/50 hover:border-success/40 cursor-pointer transition-all group"
+                              onClick={() => {
+                                const params = new URLSearchParams({
+                                  productName: product.name,
+                                  productType: product.stockType,
+                                  productPrice: String(product.price),
+                                  productProvider: product.provider,
+                                });
+                                navigate(`/dropshipping?${params.toString()}`);
+                              }}>
                               <CardContent className="p-3">
                                 <div className="flex items-start justify-between mb-1">
                                   <div className="flex items-center gap-2">
