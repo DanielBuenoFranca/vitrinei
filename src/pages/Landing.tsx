@@ -34,6 +34,7 @@ const Landing = () => {
   const [aiSpeaking, setAiSpeaking] = useState(false);
   const [expandedProducts, setExpandedProducts] = useState<number | null>(null);
   const [expandedServices, setExpandedServices] = useState<number | null>(null);
+  const [showSearchProducts, setShowSearchProducts] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -61,31 +62,28 @@ const Landing = () => {
     setActiveSegments((prev) => prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]);
   };
 
-  // ── Motor de busca semântica ──
-  const filteredResults = (() => {
+  // ── Motor de busca semântica universal ──
+  const searchResult = (() => {
     const query = searchQuery.toLowerCase().trim();
-    if (!query && activeSegments.length === 0) return mockResults;
+    if (!query && activeSegments.length === 0) return { products: [], services: mockResults, followUp: undefined, needLabel: undefined, suggestedServices: undefined };
+    if (!query && activeSegments.length > 0) return { products: [], services: mockResults.filter(r => activeSegments.includes(r.segment)), followUp: undefined, needLabel: undefined, suggestedServices: undefined };
 
-    // Use the universal semantic search engine
-    const { services: semanticServices } = semanticSearch(query);
+    const result = semanticSearch(query);
 
     // Apply segment filter on top
-    const filtered = activeSegments.length === 0
-      ? semanticServices
-      : semanticServices.filter(r => activeSegments.includes(r.segment));
+    const filteredServices = activeSegments.length === 0
+      ? result.services
+      : result.services.filter(r => activeSegments.includes(r.segment));
 
-    // If no semantic results but segments are active, show segment-filtered defaults
-    if (filtered.length === 0 && activeSegments.length > 0 && !query) {
-      return mockResults.filter(r => activeSegments.includes(r.segment));
+    // Fallback to segment-filtered defaults
+    if (filteredServices.length === 0 && activeSegments.length > 0) {
+      return { ...result, services: mockResults.filter(r => activeSegments.includes(r.segment)) };
     }
 
-    // If query produced no semantic results but segments are active, try segment fallback
-    if (filtered.length === 0 && activeSegments.length > 0) {
-      return mockResults.filter(r => activeSegments.includes(r.segment));
-    }
-
-    return filtered.length > 0 ? filtered : (query ? [] : mockResults);
+    return { ...result, services: filteredServices.length > 0 ? filteredServices : (query ? [] : mockResults) };
   })();
+
+  const filteredResults = searchResult.services;
 
   const handleAiSend = () => {
     if (!aiMessage.trim()) return;
@@ -300,67 +298,156 @@ const Landing = () => {
             <AnimatePresence>
               {(searchQuery || activeSegments.length > 0) && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }}>
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
-                    {filteredResults.map((result, idx) => {
-                      const seg = segments.find((s) => s.id === result.segment);
-                      const SegIcon = seg?.icon || Sparkles;
-                      return (
-                        <motion.div key={result.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}>
-                          <Card
-                            className="border-border/50 hover:border-primary/30 hover:shadow-md transition-all duration-200 cursor-pointer group"
-                            onClick={() => {
-                              const params = new URLSearchParams({
-                                serviceName: result.name,
-                                serviceProvider: result.provider,
-                                servicePrice: String(result.price),
-                                serviceRating: String(result.rating),
-                                serviceDistance: result.distance,
-                                serviceTime: result.time,
-                                serviceSegment: result.segment,
-                                serviceProducts: JSON.stringify(result.products),
-                              });
-                              navigate(`/jornada-cliente?${params.toString()}`);
-                            }}
-                          >
-                            <CardContent className="p-4">
-                              <div className="flex items-start justify-between mb-2">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                                    <SegIcon className="w-4 h-4 text-primary" />
+                  {/* AI Interpretation Banner */}
+                  {searchQuery && searchResult.needLabel && (
+                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-4 p-4 rounded-xl bg-primary/5 border border-primary/20">
+                      <div className="flex items-start gap-3">
+                        <AiAvatar size={36} speaking={false} onClick={() => setShowAiPanel(true)} />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge className="bg-primary/10 text-primary border-primary/20 text-xs">
+                              <Sparkles className="w-3 h-3 mr-1" /> IA identificou
+                            </Badge>
+                            <span className="font-semibold text-sm text-foreground">{searchResult.needLabel}</span>
+                          </div>
+                          {searchResult.followUp && (
+                            <p className="text-xs text-muted-foreground">{searchResult.followUp}</p>
+                          )}
+                          <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                            {searchResult.services.length > 0 && (
+                              <span className="flex items-center gap-1"><WrenchIcon className="w-3 h-3 text-primary" /> {searchResult.services.length} serviço(s)</span>
+                            )}
+                            {searchResult.products.length > 0 && (
+                              <span className="flex items-center gap-1"><ShoppingBag className="w-3 h-3 text-success" /> {searchResult.products.length} produto(s)</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Products Section */}
+                  {searchQuery && searchResult.products.length > 0 && (
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                          <ShoppingBag className="w-4 h-4 text-success" /> Produtos disponíveis
+                        </h3>
+                        {searchResult.products.length > 6 && (
+                          <Button variant="ghost" size="sm" className="text-xs h-7 text-muted-foreground hover:text-primary gap-1"
+                            onClick={() => setShowSearchProducts(!showSearchProducts)}>
+                            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showSearchProducts ? 'rotate-180' : ''}`} />
+                            {showSearchProducts ? 'Mostrar menos' : `Ver todos (${searchResult.products.length})`}
+                          </Button>
+                        )}
+                      </div>
+                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {(showSearchProducts ? searchResult.products : searchResult.products.slice(0, 6)).map((product, idx) => (
+                          <motion.div key={product.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}>
+                            <Card className="border-border/50 hover:border-success/40 hover:shadow-md transition-all duration-200 cursor-pointer group">
+                              <CardContent className="p-4">
+                                <div className="flex items-start justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center">
+                                      <ShoppingBag className="w-4 h-4 text-success" />
+                                    </div>
+                                    <div>
+                                      <h4 className="font-semibold text-sm text-foreground">{product.name}</h4>
+                                      <p className="text-xs text-muted-foreground">{product.provider}</p>
+                                    </div>
                                   </div>
-                                  <div>
-                                    <h4 className="font-semibold text-sm text-foreground">{result.name}</h4>
-                                    <p className="text-xs text-muted-foreground">{result.provider}</p>
+                                  <Badge variant={product.stockType === 'fisico' ? 'default' : 'secondary'} className="text-[10px] px-2 py-0 shrink-0">
+                                    <Store className="w-2.5 h-2.5 mr-0.5" />
+                                    {product.stockType === 'fisico' ? 'Estoque' : 'Drop'}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                  <span className="flex items-center gap-1 font-semibold text-foreground"><DollarSign className="w-3 h-3" /> R$ {product.price}</span>
+                                  <span className="flex items-center gap-1"><Star className="w-3 h-3 fill-accent text-accent" /> {product.rating}</span>
+                                  <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {product.distance}</span>
+                                </div>
+                                <div className="mt-2 flex items-center gap-1 text-[10px] text-success font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <ArrowRight className="w-3 h-3" /> Comprar produto
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Services Section */}
+                  {filteredResults.length > 0 && (
+                    <>
+                      {searchQuery && searchResult.products.length > 0 && (
+                        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
+                          <WrenchIcon className="w-4 h-4 text-primary" /> Serviços profissionais
+                        </h3>
+                      )}
+                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+                        {filteredResults.map((result, idx) => {
+                          const seg = segments.find((s) => s.id === result.segment);
+                          const SegIcon = seg?.icon || Sparkles;
+                          return (
+                            <motion.div key={result.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}>
+                              <Card
+                                className="border-border/50 hover:border-primary/30 hover:shadow-md transition-all duration-200 cursor-pointer group"
+                                onClick={() => {
+                                  const params = new URLSearchParams({
+                                    serviceName: result.name,
+                                    serviceProvider: result.provider,
+                                    servicePrice: String(result.price),
+                                    serviceRating: String(result.rating),
+                                    serviceDistance: result.distance,
+                                    serviceTime: result.time,
+                                    serviceSegment: result.segment,
+                                    serviceProducts: JSON.stringify(result.products),
+                                  });
+                                  navigate(`/jornada-cliente?${params.toString()}`);
+                                }}
+                              >
+                                <CardContent className="p-4">
+                                  <div className="flex items-start justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                                        <SegIcon className="w-4 h-4 text-primary" />
+                                      </div>
+                                      <div>
+                                        <h4 className="font-semibold text-sm text-foreground">{result.name}</h4>
+                                        <p className="text-xs text-muted-foreground">{result.provider}</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-xs text-accent-foreground">
+                                      <Star className="w-3 h-3 fill-accent text-accent" />
+                                      {result.rating}
+                                    </div>
                                   </div>
-                                </div>
-                                <div className="flex items-center gap-1 text-xs text-accent-foreground">
-                                  <Star className="w-3 h-3 fill-accent text-accent" />
-                                  {result.rating}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
-                                <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> R$ {result.price}</span>
-                                <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {result.time}</span>
-                                <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {result.distance}</span>
-                              </div>
-                              {result.products.length > 0 && (
-                                <div className="flex flex-wrap gap-1">
-                                  {result.products.map((p) => (
-                                    <Badge key={p} variant="secondary" className="text-[10px] px-2 py-0">
-                                      <Package className="w-2.5 h-2.5 mr-1" />{p}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              )}
-                              <div className="mt-2 flex items-center gap-1 text-[10px] text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                                <ArrowRight className="w-3 h-3" /> Simular contratação
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
+                                  <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
+                                    <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> R$ {result.price}</span>
+                                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {result.time}</span>
+                                    <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {result.distance}</span>
+                                  </div>
+                                  {result.products.length > 0 && (
+                                    <div className="flex flex-wrap gap-1">
+                                      {result.products.map((p) => (
+                                        <Badge key={p} variant="secondary" className="text-[10px] px-2 py-0">
+                                          <Package className="w-2.5 h-2.5 mr-1" />{p}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  )}
+                                  <div className="mt-2 flex items-center gap-1 text-[10px] text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <ArrowRight className="w-3 h-3" /> Simular contratação
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
 
                   {filteredResults.length === 0 && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
