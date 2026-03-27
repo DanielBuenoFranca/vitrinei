@@ -139,14 +139,41 @@ const ClientApp = () => {
 
   const addServiceToCart = (service: ServiceItem) => {
     if (cart.some(c => c.service?.id === service.id)) return;
-    const relatedProducts = clientProducts.filter(p => service.relatedProductIds.includes(p.id));
-    setCart(prev => [...prev, { service, products: relatedProducts }]);
+    
+    // Find relevant MEI providers for this service
+    const relevantMeis = meiProfessionals.filter(mei => mei.segment === service.category);
+    const allProducts = relevantMeis.flatMap(mei => [...mei.ownProducts, ...mei.dropshippingProducts]);
+    
+    // Filter products contextually by service theme
+    const contextual = getContextualProducts(service, allProducts);
+    
+    // Also get relatedProductIds from original data as fallback
+    const relatedProds = clientProducts.filter(p => service.relatedProductIds.includes(p.id));
+    
+    setCart(prev => [...prev, { 
+      service, 
+      products: relatedProds,
+      contextualProducts: contextual,
+      allProviderProducts: allProducts,
+      showAllProducts: false,
+    }]);
   };
 
   const removeFromCart = (index: number) => setCart(prev => prev.filter((_, i) => i !== index));
 
+  const toggleShowAllProducts = (index: number) => {
+    setCart(prev => prev.map((item, i) => 
+      i === index ? { ...item, showAllProducts: !item.showAllProducts } : item
+    ));
+  };
+
+  const updateSchedule = (index: number, date: string, time: string) => {
+    setCart(prev => prev.map((item, i) =>
+      i === index ? { ...item, scheduledDate: date, scheduledTime: time } : item
+    ));
+  };
+
   const addProductToCart = (product: ProductItem) => {
-    // Add to last cart item or create standalone
     setCart(prev => {
       if (prev.length > 0) {
         const updated = [...prev];
@@ -157,11 +184,24 @@ const ClientApp = () => {
         }
         return updated;
       }
-      return [{ service: null, products: [product] }];
+      return [{ service: null, products: [product], contextualProducts: [], allProviderProducts: [], showAllProducts: false }];
     });
   };
 
-  const toggleSegment = (id: string) => {
+  const addProductToCartItem = (cartIndex: number, product: ProductItem) => {
+    setCart(prev => prev.map((item, i) => {
+      if (i !== cartIndex) return item;
+      if (item.products.some(p => p.id === product.id)) return item;
+      return { ...item, products: [...item.products, product] };
+    }));
+  };
+
+  const removeProductFromCartItem = (cartIndex: number, productId: number) => {
+    setCart(prev => prev.map((item, i) => {
+      if (i !== cartIndex) return item;
+      return { ...item, products: item.products.filter(p => p.id !== productId) };
+    }));
+  };
     setSelectedSegments(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
   };
 
