@@ -293,12 +293,16 @@ const ClientJourneyDemo = () => {
       <div className="sticky top-0 z-50 bg-card border-b border-border">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/client')}>
+            <Button variant="ghost" size="icon" onClick={() => navigate(fromLanding ? '/' : '/client')}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h1 className="font-display font-bold text-foreground text-sm md:text-base">Jornada do Cliente — Demo Interativa</h1>
-              <p className="text-[10px] md:text-xs text-muted-foreground">Da escolha do serviço até a economia final</p>
+              <h1 className="font-display font-bold text-foreground text-sm md:text-base">
+                {fromLanding ? `Contratando: ${fromLanding}` : 'Jornada do Cliente — Demo Interativa'}
+              </h1>
+              <p className="text-[10px] md:text-xs text-muted-foreground">
+                {fromLanding ? `${searchParams.get('serviceProvider')} • Simulação de contratação` : 'Da escolha do serviço até a economia final'}
+              </p>
             </div>
           </div>
           <Button
