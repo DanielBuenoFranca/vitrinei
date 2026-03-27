@@ -108,15 +108,33 @@ const DropshippingDemo = () => {
   const [sortBy, setSortBy] = useState<'price' | 'rating' | 'discount'>('discount');
   const [deliveryProgress, setDeliveryProgress] = useState(0);
 
-  // Context from URL params
+  // Context from URL params — supports single product (legacy) and multi-product
+  const contextProductsRaw = searchParams.get('products');
   const contextProduct = searchParams.get('productName');
   const contextType = searchParams.get('productType') as 'fisico' | 'drop' | null;
   const contextPrice = searchParams.get('productPrice');
   const contextProvider = searchParams.get('productProvider');
 
-  const isContextual = !!contextProduct;
-  const isLocal = contextType === 'fisico';
-  const steps = isContextual ? (isLocal ? localSteps : dropSteps) : genericSteps;
+  const contextProducts: ContextProduct[] = (() => {
+    if (contextProductsRaw) {
+      try { return JSON.parse(contextProductsRaw); } catch { return []; }
+    }
+    if (contextProduct) {
+      return [{ name: contextProduct, type: contextType || 'fisico', price: parseFloat(contextPrice || '0'), provider: contextProvider || '' }];
+    }
+    return [];
+  })();
+
+  const isContextual = contextProducts.length > 0;
+  const isMultiProduct = contextProducts.length > 1;
+  const isSingleLocal = contextProducts.length === 1 && contextProducts[0].type === 'fisico';
+  const localProducts = contextProducts.filter(p => p.type === 'fisico');
+  const dropProducts = contextProducts.filter(p => p.type === 'drop');
+  const totalPrice = contextProducts.reduce((s, p) => s + p.price, 0);
+
+  const steps = isContextual
+    ? (isMultiProduct ? multiProductSteps : (isSingleLocal ? localSteps : dropSteps))
+    : genericSteps;
   const step = steps[currentStep];
 
   useEffect(() => {
