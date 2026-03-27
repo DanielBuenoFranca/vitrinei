@@ -409,7 +409,6 @@ const Landing = () => {
                                     <span className="text-success opacity-0 group-hover:opacity-100 flex items-center gap-1"><Plus className="w-3 h-3" /> Adicionar ao carrinho</span>
                                   )}
                                 </div>
-                                </div>
                               </CardContent>
                             </Card>
                           </motion.div>
