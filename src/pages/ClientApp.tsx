@@ -479,7 +479,13 @@ const ClientApp = () => {
                         {services.map((svc, i) => {
                           const elig = checkEligibility(svc, user.credits, user.monthsActive, user.plan);
                           const inCart = isInCart(svc.id);
-                          const relatedProds = clientProducts.filter(p => svc.relatedProductIds.includes(p.id));
+                          const cartIdx = cart.findIndex(c => c.service?.id === svc.id);
+                          const cartItem = cartIdx >= 0 ? cart[cartIdx] : null;
+                          
+                          // Get contextual product count for preview
+                          const relevantMeis = meiProfessionals.filter(mei => mei.segment === svc.category);
+                          const allMeiProducts = relevantMeis.flatMap(mei => [...mei.ownProducts, ...mei.dropshippingProducts]);
+                          const contextualCount = getContextualProducts(svc, allMeiProducts).length;
 
                           return (
                             <motion.div key={svc.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
@@ -498,32 +504,44 @@ const ClientApp = () => {
                                   <p className="text-[10px] text-muted-foreground">{svc.provider} • <Star className="w-2.5 h-2.5 text-accent fill-accent inline" /> {svc.rating}</p>
                                   <div className="flex items-center gap-2 mt-1">
                                     <span className="text-[10px] font-medium text-primary flex items-center gap-0.5"><Coins className="w-2.5 h-2.5" />{svc.creditCost} cr</span>
-                                    {elig.status === 'disponivel_total' && <Badge className="text-[8px] h-3.5 bg-green-500/10 text-green-600 border-0">Coberto</Badge>}
-                                    {elig.status === 'disponivel_parcial' && <Badge className="text-[8px] h-3.5 bg-amber-500/10 text-amber-600 border-0">+R$ {elig.extraValue.toFixed(0)}</Badge>}
-                                    {elig.status === 'bloqueado' && <Badge className="text-[8px] h-3.5 bg-red-500/10 text-red-600 border-0"><Lock className="w-2 h-2 mr-0.5" />Bloqueado</Badge>}
-                                    {relatedProds.length > 0 && <span className="text-[9px] text-muted-foreground"><Package className="w-2.5 h-2.5 inline" /> {relatedProds.length}</span>}
+                                    {elig.status === 'disponivel_total' && <Badge className="text-[8px] h-3.5 bg-primary/10 text-primary border-0">Coberto</Badge>}
+                                    {elig.status === 'disponivel_parcial' && <Badge className="text-[8px] h-3.5 bg-accent/10 text-accent border-0">+R$ {elig.extraValue.toFixed(0)}</Badge>}
+                                    {elig.status === 'bloqueado' && <Badge className="text-[8px] h-3.5 bg-destructive/10 text-destructive border-0"><Lock className="w-2 h-2 mr-0.5" />Bloqueado</Badge>}
+                                    {contextualCount > 0 && <span className="text-[9px] text-muted-foreground"><Package className="w-2.5 h-2.5 inline" /> {contextualCount} produtos</span>}
                                   </div>
                                 </div>
                                 <Button size="sm" variant={inCart ? 'default' : 'outline'} className="text-[9px] h-7 px-2 shrink-0"
-                                  onClick={() => inCart ? removeFromCart(cart.findIndex(c => c.service?.id === svc.id)) : addServiceToCart(svc)}
+                                  onClick={() => inCart ? removeFromCart(cartIdx) : addServiceToCart(svc)}
                                   disabled={elig.status === 'bloqueado'}>
                                   {inCart ? <><CheckCircle2 className="w-3 h-3 mr-0.5" />Adicionado</> : <><Plus className="w-3 h-3 mr-0.5" />Adicionar</>}
                                 </Button>
                               </div>
 
-                              {/* Related products inline (show when in cart) */}
-                              {inCart && relatedProds.length > 0 && (
+                              {/* Contextual products inline (show when in cart) */}
+                              {inCart && cartItem && cartItem.contextualProducts.length > 0 && (
                                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-2 ml-12 space-y-1">
-                                  <p className="text-[9px] font-bold text-muted-foreground">📦 Produtos sugeridos:</p>
-                                  {relatedProds.map(p => (
+                                  <p className="text-[9px] font-bold text-muted-foreground">🎯 Produtos relacionados ao serviço:</p>
+                                  {cartItem.contextualProducts.slice(0, 4).map(p => (
                                     <div key={p.id} className="flex items-center justify-between text-[10px] bg-muted/50 rounded-lg px-2 py-1">
-                                      <span>{p.image} {p.name}</span>
-                                      <div className="flex items-center gap-1.5">
-                                        {discount > 0 && <span className="line-through text-muted-foreground">R$ {p.price.toFixed(2)}</span>}
+                                      <span className="truncate flex-1">{p.image} {p.name}</span>
+                                      <div className="flex items-center gap-1 shrink-0">
+                                        <Badge variant="outline" className="text-[7px] h-3 px-1">{p.supplier?.includes('Drop') ? '🌍' : '📦'}</Badge>
                                         <span className="font-medium text-foreground">R$ {(p.price * (1 - discount / 100)).toFixed(2)}</span>
+                                        {!cartItem.products.some(cp => cp.id === p.id) ? (
+                                          <button onClick={() => addProductToCartItem(cartIdx, p)} className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20">
+                                            <Plus className="w-2.5 h-2.5 text-primary" />
+                                          </button>
+                                        ) : (
+                                          <CheckCircle2 className="w-3 h-3 text-primary" />
+                                        )}
                                       </div>
                                     </div>
                                   ))}
+                                  {cartItem.contextualProducts.length > 4 && (
+                                    <button onClick={() => { setShowCart(true); }} className="text-[9px] text-primary font-medium hover:underline">
+                                      Ver mais {cartItem.contextualProducts.length - 4} produtos no carrinho →
+                                    </button>
+                                  )}
                                 </motion.div>
                               )}
                             </motion.div>
