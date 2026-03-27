@@ -113,107 +113,169 @@ export const naturalLanguageMap: {
     triggers: ['blusa', 'camiseta', 'camisa', 'regata', 'top', 'cropped', 'moletom', 'jaqueta', 'casaco', 'blazer', 'suéter'],
     segments: ['moda', 'vestuario'], keywords: ['blusa', 'camiseta', 'roupa', 'moda'],
     relevantServiceIds: [39],
-    aiFollowUp: 'Encontrei opções de peças para você! Veja o estoque disponível:'
+    relevantProductIds: [201, 202, 203],
+    needLabel: 'Vestuário - Tops',
+    aiFollowUp: 'Encontrei peças para você! Veja o estoque disponível com opções físicas e drop-shipping:'
   },
   {
     triggers: ['calça', 'calça jeans', 'legging', 'bermuda', 'short', 'saia', 'shorts'],
     segments: ['moda', 'vestuario'], keywords: ['calça', 'jeans', 'legging', 'bermuda', 'roupa'],
     relevantServiceIds: [40],
+    relevantProductIds: [204, 205, 206],
+    needLabel: 'Vestuário - Calças',
+    aiFollowUp: 'Separei opções de calças e shorts para você:'
   },
   {
     triggers: ['vestido', 'macacão', 'conjunto', 'roupa', 'look', 'outfit', 'moda'],
     segments: ['moda', 'vestuario'], keywords: ['vestido', 'roupa', 'moda', 'look'],
     relevantServiceIds: [41],
+    relevantProductIds: [207, 208, 209],
+    needLabel: 'Moda - Looks',
+    aiFollowUp: 'Veja as melhores opções de looks completos:'
   },
   {
     triggers: ['sapato', 'tênis', 'sandália', 'bota', 'chinelo', 'salto', 'calçado'],
     segments: ['moda', 'vestuario'], keywords: ['sapato', 'tênis', 'sandália', 'calçado'],
     relevantServiceIds: [42],
+    relevantProductIds: [210, 211, 212],
+    needLabel: 'Calçados',
+    aiFollowUp: 'Encontrei calçados disponíveis para você:'
   },
   {
     triggers: ['jóia', 'joia', 'anel', 'aliança', 'brinco', 'colar', 'pulseira', 'corrente', 'pingente', 'cordão'],
     segments: ['acessorios', 'moda'], keywords: ['jóia', 'anel', 'brinco', 'colar', 'pulseira'],
     relevantServiceIds: [44],
+    relevantProductIds: [213, 214, 215, 216],
+    needLabel: 'Jóias & Acessórios',
+    aiFollowUp: 'Separei jóias e acessórios disponíveis:'
   },
   {
     triggers: ['relógio', 'óculos', 'bolsa', 'carteira', 'cinto', 'chapéu', 'boné', 'lenço', 'cachecol', 'gravata'],
     segments: ['acessorios', 'moda'], keywords: ['relógio', 'óculos', 'bolsa', 'acessório'],
     relevantServiceIds: [46, 47],
+    relevantProductIds: [217, 218, 219],
+    needLabel: 'Acessórios',
+    aiFollowUp: 'Encontrei acessórios disponíveis para você:'
   },
   {
     triggers: ['bijuteria', 'piercing', 'adereço', 'broche', 'presilha', 'tiara', 'faixa de cabelo'],
     segments: ['acessorios', 'moda'], keywords: ['bijuteria', 'acessório'],
     relevantServiceIds: [45],
+    relevantProductIds: [220, 221],
+    needLabel: 'Bijuterias',
+    aiFollowUp: 'Separei bijuterias e adereços para você:'
   },
   {
     triggers: ['cortar grama', 'grama alta', 'capinar', 'jardim sujo', 'podar', 'mato alto', 'limpar jardim', 'quintal sujo', 'aparar grama'],
     segments: ['natureza', 'casa'], keywords: ['jardinagem', 'jardineiro', 'poda', 'grama'],
     relevantServiceIds: [29, 30],
+    relevantProductIds: [301, 302, 303],
+    needLabel: 'Jardinagem',
+    aiFollowUp: 'Identifiquei: **Jardinagem**. Separei ferramentas, insumos e profissionais para cuidar do seu jardim.'
   },
   {
     triggers: ['plantar', 'horta', 'vaso', 'muda', 'semente', 'adubo', 'terra', 'fertilizante'],
     segments: ['natureza'], keywords: ['horta', 'jardinagem', 'sementes'],
     relevantServiceIds: [26],
+    relevantProductIds: [304, 305, 306],
+    needLabel: 'Horta & Plantio',
+    aiFollowUp: 'Identifiquei: **Horta/Plantio**. Veja sementes, vasos e profissionais especializados.'
   },
   {
     triggers: ['carro não liga', 'carro falhando', 'barulho no carro', 'freio ruim', 'pneu furado'],
     segments: ['auto'], keywords: ['mecânico', 'guincho', 'pneu'],
     relevantServiceIds: [33, 11],
+    relevantProductIds: [401, 402, 403, 404],
+    needLabel: 'Problema no carro',
+    aiFollowUp: 'Identifiquei: **Problema automotivo**. Separei peças para reparos e mecânicos disponíveis.'
   },
   {
     triggers: ['lavar carro', 'carro sujo', 'polir carro'],
     segments: ['auto'], keywords: ['lavagem', 'polimento'],
     relevantServiceIds: [12],
+    relevantProductIds: [405, 406],
+    needLabel: 'Lavagem automotiva',
+    aiFollowUp: 'Identifiquei: **Lavagem/Polimento**. Veja produtos e serviço profissional:'
   },
   {
     triggers: ['casa suja', 'preciso limpar', 'faxina', 'limpeza pesada', 'vidros sujos'],
     segments: ['casa'], keywords: ['limpeza', 'faxina'],
     relevantServiceIds: [10],
+    relevantProductIds: [501, 502, 503],
+    needLabel: 'Limpeza residencial',
+    aiFollowUp: 'Identifiquei: **Limpeza**. Separei produtos de limpeza e profissionais disponíveis.'
   },
   {
     triggers: ['torneira vazando', 'cano furado', 'entupiu', 'vaso entupido', 'descarga quebrou'],
     segments: ['manutencao'], keywords: ['encanador', 'reparo'],
     relevantServiceIds: [32],
+    relevantProductIds: [601, 602, 603],
+    needLabel: 'Problema hidráulico',
+    aiFollowUp: 'Identifiquei: **Problema hidráulico**. Separei materiais e encanador disponível.'
   },
   {
     triggers: ['tomada não funciona', 'luz apagou', 'curto circuito', 'chuveiro queimou', 'fiação'],
     segments: ['manutencao'], keywords: ['eletricista', 'instalação'],
     relevantServiceIds: [1],
+    relevantProductIds: [604, 605, 606],
+    needLabel: 'Problema elétrico',
+    aiFollowUp: 'Identifiquei: **Problema elétrico**. Separei materiais elétricos e eletricista disponível.'
   },
   {
     triggers: ['cabelo feio', 'preciso cortar cabelo', 'tintura', 'pintar cabelo'],
     segments: ['beleza'], keywords: ['cabelo', 'corte', 'barbeiro'],
     relevantServiceIds: [8],
+    relevantProductIds: [701, 702, 703],
+    needLabel: 'Cuidados com cabelo',
+    aiFollowUp: 'Identifiquei: **Cuidados capilares**. Veja produtos e profissionais disponíveis.'
   },
   {
     triggers: ['unha quebrou', 'fazer unha', 'pé e mão'],
     segments: ['beleza'], keywords: ['manicure', 'estética'],
     relevantServiceIds: [35],
+    relevantProductIds: [704, 705],
+    needLabel: 'Unhas & Estética',
+    aiFollowUp: 'Identifiquei: **Unhas/Estética**. Veja kits e profissionais.'
   },
   {
     triggers: ['meu cachorro', 'meu gato', 'meu pet', 'animal doente', 'vacina pet', 'pulga', 'carrapato'],
     segments: ['pet'], keywords: ['veterinário', 'pet', 'banho', 'tosa'],
     relevantServiceIds: [18, 19, 36],
+    relevantProductIds: [801, 802, 803, 804],
+    needLabel: 'Cuidados com Pet',
+    aiFollowUp: 'Identifiquei: **Cuidados com Pet**. Separei produtos e profissionais especializados.'
   },
   {
     triggers: ['aprender inglês', 'aula particular', 'reforço escolar', 'estudar para concurso'],
     segments: ['educacao'], keywords: ['professor', 'aula', 'inglês'],
     relevantServiceIds: [16, 17],
+    relevantProductIds: [901, 902, 903],
+    needLabel: 'Educação',
+    aiFollowUp: 'Identifiquei: **Educação**. Veja materiais didáticos e professores disponíveis.'
   },
   {
     triggers: ['aprender violão', 'aprender guitarra', 'aula de piano', 'aprender música', 'tocar bateria'],
     segments: ['musica'], keywords: ['violão', 'guitarra', 'piano', 'bateria'],
     relevantServiceIds: [23, 24, 25, 37],
+    relevantProductIds: [1001, 1002, 1003, 1004],
+    needLabel: 'Aulas de Música',
+    aiFollowUp: 'Identifiquei: **Música**. Separei instrumentos, acessórios e professores.'
   },
   {
     triggers: ['computador lento', 'pc travando', 'vírus no pc', 'celular quebrou', 'tela quebrada'],
     segments: ['tech'], keywords: ['formatação', 'computador', 'celular'],
     relevantServiceIds: [14, 15],
+    relevantProductIds: [1101, 1102, 1103],
+    needLabel: 'Problema tecnológico',
+    aiFollowUp: 'Identifiquei: **Problema com dispositivo**. Veja acessórios e técnicos disponíveis.'
   },
   {
     triggers: ['festa de aniversário', 'casamento', 'organizar festa', 'buffet', 'precisamos de dj'],
     segments: ['eventos'], keywords: ['festa', 'buffet', 'dj', 'casamento'],
     relevantServiceIds: [20, 21],
+    relevantProductIds: [1201, 1202, 1203],
+    needLabel: 'Evento / Festa',
+    aiFollowUp: 'Identifiquei: **Evento/Festa**. Separei itens de decoração/doces e profissionais.'
   },
 ];
 
@@ -270,6 +332,110 @@ export const productInventory: ProductItem[] = [
 
   // ── Garganta / Tosse ──
   { id: 122, name: 'Pastilha Própolis + Mel 10un', price: 12, provider: 'NaturalFarma MEI', stockType: 'fisico', rating: 4.8, distance: '1 km', relatedServiceIds: [27, 4], tags: ['garganta', 'tosse', 'rouquidão', 'inflamação'] },
+
+  // ── Moda - Tops ──
+  { id: 201, name: 'Blusa Algodão P/M/G', price: 39, provider: 'ModaFácil MEI', stockType: 'fisico', rating: 4.7, distance: '1.2 km', relatedServiceIds: [39], tags: ['blusa', 'camiseta', 'roupa', 'camisa', 'regata', 'moda'] },
+  { id: 202, name: 'Camiseta Estampada Unissex', price: 49, provider: 'ModaFácil MEI', stockType: 'fisico', rating: 4.6, distance: '1.2 km', relatedServiceIds: [39], tags: ['camiseta', 'estampada', 'roupa', 'moda', 'blusa'] },
+  { id: 203, name: 'Moletom Canguru Unissex', price: 89, provider: 'HomemStyle MEI', stockType: 'drop', rating: 4.7, distance: '4 km', relatedServiceIds: [43], tags: ['moletom', 'casaco', 'jaqueta', 'frio', 'roupa'] },
+
+  // ── Moda - Calças ──
+  { id: 204, name: 'Calça Jeans Skinny', price: 89, provider: 'JeansStore MEI', stockType: 'fisico', rating: 4.6, distance: '2.5 km', relatedServiceIds: [40], tags: ['calça', 'jeans', 'skinny', 'roupa', 'moda'] },
+  { id: 205, name: 'Legging Suplex Fitness', price: 45, provider: 'JeansStore MEI', stockType: 'fisico', rating: 4.7, distance: '2.5 km', relatedServiceIds: [40], tags: ['legging', 'fitness', 'calça', 'academia', 'roupa'] },
+  { id: 206, name: 'Bermuda Sarja Masculina', price: 59, provider: 'HomemStyle MEI', stockType: 'fisico', rating: 4.5, distance: '4 km', relatedServiceIds: [43], tags: ['bermuda', 'short', 'shorts', 'roupa', 'masculina'] },
+
+  // ── Moda - Looks ──
+  { id: 207, name: 'Vestido Midi Floral', price: 79, provider: 'ElaStyle MEI', stockType: 'fisico', rating: 4.8, distance: '3 km', relatedServiceIds: [41], tags: ['vestido', 'floral', 'roupa', 'look', 'moda', 'outfit'] },
+  { id: 208, name: 'Conjunto Cropped + Saia', price: 99, provider: 'ElaStyle MEI', stockType: 'fisico', rating: 4.7, distance: '3 km', relatedServiceIds: [41], tags: ['conjunto', 'cropped', 'saia', 'look', 'outfit', 'moda'] },
+  { id: 209, name: 'Macacão Longo Feminino', price: 119, provider: 'ElaStyle MEI', stockType: 'drop', rating: 4.6, distance: '3 km', relatedServiceIds: [41], tags: ['macacão', 'roupa', 'look', 'moda'] },
+
+  // ── Calçados ──
+  { id: 210, name: 'Sandália Rasteira Confort', price: 59, provider: 'PéBonito MEI', stockType: 'fisico', rating: 4.7, distance: '1.8 km', relatedServiceIds: [42], tags: ['sandália', 'rasteira', 'calçado', 'sapato'] },
+  { id: 211, name: 'Tênis Casual Unissex', price: 129, provider: 'PéBonito MEI', stockType: 'drop', rating: 4.8, distance: '1.8 km', relatedServiceIds: [42], tags: ['tênis', 'casual', 'calçado', 'sapato'] },
+  { id: 212, name: 'Bota Cano Curto', price: 149, provider: 'PéBonito MEI', stockType: 'drop', rating: 4.6, distance: '1.8 km', relatedServiceIds: [42], tags: ['bota', 'calçado', 'sapato', 'chinelo'] },
+
+  // ── Jóias ──
+  { id: 213, name: 'Anel Prata 925', price: 85, provider: 'BrilhoJóias MEI', stockType: 'fisico', rating: 4.9, distance: '2 km', relatedServiceIds: [44], tags: ['anel', 'prata', 'jóia', 'joia', 'aliança'] },
+  { id: 214, name: 'Brinco Argola Ouro 18k', price: 220, provider: 'BrilhoJóias MEI', stockType: 'fisico', rating: 4.9, distance: '2 km', relatedServiceIds: [44], tags: ['brinco', 'ouro', 'jóia', 'joia', 'argola'] },
+  { id: 215, name: 'Corrente Prata 60cm', price: 150, provider: 'BrilhoJóias MEI', stockType: 'fisico', rating: 4.8, distance: '2 km', relatedServiceIds: [44], tags: ['corrente', 'colar', 'prata', 'jóia', 'joia', 'pingente', 'cordão'] },
+  { id: 216, name: 'Pulseira Berloques Prata', price: 95, provider: 'BrilhoJóias MEI', stockType: 'fisico', rating: 4.7, distance: '2 km', relatedServiceIds: [44], tags: ['pulseira', 'berloque', 'jóia', 'joia', 'prata'] },
+
+  // ── Acessórios ──
+  { id: 217, name: 'Relógio Digital Esportivo', price: 95, provider: 'TempoStyle MEI', stockType: 'fisico', rating: 4.6, distance: '2.8 km', relatedServiceIds: [47], tags: ['relógio', 'digital', 'esportivo', 'acessório'] },
+  { id: 218, name: 'Óculos de Sol UV400', price: 79, provider: 'TempoStyle MEI', stockType: 'drop', rating: 4.7, distance: '2.8 km', relatedServiceIds: [47], tags: ['óculos', 'sol', 'uv', 'acessório'] },
+  { id: 219, name: 'Bolsa Transversal Feminina', price: 85, provider: 'BagStore MEI', stockType: 'fisico', rating: 4.7, distance: '3.2 km', relatedServiceIds: [46], tags: ['bolsa', 'carteira', 'mochila', 'acessório'] },
+
+  // ── Bijuterias ──
+  { id: 220, name: 'Colar Choker Preto', price: 18, provider: 'AcessóriosPop MEI', stockType: 'fisico', rating: 4.5, distance: '800 m', relatedServiceIds: [45], tags: ['bijuteria', 'colar', 'choker', 'adereço'] },
+  { id: 221, name: 'Kit Presilhas Pérola 6un', price: 22, provider: 'AcessóriosPop MEI', stockType: 'fisico', rating: 4.6, distance: '800 m', relatedServiceIds: [45], tags: ['presilha', 'tiara', 'faixa', 'cabelo', 'bijuteria', 'adereço'] },
+
+  // ── Jardinagem ──
+  { id: 301, name: 'Tesoura de Poda Profissional', price: 45, provider: 'GardenPro', stockType: 'fisico', rating: 4.8, distance: '3.5 km', relatedServiceIds: [30, 29], tags: ['poda', 'tesoura', 'jardim', 'grama', 'jardinagem'] },
+  { id: 302, name: 'Adubo Orgânico 5kg', price: 25, provider: 'VerdeVivo', stockType: 'fisico', rating: 4.7, distance: '1.8 km', relatedServiceIds: [29, 26], tags: ['adubo', 'fertilizante', 'jardim', 'grama', 'horta'] },
+  { id: 303, name: 'Luva de Jardinagem Par', price: 18, provider: 'GardenPro', stockType: 'fisico', rating: 4.6, distance: '3.5 km', relatedServiceIds: [30, 29], tags: ['luva', 'jardinagem', 'jardim', 'proteção'] },
+
+  // ── Horta & Plantio ──
+  { id: 304, name: 'Kit Sementes Orgânicas 10 tipos', price: 35, provider: 'UrbanGreen', stockType: 'fisico', rating: 4.9, distance: '3 km', relatedServiceIds: [26], tags: ['semente', 'horta', 'orgânico', 'plantar', 'muda'] },
+  { id: 305, name: 'Vaso Autoirrigável 15cm', price: 29, provider: 'UrbanGreen', stockType: 'fisico', rating: 4.8, distance: '3 km', relatedServiceIds: [26], tags: ['vaso', 'horta', 'plantar', 'autoirrigável'] },
+  { id: 306, name: 'Substrato Vegetal 10L', price: 22, provider: 'UrbanGreen', stockType: 'fisico', rating: 4.7, distance: '3 km', relatedServiceIds: [26], tags: ['terra', 'substrato', 'adubo', 'horta', 'fertilizante'] },
+
+  // ── Automotivo ──
+  { id: 401, name: 'Óleo Motor 5W30 Sintético 1L', price: 45, provider: 'ÓleoRápido', stockType: 'fisico', rating: 4.7, distance: '5 km', relatedServiceIds: [11, 33], tags: ['óleo', 'motor', 'carro', 'troca', 'sintético'] },
+  { id: 402, name: 'Filtro de Óleo Universal', price: 28, provider: 'ÓleoRápido', stockType: 'fisico', rating: 4.6, distance: '5 km', relatedServiceIds: [11], tags: ['filtro', 'óleo', 'carro', 'motor'] },
+  { id: 403, name: 'Vela de Ignição Kit 4un', price: 55, provider: 'MecFácil', stockType: 'fisico', rating: 4.6, distance: '5 km', relatedServiceIds: [33], tags: ['vela', 'ignição', 'carro', 'motor', 'falhando'] },
+  { id: 404, name: 'Filtro de Ar Motor', price: 32, provider: 'MecFácil', stockType: 'drop', rating: 4.5, distance: '5 km', relatedServiceIds: [33], tags: ['filtro', 'ar', 'carro', 'motor'] },
+  { id: 405, name: 'Kit Polimento Automotivo', price: 65, provider: 'BrilhoAuto', stockType: 'fisico', rating: 4.8, distance: '3 km', relatedServiceIds: [12], tags: ['polimento', 'cera', 'carro', 'brilho', 'lavagem'] },
+  { id: 406, name: 'Shampoo Automotivo 500ml', price: 22, provider: 'BrilhoAuto', stockType: 'fisico', rating: 4.6, distance: '3 km', relatedServiceIds: [12], tags: ['shampoo', 'lavagem', 'carro', 'lavar'] },
+
+  // ── Casa / Limpeza ──
+  { id: 501, name: 'Kit Limpeza Completo 8 itens', price: 45, provider: 'Maria Clean', stockType: 'fisico', rating: 4.6, distance: '3.2 km', relatedServiceIds: [10], tags: ['limpeza', 'faxina', 'casa', 'produto', 'desinfetante'] },
+  { id: 502, name: 'Desinfetante Concentrado 1L', price: 15, provider: 'Maria Clean', stockType: 'fisico', rating: 4.5, distance: '3.2 km', relatedServiceIds: [10], tags: ['desinfetante', 'limpeza', 'casa', 'faxina'] },
+  { id: 503, name: 'Limpa Vidros Profissional 500ml', price: 18, provider: 'Maria Clean', stockType: 'drop', rating: 4.7, distance: '3.2 km', relatedServiceIds: [10], tags: ['vidro', 'limpeza', 'casa', 'janela'] },
+
+  // ── Manutenção Hidráulica ──
+  { id: 601, name: 'Fita Veda-Rosca 18mm 50m', price: 8, provider: 'Pedro Encanador', stockType: 'fisico', rating: 4.7, distance: '3.1 km', relatedServiceIds: [32], tags: ['fita', 'veda-rosca', 'encanamento', 'torneira', 'vazamento'] },
+  { id: 602, name: 'Sifão Universal Flexível', price: 22, provider: 'Pedro Encanador', stockType: 'fisico', rating: 4.6, distance: '3.1 km', relatedServiceIds: [32], tags: ['sifão', 'pia', 'encanamento', 'entupido'] },
+  { id: 603, name: 'Desentupidor Líquido 1L', price: 18, provider: 'Pedro Encanador', stockType: 'drop', rating: 4.5, distance: '3.1 km', relatedServiceIds: [32], tags: ['desentupidor', 'entupiu', 'entupido', 'vaso', 'pia', 'descarga'] },
+
+  // ── Manutenção Elétrica ──
+  { id: 604, name: 'Disjuntor 20A Unipolar', price: 12, provider: 'João Eletricista', stockType: 'fisico', rating: 4.8, distance: '2.3 km', relatedServiceIds: [1], tags: ['disjuntor', 'elétrica', 'curto', 'circuito', 'luz'] },
+  { id: 605, name: 'Fio Elétrico 2.5mm 100m', price: 85, provider: 'João Eletricista', stockType: 'fisico', rating: 4.7, distance: '2.3 km', relatedServiceIds: [1], tags: ['fio', 'elétrico', 'fiação', 'tomada', 'instalação'] },
+  { id: 606, name: 'Resistência Chuveiro Universal', price: 15, provider: 'João Eletricista', stockType: 'fisico', rating: 4.6, distance: '2.3 km', relatedServiceIds: [1], tags: ['chuveiro', 'resistência', 'queimou', 'elétrica'] },
+
+  // ── Beleza - Cabelo ──
+  { id: 701, name: 'Shampoo Profissional 500ml', price: 35, provider: 'Beauty Home', stockType: 'fisico', rating: 4.8, distance: '800 m', relatedServiceIds: [8], tags: ['shampoo', 'cabelo', 'lavagem', 'capilar'] },
+  { id: 702, name: 'Kit Tintura Capilar', price: 45, provider: 'Beauty Home', stockType: 'fisico', rating: 4.7, distance: '800 m', relatedServiceIds: [8], tags: ['tintura', 'cabelo', 'pintar', 'cor', 'coloração'] },
+  { id: 703, name: 'Máscara Hidratação Capilar 500g', price: 38, provider: 'Beauty Home', stockType: 'drop', rating: 4.8, distance: '800 m', relatedServiceIds: [8], tags: ['máscara', 'hidratação', 'cabelo', 'tratamento'] },
+
+  // ── Beleza - Unhas ──
+  { id: 704, name: 'Kit Esmaltes Gel 6 cores', price: 55, provider: 'NailArt', stockType: 'fisico', rating: 4.8, distance: '600 m', relatedServiceIds: [35], tags: ['esmalte', 'unha', 'gel', 'manicure'] },
+  { id: 705, name: 'Kit Alicate + Lixa Profissional', price: 32, provider: 'NailArt', stockType: 'fisico', rating: 4.7, distance: '600 m', relatedServiceIds: [35], tags: ['alicate', 'unha', 'lixa', 'manicure', 'pedicure'] },
+
+  // ── Pet ──
+  { id: 801, name: 'Shampoo Pet Neutro 500ml', price: 28, provider: 'PetClean', stockType: 'fisico', rating: 4.7, distance: '1 km', relatedServiceIds: [18], tags: ['shampoo', 'pet', 'cachorro', 'gato', 'banho'] },
+  { id: 802, name: 'Antipulgas Comprimido 3un', price: 45, provider: 'VetHome', stockType: 'fisico', rating: 4.9, distance: '2.5 km', relatedServiceIds: [19], tags: ['pulga', 'carrapato', 'antipulgas', 'pet', 'cachorro', 'gato'] },
+  { id: 803, name: 'Ração Premium 15kg', price: 120, provider: 'PetClean', stockType: 'drop', rating: 4.6, distance: '1 km', relatedServiceIds: [18, 19], tags: ['ração', 'pet', 'cachorro', 'gato', 'alimentação'] },
+  { id: 804, name: 'Guia Retrátil 5m', price: 35, provider: 'DogTrainer', stockType: 'fisico', rating: 4.7, distance: '4 km', relatedServiceIds: [36], tags: ['guia', 'coleira', 'passeio', 'cachorro', 'pet', 'adestramento'] },
+
+  // ── Educação ──
+  { id: 901, name: 'Dicionário Inglês-Português', price: 35, provider: 'EnglishNow', stockType: 'drop', rating: 4.8, distance: 'Online', relatedServiceIds: [16], tags: ['dicionário', 'inglês', 'livro', 'estudo'] },
+  { id: 902, name: 'Apostila ENEM 2026 Completa', price: 65, provider: 'ENEMPro', stockType: 'fisico', rating: 4.9, distance: 'Online', relatedServiceIds: [17], tags: ['apostila', 'enem', 'concurso', 'estudo', 'reforço'] },
+  { id: 903, name: 'Kit Cadernos + Canetas Study', price: 28, provider: 'ENEMPro', stockType: 'drop', rating: 4.5, distance: 'Online', relatedServiceIds: [16, 17], tags: ['caderno', 'caneta', 'estudo', 'aula', 'escolar'] },
+
+  // ── Música ──
+  { id: 1001, name: 'Encordoamento Nylon Violão', price: 22, provider: 'ViolãoMaster', stockType: 'fisico', rating: 4.8, distance: '1.5 km', relatedServiceIds: [23], tags: ['corda', 'violão', 'nylon', 'encordoamento', 'música'] },
+  { id: 1002, name: 'Kit Palhetas Guitarra 12un', price: 18, provider: 'RockSchool', stockType: 'fisico', rating: 4.7, distance: '2 km', relatedServiceIds: [37], tags: ['palheta', 'guitarra', 'música', 'acessório'] },
+  { id: 1003, name: 'Metrônomo Digital Clip', price: 35, provider: 'PianoClass', stockType: 'drop', rating: 4.8, distance: '2 km', relatedServiceIds: [24], tags: ['metrônomo', 'piano', 'teclado', 'ritmo', 'música'] },
+  { id: 1004, name: 'Interface de Áudio USB 2 canais', price: 250, provider: 'BeatMaker', stockType: 'drop', rating: 4.9, distance: 'Remoto', relatedServiceIds: [25], tags: ['interface', 'áudio', 'usb', 'gravação', 'produção', 'home studio'] },
+
+  // ── Tecnologia ──
+  { id: 1101, name: 'Antivírus Premium 1 ano', price: 49, provider: 'FormatPC', stockType: 'drop', rating: 4.6, distance: '1.8 km', relatedServiceIds: [14], tags: ['antivírus', 'vírus', 'computador', 'pc', 'segurança'] },
+  { id: 1102, name: 'Película Vidro Temperado Celular', price: 15, provider: 'CellFix', stockType: 'fisico', rating: 4.7, distance: '2.5 km', relatedServiceIds: [15], tags: ['película', 'celular', 'tela', 'vidro', 'proteção'] },
+  { id: 1103, name: 'Cabo USB-C Carregador Rápido', price: 25, provider: 'CellFix', stockType: 'fisico', rating: 4.6, distance: '2.5 km', relatedServiceIds: [15], tags: ['cabo', 'usb', 'carregador', 'celular'] },
+
+  // ── Eventos ──
+  { id: 1201, name: 'Kit Doces Finos 100un', price: 120, provider: 'SaborFesta', stockType: 'fisico', rating: 4.8, distance: '5 km', relatedServiceIds: [20], tags: ['doce', 'festa', 'aniversário', 'casamento', 'buffet'] },
+  { id: 1202, name: 'Kit Decoração Balões 50un', price: 35, provider: 'SaborFesta', stockType: 'drop', rating: 4.6, distance: '5 km', relatedServiceIds: [20], tags: ['decoração', 'balão', 'festa', 'aniversário'] },
+  { id: 1203, name: 'Toalha de Mesa Festa 10un', price: 28, provider: 'SaborFesta', stockType: 'drop', rating: 4.5, distance: '5 km', relatedServiceIds: [20], tags: ['toalha', 'mesa', 'festa', 'decoração', 'evento'] },
 ];
 
 // ── Service results (original mock) ──
