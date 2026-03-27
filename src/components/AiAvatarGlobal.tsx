@@ -1,9 +1,13 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Send, Headphones, DollarSign, Clock, MapPin } from 'lucide-react';
+import { Sparkles, Send, Headphones, DollarSign, Clock, MapPin, Star, Package, ArrowRight, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import avatarImg from '@/assets/ai-avatar.png';
+import { segments, semanticSearch, mockResults } from '@/data/searchData';
 
 interface AiAvatarProps {
   size?: number;
@@ -22,7 +26,6 @@ export const AiAvatar = ({ size = 64, speaking = false, thinking = false, onClic
       whileHover={{ scale: 1.08 }}
       whileTap={{ scale: 0.95 }}
     >
-      {/* Pulse rings */}
       <motion.div
         className="absolute inset-0 rounded-full bg-primary/20"
         animate={{ scale: [1, 1.5, 1], opacity: [0.4, 0, 0.4] }}
@@ -33,139 +36,175 @@ export const AiAvatar = ({ size = 64, speaking = false, thinking = false, onClic
         animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0, 0.3] }}
         transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
       />
-
-      {/* Avatar image */}
       <motion.div
         className="absolute inset-0 rounded-full overflow-hidden border-2 border-primary/50 shadow-lg"
         animate={thinking ? { 
-          boxShadow: [
-            '0 0 10px hsl(var(--primary) / 0.3)',
-            '0 0 25px hsl(var(--primary) / 0.6)',
-            '0 0 10px hsl(var(--primary) / 0.3)',
-          ]
+          boxShadow: ['0 0 10px hsl(var(--primary) / 0.3)', '0 0 25px hsl(var(--primary) / 0.6)', '0 0 10px hsl(var(--primary) / 0.3)']
         } : speaking ? {
-          boxShadow: [
-            '0 0 8px hsl(var(--accent) / 0.3)',
-            '0 0 20px hsl(var(--accent) / 0.5)',
-            '0 0 8px hsl(var(--accent) / 0.3)',
-          ]
+          boxShadow: ['0 0 8px hsl(var(--accent) / 0.3)', '0 0 20px hsl(var(--accent) / 0.5)', '0 0 8px hsl(var(--accent) / 0.3)']
         } : { y: [0, -2, 0] }}
         transition={thinking ? { duration: 1.2, repeat: Infinity } : speaking ? { duration: 0.8, repeat: Infinity } : { duration: 3, repeat: Infinity, ease: 'easeInOut' }}
       >
         <img src={avatarImg} alt="Assistente IA EcoMEI" className="w-full h-full object-cover" />
       </motion.div>
-
-      {/* Thinking dots */}
       <AnimatePresence>
         {thinking && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.5 }}
-            className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-1 bg-card border border-border rounded-full px-2 py-1 shadow-md"
-          >
+          <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}
+            className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-1 bg-card border border-border rounded-full px-2 py-1 shadow-md">
             {[0, 1, 2].map(i => (
-              <motion.div
-                key={i}
-                className="w-1.5 h-1.5 rounded-full bg-primary"
+              <motion.div key={i} className="w-1.5 h-1.5 rounded-full bg-primary"
                 animate={{ y: [0, -4, 0], opacity: [0.4, 1, 0.4] }}
-                transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
-              />
+                transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }} />
             ))}
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Speaking wave indicator */}
       <AnimatePresence>
         {speaking && !thinking && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.5 }}
-            className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex items-end gap-[2px] bg-card border border-border rounded-full px-2 py-1 shadow-md"
-          >
+          <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}
+            className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex items-end gap-[2px] bg-card border border-border rounded-full px-2 py-1 shadow-md">
             {[0, 1, 2, 3, 4].map(i => (
-              <motion.div
-                key={i}
-                className="w-[3px] rounded-full bg-accent"
-                style={{ height: 6 }}
+              <motion.div key={i} className="w-[3px] rounded-full bg-accent" style={{ height: 6 }}
                 animate={{ scaleY: [0.4, 1.2, 0.6, 1, 0.4] }}
-                transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.08 }}
-              />
+                transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.08 }} />
             ))}
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Sparkle */}
-      <motion.div
-        className="absolute -top-1 -right-1"
+      <motion.div className="absolute -top-1 -right-1"
         animate={{ rotate: [0, 360], scale: [0.8, 1.1, 0.8] }}
-        transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
-      >
+        transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}>
         <Sparkles className="text-accent" style={{ width: size * 0.3, height: size * 0.3 }} />
       </motion.div>
-
-      {/* Online indicator */}
-      <motion.div
-        className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-success border-2 border-card"
+      <motion.div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-success border-2 border-card"
         animate={{ scale: [1, 1.2, 1] }}
         transition={{ duration: 2, repeat: Infinity }}
-        style={{ width: size * 0.18, height: size * 0.18 }}
-      />
+        style={{ width: size * 0.18, height: size * 0.18 }} />
+    </motion.div>
+  );
+};
+
+type ChatMsg = { role: 'user' | 'ai'; text: string; results?: typeof mockResults };
+
+/** Result card inside chat */
+const ChatResultCard = ({ result, onClick }: { result: typeof mockResults[0]; onClick: () => void }) => {
+  const seg = segments.find((s) => s.id === result.segment);
+  const SegIcon = seg?.icon || Sparkles;
+  return (
+    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+      <Card className="border-border/50 hover:border-primary/40 cursor-pointer transition-all group" onClick={onClick}>
+        <CardContent className="p-2.5">
+          <div className="flex items-start justify-between mb-1">
+            <div className="flex items-center gap-1.5">
+              <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                <SegIcon className="w-3 h-3 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <h4 className="font-semibold text-[11px] text-foreground truncate">{result.name}</h4>
+                <p className="text-[10px] text-muted-foreground truncate">{result.provider}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-0.5 text-[10px] text-accent-foreground shrink-0">
+              <Star className="w-2.5 h-2.5 fill-accent text-accent" />
+              {result.rating}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-1.5">
+            <span className="flex items-center gap-0.5"><DollarSign className="w-2.5 h-2.5" /> R$ {result.price}</span>
+            <span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" /> {result.time}</span>
+            <span className="flex items-center gap-0.5"><MapPin className="w-2.5 h-2.5" /> {result.distance}</span>
+          </div>
+          {result.products.length > 0 && (
+            <div className="flex flex-wrap gap-0.5">
+              {result.products.slice(0, 2).map((p) => (
+                <Badge key={p} variant="secondary" className="text-[8px] px-1.5 py-0">
+                  <Package className="w-2 h-2 mr-0.5" />{p}
+                </Badge>
+              ))}
+              {result.products.length > 2 && (
+                <Badge variant="secondary" className="text-[8px] px-1.5 py-0">+{result.products.length - 2}</Badge>
+              )}
+            </div>
+          )}
+          <div className="mt-1 flex items-center gap-0.5 text-[9px] text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+            <ArrowRight className="w-2.5 h-2.5" /> Contratar
+          </div>
+        </CardContent>
+      </Card>
     </motion.div>
   );
 };
 
 /** Floating avatar for secondary pages - bottom right corner with mini chat */
 export const FloatingAiAvatar = () => {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState('');
-  const [chat, setChat] = useState<{ role: 'user' | 'ai'; text: string }[]>([]);
+  const [chat, setChat] = useState<ChatMsg[]>([]);
   const [speaking, setSpeaking] = useState(false);
   const [thinking, setThinking] = useState(false);
+  const [expandedMsgIdx, setExpandedMsgIdx] = useState<number | null>(null);
+
+  const navigateToDemo = (result: typeof mockResults[0]) => {
+    const params = new URLSearchParams({
+      serviceName: result.name,
+      serviceProvider: result.provider,
+      servicePrice: String(result.price),
+      serviceRating: String(result.rating),
+      serviceDistance: result.distance,
+      serviceTime: result.time,
+      serviceSegment: result.segment,
+      serviceProducts: JSON.stringify(result.products),
+    });
+    navigate(`/jornada-cliente?${params.toString()}`);
+  };
 
   const handleSend = () => {
     if (!message.trim()) return;
-    setChat(prev => [...prev, { role: 'user', text: message }]);
+    const msg = message.trim();
+    setChat(prev => [...prev, { role: 'user', text: msg }]);
     setMessage('');
     setThinking(true);
-    const responses = [
-      'Encontrei 3 opções na sua região! O mais próximo é o Carlos MEI, a 2.3 km, com avaliação 4.9⭐. Posso agendar?',
-      'Analisando fornecedores e estoque via drop-shipping... Melhor opção: preço 15% menor, entrega em 24h!',
-      'Encaminhando para a Central de Atendimento. SLA: máximo 24h. Você será notificado! 📩',
-    ];
+
+    const { results, followUp } = semanticSearch(msg);
+
     setTimeout(() => {
       setThinking(false);
       setSpeaking(true);
-      setChat(prev => [...prev, { role: 'ai', text: responses[Math.floor(Math.random() * responses.length)] }]);
+
+      if (results.length > 0) {
+        const contextMsg = followUp || 'Entendi sua necessidade! 🧠';
+        const top3 = results.slice(0, 3);
+        const totalCount = results.length;
+        const aiText = totalCount > 3
+          ? `${contextMsg}\n\nSelecionei as **${top3.length} melhores opções** de ${totalCount} encontradas:`
+          : `${contextMsg}\n\nEncontrei ${totalCount} resultado(s) para você:`;
+        setChat(prev => [...prev, { role: 'ai', text: aiText, results }]);
+      } else {
+        setChat(prev => [...prev, {
+          role: 'ai',
+          text: 'Não encontrei resultados exatos, mas estou encaminhando para a Central de Atendimento. SLA: 24h para encontrar a melhor solução! 📩'
+        }]);
+      }
       setTimeout(() => setSpeaking(false), 2000);
     }, 1500);
   };
 
   return (
     <>
-      {/* Floating button */}
-      <motion.div
-        className="fixed bottom-6 right-6 z-50"
+      <motion.div className="fixed bottom-6 right-6 z-50"
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 1, type: 'spring', stiffness: 200 }}
-      >
+        transition={{ delay: 1, type: 'spring', stiffness: 200 }}>
         {!open && (
-          <motion.div
-            className="relative"
+          <motion.div className="relative"
             animate={{ y: [0, -5, 0] }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-          >
-            {/* Tooltip */}
+            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}>
             <motion.div
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: [0, 1, 1, 0], x: [10, 0, 0, -10] }}
               transition={{ duration: 4, repeat: Infinity, repeatDelay: 6 }}
-              className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-card border border-border rounded-xl px-3 py-2 shadow-lg whitespace-nowrap"
-            >
+              className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-card border border-border rounded-xl px-3 py-2 shadow-lg whitespace-nowrap">
               <p className="text-xs text-foreground font-medium">Precisa de ajuda? 💡</p>
               <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1 w-2 h-2 bg-card border-r border-t border-border rotate-45" />
             </motion.div>
@@ -174,7 +213,6 @@ export const FloatingAiAvatar = () => {
         )}
       </motion.div>
 
-      {/* Chat panel */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -183,8 +221,7 @@ export const FloatingAiAvatar = () => {
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
             transition={{ type: 'spring', damping: 25 }}
             className="fixed bottom-6 right-6 w-80 sm:w-96 bg-card border border-border rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden"
-            style={{ maxHeight: '70vh' }}
-          >
+            style={{ maxHeight: '75vh' }}>
             {/* Header */}
             <div className="p-3 border-b border-border bg-primary/5 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -201,7 +238,7 @@ export const FloatingAiAvatar = () => {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-[200px] max-h-[400px]">
+            <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-[200px] max-h-[450px]">
               {chat.length === 0 && (
                 <div className="bg-muted/50 rounded-xl p-3 text-xs text-muted-foreground">
                   <p className="font-medium text-foreground mb-1.5">👋 Olá! Sou a IA do EcoMEI.</p>
@@ -214,20 +251,50 @@ export const FloatingAiAvatar = () => {
                 </div>
               )}
               {chat.map((msg, idx) => (
-                <motion.div key={idx} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start gap-1.5'}`}>
-                  {msg.role === 'ai' && <AiAvatar size={24} speaking={false} />}
-                  <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs ${
-                    msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted text-foreground rounded-bl-md'
-                  }`}>
-                    {msg.text}
+                <motion.div key={idx} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                  <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start gap-1.5'}`}>
+                    {msg.role === 'ai' && <AiAvatar size={24} speaking={false} />}
+                    <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs ${
+                      msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted text-foreground rounded-bl-md'
+                    }`}>
+                      {msg.text}
+                    </div>
                   </div>
+                  {/* Result cards */}
+                  {msg.results && msg.results.length > 0 && (
+                    <div className="w-full mt-1.5 space-y-1.5 pl-8">
+                      {(expandedMsgIdx === idx ? msg.results : msg.results.slice(0, 3)).map((r) => (
+                        <ChatResultCard key={r.id} result={r} onClick={() => navigateToDemo(r)} />
+                      ))}
+                      {msg.results.length > 3 && expandedMsgIdx !== idx && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full text-[10px] h-7 text-muted-foreground hover:text-primary gap-1"
+                          onClick={() => setExpandedMsgIdx(idx)}>
+                          <ChevronDown className="w-3 h-3" />
+                          Ver todas as {msg.results.length} opções
+                        </Button>
+                      )}
+                      {expandedMsgIdx === idx && msg.results.length > 3 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full text-[10px] h-7 text-muted-foreground hover:text-primary"
+                          onClick={() => setExpandedMsgIdx(null)}>
+                          Mostrar menos
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </motion.div>
               ))}
               {thinking && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-1.5">
                   <AiAvatar size={24} thinking={true} />
                   <div className="bg-muted rounded-2xl rounded-bl-md px-3 py-2 text-xs text-muted-foreground">
-                    Analisando fornecedores...
+                    Analisando fornecedores e estoque...
                   </div>
                 </motion.div>
               )}
@@ -240,7 +307,7 @@ export const FloatingAiAvatar = () => {
                   value={message}
                   onChange={e => setMessage(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSend()}
-                  placeholder="O que você precisa?"
+                  placeholder="Ex: blusa, remédio, dor de barriga..."
                   className="rounded-xl text-xs h-8"
                 />
                 <Button size="icon" className="rounded-xl shrink-0 h-8 w-8" onClick={handleSend}>
@@ -256,8 +323,7 @@ export const FloatingAiAvatar = () => {
                   ]);
                   setTimeout(() => setSpeaking(false), 2000);
                 }}
-                className="w-full mt-1.5 text-[10px] text-muted-foreground hover:text-primary transition-colors flex items-center justify-center gap-1 py-1"
-              >
+                className="w-full mt-1.5 text-[10px] text-muted-foreground hover:text-primary transition-colors flex items-center justify-center gap-1 py-1">
                 <Headphones className="w-3 h-3" /> Central de Atendimento (SLA 24h)
               </button>
             </div>
