@@ -246,9 +246,10 @@ const Landing = () => {
       );
 
       if (relevantResults.length > 0) {
-        const top = relevantResults.slice(0, 3);
+        const top = relevantResults.slice(0, 5);
         const serviceList = top.map((r) => `• **${r.name}** — ${r.provider} (${r.distance}, ⭐${r.rating})${r.products.length > 0 ? ` | Produtos: ${r.products.join(', ')}` : ''}`).join('\n');
-        aiResponse = `Entendi sua necessidade! 🧠 Encontrei ${relevantResults.length} resultado(s) relevante(s):\n\n${serviceList}\n\n${relevantResults.length > 3 ? `E mais ${relevantResults.length - 3} opções! ` : ''}Posso agendar o mais próximo para você?`;
+        const contextMsg = matched.find((m) => m.aiFollowUp)?.aiFollowUp || 'Entendi sua necessidade! 🧠';
+        aiResponse = `${contextMsg}\n\nEncontrei ${relevantResults.length} resultado(s):\n\n${serviceList}\n\n${relevantResults.length > 5 ? `E mais ${relevantResults.length - 5} opções! ` : ''}Clique em um resultado na lista para iniciar a contratação! 👆`;
         // Atualizar busca automaticamente
         setSearchQuery(msg);
       } else {
