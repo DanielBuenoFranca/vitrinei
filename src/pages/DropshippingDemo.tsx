@@ -502,6 +502,224 @@ const DropshippingDemo = () => {
           </div>
         );
 
+      case 'processing':
+        return (
+          <div className="p-3 space-y-3">
+            <p className="text-xs font-bold text-foreground">⚙️ Processamento — SLAs Separados</p>
+            <p className="text-[10px] text-muted-foreground">Cada produto segue o SLA do seu tipo de estoque</p>
+
+            {localProducts.length > 0 && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                className="bg-green-500/5 border border-green-500/20 rounded-xl p-2.5">
+                <p className="text-[10px] font-bold text-green-700 mb-1.5">📦 Estoque Local — Saem com o técnico</p>
+                {localProducts.map((p, i) => (
+                  <div key={i} className="flex items-center justify-between text-[10px] py-1 border-t border-green-500/10 first:border-0">
+                    <span className="text-foreground font-medium">{p.name}</span>
+                    <Badge className="text-[7px] bg-green-500/10 text-green-600 border-0">Mesmo dia</Badge>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+
+            {dropProducts.length > 0 && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+                className="bg-accent/5 border border-accent/20 rounded-xl p-2.5">
+                <p className="text-[10px] font-bold text-accent-foreground mb-1.5">🌍 Dropshipping — SLA do fornecedor</p>
+                {dropProducts.map((p, i) => (
+                  <div key={i} className="flex items-center justify-between text-[10px] py-1 border-t border-accent/10 first:border-0">
+                    <div>
+                      <span className="text-foreground font-medium">{p.name}</span>
+                      <span className="text-[9px] text-muted-foreground ml-1">({p.provider})</span>
+                    </div>
+                    <Badge className="text-[7px] bg-accent/10 text-accent-foreground border-0">7-25 dias</Badge>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
+              className="bg-muted/50 rounded-xl p-2.5 space-y-1.5">
+              {[
+                { icon: '✅', label: 'Pedidos confirmados na plataforma', done: true },
+                { icon: '📦', label: `${localProducts.length} produto(s) separados pelo prestador`, done: localProducts.length > 0 },
+                { icon: '📤', label: `${dropProducts.length} ordem(ns) enviada(s) a fornecedores`, done: dropProducts.length > 0 },
+                { icon: '⏳', label: 'Rastreio ativado para todos os itens', done: true },
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-2 text-[10px]">
+                  <span>{item.icon}</span>
+                  <span className={item.done ? 'text-foreground font-medium' : 'text-muted-foreground'}>{item.label}</span>
+                  {item.done && <CheckCircle2 className="w-3 h-3 text-green-600 ml-auto" />}
+                </div>
+              ))}
+            </motion.div>
+          </div>
+        );
+
+      case 'tracking':
+        if (isMultiProduct) {
+          return (
+            <div className="p-3 space-y-3">
+              <p className="text-xs font-bold text-foreground">📦 Rastreio — {contextProducts.length} Produtos</p>
+              {contextProducts.map((p, i) => {
+                const isItemLocal = p.type === 'fisico';
+                const progress = Math.min(100, deliveryProgress + (isItemLocal ? 30 : -i * 8));
+                const statusLabel = progress >= 90 ? 'Entregue' : progress >= 60 ? 'Em trânsito' : progress >= 30 ? 'Despachado' : 'Processando';
+                return (
+                  <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.15 }}
+                    className="bg-card border border-border rounded-xl p-2.5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-base">{isItemLocal ? '📦' : '🌍'}</span>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-1">
+                          <p className="text-[11px] font-semibold">{p.name}</p>
+                          <Badge variant={isItemLocal ? 'default' : 'secondary'} className="text-[7px] h-3.5">
+                            {isItemLocal ? '📦 Local' : '🌍 Drop'}
+                          </Badge>
+                        </div>
+                        <p className="text-[9px] text-muted-foreground">
+                          {p.provider} • SLA: {isItemLocal ? 'Mesmo dia' : '7-25 dias'}
+                        </p>
+                      </div>
+                    </div>
+                    <Progress value={Math.max(0, progress)} className="h-1.5 mb-1" />
+                    <div className="flex justify-between text-[9px]">
+                      <span className={progress >= 90 ? 'text-green-600 font-bold' : 'text-muted-foreground'}>{statusLabel}</span>
+                      <span className="text-muted-foreground">{Math.max(0, Math.round(progress))}%</span>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          );
+        }
+        return null; // single-product tracking handled by transit/delivery steps
+
+      default: return null;
+    }
+  };
+
+  /* ─── MULTI-PRODUCT select/confirm/done overrides ─── */
+  const renderMultiProductStep = () => {
+    switch (step.id) {
+      case 'select':
+        return (
+          <div className="p-3 space-y-3">
+            <p className="text-xs font-bold text-foreground">🛒 {contextProducts.length} Produtos Selecionados</p>
+            <div className="space-y-2">
+              {contextProducts.map((p, i) => (
+                <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
+                  className="bg-card border border-border rounded-xl p-2.5 flex items-center gap-2.5">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg ${p.type === 'fisico' ? 'bg-green-500/10' : 'bg-accent/10'}`}>
+                    {p.type === 'fisico' ? '📦' : '🌍'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-semibold text-foreground truncate">{p.name}</p>
+                    <p className="text-[9px] text-muted-foreground">{p.provider}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs font-bold">R$ {p.price.toFixed(2)}</p>
+                    <Badge variant={p.type === 'fisico' ? 'default' : 'secondary'} className="text-[7px]">
+                      {p.type === 'fisico' ? 'Local' : 'Drop'}
+                    </Badge>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
+              className="bg-muted/50 border border-border rounded-xl p-2.5">
+              <p className="text-[10px] font-bold text-foreground mb-2">📊 SLAs de entrega</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className={`rounded-lg p-2 text-center border ${localProducts.length > 0 ? 'border-green-500/30 bg-green-500/5' : 'border-border'}`}>
+                  <p className="text-lg">📦</p>
+                  <p className="text-[9px] font-bold">{localProducts.length} Local</p>
+                  <Badge className="text-[7px] mt-1 bg-green-500/10 text-green-600 border-0">Mesmo dia</Badge>
+                </div>
+                <div className={`rounded-lg p-2 text-center border ${dropProducts.length > 0 ? 'border-accent/30 bg-accent/5' : 'border-border'}`}>
+                  <p className="text-lg">🌍</p>
+                  <p className="text-[9px] font-bold">{dropProducts.length} Drop</p>
+                  <Badge className="text-[7px] mt-1 bg-accent/10 text-accent-foreground border-0">7-25 dias</Badge>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        );
+
+      case 'confirm':
+        return (
+          <div className="p-3 space-y-3">
+            <p className="text-xs font-bold text-foreground">✅ Confirmação — {contextProducts.length} Produtos</p>
+            {contextProducts.map((p, i) => (
+              <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
+                className="flex items-center justify-between text-[10px] bg-card border border-border rounded-lg px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <span>{p.type === 'fisico' ? '📦' : '🌍'}</span>
+                  <span className="font-medium text-foreground">{p.name}</span>
+                </div>
+                <span className="font-bold">R$ {p.price.toFixed(2)}</span>
+              </motion.div>
+            ))}
+
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
+              className="bg-muted/50 rounded-xl p-2.5 space-y-1.5 text-[10px]">
+              <div className="flex justify-between"><span className="text-muted-foreground">Subtotal ({contextProducts.length} itens)</span><span>R$ {totalPrice.toFixed(2)}</span></div>
+              <div className="flex justify-between text-green-600"><span>Desconto Plano Prata (-10%)</span><span>-R$ {(totalPrice * 0.1).toFixed(2)}</span></div>
+              <div className="h-px bg-border" />
+              <div className="flex justify-between font-bold text-sm"><span>Total</span><span>R$ {(totalPrice * 0.9).toFixed(2)}</span></div>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
+              <Button size="sm" className="w-full text-xs gap-1" onClick={() => setCurrentStep(c => c + 1)}>
+                <CreditCard className="w-3 h-3" /> Confirmar Compra
+              </Button>
+            </motion.div>
+          </div>
+        );
+
+      case 'done':
+        return (
+          <div className="p-3 space-y-3">
+            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+              className="bg-gradient-to-br    from-green-500/15 to-primary/10 border border-green-500/30 rounded-xl p-4 text-center">
+              <span className="text-3xl">🎉</span>
+              <p className="text-sm font-bold text-green-700 mt-2">{contextProducts.length} Produtos Finalizados!</p>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity....y: 0 }} transition={{ delay: 0.3 }} className="grid grid-cols-2 gap-2">
+              {[
+                { icon: '🛒', label: 'Produtos', value: String(contextProducts.length), sub: `${localProducts.length} local + ${dropProducts.length} drop` },
+                { icon: '💰', label: 'Economizado', value: `R$ ${(totalPrice * 0.1).toFixed(2)}`, sub: 'Plano Prata -10%' },
+                { icon: '📦', label: 'Local', value: `${localProducts.length} item(s)`, sub: 'Mesmo dia' },
+                { icon: '🌍', label: 'Drop', value: `${dropProducts.length} item(s)`, sub: '7-25 dias' },
+              ].map((b, i) => (
+                <motion.div key={i} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 + i * 0.15 }}
+                  className="bg-card border border-border rounded-xl p-2.5 text-center">
+                  <span className="text-xl">{b.icon}</span>
+                  <p className="text-xs font-bold text-foreground mt-1">{b.value}</p>
+                  <p className="text-[9px] text-muted-foreground">{b.sub}</p>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}
+              className="bg-accent/10 border border-accent/30 rounded-xl p-3">
+              <p className="text-[10px] font-bold text-accent-foreground">🏆 Entrega Multi-SLA</p>
+              <ul className="space-y-1 mt-1.5">
+                {[
+                  '📦 Produtos de estoque local entregues com o técnico',
+                  '🌍 Produtos dropshipping seguem SLA do fornecedor',
+                  'Cliente pode adicionar produtos extras a qualquer momento',
+                  'Rastreio unificado independente da origem',
+                ].map((v, i) => (
+                  <li key={i} className="text-[9px] text-muted-foreground flex items-start gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-green-600 shrink-0 mt-0.5" />{v}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          </div>
+        );
+
       default: return null;
     }
   };
