@@ -59,6 +59,9 @@ function getAiSuggestions(cart: CartItem[], userCredits: number, plan: string): 
 interface CartItem {
   service: ServiceItem | null;
   products: ProductItem[];
+  contextualProducts: ProductItem[];
+  allProviderProducts: ProductItem[];
+  showAllProducts: boolean;
   scheduledDate?: string;
   scheduledTime?: string;
 }
