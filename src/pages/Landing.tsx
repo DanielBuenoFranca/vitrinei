@@ -9,7 +9,7 @@ import {
   Search, ArrowRight, Zap, Sparkles, Clock, MapPin, DollarSign,
   Headphones, ShoppingCart, BarChart3, Send, Star,
   Package, TrendingDown, Navigation, Users, Shield, MessageCircle,
-  ChevronDown
+  ChevronDown, ShoppingBag, Wrench as WrenchIcon, Store
 } from 'lucide-react';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
 import { segments, naturalLanguageMap, mockResults, semanticSearch, type ProductItem, type SearchResult } from '@/data/searchData';
