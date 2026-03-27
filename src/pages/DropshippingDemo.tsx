@@ -1040,7 +1040,7 @@ const DropshippingDemo = () => {
 
         <AnimatePresence mode="wait">
           <motion.div key={`${isContextual}-${currentStep}`} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.3 }}>
-            <PhoneFrame>{isContextual ? renderContextualStep() : renderGenericStep()}</PhoneFrame>
+            <PhoneFrame>{isContextual ? (isMultiProduct ? (renderMultiProductStep() || renderContextualStep()) : renderContextualStep()) : renderGenericStep()}</PhoneFrame>
           </motion.div>
         </AnimatePresence>
 
