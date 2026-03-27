@@ -401,7 +401,22 @@ const Landing = () => {
                       const SegIcon = seg?.icon || Wrench;
                       return (
                         <motion.div key={result.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}>
-                          <Card className="border-border/50 hover:border-primary/30 hover:shadow-md transition-all duration-200 cursor-pointer group">
+                          <Card
+                            className="border-border/50 hover:border-primary/30 hover:shadow-md transition-all duration-200 cursor-pointer group"
+                            onClick={() => {
+                              const params = new URLSearchParams({
+                                serviceName: result.name,
+                                serviceProvider: result.provider,
+                                servicePrice: String(result.price),
+                                serviceRating: String(result.rating),
+                                serviceDistance: result.distance,
+                                serviceTime: result.time,
+                                serviceSegment: result.segment,
+                                serviceProducts: JSON.stringify(result.products),
+                              });
+                              navigate(`/jornada-cliente?${params.toString()}`);
+                            }}
+                          >
                             <CardContent className="p-4">
                               <div className="flex items-start justify-between mb-2">
                                 <div className="flex items-center gap-2">
@@ -432,6 +447,9 @@ const Landing = () => {
                                   ))}
                                 </div>
                               )}
+                              <div className="mt-2 flex items-center gap-1 text-[10px] text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                                <ArrowRight className="w-3 h-3" /> Simular contratação
+                              </div>
                             </CardContent>
                           </Card>
                         </motion.div>
