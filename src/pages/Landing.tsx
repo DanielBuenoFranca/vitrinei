@@ -310,7 +310,7 @@ const Landing = () => {
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
                     {filteredResults.map((result, idx) => {
                       const seg = segments.find((s) => s.id === result.segment);
-                      const SegIcon = seg?.icon || Wrench;
+                      const SegIcon = seg?.icon || Sparkles;
                       return (
                         <motion.div key={result.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}>
                           <Card
