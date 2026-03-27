@@ -135,5 +135,293 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    transition: background-color 0.4s ease, color 0.3s ease;
   }
 }
+
+/* ═══════════════════════════════════════════════
+   THEME-SPECIFIC VISUAL OVERRIDES
+   ═══════════════════════════════════════════════ */
+
+/* ── Standard: Clean fintech feel ── */
+:root,
+[data-theme="standard"] {
+  --theme-btn-shadow: 0 1px 3px 0 hsl(220 30% 12% / 0.08), 0 1px 2px -1px hsl(220 30% 12% / 0.08);
+  --theme-btn-hover-shadow: 0 4px 12px -2px hsl(200 80% 35% / 0.2);
+  --theme-card-shadow: 0 1px 4px 0 hsl(220 30% 12% / 0.06);
+  --theme-card-hover-shadow: 0 8px 24px -4px hsl(200 80% 35% / 0.12);
+  --theme-border-style: solid;
+  --theme-btn-transform: translateY(0);
+  --theme-btn-hover-transform: translateY(-1px);
+  --theme-btn-active-transform: translateY(0);
+  --theme-glow: none;
+  --theme-card-border-width: 1px;
+}
+
+/* ── Tech Dark: Futuristic cyber aesthetic ── */
+[data-theme="tech-dark"] {
+  --theme-btn-shadow: 0 0 0 1px hsl(160 100% 45% / 0.15), inset 0 1px 0 hsl(160 100% 60% / 0.08);
+  --theme-btn-hover-shadow: 0 0 20px hsl(160 100% 45% / 0.3), 0 0 0 1px hsl(160 100% 45% / 0.4);
+  --theme-card-shadow: 0 0 0 1px hsl(160 100% 45% / 0.08), 0 4px 20px hsl(220 25% 2% / 0.6);
+  --theme-card-hover-shadow: 0 0 30px hsl(160 100% 45% / 0.12), 0 0 0 1px hsl(160 100% 45% / 0.2);
+  --theme-border-style: solid;
+  --theme-btn-transform: translateY(0);
+  --theme-btn-hover-transform: translateY(0) scale(1.02);
+  --theme-btn-active-transform: scale(0.98);
+  --theme-glow: 0 0 15px hsl(160 100% 45% / 0.15);
+  --theme-card-border-width: 1px;
+}
+
+/* ── Comercial: Friendly 3D rounded ── */
+[data-theme="fastfood"] {
+  --theme-btn-shadow: 0 4px 0 hsl(0 60% 38%), 0 6px 12px hsl(25 90% 15% / 0.15);
+  --theme-btn-hover-shadow: 0 5px 0 hsl(0 60% 35%), 0 8px 16px hsl(25 90% 15% / 0.2);
+  --theme-card-shadow: 0 4px 0 hsl(35 40% 78%), 0 6px 16px hsl(25 90% 15% / 0.1);
+  --theme-card-hover-shadow: 0 6px 0 hsl(35 40% 75%), 0 10px 24px hsl(25 90% 15% / 0.15);
+  --theme-border-style: solid;
+  --theme-btn-transform: translateY(0);
+  --theme-btn-hover-transform: translateY(-2px);
+  --theme-btn-active-transform: translateY(2px);
+  --theme-glow: none;
+  --theme-card-border-width: 2px;
+}
+
+
+/* ═══════════════════════════════════════════════
+   BUTTON STYLES PER THEME
+   ═══════════════════════════════════════════════ */
+
+/* Standard buttons: clean and subtle */
+[data-theme="standard"] button,
+[data-theme="standard"] [role="button"] {
+  transition: all 0.2s ease;
+}
+
+/* Tech Dark buttons: keyboard keycap style */
+[data-theme="tech-dark"] .themed-btn,
+[data-theme="tech-dark"] button[class*="bg-primary"],
+[data-theme="tech-dark"] [data-slot="button"] {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  position: relative;
+}
+
+[data-theme="tech-dark"] .themed-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 -2px 0 hsl(160 100% 45% / 0.1), inset 0 1px 0 hsl(160 100% 80% / 0.06);
+  pointer-events: none;
+}
+
+/* Comercial buttons: 3D push effect */
+[data-theme="fastfood"] button[class*="bg-primary"] {
+  box-shadow: var(--theme-btn-shadow);
+  transform: var(--theme-btn-transform);
+  transition: all 0.15s ease;
+  font-weight: 700;
+}
+[data-theme="fastfood"] button[class*="bg-primary"]:hover {
+  box-shadow: var(--theme-btn-hover-shadow);
+  transform: var(--theme-btn-hover-transform);
+}
+[data-theme="fastfood"] button[class*="bg-primary"]:active {
+  box-shadow: 0 1px 0 hsl(0 60% 38%), 0 2px 4px hsl(25 90% 15% / 0.15);
+  transform: var(--theme-btn-active-transform);
+}
+
+
+/* ═══════════════════════════════════════════════
+   CARD STYLES PER THEME
+   ═══════════════════════════════════════════════ */
+
+/* Standard: elegant lift */
+[data-theme="standard"] .rounded-lg[class*="border"][class*="bg-card"],
+[data-theme="standard"] [class*="rounded-lg"][class*="shadow"] {
+  box-shadow: var(--theme-card-shadow);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+[data-theme="standard"] .rounded-lg[class*="border"][class*="bg-card"]:hover {
+  box-shadow: var(--theme-card-hover-shadow);
+}
+
+/* Tech Dark: glowing border cards */
+[data-theme="tech-dark"] .rounded-lg[class*="border"][class*="bg-card"],
+[data-theme="tech-dark"] [class*="rounded-lg"][class*="shadow"] {
+  box-shadow: var(--theme-card-shadow);
+  border-color: hsl(160 100% 45% / 0.1);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  backdrop-filter: blur(8px);
+}
+[data-theme="tech-dark"] .rounded-lg[class*="border"][class*="bg-card"]:hover {
+  box-shadow: var(--theme-card-hover-shadow);
+  border-color: hsl(160 100% 45% / 0.25);
+}
+
+/* Comercial: 3D raised cards */
+[data-theme="fastfood"] .rounded-lg[class*="border"][class*="bg-card"],
+[data-theme="fastfood"] [class*="rounded-lg"][class*="shadow"] {
+  box-shadow: var(--theme-card-shadow);
+  border-width: var(--theme-card-border-width);
+  border-color: hsl(35 40% 82%);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+[data-theme="fastfood"] .rounded-lg[class*="border"][class*="bg-card"]:hover {
+  box-shadow: var(--theme-card-hover-shadow);
+  transform: translateY(-2px);
+}
+
+
+/* ═══════════════════════════════════════════════
+   BADGE / CHIP STYLES PER THEME
+   ═══════════════════════════════════════════════ */
+
+/* Tech Dark: glowing badges */
+[data-theme="tech-dark"] [class*="rounded-full"][class*="border"][class*="bg-primary"] {
+  box-shadow: 0 0 10px hsl(160 100% 45% / 0.3);
+}
+
+/* Comercial: puffy badges */
+[data-theme="fastfood"] [class*="rounded-full"][class*="border"] {
+  box-shadow: 0 2px 0 hsl(35 40% 78%);
+  border-width: 2px;
+}
+
+
+/* ═══════════════════════════════════════════════
+   INPUT STYLES PER THEME
+   ═══════════════════════════════════════════════ */
+
+/* Tech Dark: neon focus ring */
+[data-theme="tech-dark"] input,
+[data-theme="tech-dark"] textarea {
+  caret-color: hsl(160 100% 45%);
+}
+[data-theme="tech-dark"] input:focus,
+[data-theme="tech-dark"] textarea:focus {
+  box-shadow: 0 0 0 2px hsl(160 100% 45% / 0.2), 0 0 20px hsl(160 100% 45% / 0.08);
+}
+
+/* Comercial: warm rounded inputs */
+[data-theme="fastfood"] input,
+[data-theme="fastfood"] textarea {
+  border-radius: 1rem;
+  border-width: 2px;
+}
+[data-theme="fastfood"] input:focus,
+[data-theme="fastfood"] textarea:focus {
+  box-shadow: 0 3px 0 hsl(35 40% 82%), 0 0 0 3px hsl(0 85% 50% / 0.15);
+}
+
+
+/* ═══════════════════════════════════════════════
+   NAVBAR PER THEME
+   ═══════════════════════════════════════════════ */
+
+/* Tech Dark: scanline effect navbar */
+[data-theme="tech-dark"] nav {
+  background: hsl(220 25% 6% / 0.92) !important;
+  border-bottom-color: hsl(160 100% 45% / 0.12) !important;
+  box-shadow: 0 0 30px hsl(160 100% 45% / 0.05);
+}
+
+/* Comercial: warm navbar */
+[data-theme="fastfood"] nav {
+  border-bottom-width: 3px;
+  border-bottom-color: hsl(0 85% 50% / 0.2) !important;
+}
+
+
+/* ═══════════════════════════════════════════════
+   SCROLLBAR PER THEME
+   ═══════════════════════════════════════════════ */
+
+[data-theme="tech-dark"] ::-webkit-scrollbar {
+  width: 6px;
+}
+[data-theme="tech-dark"] ::-webkit-scrollbar-track {
+  background: hsl(220 25% 6%);
+}
+[data-theme="tech-dark"] ::-webkit-scrollbar-thumb {
+  background: hsl(160 100% 45% / 0.3);
+  border-radius: 3px;
+}
+[data-theme="tech-dark"] ::-webkit-scrollbar-thumb:hover {
+  background: hsl(160 100% 45% / 0.5);
+}
+
+[data-theme="fastfood"] ::-webkit-scrollbar {
+  width: 10px;
+}
+[data-theme="fastfood"] ::-webkit-scrollbar-track {
+  background: hsl(40 100% 96%);
+}
+[data-theme="fastfood"] ::-webkit-scrollbar-thumb {
+  background: hsl(0 85% 50% / 0.3);
+  border-radius: 5px;
+}
+
+
+/* ═══════════════════════════════════════════════
+   SELECTION COLOR PER THEME
+   ═══════════════════════════════════════════════ */
+
+[data-theme="standard"] ::selection {
+  background: hsl(200 80% 35% / 0.2);
+  color: hsl(220 30% 12%);
+}
+[data-theme="tech-dark"] ::selection {
+  background: hsl(160 100% 45% / 0.3);
+  color: hsl(0 0% 100%);
+}
+[data-theme="fastfood"] ::selection {
+  background: hsl(0 85% 50% / 0.2);
+  color: hsl(25 90% 15%);
+}
+
+
+/* ═══════════════════════════════════════════════
+   TECH DARK SPECIAL EFFECTS
+   ═══════════════════════════════════════════════ */
+
+/* Subtle grid background */
+[data-theme="tech-dark"] .min-h-screen {
+  background-image:
+    linear-gradient(hsl(160 100% 45% / 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(160 100% 45% / 0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Glowing logo */
+[data-theme="tech-dark"] .rounded-lg.bg-primary {
+  box-shadow: 0 0 20px hsl(160 100% 45% / 0.4), 0 0 40px hsl(160 100% 45% / 0.15);
+}
+
+/* Neon text glow for primary text */
+[data-theme="tech-dark"] .text-primary {
+  text-shadow: 0 0 10px hsl(160 100% 45% / 0.4), 0 0 30px hsl(160 100% 45% / 0.15);
+}
+
+
+/* ═══════════════════════════════════════════════
+   COMERCIAL SPECIAL EFFECTS
+   ═══════════════════════════════════════════════ */
+
+/* Warm gradient background */
+[data-theme="fastfood"] .min-h-screen {
+  background-image: radial-gradient(ellipse at top, hsl(45 100% 50% / 0.04) 0%, transparent 60%);
+}
+
+/* Playful logo bounce-ready */
+[data-theme="fastfood"] .rounded-lg.bg-primary {
+  border-radius: 1rem;
+  box-shadow: 0 3px 0 hsl(0 60% 38%), 0 6px 12px hsl(25 90% 15% / 0.2);
+}
+
+/* Rounded everything */
+[data-theme="fastfood"] .rounded-md { border-radius: 0.75rem; }
+[data-theme="fastfood"] .rounded-lg { border-radius: 1.25rem; }
+[data-theme="fastfood"] .rounded-xl { border-radius: 1.5rem; }
+[data-theme="fastfood"] .rounded-2xl { border-radius: 2rem; }
