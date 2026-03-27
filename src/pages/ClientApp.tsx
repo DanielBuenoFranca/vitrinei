@@ -325,6 +325,12 @@ const ClientApp = () => {
               <div><p className="text-[10px] font-bold text-foreground">Dropshipping</p><p className="text-[9px] text-muted-foreground">Produtos globais</p></div>
             </CardContent>
           </Card>
+          <Card className="flex-1 border-border cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/gestao')}>
+            <CardContent className="p-2 flex items-center gap-2">
+              <span className="text-lg">🔧</span>
+              <div><p className="text-[10px] font-bold text-foreground">Gestão</p><p className="text-[9px] text-muted-foreground">Chamados</p></div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Segmented Service Sections */}
@@ -426,7 +432,16 @@ const ClientApp = () => {
               {clientProducts.filter(p => searchQuery.length < 2 || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.category.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 6).map(product => {
                 const discountedPrice = product.price * (1 - discount / 100);
                 return (
-                  <Card key={product.id} className="overflow-hidden">
+                  <Card key={product.id} className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => {
+                      const params = new URLSearchParams({
+                        productName: product.name,
+                        productType: product.stockType || 'fisico',
+                        productPrice: String(product.price),
+                        productProvider: product.supplier,
+                      });
+                      navigate(`/dropshipping?${params.toString()}`);
+                    }}>
                     <CardContent className="p-0">
                       <div className="h-16 bg-muted flex items-center justify-center text-2xl">{product.image}</div>
                       <div className="p-2">
@@ -439,9 +454,11 @@ const ClientApp = () => {
                           {discount > 0 && <p className="text-[9px] text-muted-foreground line-through">R$ {product.price.toFixed(2)}</p>}
                           <p className="text-xs font-bold text-foreground">R$ {discountedPrice.toFixed(2)}</p>
                         </div>
-                        <Button size="sm" className="w-full mt-1.5 text-[9px] h-6 gap-0.5" onClick={() => addProductToCart(product)}>
-                          <Plus className="w-2.5 h-2.5" /> Adicionar
-                        </Button>
+                        <div className="flex gap-1 mt-1.5">
+                          <Button size="sm" variant="outline" className="flex-1 text-[8px] h-6 gap-0.5" onClick={(e) => { e.stopPropagation(); addProductToCart(product); }}>
+                            <Plus className="w-2.5 h-2.5" /> Carrinho
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>

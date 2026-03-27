@@ -137,15 +137,19 @@ const MeiPanel = () => {
                 </CardContent>
               </Card>
 
-              {/* Quick stats */}
+              {/* Quick stats — clickable to demos */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card><CardContent className="p-4 text-center">
+                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/gestao')}>
+                  <CardContent className="p-4 text-center">
                   <p className="text-2xl font-bold text-foreground">8</p>
                   <p className="text-xs text-muted-foreground">Chamados Pendentes</p>
+                  <p className="text-[9px] text-primary mt-1">▶ Ver demo</p>
                 </CardContent></Card>
-                <Card><CardContent className="p-4 text-center">
+                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/mei-acompanhamento')}>
+                  <CardContent className="p-4 text-center">
                   <p className="text-2xl font-bold text-primary">3</p>
                   <p className="text-xs text-muted-foreground">Em Execução</p>
+                  <p className="text-[9px] text-primary mt-1">▶ Acompanhar</p>
                 </CardContent></Card>
                 <Card><CardContent className="p-4 text-center">
                   <p className="text-2xl font-bold text-foreground">142</p>

@@ -330,6 +330,35 @@ const DropshippingDemo = () => {
       </nav>
 
       <div className="pt-20 pb-10 px-4 container mx-auto">
+        {/* Context banner when arriving from product click */}
+        {contextProduct && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 max-w-lg mx-auto">
+            <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-accent/5">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-xl">
+                    {contextType === 'fisico' ? '📦' : '🌍'}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-foreground">{contextProduct}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {contextProvider} • R$ {contextPrice}
+                    </p>
+                    <Badge variant={contextType === 'fisico' ? 'default' : 'secondary'} className="text-[9px] mt-1">
+                      {contextType === 'fisico' ? '📦 Estoque Local — Entrega rápida' : '🌍 Dropshipping — Fornecedor global'}
+                    </Badge>
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-2 border-t border-border pt-2">
+                  {contextType === 'fisico'
+                    ? '✅ Este produto está no estoque do prestador. Veja abaixo o fluxo completo de compra com entrega local rápida.'
+                    : '🌐 Este produto vem de um fornecedor global via dropshipping. Acompanhe o fluxo de compra internacional abaixo.'}
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
         <div className="flex items-center justify-center gap-1 mb-8 flex-wrap">
           {steps.map((s, i) => (
             <button key={s.id} onClick={() => setCurrentStep(i)}
