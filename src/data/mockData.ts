@@ -86,7 +86,194 @@ export interface ServiceItem {
   allowComplement: boolean;
   monetaryValue: number;
   relatedProductIds: number[];
-  themeTags: string[];
+  themeTags?: string[];
+}
+
+/**
+ * Mapa de tags temáticas derivadas automaticamente do nome/categoria do serviço.
+ * Usado para filtrar produtos contextualmente.
+ */
+const serviceThemeMap: Record<string, string[]> = {
+  // Saúde
+  'dentist': ['odontologia', 'dente', 'dental', 'oral', 'boca', 'clareador', 'fio dental', 'escova'],
+  'clínic': ['saúde', 'primeiros socorros', 'termômetro', 'oxímetro', 'vitamina', 'suplemento'],
+  'ortodont': ['odontologia', 'dente', 'dental', 'oral', 'aparelho', 'alinhador'],
+  'oftalmolog': ['oftalmologia', 'olho', 'colírio', 'óculos', 'visão'],
+  'dermatolog': ['dermatologia', 'pele', 'protetor solar', 'skincare', 'creme'],
+  'nutricion': ['nutrição', 'suplemento', 'whey', 'creatina', 'vitamina'],
+  'fisioterapeut': ['fisioterapia', 'faixa', 'bolsa térmica', 'ortopédic', 'massageador'],
+  'psicólog': ['saúde', 'bem-estar'],
+  'enfermei': ['saúde', 'curativo', 'primeiros socorros', 'aplicação'],
+  'fonoaudiólog': ['saúde'],
+  'podólog': ['pé', 'unha', 'podologia'],
+  'laborator': ['exame', 'saúde'],
+  'acupuntur': ['acupuntura', 'agulha', 'bem-estar'],
+  'quiroprax': ['coluna', 'ortopédic', 'lombar'],
+  'medicina do trabalho': ['aso', 'pcmso', 'saúde', 'exame'],
+  // Manutenção
+  'eletricista': ['elétric', 'fio', 'tomada', 'disjuntor', 'iluminação', 'material elétrico'],
+  'encanador': ['hidráulic', 'torneira', 'veda-rosca', 'sifão', 'encanamento'],
+  'montagem': ['parafuso', 'ferrament', 'madeira'],
+  'pintor': ['tinta', 'pintura', 'rolo', 'lixa'],
+  'gesseiro': ['gesso', 'drywall', 'forro'],
+  'serralheiro': ['grade', 'portão', 'ferro', 'solda'],
+  'vidraceiro': ['vidro', 'box', 'janela', 'espelho'],
+  'pedreiro': ['cimento', 'tijolo', 'construção', 'reforma'],
+  'impermeabiliz': ['impermeabiliz', 'vedação', 'telhado'],
+  'piso': ['piso', 'cerâmica', 'porcelanato', 'rejunte'],
+  'marido de aluguel': ['ferrament', 'parafuso', 'reparo'],
+  'chaveiro': ['chave', 'fechadura', 'cofre'],
+  'ar condicionado': ['ar condicionado', 'climatiz', 'gás'],
+  'aquecedor': ['aquecedor', 'gás', 'boiler'],
+  'cerca elétrica': ['segurança', 'cerca', 'elétric'],
+  'telhado': ['telha', 'telhado', 'calha'],
+  'antena': ['antena', 'sinal', 'tv'],
+  'soldador': ['solda', 'ferro', 'metal'],
+  'desentupidora': ['desentup', 'esgoto', 'vaso', 'pia'],
+  'portão eletrônico': ['portão', 'motor', 'controle'],
+  // Beleza
+  'cabeleirei': ['cabelo', 'shampoo', 'hidratação', 'capilar', 'tintura'],
+  'manicure': ['unha', 'esmalte', 'lixa', 'alicate'],
+  'estética facial': ['facial', 'skincare', 'pele', 'sérum', 'creme'],
+  'sobrancelha': ['sobrancelha', 'henna', 'pinça'],
+  'cílio': ['cílio', 'alongamento', 'cola'],
+  'depilação': ['depilação', 'cera', 'depilatória'],
+  'massagem': ['massagem', 'óleo', 'creme'],
+  'maquiagem': ['maquiagem', 'base', 'corretivo', 'pincel', 'batom'],
+  'limpeza de pele': ['pele', 'limpeza', 'skincare'],
+  'peeling': ['peeling', 'pele', 'renovação'],
+  'microblading': ['sobrancelha', 'microblading'],
+  'barbeiro': ['barba', 'barbeiro', 'navalha', 'cabelo'],
+  'drenagem': ['drenagem', 'linfática', 'massagem'],
+  'tratamento capilar': ['capilar', 'cabelo', 'hidratação', 'queratina'],
+  'bronzeamento': ['bronze', 'spray', 'pele'],
+  // Lar
+  'limpeza': ['limpeza', 'desinfetante', 'produto', 'vassoura', 'pano'],
+  'jardinagem': ['jardim', 'poda', 'adubo', 'tesoura', 'luva'],
+  'organiza': ['organizador', 'caixa', 'arrumação'],
+  'dedetiza': ['inseticida', 'veneno', 'dedetização'],
+  'lavanderia': ['roupa', 'lavagem', 'passar'],
+  'piscina': ['piscina', 'cloro', 'ph'],
+  'decoração': ['decoração', 'cortina', 'tapete'],
+  'estofado': ['estofado', 'sofá', 'carpete', 'limpeza'],
+  'poda': ['poda', 'árvore', 'jardim'],
+  // Automotivo
+  'mecânic': ['óleo', 'filtro', 'motor', 'vela', 'ferrament'],
+  'lavagem': ['lavagem', 'shampoo', 'cera', 'polimento'],
+  'funilaria': ['funilaria', 'pintura', 'massa', 'lixa'],
+  'elétrica auto': ['elétric', 'bateria', 'alternador'],
+  'pneu': ['pneu', 'alinhamento', 'balanceamento'],
+  'som': ['som', 'alto-falante', 'central multimídia'],
+  'martelinho': ['martelinho', 'abolido', 'pintura'],
+  'envelopamento': ['película', 'envelopamento', 'adesivo'],
+  'guincho': ['guincho', 'reboque', 'socorro'],
+  'rastreador': ['rastreador', 'gps', 'segurança'],
+  // Digital
+  'design': ['template', 'mockup', 'design', 'identidade visual', 'branding'],
+  'fotógrafo': ['fotografia', 'preset', 'câmera', 'iluminação'],
+  'social media': ['instagram', 'template', 'stories', 'marketing'],
+  'vídeo': ['vídeo', 'edição', 'reels'],
+  'web': ['site', 'landing page', 'web'],
+  'copywriter': ['texto', 'copy', 'marketing'],
+  'tráfego': ['ads', 'marketing', 'tráfego'],
+  'ux': ['ui', 'ux', 'prototip'],
+  'podcast': ['podcast', 'áudio', 'microfone'],
+  // Tech
+  'formatação': ['formatação', 'computador', 'software', 'ssd', 'memória'],
+  'rede': ['rede', 'wi-fi', 'roteador', 'cabo', 'switch'],
+  'celular': ['celular', 'smartphone', 'tela', 'película'],
+  'cftv': ['câmera', 'cftv', 'dvr', 'segurança'],
+  'pc gamer': ['placa de vídeo', 'memória', 'ssd', 'gamer'],
+  'e-commerce': ['loja', 'e-commerce', 'online'],
+  'ia': ['ia', 'chatbot', 'automação'],
+  'cibersegurança': ['segurança', 'firewall', 'antivírus'],
+  'office': ['planilha', 'excel', 'office'],
+  'recuperação': ['backup', 'hd', 'dados', 'recuperação'],
+  // Pet
+  'banho': ['shampoo', 'banho', 'higiene'],
+  'veterinário': ['veterinário', 'medicamento', 'vacina'],
+  'dog walker': ['coleira', 'guia', 'passeio'],
+  'adestramento': ['adestramento', 'petisco', 'treinamento'],
+  'pet sitter': ['ração', 'comedouro', 'cama'],
+  'creche': ['brinquedo', 'ração', 'comedouro'],
+  'tosa': ['tosa', 'máquina', 'tesoura'],
+  'vacinação pet': ['vacina', 'seringa', 'medicamento'],
+  'nutricionista animal': ['ração', 'suplemento', 'nutrição'],
+  'transporte pet': ['caixa de transporte', 'coleira'],
+  // Eventos
+  'buffet': ['buffet', 'comida', 'refeição'],
+  'dj': ['dj', 'som', 'música', 'caixa de som'],
+  'decoração de festas': ['balão', 'decoração', 'painel'],
+  'garçom': ['taça', 'prato', 'talheres'],
+  'inflá': ['inflável', 'brinquedo', 'pula-pula'],
+  'animador': ['fantasia', 'brinquedo'],
+  'cerimonial': ['cerimonial', 'convite'],
+  'bartender': ['bebida', 'coquetel', 'coqueteleira'],
+  'confeitei': ['bolo', 'doce', 'confeitaria'],
+  'churrasquei': ['carne', 'churrasco', 'espeto'],
+  // Música
+  'violão': ['violão', 'corda', 'palheta', 'afinador'],
+  'guitarra': ['guitarra', 'corda', 'palheta', 'amplificador'],
+  'piano': ['piano', 'teclado', 'partitura'],
+  'bateria': ['bateria', 'baqueta', 'prato'],
+  'baixo': ['baixo', 'corda', 'amplificador'],
+  'canto': ['microfone', 'vocal', 'áudio'],
+  'ukulele': ['ukulele', 'corda'],
+  'violino': ['violino', 'arco', 'breu'],
+  'saxofone': ['saxofone', 'palheta', 'bocal'],
+  'produção musical': ['interface de áudio', 'monitor', 'estúdio', 'plugin'],
+  'gravação': ['microfone', 'interface', 'estúdio'],
+  'mixagem': ['monitor', 'plugin', 'fone'],
+  'sonorização': ['caixa de som', 'mesa de som', 'microfone'],
+  // Natureza
+  'horta': ['semente', 'vaso', 'substrato', 'adubo'],
+  'paisagismo': ['planta', 'jardim', 'paisagismo'],
+  'jardineiro': ['jardim', 'poda', 'adubo', 'ferramenta'],
+  'fitoterapia': ['chá', 'fitoterápico', 'erva', 'natural'],
+  'compostagem': ['composteira', 'adubo', 'orgânico'],
+  'aromaterapia': ['óleo essencial', 'difusor', 'aroma'],
+  'floral': ['floral', 'bach', 'essência'],
+  'permacultura': ['permacultura', 'sustentável', 'orgânico'],
+  'apicultura': ['mel', 'abelha', 'colmeia'],
+  'irrigação': ['irrigação', 'mangueira', 'gotejamento'],
+  'jardim vertical': ['vaso', 'suporte', 'planta'],
+  // Educação
+  'professor': ['livro', 'material', 'caderno', 'apostila'],
+  'inglês': ['livro', 'idioma', 'inglês'],
+  'culinária': ['utensílio', 'panela', 'receita'],
+  'costura': ['tecido', 'linha', 'agulha'],
+  'natação': ['óculos', 'touca', 'maiô'],
+  'autoescola': ['direção', 'habilitação'],
+  'marketing digital': ['marketing', 'ads', 'curso'],
+  'excel': ['planilha', 'excel', 'curso'],
+  'fotografia': ['câmera', 'lente', 'tripé'],
+  'desenho': ['lápis', 'papel', 'arte'],
+  'programação': ['programação', 'código', 'software'],
+  'primeiros socorros': ['kit primeiros socorros', 'curativo', 'bandagem'],
+  // Bem-estar
+  'personal trainer': ['whey', 'suplemento', 'faixa', 'luva', 'academia'],
+  'yoga': ['tapete', 'yoga', 'bloco', 'meditação'],
+  'pilates': ['bola', 'faixa', 'pilates'],
+  'massoterapeut': ['óleo', 'creme', 'massagem'],
+  'meditação': ['incenso', 'vela', 'meditação', 'difusor'],
+  'crossfit': ['luva', 'faixa', 'corda', 'kettlebell'],
+  'reiki': ['cristal', 'incenso', 'energia'],
+  'muay thai': ['luva', 'protetor', 'bandagem', 'saco'],
+  'funcional': ['faixa', 'cone', 'corda', 'kettlebell'],
+  'hidroginástica': ['óculos', 'touca', 'maiô'],
+};
+
+/**
+ * Deriva automaticamente as tags temáticas de um serviço baseado no seu nome.
+ */
+function deriveThemeTags(service: ServiceItem): string[] {
+  if (service.themeTags && service.themeTags.length > 0) return service.themeTags;
+  const nameLower = service.name.toLowerCase();
+  for (const [keyword, tags] of Object.entries(serviceThemeMap)) {
+    if (nameLower.includes(keyword.toLowerCase())) return tags;
+  }
+  // Fallback: use category-based broad matching
+  return [service.category.toLowerCase()];
 }
 
 /**
@@ -97,12 +284,13 @@ export function getContextualProducts(
   service: ServiceItem,
   products: ProductItem[]
 ): ProductItem[] {
-  if (!service.themeTags || service.themeTags.length === 0) return products;
-  const tags = service.themeTags.map(t => t.toLowerCase());
+  const tags = deriveThemeTags(service);
+  if (tags.length === 0) return products;
+  const normalizedTags = tags.map(t => t.toLowerCase());
   return products.filter(p => {
     const pName = p.name.toLowerCase();
     const pCat = p.category.toLowerCase();
-    return tags.some(tag => pName.includes(tag) || pCat.includes(tag));
+    return normalizedTags.some(tag => pName.includes(tag) || pCat.includes(tag));
   });
 }
 
