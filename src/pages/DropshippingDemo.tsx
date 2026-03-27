@@ -992,32 +992,60 @@ const DropshippingDemo = () => {
         {/* Context banner */}
         {isContextual && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 max-w-lg mx-auto">
-            <Card className={`${isLocal ? 'border-green-500/30 bg-gradient-to-r from-green-500/5 to-primary/5' : 'border-accent/30 bg-gradient-to-r from-accent/5 to-primary/5'}`}>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${isLocal ? 'bg-green-500/10' : 'bg-accent/10'}`}>
-                    {isLocal ? '📦' : '🌍'}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-bold text-foreground">{contextProduct}</p>
-                    <p className="text-xs text-muted-foreground">{contextProvider} • R$ {contextPrice}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant={isLocal ? 'default' : 'secondary'} className="text-[10px]">
-                        {isLocal ? '📦 Estoque do Prestador' : '🌍 Fornecedor Terceiro'}
-                      </Badge>
-                      <span className="text-[10px] text-muted-foreground">
-                        SLA: {isLocal ? 'Mesmo dia (com serviço)' : '7-25 dias'}
-                      </span>
+            {isMultiProduct ? (
+              <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-accent/5">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-2xl">🛒</div>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">{contextProducts.length} Produtos Selecionados</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        {localProducts.length > 0 && <Badge className="text-[9px] bg-green-500/10 text-green-600 border-0">📦 {localProducts.length} estoque local</Badge>}
+                        {dropProducts.length > 0 && <Badge variant="secondary" className="text-[9px]">🌍 {dropProducts.length} dropshipping</Badge>}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <p className="text-[10px] text-muted-foreground mt-3 border-t border-border pt-2">
-                  {isLocal
-                    ? '✅ Este produto está no estoque do prestador. Será entregue junto com o técnico no dia do serviço. O SLA segue o prazo do serviço.'
-                    : '🌐 Este produto vem de um fornecedor terceiro (dropshipping). O SLA é independente — o produto segue seu próprio prazo de entrega.'}
-                </p>
-              </CardContent>
-            </Card>
+                  <div className="space-y-1 text-[10px]">
+                    {contextProducts.map((p, i) => (
+                      <div key={i} className="flex items-center justify-between py-1 border-t border-border first:border-0">
+                        <span className="flex items-center gap-1"><span>{p.type === 'fisico' ? '📦' : '🌍'}</span> {p.name}</span>
+                        <span className="font-medium">R$ {p.price.toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-2 border-t border-border pt-2">
+                    Cada produto segue o SLA do seu tipo: estoque local chega com o técnico, dropshipping segue prazo do fornecedor.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className={`${isLocal ? 'border-green-500/30 bg-gradient-to-r from-green-500/5 to-primary/5' : 'border-accent/30 bg-gradient-to-r from-accent/5 to-primary/5'}`}>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${isLocal ? 'bg-green-500/10' : 'bg-accent/10'}`}>
+                      {isLocal ? '📦' : '🌍'}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-foreground">{contextProducts[0]?.name}</p>
+                      <p className="text-xs text-muted-foreground">{contextProducts[0]?.provider} • R$ {contextProducts[0]?.price?.toFixed(2)}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant={isLocal ? 'default' : 'secondary'} className="text-[10px]">
+                          {isLocal ? '📦 Estoque do Prestador' : '🌍 Fornecedor Terceiro'}
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground">
+                          SLA: {isLocal ? 'Mesmo dia (com serviço)' : '7-25 dias'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-3 border-t border-border pt-2">
+                    {isLocal
+                      ? '✅ Este produto está no estoque do prestador. Será entregue junto com o técnico no dia do serviço.'
+                      : '🌐 Este produto vem de um fornecedor terceiro (dropshipping). O SLA é independente do serviço.'}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </motion.div>
         )}
 
