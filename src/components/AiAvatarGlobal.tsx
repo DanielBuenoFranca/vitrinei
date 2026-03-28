@@ -385,6 +385,25 @@ export const FloatingAiAvatar = () => {
                       </div>
                     </div>
                   )}
+                  {/* Central action buttons when no results */}
+                  {msg.role === 'ai' && (msg.searchResult as any)?._noResults && (
+                    <div className="w-full mt-1.5 pl-8 space-y-1">
+                      <Button size="sm" className="w-full gap-1.5 text-[10px] h-7" onClick={() => {
+                        const sr = msg.searchResult as any;
+                        const params = new URLSearchParams({ query: sr._query, context: 'Chat IA', summary: sr._summary, type: 'both' });
+                        navigate(`/central-atendimento?${params.toString()}`);
+                      }}>
+                        <Headphones className="w-3 h-3" /> Acionar Central
+                      </Button>
+                      <Button size="sm" variant="outline" className="w-full gap-1.5 text-[10px] h-7" onClick={() => {
+                        const sr = msg.searchResult as any;
+                        const params = new URLSearchParams({ query: sr._query, context: 'Incluir item', summary: sr._summary, type: 'both' });
+                        navigate(`/central-atendimento?${params.toString()}`);
+                      }}>
+                        <Plus className="w-3 h-3" /> Incluir no hub
+                      </Button>
+                    </div>
+                  )}
                 </motion.div>
               ))}
               {thinking && (
@@ -413,12 +432,10 @@ export const FloatingAiAvatar = () => {
               </div>
               <button
                 onClick={() => {
-                  setSpeaking(true);
-                  setChat(prev => [...prev,
-                    { role: 'user', text: 'Preciso de ajuda especializada' },
-                    { role: 'ai', text: 'Encaminhando para a Central de Atendimento. SLA: máximo 24h. Você será notificado! 📩✅' },
-                  ]);
-                  setTimeout(() => setSpeaking(false), 2000);
+                  const lastQuery = chat.filter(m => m.role === 'user').pop()?.text || 'serviço especializado';
+                  const summary = buildSupportSummary(chat, lastQuery);
+                  const params = new URLSearchParams({ query: lastQuery, context: 'Chat flutuante', summary, type: 'both' });
+                  navigate(`/central-atendimento?${params.toString()}`);
                 }}
                 className="w-full mt-1.5 text-[10px] text-muted-foreground hover:text-primary transition-colors flex items-center justify-center gap-1 py-1">
                 <Headphones className="w-3 h-3" /> Central de Atendimento (SLA 24h)
