@@ -29,6 +29,7 @@ const Landing = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [executedQuery, setExecutedQuery] = useState('');
   const [searchExecuted, setSearchExecuted] = useState(false);
+  const [searchVersion, setSearchVersion] = useState(0);
   const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set());
   const [activeSegments, setActiveSegments] = useState<string[]>([]);
   const [showAiPanel, setShowAiPanel] = useState(false);
@@ -48,7 +49,10 @@ const Landing = () => {
     if (!searchQuery.trim() && activeSegments.length === 0) return;
     setExecutedQuery(searchQuery.trim());
     setSearchExecuted(true);
+    setSearchVersion(v => v + 1);
     setSelectedSuggestions(new Set());
+    setShowSearchProducts(false);
+    setProductCart([]);
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent) => {
