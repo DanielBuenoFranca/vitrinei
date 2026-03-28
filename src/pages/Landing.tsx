@@ -136,10 +136,10 @@ const Landing = () => {
   const toggleSegment = (id: string) => {
     setActiveSegments((prev) => {
       const next = prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id];
-      // Auto-execute search when toggling segments
       setTimeout(() => {
         setSearchExecuted(true);
         setExecutedQuery(searchQuery.trim());
+        setSearchVersion(v => v + 1);
       }, 0);
       return next;
     });
