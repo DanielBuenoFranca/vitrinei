@@ -501,6 +501,9 @@ export interface SearchResult {
   suggestedServices?: typeof mockResults;
 }
 
+type ContextualSuggestionConfidence = 'high' | 'medium' | 'low';
+type ContextualSuggestionSource = 'local_nl' | 'local_contextual' | 'local_segment' | 'local_generic' | 'web';
+
 // ── Helpers for universal fuzzy matching ──
 
 interface ContextualMapEntry {
@@ -522,14 +525,32 @@ const GENERIC_INTENT_TOKENS = new Set([
   'profissional', 'profissionais', 'atendimento', 'contratar', 'encontrar', 'pesquisa', 'buscar', 'coisa'
 ]);
 
+const PHRASE_FILLER_TOKENS = new Set([
+  ...GENERIC_INTENT_TOKENS,
+  'estou', 'estava', 'estive', 'estamos', 'fico', 'fiquei', 'ficou', 'sentindo', 'sinto', 'tenho', 'tive', 'com',
+  'sem', 'para', 'pra', 'por', 'de', 'do', 'da', 'dos', 'das', 'na', 'no', 'nas', 'nos', 'em', 'e', 'ou', 'um',
+  'uma', 'uns', 'umas', 'meu', 'minha', 'meus', 'minhas', 'me', 'que', 'isso', 'isto', 'aqui', 'ali', 'nao', 'não',
+  'ser', 'mais', 'menos', 'muito', 'muita', 'pouco', 'pouca', 'hoje', 'ontem', 'amanha', 'amanhã'
+]);
+
 /** Normalize accents & lowercase */
 function normalize(s: string): string {
-  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 /** Break a phrase into meaningful tokens (2+ chars) */
 function tokenize(s: string): string[] {
   return normalize(s).split(/\s+/).filter(t => t.length >= 2);
+}
+
+function tokenizePhrase(s: string): string[] {
+  return tokenize(s).filter(token => token.length >= 3 && !PHRASE_FILLER_TOKENS.has(token));
 }
 
 function isMeaningfulIntentToken(token: string): boolean {
@@ -542,6 +563,35 @@ function commonPrefixLength(a: string, b: string): number {
   let i = 0;
   while (i < left.length && i < right.length && left[i] === right[i]) i += 1;
   return i;
+}
+
+function scoreTriggerPhrase(text: string, textTokens: string[], trigger: string): number {
+  const normalizedTrigger = normalize(trigger);
+  const triggerTokens = tokenizePhrase(trigger);
+
+  if (!normalizedTrigger || triggerTokens.length === 0) return 0;
+  if (text === normalizedTrigger) return 260;
+  if (text.includes(normalizedTrigger)) return 220 + normalizedTrigger.length;
+
+  const overlap = triggerTokens.filter(token => textTokens.includes(token));
+  let score = overlap.length * 28;
+
+  if (overlap.length === triggerTokens.length) {
+    score += 140 + triggerTokens.join('').length;
+  } else if (overlap.length >= Math.max(1, triggerTokens.length - 1)) {
+    score += 70;
+  }
+
+  for (const token of textTokens) {
+    if (normalizedTrigger.includes(token) && token.length >= 4) score = Math.max(score, 40 + token.length * 2);
+    else if (token.includes(normalizedTrigger) && normalizedTrigger.length >= 4) score = Math.max(score, 35 + normalizedTrigger.length * 2);
+    else {
+      const prefix = commonPrefixLength(token, normalizedTrigger);
+      if (prefix >= 5) score = Math.max(score, 18 + prefix * 2);
+    }
+  }
+
+  return score;
 }
 
 function scoreKeywordIntent(query: string, tokens: string[], keyword: string): number {
@@ -633,6 +683,130 @@ function resolveIntentProfile(query: string): IntentProfile {
   return {
     strict: false,
     intentTerms: match.tokens,
+  };
+}
+
+type NaturalLanguageEntry = typeof naturalLanguageMap[number];
+
+interface NaturalLanguageMatch {
+  entry: NaturalLanguageEntry;
+  score: number;
+  matchedTrigger: string;
+}
+
+function findNaturalLanguageMatches(query: string, conversationContext?: string[]): NaturalLanguageMatch[] {
+  const recentMessages = conversationContext?.slice(-5) ?? [];
+  const combinedText = normalize([...recentMessages, query].filter(Boolean).join(' '));
+  const combinedTokens = tokenizePhrase(combinedText);
+
+  return naturalLanguageMap
+    .map((entry) => {
+      let bestScore = 0;
+      let bestTrigger = '';
+
+      for (const trigger of entry.triggers) {
+        const score = scoreTriggerPhrase(combinedText, combinedTokens, trigger);
+        if (score > bestScore) {
+          bestScore = score;
+          bestTrigger = trigger;
+        }
+      }
+
+      return { entry, score: bestScore, matchedTrigger: bestTrigger };
+    })
+    .filter((match) => match.score >= 44)
+    .sort((a, b) => b.score - a.score);
+}
+
+function capitalizePhrase(text: string): string {
+  return text
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function buildSegmentLabel(segmentIds: string[]): string {
+  const labels = [...new Set(segmentIds.map((id) => segments.find((segment) => segment.id === id)?.label).filter(Boolean))];
+  return labels.slice(0, 2).join(' + ') || 'Busca contextual';
+}
+
+function pushUniqueSuggestion(
+  items: { name: string; description: string }[],
+  suggestion: { name: string; description: string }
+) {
+  if (!items.some((item) => normalize(item.name) === normalize(suggestion.name))) {
+    items.push(suggestion);
+  }
+}
+
+function buildSuggestionsFromNaturalLanguageEntry(entry: NaturalLanguageEntry): {
+  segment: string;
+  segmentLabel: string;
+  suggestedServices: { name: string; description: string }[];
+  suggestedProducts: { name: string; description: string }[];
+  derivedContext: string;
+  confidence: ContextualSuggestionConfidence;
+  source: ContextualSuggestionSource;
+} {
+  const primaryKeyword = entry.keywords.find((keyword) => !GENERIC_INTENT_TOKENS.has(normalize(keyword))) || entry.needLabel || 'sua necessidade';
+  const needLabel = entry.needLabel || capitalizePhrase(primaryKeyword);
+  const needLabelLower = needLabel.toLowerCase();
+  const suggestedServices: { name: string; description: string }[] = [];
+  const suggestedProducts: { name: string; description: string }[] = [];
+
+  for (const segmentId of entry.segments) {
+    if (segmentId === 'saude_clinica') {
+      pushUniqueSuggestion(suggestedServices, { name: 'Atendimento médico', description: `Avaliação clínica para ${needLabelLower} e orientação segura.` });
+      pushUniqueSuggestion(suggestedServices, { name: 'Teleconsulta clínica', description: `Atendimento remoto para entender o quadro de ${needLabelLower}.` });
+      pushUniqueSuggestion(suggestedServices, { name: 'Orientação farmacêutica', description: `Ajuda para identificar opções seguras relacionadas a ${needLabelLower}.` });
+
+      pushUniqueSuggestion(suggestedProducts, { name: `Remédios para ${needLabelLower}`, description: `Opções de alívio relacionadas ao contexto de ${needLabelLower}.` });
+      pushUniqueSuggestion(suggestedProducts, { name: `Kit de cuidados para ${needLabelLower}`, description: 'Itens de apoio e alívio inicial conforme a necessidade identificada.' });
+    }
+
+    if (segmentId === 'natureza') {
+      pushUniqueSuggestion(suggestedServices, { name: `Fitoterapia para ${needLabelLower}`, description: `Acompanhamento natural com foco em ${needLabelLower}.` });
+      pushUniqueSuggestion(suggestedServices, { name: 'Orientação integrativa', description: `Sugestões complementares para lidar com ${needLabelLower}.` });
+
+      pushUniqueSuggestion(suggestedProducts, { name: `Chás e suporte natural para ${needLabelLower}`, description: 'Alternativas naturais relacionadas ao desconforto identificado.' });
+      pushUniqueSuggestion(suggestedProducts, { name: `Fitoterápicos para ${needLabelLower}`, description: `Produtos de apoio natural associados a ${needLabelLower}.` });
+    }
+
+    if (segmentId === 'bem_estar') {
+      pushUniqueSuggestion(suggestedServices, { name: `Sessão de bem-estar para ${needLabelLower}`, description: 'Abordagem complementar para aliviar desconfortos e tensão.' });
+      pushUniqueSuggestion(suggestedProducts, { name: `Itens de relaxamento para ${needLabelLower}`, description: 'Produtos de apoio para conforto e equilíbrio.' });
+    }
+
+    if (segmentId === 'manutencao') {
+      pushUniqueSuggestion(suggestedServices, { name: `Atendimento profissional em ${primaryKeyword}`, description: `Visita técnica e execução especializada em ${primaryKeyword}.` });
+      pushUniqueSuggestion(suggestedServices, { name: `Diagnóstico de ${primaryKeyword}`, description: 'Identificação da causa do problema antes do reparo.' });
+      pushUniqueSuggestion(suggestedProducts, { name: `Materiais para ${primaryKeyword}`, description: `Itens e peças normalmente usados em demandas de ${primaryKeyword}.` });
+      pushUniqueSuggestion(suggestedProducts, { name: `Kit essencial de ${primaryKeyword}`, description: 'Produtos básicos relacionados ao reparo ou manutenção.' });
+    }
+
+    if (segmentId === 'casa') {
+      pushUniqueSuggestion(suggestedServices, { name: `Atendimento residencial para ${primaryKeyword}`, description: 'Serviço em domicílio relacionado ao contexto pesquisado.' });
+      pushUniqueSuggestion(suggestedProducts, { name: `Produtos residenciais para ${primaryKeyword}`, description: 'Itens relacionados ao cuidado ou manutenção do ambiente.' });
+    }
+
+    if (segmentId === 'auto') {
+      pushUniqueSuggestion(suggestedServices, { name: `Atendimento automotivo para ${primaryKeyword}`, description: 'Diagnóstico e solução com profissional da área automotiva.' });
+      pushUniqueSuggestion(suggestedProducts, { name: `Peças e itens para ${primaryKeyword}`, description: 'Produtos normalmente associados ao problema automotivo identificado.' });
+    }
+  }
+
+  pushUniqueSuggestion(suggestedServices, { name: `Atendimento especializado em ${needLabelLower}`, description: `Profissionais e orientações coerentes com o contexto de ${needLabelLower}.` });
+  pushUniqueSuggestion(suggestedProducts, { name: `Soluções para ${needLabelLower}`, description: `Produtos e itens relacionados diretamente a ${needLabelLower}.` });
+
+  return {
+    segment: entry.segments[0] || 'manutencao',
+    segmentLabel: buildSegmentLabel(entry.segments),
+    suggestedServices: suggestedServices.slice(0, 3),
+    suggestedProducts: suggestedProducts.slice(0, 3),
+    derivedContext: `Entendi sua frase como **${needLabel}** e vou manter a busca focada nesse contexto, sugerindo opções coerentes como atendimento, orientação e itens de apoio relacionados.`,
+    confidence: 'high',
+    source: 'local_nl',
   };
 }
 
@@ -731,6 +905,9 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
   if (!q) return { products: [], services: [] };
 
   const intentProfile = resolveIntentProfile(query);
+  const naturalLanguageMatches = findNaturalLanguageMatches(query, conversationContext);
+  const matched = naturalLanguageMatches.map((match) => match.entry);
+  const primaryNaturalLanguageMatch = naturalLanguageMatches[0]?.entry;
 
   // ── Build enriched query from conversation context ──
   const contextTokens: string[] = [];
@@ -743,17 +920,8 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
   const queryTokens = tokenize(q);
   const allTokens = [...new Set([...queryTokens, ...contextTokens])];
 
-  // ── 1. Match NL triggers (exact match, using both current + context) ──
-  const combinedQuery = allTokens.join(' ');
-  const matched = naturalLanguageMap.filter((nlm) =>
-    nlm.triggers.some((t) => {
-      const nt = normalize(t);
-      return combinedQuery.includes(nt) || nt.includes(q);
-    })
-  );
-
-  let followUp = matched.find((m) => m.aiFollowUp)?.aiFollowUp;
-  let needLabel = matched.find((m) => m.needLabel)?.needLabel;
+  let followUp = primaryNaturalLanguageMatch?.aiFollowUp;
+  let needLabel = primaryNaturalLanguageMatch?.needLabel;
 
   // ── 2. Find PRODUCTS ──
   let matchedProducts: ProductItem[] = [];
@@ -863,6 +1031,9 @@ export interface ContextualSuggestion {
   suggestedServices: { name: string; description: string }[];
   suggestedProducts: { name: string; description: string }[];
   derivedContext: string;
+  confidence?: ContextualSuggestionConfidence;
+  source?: ContextualSuggestionSource;
+  references?: string[];
 }
 
 /** Map of common terms to segments with service/product suggestions */
@@ -1075,8 +1246,12 @@ const contextualMap: {
  * Analyzes the query to derive the segment and suggest related services/products.
  */
 export function generateContextualSuggestions(query: string): ContextualSuggestion | null {
-  const q = normalize(query.trim());
-  const tokens = tokenize(query).filter(isMeaningfulIntentToken);
+  const naturalLanguageMatch = findNaturalLanguageMatches(query)[0]?.entry;
+  if (naturalLanguageMatch) {
+    return buildSuggestionsFromNaturalLanguageEntry(naturalLanguageMatch);
+  }
+
+  const tokens = tokenizePhrase(query);
   const bestMatch = findBestContextualEntry(query);
 
   if (bestMatch.entry && bestMatch.score >= 12) {
@@ -1089,6 +1264,8 @@ export function generateContextualSuggestions(query: string): ContextualSuggesti
       suggestedServices: bestMatch.entry.services,
       suggestedProducts: bestMatch.entry.products,
       derivedContext: `Analisei sua pesquisa por "${query}" e identifiquei o contexto exato de **${matchedKeyword}** dentro da área de **${seg?.label || bestMatch.entry.segment}**.`,
+      confidence: 'high',
+      source: 'local_contextual',
     };
   }
 
@@ -1122,6 +1299,8 @@ export function generateContextualSuggestions(query: string): ContextualSuggesti
         { name: `Acessório para ${capKw}`, description: `Complemento útil para a necessidade pesquisada` },
       ],
       derivedContext: `Analisei sua pesquisa por "${query}" e identifiquei uma intenção mais próxima em **${bestSeg.label}**, preservando o foco em **${capKw}**.`,
+      confidence: 'medium',
+      source: 'local_segment',
     };
   }
 
@@ -1141,7 +1320,16 @@ export function generateContextualSuggestions(query: string): ContextualSuggesti
       { name: `Acessório ${capitalizedWord}`, description: `Complemento coerente com sua busca` },
     ],
     derivedContext: `Analisei sua pesquisa por "${query}" e mantive o foco exatamente no assunto pesquisado para evitar sugestões incorretas.`,
+    confidence: 'low',
+    source: 'local_generic',
   };
+}
+
+export function needsWebContextualization(query: string, suggestion?: ContextualSuggestion | null): boolean {
+  const tokens = tokenizePhrase(query);
+  if (tokens.length < 2) return false;
+  if (!suggestion) return true;
+  return suggestion.confidence === 'low' || suggestion.confidence === 'medium';
 }
 
 // ── Dynamic Entry System (persisted to Supabase) ──
