@@ -687,7 +687,7 @@ const Landing = () => {
             </AnimatePresence>
 
             {/* Idle state */}
-            {!searchQuery && activeSegments.length === 0 && (
+            {!searchExecuted && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-center py-6">
                 <div className="grid sm:grid-cols-3 gap-4 max-w-3xl mx-auto mb-8">
                   {[
