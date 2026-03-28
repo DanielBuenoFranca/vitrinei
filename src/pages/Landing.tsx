@@ -498,25 +498,46 @@ const Landing = () => {
                     </>
                   )}
 
-                  {filteredResults.length === 0 && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
-                      <AiAvatar size={72} speaking={true} onClick={() => setShowAiPanel(true)} />
-                      <h3 className="font-display font-bold text-lg text-foreground mb-2 mt-4">Não encontrou? Deixa comigo!</h3>
-                      <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
-                        Estou buscando em todos os fornecedores, estoques próprios e catálogos drop-shipping para encontrar a melhor opção por <strong>preço, tempo e proximidade</strong>.
-                      </p>
+                  {filteredResults.length === 0 && searchResult.products.length === 0 && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-8">
+                      {/* Structured analysis */}
+                      <Card className="border-primary/20 bg-primary/5 mb-4">
+                        <CardContent className="p-5">
+                          <div className="flex items-center gap-3 mb-3">
+                            <AiAvatar size={48} speaking={true} onClick={() => setShowAiPanel(true)} />
+                            <div>
+                              <h3 className="font-display font-bold text-foreground">Análise Inteligente</h3>
+                              <p className="text-xs text-muted-foreground">Nenhum resultado encontrado para "{searchQuery}"</p>
+                            </div>
+                          </div>
+                          <div className="bg-card rounded-lg p-4 space-y-2 text-sm">
+                            <p className="font-semibold text-foreground">📋 Resumo da solicitação:</p>
+                            <ul className="text-xs text-muted-foreground space-y-1">
+                              <li>• <strong>Busca:</strong> "{searchQuery}"</li>
+                              <li>• <strong>Tipo:</strong> Serviço + Produtos relacionados</li>
+                              <li>• <strong>Status:</strong> Não disponível no hub atual</li>
+                              <li>• <strong>Ação:</strong> Encaminhar para Central de Atendimento</li>
+                            </ul>
+                          </div>
+                        </CardContent>
+                      </Card>
                       <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                        <Button className="gap-2" onClick={() => setShowAiPanel(true)}>
-                          <Sparkles className="w-4 h-4" /> Pedir para a IA buscar
+                        <Button className="gap-2" onClick={() => {
+                          const summary = buildSupportSummary(aiChat, searchQuery);
+                          const params = new URLSearchParams({ query: searchQuery, context: 'Busca sem resultados', summary, type: 'both' });
+                          navigate(`/central-atendimento?${params.toString()}`);
+                        }}>
+                          <Headphones className="w-4 h-4" /> Acionar Central (SLA 24h)
                         </Button>
                         <Button variant="outline" className="gap-2" onClick={() => {
-                          setShowAiPanel(true);
-                          setAiChat((prev) => [...prev,
-                            { role: 'user', text: `Preciso de: ${searchQuery}` },
-                            { role: 'ai', text: 'Encaminhando para a Central de Atendimento EcoMEI. Prazo: até 24 horas. Você será notificado assim que encontrarmos a solução ideal! 📩' },
-                          ]);
+                          const summary = buildSupportSummary(aiChat, searchQuery);
+                          const params = new URLSearchParams({ query: searchQuery, context: 'Incluir novo item', summary, type: 'both' });
+                          navigate(`/central-atendimento?${params.toString()}`);
                         }}>
-                          <Headphones className="w-4 h-4" /> Central de Atendimento (SLA 24h)
+                          <Plus className="w-4 h-4" /> Incluir serviço/produto
+                        </Button>
+                        <Button variant="ghost" className="gap-2" onClick={() => setShowAiPanel(true)}>
+                          <Sparkles className="w-4 h-4" /> Falar com a IA
                         </Button>
                       </div>
                     </motion.div>
