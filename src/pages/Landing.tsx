@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
-import { segments, mockResults, semanticSearch, buildSupportSummary, generateContextualSuggestions, type ProductItem, type SearchResult, type ContextualSuggestion } from '@/data/searchData';
+import { segments, mockResults, semanticSearch, buildSupportSummary, generateContextualSuggestions, getAllServices, type ProductItem, type SearchResult, type ContextualSuggestion } from '@/data/searchData';
 
 
 const aiSuggestions = [
@@ -99,7 +99,6 @@ const Landing = () => {
     if (!query && activeSegments.length === 0) return { products: [] as ProductItem[], services: [] as typeof mockResults, followUp: undefined, needLabel: undefined, suggestedServices: undefined };
     // Sem query mas com segmentos selecionados: mostrar serviços do segmento da base
     if (!query && activeSegments.length > 0) {
-      const { getAllServices } = require('@/data/searchData');
       const allSvcs = getAllServices();
       return { products: [] as ProductItem[], services: allSvcs.filter((r: any) => activeSegments.includes(r.segment)), followUp: undefined, needLabel: undefined, suggestedServices: undefined };
     }
