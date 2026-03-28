@@ -14,7 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      dynamic_products: {
+        Row: {
+          created_at: string
+          distance: string
+          id: number
+          name: string
+          price: number
+          product_id: number
+          provider: string
+          rating: number
+          related_service_ids: number[]
+          stock_type: string
+          tags: string[]
+        }
+        Insert: {
+          created_at?: string
+          distance?: string
+          id?: number
+          name: string
+          price?: number
+          product_id: number
+          provider: string
+          rating?: number
+          related_service_ids?: number[]
+          stock_type?: string
+          tags?: string[]
+        }
+        Update: {
+          created_at?: string
+          distance?: string
+          id?: number
+          name?: string
+          price?: number
+          product_id?: number
+          provider?: string
+          rating?: number
+          related_service_ids?: number[]
+          stock_type?: string
+          tags?: string[]
+        }
+        Relationships: []
+      }
+      dynamic_services: {
+        Row: {
+          created_at: string
+          distance: string
+          id: number
+          name: string
+          price: number
+          products: string[]
+          provider: string
+          rating: number
+          segment: string
+          service_id: number
+          time: string
+        }
+        Insert: {
+          created_at?: string
+          distance?: string
+          id?: number
+          name: string
+          price?: number
+          products?: string[]
+          provider: string
+          rating?: number
+          segment: string
+          service_id: number
+          time?: string
+        }
+        Update: {
+          created_at?: string
+          distance?: string
+          id?: number
+          name?: string
+          price?: number
+          products?: string[]
+          provider?: string
+          rating?: number
+          segment?: string
+          service_id?: number
+          time?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
