@@ -341,6 +341,7 @@ const Landing = () => {
                   ref={searchRef}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearchKeyDown}
                   placeholder={placeholders[placeholderIdx]}
                   className="border-0 pl-12 pr-4 py-6 text-base md:text-lg bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
                 />
@@ -349,7 +350,7 @@ const Landing = () => {
                     <MessageCircle className="w-4 h-4" />
                     <span className="hidden sm:inline text-xs">Falar com IA</span>
                   </Button>
-                  <Button size="sm" className="gap-1 rounded-xl">
+                  <Button size="sm" className="gap-1 rounded-xl" onClick={executeSearch}>
                     <Search className="w-4 h-4" /> Buscar
                   </Button>
                 </div>
