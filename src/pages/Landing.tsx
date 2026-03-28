@@ -879,8 +879,93 @@ const Landing = () => {
                       </div>
                     </div>
                   )}
-                  {/* Central action buttons when no results */}
-                  {msg.role === 'ai' && (msg.searchResult as any)?._noResults && (
+                  {/* Contextual suggestion cards in chat */}
+                  {msg.contextualSuggestion && (
+                    <div className="w-full mt-2 pl-10 space-y-2">
+                      <p className="text-[11px] font-semibold text-primary flex items-center gap-1">
+                        <WrenchIcon className="w-3.5 h-3.5" /> Serviços sugeridos ({msg.contextualSuggestion.segmentLabel})
+                      </p>
+                      {msg.contextualSuggestion.suggestedServices.map((svc) => {
+                        const isSelected = pendingChatSuggestions.get(idx)?.has(svc.name);
+                        return (
+                          <Card key={svc.name}
+                            className={`cursor-pointer transition-all ${isSelected ? 'border-primary bg-primary/5' : 'border-border/50 hover:border-primary/40'}`}
+                            onClick={() => {
+                              setPendingChatSuggestions(prev => {
+                                const next = new Map(prev);
+                                const set = new Set(next.get(idx) || []);
+                                if (set.has(svc.name)) set.delete(svc.name); else set.add(svc.name);
+                                next.set(idx, set);
+                                return next;
+                              });
+                            }}>
+                            <CardContent className="p-3">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-6 h-6 rounded-md flex items-center justify-center ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-primary/10'}`}>
+                                  {isSelected ? <CheckCircle2 className="w-3.5 h-3.5" /> : <WrenchIcon className="w-3.5 h-3.5 text-primary" />}
+                                </div>
+                                <div>
+                                  <h4 className="font-semibold text-xs text-foreground">{svc.name}</h4>
+                                  <p className="text-[10px] text-muted-foreground">{svc.description}</p>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                      <p className="text-[11px] font-semibold text-success flex items-center gap-1 mt-1">
+                        <ShoppingBag className="w-3.5 h-3.5" /> Produtos sugeridos
+                      </p>
+                      {msg.contextualSuggestion.suggestedProducts.map((prod) => {
+                        const isSelected = pendingChatSuggestions.get(idx)?.has(prod.name);
+                        return (
+                          <Card key={prod.name}
+                            className={`cursor-pointer transition-all ${isSelected ? 'border-success bg-success/5' : 'border-border/50 hover:border-success/40'}`}
+                            onClick={() => {
+                              setPendingChatSuggestions(prev => {
+                                const next = new Map(prev);
+                                const set = new Set(next.get(idx) || []);
+                                if (set.has(prod.name)) set.delete(prod.name); else set.add(prod.name);
+                                next.set(idx, set);
+                                return next;
+                              });
+                            }}>
+                            <CardContent className="p-3">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-6 h-6 rounded-md flex items-center justify-center ${isSelected ? 'bg-success text-white' : 'bg-success/10'}`}>
+                                  {isSelected ? <CheckCircle2 className="w-3.5 h-3.5" /> : <ShoppingBag className="w-3.5 h-3.5 text-success" />}
+                                </div>
+                                <div>
+                                  <h4 className="font-semibold text-xs text-foreground">{prod.name}</h4>
+                                  <p className="text-[10px] text-muted-foreground">{prod.description}</p>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                      {(pendingChatSuggestions.get(idx)?.size || 0) > 0 && (
+                        <Button size="sm" className="w-full gap-2 text-xs mt-2" onClick={() => {
+                          const selected = Array.from(pendingChatSuggestions.get(idx) || []);
+                          const summary = buildSupportSummary(aiChat, selected.join(', '));
+                          const params = new URLSearchParams({
+                            query: selected.join(', '),
+                            context: `IA: ${msg.contextualSuggestion!.segmentLabel}`,
+                            summary,
+                            type: 'both',
+                            segment: msg.contextualSuggestion!.segment,
+                            suggestions: JSON.stringify(selected),
+                          });
+                          navigate(`/central-atendimento?${params.toString()}`);
+                        }}>
+                          <Headphones className="w-3.5 h-3.5" /> Confirmar e acionar Central ({pendingChatSuggestions.get(idx)?.size} item(ns))
+                        </Button>
+                      )}
+                      <p className="text-[10px] text-muted-foreground text-center">Ou escreva com mais detalhes para refinar</p>
+                    </div>
+                  )}
+                  {/* Central action buttons when no results and no contextual suggestions */}
+                  {msg.role === 'ai' && (msg.searchResult as any)?._noResults && !msg.contextualSuggestion && (
                     <div className="w-full mt-2 pl-10 space-y-2">
                       <Button size="sm" className="w-full gap-2 text-xs" onClick={() => {
                         const sr = msg.searchResult as any;
@@ -888,13 +973,6 @@ const Landing = () => {
                         navigate(`/central-atendimento?${params.toString()}`);
                       }}>
                         <Headphones className="w-3.5 h-3.5" /> Acionar Central de Atendimento
-                      </Button>
-                      <Button size="sm" variant="outline" className="w-full gap-2 text-xs" onClick={() => {
-                        const sr = msg.searchResult as any;
-                        const params = new URLSearchParams({ query: sr._query, context: 'Incluir item', summary: sr._summary, type: 'both' });
-                        navigate(`/central-atendimento?${params.toString()}`);
-                      }}>
-                        <Plus className="w-3.5 h-3.5" /> Incluir serviço/produto no hub
                       </Button>
                     </div>
                   )}
