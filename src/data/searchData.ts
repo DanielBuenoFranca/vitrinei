@@ -1081,14 +1081,14 @@ export async function addDynamicEntries(entries: DynamicEntry[]): Promise<void> 
   }
 }
 
-/** Get all services including dynamically added ones */
+/** Get all services — only from database (dynamic entries) */
 export function getAllServices(): typeof mockResults {
-  return [...mockResults, ...dynamicServices];
+  return [...dynamicServices];
 }
 
-/** Get all products including dynamically added ones */
+/** Get all products — only from database (dynamic entries) */
 export function getAllProducts(): ProductItem[] {
-  return [...productInventory, ...dynamicProducts];
+  return [...dynamicProducts];
 }
 
 /**
