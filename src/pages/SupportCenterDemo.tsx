@@ -9,19 +9,29 @@ import {
   Headphones, Search, Sparkles, Package, Users, Shield,
   ShoppingBag, Store, ArrowRight, Play, Zap, Phone, FileText,
   UserPlus, BellRing, Truck, AlertTriangle, RefreshCw, Pause,
-  MessageCircle, Bot, User, ChevronDown, Loader2
+  MessageCircle, Bot, User, ChevronDown, Loader2, Monitor, Smartphone,
+  Database, Globe, Server, Activity, Terminal, Wifi
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
 import { addDynamicEntries, segments, type DynamicEntry } from '@/data/searchData';
 
-type ChatMessage = {
+type PhoneMessage = {
   id: number;
-  sender: 'user' | 'central' | 'system';
   content: string;
+  detail?: string;
+  timestamp: string;
+  type: 'incoming' | 'outgoing';
+};
+
+type InternalLog = {
+  id: number;
+  title: string;
+  description: string;
+  status: 'running' | 'done' | 'pending';
+  icon: React.ReactNode;
   details?: React.ReactNode;
-  typing?: boolean;
-  timestamp?: string;
+  timestamp: string;
 };
 
 const SupportCenterDemo = () => {
@@ -34,16 +44,17 @@ const SupportCenterDemo = () => {
   const segmentParam = searchParams.get('segment') || 'manutencao';
   const suggestionsParam = searchParams.get('suggestions');
 
-  const [chatStep, setChatStep] = useState(0);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [showTyping, setShowTyping] = useState(false);
+  const [step, setStep] = useState(0);
+  const [phoneMessages, setPhoneMessages] = useState<PhoneMessage[]>([]);
+  const [internalLogs, setInternalLogs] = useState<InternalLog[]>([]);
   const [waitingUser, setWaitingUser] = useState(false);
   const [searchProgress, setSearchProgress] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const [showPush, setShowPush] = useState(false);
   const [injectedItems, setInjectedItems] = useState(false);
   const [protocolNumber] = useState(() => Math.floor(Math.random() * 90000 + 10000));
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const logsEndRef = useRef<HTMLDivElement>(null);
+  const phoneEndRef = useRef<HTMLDivElement>(null);
   const hasInitialized = useRef(false);
 
   const userSelections: string[] = suggestionsParam ? (() => { try { return JSON.parse(suggestionsParam); } catch { return []; } })() : [];
@@ -81,249 +92,224 @@ const SupportCenterDemo = () => {
     return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
   };
 
-  const addMessage = useCallback((msg: Omit<ChatMessage, 'id' | 'timestamp'>) => {
-    setMessages(prev => [...prev, { ...msg, id: prev.length, timestamp: now() }]);
+  const addPhoneMsg = useCallback((msg: Omit<PhoneMessage, 'id' | 'timestamp'>) => {
+    setPhoneMessages(prev => [...prev, { ...msg, id: prev.length, timestamp: now() }]);
   }, []);
 
-  const simulateTyping = useCallback((delay: number): Promise<void> => {
-    return new Promise(resolve => {
-      setShowTyping(true);
-      setTimeout(() => {
-        setShowTyping(false);
-        resolve();
-      }, delay);
-    });
+  const addLog = useCallback((log: Omit<InternalLog, 'id' | 'timestamp'>) => {
+    setInternalLogs(prev => [...prev, { ...log, id: prev.length, timestamp: now() }]);
+  }, []);
+
+  const updateLogStatus = useCallback((id: number, status: 'done' | 'running') => {
+    setInternalLogs(prev => prev.map(l => l.id === id ? { ...l, status } : l));
   }, []);
 
   // Auto-scroll
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, showTyping, waitingUser]);
+    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [internalLogs, isSearching, waitingUser]);
 
-  // Initialize first step
+  useEffect(() => {
+    phoneEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [phoneMessages]);
+
+  // Initialize
   useEffect(() => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
-    startConversation();
+    startProcess();
   }, []);
 
-  const startConversation = async () => {
-    // System message
-    addMessage({
-      sender: 'system',
-      content: `Protocolo #${protocolNumber} aberto • SLA: 24 horas`,
+  const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+  const startProcess = async () => {
+    // Step 0: Client sends message on phone
+    addPhoneMsg({
+      type: 'outgoing',
+      content: `Olá, estou procurando "${contextTitle}" mas não encontrei no app. Podem me ajudar?`,
     });
 
-    await simulateTyping(1500);
+    await sleep(1500);
 
-    // Central greeting
-    addMessage({
-      sender: 'central',
-      content: `Olá! Sou a Central de Atendimento EcoMEI. Recebi sua solicitação e vou cuidar de tudo para você. Deixa eu analisar o que você precisa...`,
+    // System receives and opens protocol
+    addPhoneMsg({
+      type: 'incoming',
+      content: `Olá! Recebemos sua solicitação. Protocolo #${protocolNumber}. Nossa equipe já está trabalhando para encontrar o que você precisa. Você será notificado assim que tivermos novidades! 😊`,
     });
 
-    await simulateTyping(2000);
+    await sleep(1000);
 
-    // Central shows analysis
-    addMessage({
-      sender: 'central',
-      content: `📋 Entendi sua necessidade. Aqui está o que identifiquei:`,
+    // Internal: protocol opened
+    addLog({
+      title: 'Protocolo aberto',
+      description: `#${protocolNumber} • Cliente solicitou: "${contextTitle}"`,
+      status: 'done',
+      icon: <FileText className="w-4 h-4" />,
+    });
+
+    await sleep(800);
+
+    // Internal: context analysis
+    addLog({
+      title: 'Análise de contexto pela IA',
+      description: `Processando solicitação do cliente...`,
+      status: 'done',
+      icon: <Bot className="w-4 h-4" />,
       details: (
-        <div className="mt-3 bg-muted/50 rounded-xl p-4 space-y-3">
+        <div className="mt-2 space-y-2 text-xs">
           <div className="flex items-center gap-2">
-            <Badge className="bg-primary/10 text-primary text-xs"><Search className="w-3 h-3 mr-1" /> Busca</Badge>
-            <span className="text-sm font-medium text-foreground">"{query}"</span>
+            <Badge className="bg-primary/10 text-primary text-[10px]"><Search className="w-2.5 h-2.5 mr-0.5" /> Busca</Badge>
+            <span className="text-muted-foreground">"{query}"</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-accent/10 text-accent-foreground text-[10px]">📂 Segmento</Badge>
+            <span className="text-muted-foreground">{segmentLabel}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-secondary text-secondary-foreground text-[10px]">📋 Tipo</Badge>
+            <span className="text-muted-foreground">{type === 'service' ? 'Serviço' : type === 'product' ? 'Produto' : 'Serviço + Produtos'}</span>
           </div>
           {userSelections.length > 0 && (
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Opções que você selecionou:</p>
-              <div className="flex flex-wrap gap-1">
-                {userSelections.map((sel, i) => (
-                  <Badge key={i} className="bg-success/10 text-success border-success/20 text-[10px]">
-                    <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" /> {sel}
-                  </Badge>
-                ))}
-              </div>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {userSelections.map((sel, i) => (
+                <Badge key={i} variant="outline" className="text-[9px]">{sel}</Badge>
+              ))}
             </div>
           )}
-          <div className="flex items-center gap-2">
-            <Badge className="bg-accent/10 text-accent-foreground text-xs">📂 Segmento</Badge>
-            <span className="text-sm font-medium text-foreground">{segmentLabel}</span>
-          </div>
-          {summary && (
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Contexto da conversa:</p>
-              <p className="text-sm text-foreground">{summary}</p>
-            </div>
-          )}
-          <div className="border-t border-border pt-3">
-            <p className="text-xs font-semibold text-foreground mb-2">📋 Resumo:</p>
-            <ul className="text-xs text-muted-foreground space-y-1">
-              <li>• Necessidade: <strong className="text-foreground">{contextTitle}</strong></li>
-              <li>• Segmento: <strong className="text-foreground">{segmentLabel}</strong></li>
-              <li>• Tipo: <strong className="text-foreground">{type === 'service' ? 'Serviço profissional' : type === 'product' ? 'Produto' : 'Serviço + Produtos'}</strong></li>
-              <li>• Região: São Paulo - SP</li>
-              <li>• Prioridade: Normal (SLA 24h)</li>
-            </ul>
-          </div>
+          {summary && <p className="text-muted-foreground italic">"{summary}"</p>}
         </div>
       ),
     });
 
-    setChatStep(1);
+    setStep(1);
     setWaitingUser(true);
   };
 
-  const handleUserResponse = async () => {
+  const handleNext = async () => {
     setWaitingUser(false);
 
-    if (chatStep === 1) {
-      // User confirms
-      addMessage({ sender: 'user', content: 'Tudo certo, podem prosseguir com a busca!' });
-      await simulateTyping(1200);
-      addMessage({ sender: 'central', content: `Perfeito! Vou iniciar a pesquisa de profissionais de ${segmentLabel} na sua região. Acompanhe em tempo real:` });
-      setChatStep(2);
+    if (step === 1) {
+      // Internal: start searching professionals
+      addLog({
+        title: 'Busca de profissionais iniciada',
+        description: `Pesquisando base de dados de ${segmentLabel} na região...`,
+        status: 'running',
+        icon: <Search className="w-4 h-4" />,
+      });
+      setStep(2);
       setIsSearching(true);
-      // Start search progress
       setSearchProgress(0);
-    } else if (chatStep === 3) {
-      // User acknowledges professionals
-      addMessage({ sender: 'user', content: 'Ótimo! Esses profissionais parecem qualificados. E quanto a serviços e produtos?' });
-      await simulateTyping(2000);
-      addMessage({
-        sender: 'central',
-        content: `Boa pergunta! Fiz uma pesquisa na web para identificar os serviços e produtos mais relevantes para "${contextTitle}". Veja o que encontrei:`,
+    } else if (step === 3) {
+      // Internal: web research
+      const logId = internalLogs.length;
+      addLog({
+        title: 'Pesquisa web em andamento',
+        description: `Consultando fontes externas sobre "${contextTitle}"...`,
+        status: 'running',
+        icon: <Globe className="w-4 h-4" />,
+      });
+
+      await sleep(2500);
+
+      updateLogStatus(logId, 'done');
+
+      addLog({
+        title: 'Serviços e produtos mapeados',
+        description: `${webResearchedServices.length} serviços + ${webResearchedProducts.length} produtos identificados`,
+        status: 'done',
+        icon: <Database className="w-4 h-4" />,
         details: (
-          <div className="mt-3 space-y-4">
+          <div className="mt-2 space-y-3">
             <div>
-              <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1">
-                <Search className="w-3.5 h-3.5 text-primary" /> 🌐 Serviços mais comuns (pesquisa web)
-              </p>
-              <div className="space-y-2">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">🌐 Serviços (pesquisa web)</p>
+              <div className="space-y-1.5">
                 {webResearchedServices.map((svc, idx) => (
-                  <div key={idx} className="flex items-center gap-3 p-2.5 rounded-lg bg-primary/5 border border-primary/10">
-                    <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <Sparkles className="w-3.5 h-3.5 text-primary" />
+                  <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 border border-primary/10">
+                    <Sparkles className="w-3 h-3 text-primary shrink-0" />
+                    <div className="min-w-0">
+                      <p className="font-medium text-xs text-foreground truncate">{svc.name}</p>
+                      <p className="text-[10px] text-muted-foreground">{svc.description}</p>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm text-foreground">{svc.name}</p>
-                      <p className="text-[11px] text-muted-foreground">{svc.description}</p>
-                    </div>
-                    <Badge className="bg-accent/10 text-accent-foreground text-[9px] shrink-0">🌐 Web</Badge>
                   </div>
                 ))}
               </div>
             </div>
             <div>
-              <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1">
-                <ShoppingBag className="w-3.5 h-3.5 text-success" /> 🌐 Produtos mais comuns (pesquisa web)
-              </p>
-              <div className="space-y-2">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">📦 Produtos (pesquisa web)</p>
+              <div className="space-y-1.5">
                 {webResearchedProducts.map((prod, idx) => (
-                  <div key={idx} className="flex items-center gap-3 p-2.5 rounded-lg bg-success/5 border border-success/10">
-                    <div className="w-7 h-7 rounded-lg bg-success/10 flex items-center justify-center shrink-0">
-                      <ShoppingBag className="w-3.5 h-3.5 text-success" />
+                  <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-success/5 border border-success/10">
+                    <ShoppingBag className="w-3 h-3 text-success shrink-0" />
+                    <div className="min-w-0">
+                      <p className="font-medium text-xs text-foreground truncate">{prod.name}</p>
+                      <p className="text-[10px] text-muted-foreground">{prod.description}</p>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm text-foreground">{prod.name}</p>
-                      <p className="text-[11px] text-muted-foreground">{prod.description}</p>
-                    </div>
-                    <Badge className="bg-accent/10 text-accent-foreground text-[9px] shrink-0">🌐 Web</Badge>
                   </div>
                 ))}
               </div>
             </div>
-            {userSelections.length > 0 && (
-              <div className="bg-success/5 border border-success/20 rounded-lg p-3">
-                <p className="text-xs font-semibold text-foreground mb-1">✅ Combinando com suas seleções:</p>
-                <div className="flex flex-wrap gap-1">
-                  {userSelections.map((sel, i) => (
-                    <Badge key={i} className="bg-success/10 text-success text-[10px]">{sel}</Badge>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         ),
       });
-      setChatStep(4);
+
+      setStep(4);
       setWaitingUser(true);
-    } else if (chatStep === 4) {
-      // User acknowledges web research
-      addMessage({ sender: 'user', content: 'Muito bom! Podem adicionar esses produtos ao estoque.' });
-      await simulateTyping(1500);
-      addMessage({
-        sender: 'central',
-        content: `Pronto! Adicionei ${newProducts.length} produtos ao estoque dos profissionais. Veja a distribuição:`,
+    } else if (step === 4) {
+      // Internal: stock injection
+      const logId = internalLogs.length;
+      addLog({
+        title: 'Atualizando catálogo e estoque',
+        description: `Injetando ${newProducts.length} produtos nos profissionais cadastrados...`,
+        status: 'running',
+        icon: <Package className="w-4 h-4" />,
+      });
+
+      await sleep(2000);
+
+      updateLogStatus(logId, 'done');
+
+      addLog({
+        title: 'Estoque atualizado',
+        description: `${newProducts.length} produtos vinculados com substituição 1:1`,
+        status: 'done',
+        icon: <Store className="w-4 h-4" />,
         details: (
-          <div className="mt-3 space-y-2">
+          <div className="mt-2 space-y-1.5">
             {newProducts.map((product, idx) => (
-              <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border/50">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center">
-                    <ShoppingBag className="w-4 h-4 text-success" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{product.name}</p>
-                    <p className="text-[11px] text-muted-foreground">{product.provider}</p>
+              <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 border border-border/50">
+                <div className="flex items-center gap-2 min-w-0">
+                  <ShoppingBag className="w-3 h-3 text-success shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-foreground truncate">{product.name}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{product.provider}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant={product.stockType === 'fisico' ? 'default' : 'secondary'} className="text-[9px]">
-                    <Store className="w-2.5 h-2.5 mr-0.5" />
-                    {product.stockType === 'fisico' ? 'Estoque Local' : 'Dropshipping'}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Badge variant={product.stockType === 'fisico' ? 'default' : 'secondary'} className="text-[8px] px-1.5">
+                    {product.stockType === 'fisico' ? 'Local' : 'Drop'}
                   </Badge>
-                  <span className="text-sm font-semibold text-foreground">R$ {product.price}</span>
+                  <span className="text-xs font-semibold text-foreground">R${product.price}</span>
                 </div>
               </div>
             ))}
-            <div className="p-2.5 bg-muted/30 rounded-lg flex items-center gap-2 text-xs text-muted-foreground">
-              <RefreshCw className="w-3.5 h-3.5 text-primary" />
-              <span>Produtos similares existentes foram substituídos 1:1 para manter o catálogo equilibrado</span>
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-1">
+              <RefreshCw className="w-3 h-3 text-primary" />
+              Substituição 1:1 aplicada para equilíbrio do catálogo
             </div>
           </div>
         ),
       });
-      setChatStep(5);
-      setWaitingUser(true);
-    } else if (chatStep === 5) {
-      // User confirms — send push
-      addMessage({ sender: 'user', content: 'Perfeito! Podem enviar a notificação.' });
-      await simulateTyping(1500);
 
-      addMessage({
-        sender: 'central',
-        content: '📲 Notificação push enviada! Veja o que o cliente receberá:',
-        details: (
-          <div className="mt-3 max-w-sm mx-auto">
-            <Card className="border-success/30 shadow-lg">
-              <CardContent className="p-4 text-left">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                    <Zap className="w-4 h-4 text-primary-foreground" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-foreground">EcoMEI</p>
-                    <p className="text-[10px] text-muted-foreground">agora</p>
-                  </div>
-                </div>
-                <p className="text-sm text-foreground">🎉 O serviço que você procurou está disponível!</p>
-                <p className="text-xs text-muted-foreground mt-1">"{contextTitle}" — 2 profissionais prontos. Toque para agendar.</p>
-              </CardContent>
-            </Card>
-          </div>
-        ),
+      setStep(5);
+      setWaitingUser(true);
+    } else if (step === 5) {
+      // Internal: sending push notification
+      addLog({
+        title: 'Enviando notificação push',
+        description: `Notificando cliente sobre disponibilidade de "${contextTitle}"`,
+        status: 'done',
+        icon: <BellRing className="w-4 h-4" />,
       });
-
-      setShowPush(true);
-      setTimeout(() => setShowPush(false), 4000);
-
-      setChatStep(6);
-      setWaitingUser(true);
-    } else if (chatStep === 6) {
-      // Final — inject and finish
-      addMessage({ sender: 'user', content: 'Excelente trabalho! Quero ver no hub agora.' });
-      await simulateTyping(1500);
 
       // Inject items
       if (!injectedItems) {
@@ -356,49 +342,47 @@ const SupportCenterDemo = () => {
         addDynamicEntries(entries).then(() => setInjectedItems(true));
       }
 
-      addMessage({
-        sender: 'central',
-        content: `✅ Processo concluído com sucesso! Tudo integrado ao ecossistema EcoMEI.`,
+      await sleep(1000);
+
+      // Show push on phone
+      setShowPush(true);
+      addPhoneMsg({
+        type: 'incoming',
+        content: `🎉 Boa notícia! O serviço "${contextTitle}" que você procurou já está disponível! 2 profissionais qualificados prontos para atender na sua região. Toque para agendar.`,
+      });
+
+      setTimeout(() => setShowPush(false), 4000);
+
+      // Internal: final summary
+      await sleep(1500);
+      addLog({
+        title: 'Processo concluído',
+        description: `Protocolo #${protocolNumber} encerrado dentro do SLA`,
+        status: 'done',
+        icon: <CheckCircle2 className="w-4 h-4" />,
         details: (
-          <div className="mt-3 space-y-4">
-            <div className="grid grid-cols-3 gap-3">
-              <Card className="border-success/30">
-                <CardContent className="p-3 text-center">
-                  <p className="text-2xl font-bold text-success">2</p>
-                  <p className="text-xs text-muted-foreground">Profissionais</p>
-                </CardContent>
-              </Card>
-              <Card className="border-success/30">
-                <CardContent className="p-3 text-center">
-                  <p className="text-2xl font-bold text-success">{newProducts.length}</p>
-                  <p className="text-xs text-muted-foreground">Produtos</p>
-                </CardContent>
-              </Card>
-              <Card className="border-success/30">
-                <CardContent className="p-3 text-center">
-                  <p className="text-2xl font-bold text-primary">1:1</p>
-                  <p className="text-xs text-muted-foreground">Substituição</p>
-                </CardContent>
-              </Card>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            <div className="text-center p-2 rounded-lg bg-success/5 border border-success/20">
+              <p className="text-lg font-bold text-success">2</p>
+              <p className="text-[9px] text-muted-foreground">Profissionais</p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button className="gap-2" onClick={() => navigate('/')}>
-                <Search className="w-4 h-4" /> Buscar "{contextTitle}" agora
-              </Button>
-              <Button variant="outline" className="gap-2" onClick={() => navigate('/client')}>
-                <ShoppingBag className="w-4 h-4" /> Ir ao App Cliente
-              </Button>
+            <div className="text-center p-2 rounded-lg bg-success/5 border border-success/20">
+              <p className="text-lg font-bold text-success">{newProducts.length}</p>
+              <p className="text-[9px] text-muted-foreground">Produtos</p>
+            </div>
+            <div className="text-center p-2 rounded-lg bg-primary/5 border border-primary/20">
+              <p className="text-lg font-bold text-primary">1:1</p>
+              <p className="text-[9px] text-muted-foreground">Substituição</p>
             </div>
           </div>
         ),
       });
 
-      addMessage({
-        sender: 'system',
-        content: `Protocolo #${protocolNumber} encerrado • Tempo total: dentro do SLA ✅`,
-      });
-
-      setChatStep(7);
+      setStep(6);
+      setWaitingUser(true);
+    } else if (step === 6) {
+      // Navigate back
+      navigate('/');
     }
   };
 
@@ -411,52 +395,46 @@ const SupportCenterDemo = () => {
         if (p >= 100) {
           clearInterval(interval);
           setIsSearching(false);
-          // Show results after search completes
-          setTimeout(async () => {
-            await simulateTyping(1200);
-            addMessage({
-              sender: 'central',
-              content: `🎉 Encontrei 2 profissionais qualificados na sua região! Confira:`,
+          // Update the running log to done
+          setInternalLogs(prev => prev.map(l => l.status === 'running' ? { ...l, status: 'done' as const } : l));
+          // Show results
+          setTimeout(() => {
+            addLog({
+              title: 'Profissionais encontrados',
+              description: `2 profissionais qualificados localizados na região`,
+              status: 'done',
+              icon: <Users className="w-4 h-4" />,
               details: (
-                <div className="mt-3 space-y-3">
+                <div className="mt-2 space-y-2">
                   {newProviders.map((provider, idx) => (
-                    <Card key={idx} className="border-success/30">
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-lg">
-                              {['👩‍🔧', '👨‍🔧'][idx]}
-                            </div>
-                            <div>
-                              <h3 className="font-semibold text-sm text-foreground">{provider.name}</h3>
-                              <p className="text-xs text-muted-foreground">{provider.specialty}</p>
-                            </div>
+                    <div key={idx} className="p-2.5 rounded-lg bg-muted/50 border border-border/50">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-sm">
+                            {['👩‍🔧', '👨‍🔧'][idx]}
                           </div>
-                          <Badge className="bg-success/10 text-success border-success/20 text-xs">
-                            <CheckCircle2 className="w-3 h-3 mr-1" /> Verificado
-                          </Badge>
+                          <div>
+                            <p className="font-semibold text-xs text-foreground">{provider.name}</p>
+                            <p className="text-[10px] text-muted-foreground">{provider.specialty}</p>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1"><Star className="w-3 h-3 fill-yellow-400 text-yellow-400" /> {provider.rating}</span>
-                          <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {provider.distance}</span>
-                          <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> R$ {provider.price}</span>
-                        </div>
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {newProducts.filter(p => p.provider === provider.name).map((product, pidx) => (
-                            <Badge key={pidx} variant="secondary" className="text-[9px] px-1.5 py-0">
-                              <Package className="w-2 h-2 mr-0.5" /> {product.name.slice(0, 30)}
-                            </Badge>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
+                        <Badge className="bg-success/10 text-success border-success/20 text-[9px]">
+                          <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" /> Verificado
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
+                        <span className="flex items-center gap-0.5"><Star className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" /> {provider.rating}</span>
+                        <span className="flex items-center gap-0.5"><MapPin className="w-2.5 h-2.5" /> {provider.distance}</span>
+                        <span className="flex items-center gap-0.5"><DollarSign className="w-2.5 h-2.5" /> R$ {provider.price}</span>
+                      </div>
+                    </div>
                   ))}
                 </div>
               ),
             });
-            setChatStep(3);
+            setStep(3);
             setWaitingUser(true);
-          }, 300);
+          }, 500);
           return 100;
         }
         return p + 2;
@@ -465,33 +443,33 @@ const SupportCenterDemo = () => {
     return () => clearInterval(interval);
   }, [isSearching]);
 
-  const userButtonLabels: Record<number, string> = {
-    1: 'Confirmar e iniciar busca',
-    3: 'Ver serviços e produtos relacionados',
-    4: 'Adicionar produtos ao estoque',
-    5: 'Enviar notificação ao cliente',
-    6: 'Finalizar e ver no hub',
+  const stepLabels: Record<number, string> = {
+    1: 'Iniciar busca de profissionais',
+    3: 'Pesquisar serviços e produtos na web',
+    4: 'Atualizar catálogo e estoque',
+    5: 'Notificar cliente e finalizar',
+    6: 'Buscar no hub agora',
   };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <div className="bg-card border-b border-border sticky top-0 z-10">
-        <div className="container mx-auto flex items-center gap-3 p-4">
+      <div className="bg-card border-b border-border sticky top-0 z-20">
+        <div className="container mx-auto flex items-center gap-3 p-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex items-center gap-2 flex-1">
             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Headphones className="w-4 h-4 text-primary" />
+              <Monitor className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <h1 className="font-display font-bold text-sm text-foreground">Central de Atendimento</h1>
-              <p className="text-[11px] text-muted-foreground">Protocolo #{protocolNumber} • SLA 24h</p>
+              <h1 className="font-display font-bold text-sm text-foreground">Central de Atendimento — Painel Interno</h1>
+              <p className="text-[11px] text-muted-foreground">Protocolo #{protocolNumber} • Simulação de processos internos</p>
             </div>
           </div>
           <Badge className="bg-success/10 text-success border-success/20 text-xs gap-1">
-            <span className="w-2 h-2 rounded-full bg-success animate-pulse" /> Online
+            <Activity className="w-3 h-3" /> Operando
           </Badge>
         </div>
       </div>
@@ -504,7 +482,7 @@ const SupportCenterDemo = () => {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -100, opacity: 0 }}
             transition={{ type: 'spring', damping: 20 }}
-            className="fixed top-4 left-4 right-4 z-50 max-w-md mx-auto"
+            className="fixed top-16 left-4 right-4 z-50 max-w-md mx-auto"
           >
             <Card className="border-success shadow-2xl bg-card">
               <CardContent className="p-4">
@@ -513,10 +491,10 @@ const SupportCenterDemo = () => {
                     <BellRing className="w-5 h-5 text-success" />
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">EcoMEI • agora</p>
-                    <p className="text-sm font-bold text-foreground">🎉 Boa notícia!</p>
+                    <p className="text-xs text-muted-foreground">Push enviada ao cliente • agora</p>
+                    <p className="text-sm font-bold text-foreground">🎉 Notificação entregue!</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      O serviço "{contextTitle}" que você solicitou já está disponível! 2 profissionais prontos para atender.
+                      "{contextTitle}" — 2 profissionais prontos para atender.
                     </p>
                   </div>
                 </div>
@@ -526,165 +504,192 @@ const SupportCenterDemo = () => {
         )}
       </AnimatePresence>
 
-      {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="container mx-auto max-w-2xl p-4 space-y-4 pb-32">
-          <AnimatePresence>
-            {messages.map((msg) => (
-              <motion.div
-                key={msg.id}
-                initial={{ opacity: 0, y: 15, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.3 }}
-                className={`flex gap-2.5 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                {msg.sender === 'central' && (
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-1">
-                    <Headphones className="w-4 h-4 text-primary" />
-                  </div>
-                )}
-                {msg.sender === 'system' ? (
-                  <div className="w-full flex justify-center">
-                    <Badge variant="secondary" className="text-[10px] px-3 py-1 font-normal">
-                      {msg.content}
-                    </Badge>
-                  </div>
-                ) : (
-                  <div className={`max-w-[85%] ${msg.sender === 'user' ? 'order-first' : ''}`}>
-                    <div
-                      className={`rounded-2xl px-4 py-3 ${
-                        msg.sender === 'user'
-                          ? 'bg-primary text-primary-foreground rounded-br-md'
-                          : 'bg-card border border-border rounded-bl-md shadow-sm'
-                      }`}
-                    >
-                      <p className={`text-sm leading-relaxed ${msg.sender === 'user' ? '' : 'text-foreground'}`}>
-                        {msg.content}
-                      </p>
-                      {msg.details && (
-                        <div className={msg.sender === 'user' ? 'text-primary-foreground' : ''}>
-                          {msg.details}
-                        </div>
-                      )}
-                    </div>
-                    <p className={`text-[10px] text-muted-foreground mt-1 ${msg.sender === 'user' ? 'text-right' : ''}`}>
-                      {msg.timestamp}
-                    </p>
-                  </div>
-                )}
-                {msg.sender === 'user' && (
-                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0 mt-1">
-                    <User className="w-4 h-4 text-secondary-foreground" />
-                  </div>
-                )}
-              </motion.div>
-            ))}
-          </AnimatePresence>
+      {/* Main content: split layout */}
+      <div className="flex-1 overflow-hidden">
+        <div className="container mx-auto h-full flex flex-col lg:flex-row gap-4 p-4">
 
-          {/* Search progress inline */}
-          {isSearching && (
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex gap-2.5"
-            >
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-1">
-                <Headphones className="w-4 h-4 text-primary" />
+          {/* LEFT: Phone Mockup — Client View */}
+          <div className="lg:w-80 shrink-0 flex flex-col items-center">
+            <div className="flex items-center gap-2 mb-3 self-start">
+              <Smartphone className="w-4 h-4 text-muted-foreground" />
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Visão do Cliente</span>
+            </div>
+            <div className="w-72 bg-foreground/5 border-2 border-foreground/20 rounded-[2rem] p-2 shadow-xl">
+              {/* Phone notch */}
+              <div className="w-20 h-5 bg-foreground/20 rounded-full mx-auto mb-1" />
+              {/* Phone screen */}
+              <div className="bg-background rounded-2xl overflow-hidden h-[420px] flex flex-col">
+                {/* Phone header */}
+                <div className="bg-primary px-3 py-2.5 flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-primary-foreground/20 flex items-center justify-center">
+                    <Zap className="w-3 h-3 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-bold text-primary-foreground">EcoMEI</p>
+                    <p className="text-[9px] text-primary-foreground/70">Central de Atendimento</p>
+                  </div>
+                </div>
+                {/* Phone messages */}
+                <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                  <AnimatePresence>
+                    {phoneMessages.map((msg) => (
+                      <motion.div
+                        key={msg.id}
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        transition={{ duration: 0.3 }}
+                        className={`flex ${msg.type === 'outgoing' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div
+                          className={`max-w-[85%] rounded-2xl px-3 py-2 ${
+                            msg.type === 'outgoing'
+                              ? 'bg-primary text-primary-foreground rounded-br-sm'
+                              : 'bg-muted text-foreground rounded-bl-sm'
+                          }`}
+                        >
+                          <p className="text-[11px] leading-relaxed">{msg.content}</p>
+                          <p className={`text-[8px] mt-1 ${msg.type === 'outgoing' ? 'text-primary-foreground/60 text-right' : 'text-muted-foreground'}`}>
+                            {msg.timestamp}
+                          </p>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                  {phoneMessages.length === 0 && (
+                    <div className="flex items-center justify-center h-full">
+                      <p className="text-[10px] text-muted-foreground">Aguardando início...</p>
+                    </div>
+                  )}
+                  <div ref={phoneEndRef} />
+                </div>
               </div>
-              <div className="max-w-[85%]">
-                <div className="rounded-2xl rounded-bl-md px-4 py-3 bg-card border border-border shadow-sm">
-                  <p className="text-sm text-foreground mb-3">🔍 Pesquisando profissionais de {segmentLabel}...</p>
-                  <div className="space-y-3">
-                    <div>
-                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                        <span>Progresso</span>
-                        <span>{Math.round(searchProgress)}%</span>
+              {/* Phone bottom bar */}
+              <div className="w-16 h-1 bg-foreground/20 rounded-full mx-auto mt-1.5" />
+            </div>
+          </div>
+
+          {/* RIGHT: Internal Operations Panel */}
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="flex items-center gap-2 mb-3">
+              <Terminal className="w-4 h-4 text-muted-foreground" />
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Processamento Interno — Central</span>
+              <Badge variant="outline" className="text-[9px] ml-auto gap-1">
+                <Server className="w-2.5 h-2.5" /> Backoffice
+              </Badge>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-3 pb-28 pr-1">
+              <AnimatePresence>
+                {internalLogs.map((log) => (
+                  <motion.div
+                    key={log.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4 }}
+                  >
+                    <Card className={`border-l-4 ${log.status === 'done' ? 'border-l-success' : log.status === 'running' ? 'border-l-primary animate-pulse' : 'border-l-muted'}`}>
+                      <CardContent className="p-3">
+                        <div className="flex items-start gap-3">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                            log.status === 'done' ? 'bg-success/10 text-success' : log.status === 'running' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
+                          }`}>
+                            {log.status === 'running' ? <Loader2 className="w-4 h-4 animate-spin" /> : log.icon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold text-sm text-foreground">{log.title}</p>
+                              <Badge className={`text-[8px] px-1.5 ${
+                                log.status === 'done' ? 'bg-success/10 text-success' : log.status === 'running' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
+                              }`}>
+                                {log.status === 'done' ? '✓ Concluído' : log.status === 'running' ? '⏳ Em andamento' : 'Pendente'}
+                              </Badge>
+                              <span className="text-[9px] text-muted-foreground ml-auto shrink-0">{log.timestamp}</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-0.5">{log.description}</p>
+                            {log.details}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+
+              {/* Search progress inline */}
+              {isSearching && (
+                <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+                  <Card className="border-l-4 border-l-primary">
+                    <CardContent className="p-3">
+                      <p className="text-sm font-semibold text-foreground mb-2">🔍 Pesquisando profissionais de {segmentLabel}...</p>
+                      <div className="space-y-2">
+                        <div>
+                          <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
+                            <span>Progresso</span>
+                            <span>{Math.round(searchProgress)}%</span>
+                          </div>
+                          <Progress value={searchProgress} className="h-1.5" />
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            { label: 'Bases consultadas', value: Math.floor(searchProgress / 10), icon: '🗂️' },
+                            { label: 'Profissionais analisados', value: Math.floor(searchProgress / 5), icon: '👤' },
+                            { label: 'Regiões cobertas', value: Math.floor(searchProgress / 15) + 1, icon: '📍' },
+                          ].map((m) => (
+                            <div key={m.label} className="text-center p-1.5 rounded-lg bg-muted/50">
+                              <p className="text-xs">{m.icon}</p>
+                              <p className="text-xs font-bold text-foreground">{m.value}</p>
+                              <p className="text-[8px] text-muted-foreground">{m.label}</p>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="space-y-1">
+                          {searchProgress > 20 && (
+                            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[10px] text-muted-foreground flex items-center gap-1">
+                              <CheckCircle2 className="w-2.5 h-2.5 text-success" /> Consultando base de {segmentLabel}...
+                            </motion.p>
+                          )}
+                          {searchProgress > 45 && (
+                            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[10px] text-muted-foreground flex items-center gap-1">
+                              <CheckCircle2 className="w-2.5 h-2.5 text-success" /> Verificando avaliações...
+                            </motion.p>
+                          )}
+                          {searchProgress > 70 && (
+                            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[10px] text-muted-foreground flex items-center gap-1">
+                              <CheckCircle2 className="w-2.5 h-2.5 text-success" /> Mapeando estoque de produtos...
+                            </motion.p>
+                          )}
+                          {searchProgress > 90 && (
+                            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[10px] text-success font-semibold flex items-center gap-1">
+                              <Sparkles className="w-2.5 h-2.5" /> Profissionais encontrados!
+                            </motion.p>
+                          )}
+                        </div>
                       </div>
-                      <Progress value={searchProgress} className="h-2" />
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[
-                        { label: 'Bases', value: Math.floor(searchProgress / 10), icon: '🗂️' },
-                        { label: 'Profissionais', value: Math.floor(searchProgress / 5), icon: '👤' },
-                        { label: 'Regiões', value: Math.floor(searchProgress / 15) + 1, icon: '📍' },
-                      ].map((m) => (
-                        <div key={m.label} className="text-center p-2 rounded-lg bg-muted/50">
-                          <p className="text-sm">{m.icon}</p>
-                          <p className="text-sm font-bold text-foreground">{m.value}</p>
-                          <p className="text-[9px] text-muted-foreground">{m.label}</p>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="space-y-1.5">
-                      {searchProgress > 20 && (
-                        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-muted-foreground flex items-center gap-1.5">
-                          <CheckCircle2 className="w-3 h-3 text-success" /> Consultando base de {segmentLabel}...
-                        </motion.p>
-                      )}
-                      {searchProgress > 45 && (
-                        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-muted-foreground flex items-center gap-1.5">
-                          <CheckCircle2 className="w-3 h-3 text-success" /> Verificando avaliações...
-                        </motion.p>
-                      )}
-                      {searchProgress > 70 && (
-                        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-muted-foreground flex items-center gap-1.5">
-                          <CheckCircle2 className="w-3 h-3 text-success" /> Mapeando estoque de produtos...
-                        </motion.p>
-                      )}
-                      {searchProgress > 90 && (
-                        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-success font-semibold flex items-center gap-1.5">
-                          <Sparkles className="w-3 h-3" /> Profissionais encontrados!
-                        </motion.p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
 
-          {/* Typing indicator */}
-          {showTyping && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex gap-2.5"
-            >
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-1">
-                <Headphones className="w-4 h-4 text-primary" />
-              </div>
-              <div className="rounded-2xl rounded-bl-md px-4 py-3 bg-card border border-border shadow-sm">
-                <div className="flex items-center gap-1.5">
-                  <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1, repeat: Infinity, delay: 0 }} className="w-2 h-2 rounded-full bg-muted-foreground" />
-                  <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1, repeat: Infinity, delay: 0.2 }} className="w-2 h-2 rounded-full bg-muted-foreground" />
-                  <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1, repeat: Infinity, delay: 0.4 }} className="w-2 h-2 rounded-full bg-muted-foreground" />
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          <div ref={chatEndRef} />
+              <div ref={logsEndRef} />
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Bottom Action Bar */}
-      {waitingUser && chatStep < 7 && (
+      {waitingUser && step <= 6 && (
         <motion.div
           initial={{ y: 50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 z-10"
         >
           <div className="container mx-auto max-w-2xl">
-            <Button
-              className="w-full gap-2 h-12 text-base"
-              onClick={handleUserResponse}
-            >
+            <Button className="w-full gap-2 h-11 text-sm" onClick={handleNext}>
               <ArrowRight className="w-4 h-4" />
-              {userButtonLabels[chatStep] || 'Continuar'}
+              {stepLabels[step] || 'Continuar'}
             </Button>
-            <p className="text-[10px] text-muted-foreground text-center mt-2">
-              Clique para avançar na simulação • Etapa {chatStep} de 6
+            <p className="text-[10px] text-muted-foreground text-center mt-1.5">
+              {step < 6 ? `Clique para avançar • Etapa ${step} de 5` : 'Processo finalizado — ver resultados no hub'}
             </p>
           </div>
         </motion.div>
