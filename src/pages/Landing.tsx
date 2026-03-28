@@ -92,10 +92,15 @@ const Landing = () => {
   };
 
   // ── Motor de busca semântica universal ──
+  // Mostra APENAS resultados existentes na base. Sem query = sem resultados.
   const searchResult = (() => {
     const query = searchQuery.toLowerCase().trim();
-    if (!query && activeSegments.length === 0) return { products: [], services: mockResults, followUp: undefined, needLabel: undefined, suggestedServices: undefined };
-    if (!query && activeSegments.length > 0) return { products: [], services: mockResults.filter(r => activeSegments.includes(r.segment)), followUp: undefined, needLabel: undefined, suggestedServices: undefined };
+    // Sem query: não mostrar nada (apenas segmentos para navegar)
+    if (!query && activeSegments.length === 0) return { products: [] as ProductItem[], services: [] as typeof mockResults, followUp: undefined, needLabel: undefined, suggestedServices: undefined };
+    // Sem query mas com segmentos selecionados: mostrar serviços do segmento
+    if (!query && activeSegments.length > 0) {
+      return { products: [] as ProductItem[], services: mockResults.filter(r => activeSegments.includes(r.segment)), followUp: undefined, needLabel: undefined, suggestedServices: undefined };
+    }
 
     const result = semanticSearch(query);
 
@@ -104,12 +109,8 @@ const Landing = () => {
       ? result.services
       : result.services.filter(r => activeSegments.includes(r.segment));
 
-    // Fallback to segment-filtered defaults
-    if (filteredServices.length === 0 && activeSegments.length > 0) {
-      return { ...result, services: mockResults.filter(r => activeSegments.includes(r.segment)) };
-    }
-
-    return { ...result, services: filteredServices.length > 0 ? filteredServices : (query ? [] : mockResults) };
+    // Se não encontrou nada, retorna vazio (contextual suggestions cuidam do fallback)
+    return { ...result, services: filteredServices };
   })();
 
   const filteredResults = searchResult.services;
