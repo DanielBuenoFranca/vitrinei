@@ -1075,79 +1075,39 @@ const contextualMap: {
  * Analyzes the query to derive the segment and suggest related services/products.
  */
 export function generateContextualSuggestions(query: string): ContextualSuggestion | null {
-  const q = normalize(query);
-  const tokens = tokenize(query);
+  const q = normalize(query.trim());
+  const tokens = tokenize(query).filter(isMeaningfulIntentToken);
+  const bestMatch = findBestContextualEntry(query);
 
-  // Score each contextualMap entry — pick the BEST match, not the first
-  let bestEntry: typeof contextualMap[0] | null = null;
-  let bestScore = 0;
+  if (bestMatch.entry && bestMatch.score >= 12) {
+    const seg = segments.find(s => s.id === bestMatch.entry!.segment);
+    const matchedKeyword = bestMatch.matchedKeyword || tokens[0] || query.trim();
 
-  for (const entry of contextualMap) {
-    let score = 0;
-    for (const kw of entry.keywords) {
-      const nkw = normalize(kw);
-      // Exact match (query equals keyword)
-      if (q === nkw) { score += 100; continue; }
-      // Query contains keyword entirely
-      if (q.includes(nkw)) { score += nkw.length * 3; continue; }
-      // Keyword contains query entirely (e.g. "encanador" in "encanamento" — but not partial 3-char)
-      if (nkw.includes(q) && q.length >= 4) { score += q.length * 2; continue; }
-      // Token-level matching — require tokens >= 4 chars for precision
-      for (const t of tokens) {
-        if (t.length < 4) continue;
-        if (nkw === t) { score += t.length * 3; }
-        else if (nkw.includes(t) && t.length >= 5) { score += t.length; }
-        else if (t.includes(nkw) && nkw.length >= 5) { score += nkw.length; }
-      }
-    }
-    if (score > bestScore) {
-      bestScore = score;
-      bestEntry = entry;
-    }
-  }
-
-  if (bestEntry && bestScore >= 4) {
-    const seg = segments.find(s => s.id === bestEntry!.segment);
     return {
-      segment: bestEntry.segment,
-      segmentLabel: seg?.label || bestEntry.segment,
-      suggestedServices: bestEntry.services,
-      suggestedProducts: bestEntry.products,
-      derivedContext: `Analisei sua pesquisa por "${query}" e identifiquei que você precisa de um profissional da área de **${seg?.label || bestEntry.segment}**.`,
+      segment: bestMatch.entry.segment,
+      segmentLabel: seg?.label || bestMatch.entry.segment,
+      suggestedServices: bestMatch.entry.services,
+      suggestedProducts: bestMatch.entry.products,
+      derivedContext: `Analisei sua pesquisa por "${query}" e identifiquei o contexto exato de **${matchedKeyword}** dentro da área de **${seg?.label || bestMatch.entry.segment}**.`,
     };
   }
 
-  // Fallback: match against segment keywords with scoring
   let bestSeg: typeof segments[0] | null = null;
   let bestSegScore = 0;
 
   for (const seg of segments) {
-    let score = 0;
-    for (const kw of seg.keywords) {
-      const nkw = normalize(kw);
-      if (q === nkw) { score += 100; continue; }
-      if (q.includes(nkw)) { score += nkw.length * 3; continue; }
-      if (nkw.includes(q) && q.length >= 4) { score += q.length * 2; continue; }
-      for (const t of tokens) {
-        if (t.length < 4) continue;
-        if (nkw === t) { score += t.length * 3; }
-        else if (nkw.includes(t) && t.length >= 5) { score += t.length; }
-      }
-    }
+    const segTokens = seg.keywords.flatMap(tokenize).filter(isMeaningfulIntentToken);
+    const score = scoreIntentAgainstTokens(tokens, segTokens);
     if (score > bestSegScore) {
       bestSegScore = score;
       bestSeg = seg;
     }
   }
 
-  if (bestSeg && bestSegScore >= 4) {
-    // Generate specific suggestions based on the matched keyword
-    const matchedKw = bestSeg.keywords.find(kw => {
-      const nkw = normalize(kw);
-      return q === nkw || q.includes(nkw) || (nkw.includes(q) && q.length >= 4);
-    }) || tokens.find(t => t.length >= 3) || query.trim();
+  if (bestSeg && bestSegScore >= 8) {
+    const matchedKw = tokens[0] || query.trim();
     const capKw = matchedKw.charAt(0).toUpperCase() + matchedKw.slice(1);
-    
+
     return {
       segment: bestSeg.id,
       segmentLabel: bestSeg.label,
@@ -1157,31 +1117,30 @@ export function generateContextualSuggestions(query: string): ContextualSuggesti
         { name: `Consultoria em ${capKw}`, description: `Análise e orientação especializada` },
       ],
       suggestedProducts: [
-        { name: `Kit ${capKw} Essencial`, description: `Produtos básicos para ${matchedKw.toLowerCase()}` },
-        { name: `Material Profissional ${capKw}`, description: `Produto de alta qualidade` },
-        { name: `Acessório para ${capKw}`, description: `Complemento para o serviço` },
+        { name: `Kit ${capKw} Essencial`, description: `Produtos básicos relacionados a ${matchedKw.toLowerCase()}` },
+        { name: `Material Profissional ${capKw}`, description: `Produto de apoio para o serviço` },
+        { name: `Acessório para ${capKw}`, description: `Complemento útil para a necessidade pesquisada` },
       ],
-      derivedContext: `Analisei sua pesquisa por "${query}" e identifiquei que você precisa de um profissional da área de **${bestSeg.label}** — especificamente **${capKw}**.`,
+      derivedContext: `Analisei sua pesquisa por "${query}" e identifiquei uma intenção mais próxima em **${bestSeg.label}**, preservando o foco em **${capKw}**.`,
     };
   }
 
-  // Generic fallback: derive from query itself
-  const mainWord = tokens.find(t => t.length >= 3) || query.trim();
+  const mainWord = tokens[0] || query.trim();
   const capitalizedWord = mainWord.charAt(0).toUpperCase() + mainWord.slice(1);
   return {
     segment: 'manutencao',
     segmentLabel: capitalizedWord,
     suggestedServices: [
       { name: `Serviço de ${capitalizedWord}`, description: `Profissional especializado em ${capitalizedWord.toLowerCase()}` },
-      { name: `Manutenção de ${capitalizedWord}`, description: `Reparo e manutenção relacionada` },
-      { name: `Instalação / ${capitalizedWord}`, description: `Instalação profissional com garantia` },
+      { name: `Atendimento para ${capitalizedWord}`, description: `Avaliação e execução conforme sua necessidade` },
+      { name: `Consultoria em ${capitalizedWord}`, description: `Orientação para localizar o serviço correto` },
     ],
     suggestedProducts: [
-      { name: `Kit ${capitalizedWord} Básico`, description: `Produtos essenciais relacionados` },
-      { name: `Produto para ${capitalizedWord}`, description: `Produto profissional` },
-      { name: `Acessório ${capitalizedWord}`, description: `Complemento útil` },
+      { name: `Kit ${capitalizedWord} Básico`, description: `Itens relacionados ao termo pesquisado` },
+      { name: `Material para ${capitalizedWord}`, description: `Produto de apoio ao atendimento` },
+      { name: `Acessório ${capitalizedWord}`, description: `Complemento coerente com sua busca` },
     ],
-    derivedContext: `Analisei sua pesquisa por "${query}" e preparei sugestões de serviços e produtos que podem atender sua necessidade.`,
+    derivedContext: `Analisei sua pesquisa por "${query}" e mantive o foco exatamente no assunto pesquisado para evitar sugestões incorretas.`,
   };
 }
 
