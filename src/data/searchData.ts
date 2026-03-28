@@ -936,13 +936,23 @@ function isProductCoherentWithContext(p: ProductItem, nlSegments: string[], nlKe
   if (nlSegments.length === 0 && nlKeywords.length === 0) return true;
 
   const productText = normalize([p.name, p.provider, ...p.tags].join(' '));
+  const productTokens = new Set(tokenizePhrase(productText));
+  const normalizedKeywords = [...new Set(nlKeywords.map(normalize).filter(keyword => keyword.length >= 4))];
+  const exactKeywordMatch = normalizedKeywords.some(keyword => productText.includes(keyword));
+  const tokenKeywordMatch = normalizedKeywords.some(keyword => tokenizePhrase(keyword).some(token => productTokens.has(token)));
+  const segmentOnlyHealth = nlSegments.every(segment => segment === 'saude_clinica' || segment === 'natureza' || segment === 'bem_estar');
 
-  for (const kw of nlKeywords) {
-    const nkw = normalize(kw);
-    if (nkw.length >= 4 && productText.includes(nkw)) return true;
+  if (segmentOnlyHealth) {
+    return exactKeywordMatch || tokenKeywordMatch;
   }
 
-  return false;
+  if (nlSegments.length > 0) {
+    const relatedServices = getAllServices().filter(service => p.relatedServiceIds.includes(service.id));
+    const hasRelatedSegment = relatedServices.some(service => nlSegments.includes(service.segment));
+    if (!hasRelatedSegment && !exactKeywordMatch) return false;
+  }
+
+  return exactKeywordMatch || tokenKeywordMatch;
 }
 
 /**
@@ -951,21 +961,20 @@ function isProductCoherentWithContext(p: ProductItem, nlSegments: string[], nlKe
 function isServiceCoherentWithContext(s: typeof mockResults[0], nlSegments: string[], nlKeywords: string[]): boolean {
   if (nlSegments.length === 0 && nlKeywords.length === 0) return true;
 
-  if (nlSegments.includes(s.segment)) {
-    const serviceText = normalize([s.name, s.provider, ...s.products].join(' '));
-    for (const kw of nlKeywords) {
-      const nkw = normalize(kw);
-      if (nkw.length >= 4 && serviceText.includes(nkw)) return true;
-    }
-  }
-
   const serviceText = normalize([s.name, s.provider, ...s.products].join(' '));
-  for (const kw of nlKeywords) {
-    const nkw = normalize(kw);
-    if (nkw.length >= 4 && serviceText.includes(nkw)) return true;
+  const serviceTokens = new Set(tokenizePhrase(serviceText));
+  const normalizedKeywords = [...new Set(nlKeywords.map(normalize).filter(keyword => keyword.length >= 4))];
+  const exactKeywordMatch = normalizedKeywords.some(keyword => serviceText.includes(keyword));
+  const tokenKeywordMatch = normalizedKeywords.some(keyword => tokenizePhrase(keyword).some(token => serviceTokens.has(token)));
+  const inAllowedSegment = nlSegments.length === 0 || nlSegments.includes(s.segment);
+  const segmentOnlyHealth = nlSegments.every(segment => segment === 'saude_clinica' || segment === 'natureza' || segment === 'bem_estar');
+
+  if (segmentOnlyHealth) {
+    return inAllowedSegment && (exactKeywordMatch || tokenKeywordMatch);
   }
 
-  return false;
+  if (!inAllowedSegment && !exactKeywordMatch) return false;
+  return exactKeywordMatch || tokenKeywordMatch;
 }
 
 export function semanticSearch(query: string, conversationContext?: string[]): SearchResult {
