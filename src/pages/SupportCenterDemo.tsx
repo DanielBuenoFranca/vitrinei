@@ -123,7 +123,7 @@ const SupportCenterDemo = () => {
     }
   }, [step]);
 
-  // Inject items at final step
+  // Inject items at final step (persisted to DB)
   useEffect(() => {
     if (step === 6 && !injectedItems) {
       const entries: DynamicEntry[] = newProviders.map((p, i) => ({
@@ -152,8 +152,7 @@ const SupportCenterDemo = () => {
         })),
         maxPerSegment: 5,
       }));
-      addDynamicEntries(entries);
-      setInjectedItems(true);
+      addDynamicEntries(entries).then(() => setInjectedItems(true));
     }
   }, [step, injectedItems]);
 
