@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
-import { segments, mockResults, semanticSearch, buildSupportSummary, type ProductItem, type SearchResult } from '@/data/searchData';
+import { segments, mockResults, semanticSearch, buildSupportSummary, generateContextualSuggestions, type ProductItem, type SearchResult, type ContextualSuggestion } from '@/data/searchData';
 
 
 const aiSuggestions = [
@@ -30,7 +30,7 @@ const Landing = () => {
   const [activeSegments, setActiveSegments] = useState<string[]>([]);
   const [showAiPanel, setShowAiPanel] = useState(false);
   const [aiMessage, setAiMessage] = useState('');
-  const [aiChat, setAiChat] = useState<{ role: 'user' | 'ai'; text: string; searchResult?: SearchResult }[]>([]);
+  const [aiChat, setAiChat] = useState<{ role: 'user' | 'ai'; text: string; searchResult?: SearchResult; contextualSuggestion?: ContextualSuggestion }[]>([]);
   const [currentSuggestion, setCurrentSuggestion] = useState(0);
   const [aiSpeaking, setAiSpeaking] = useState(false);
   const [expandedProducts, setExpandedProducts] = useState<number | null>(null);
@@ -38,6 +38,7 @@ const Landing = () => {
   const [showSearchProducts, setShowSearchProducts] = useState(false);
   const [productCart, setProductCart] = useState<ProductItem[]>([]);
   const [showProductCart, setShowProductCart] = useState(false);
+  const [pendingChatSuggestions, setPendingChatSuggestions] = useState<Map<number, Set<string>>>(new Map());
   const searchRef = useRef<HTMLInputElement>(null);
 
   const toggleProductInCart = (product: ProductItem) => {
