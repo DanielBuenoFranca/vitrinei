@@ -99,7 +99,6 @@ const Landing = () => {
     if (!query && activeSegments.length === 0) return { products: [] as ProductItem[], services: [] as typeof mockResults, followUp: undefined, needLabel: undefined, suggestedServices: undefined };
     // Sem query mas com segmentos selecionados: mostrar serviços do segmento
     if (!query && activeSegments.length > 0) {
-      const allSvcs = [...mockResults, ...(() => { try { const { getAllServices } = require('@/data/searchData'); return getAllServices().filter((s: any) => !mockResults.some(m => m.id === s.id)); } catch { return []; } })()];
       return { products: [] as ProductItem[], services: mockResults.filter(r => activeSegments.includes(r.segment)), followUp: undefined, needLabel: undefined, suggestedServices: undefined };
     }
 
