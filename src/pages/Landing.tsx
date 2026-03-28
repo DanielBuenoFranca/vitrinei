@@ -147,12 +147,12 @@ const Landing = () => {
 
   // ── Motor de busca semântica universal ──
   // Executa APENAS após o usuário clicar em Buscar ou pressionar Enter
+  // searchVersion forces re-evaluation on each click
   const searchResult = (() => {
+    void searchVersion; // force dependency on search version
     if (!searchExecuted) return { products: [] as ProductItem[], services: [] as typeof mockResults, followUp: undefined, needLabel: undefined, suggestedServices: undefined };
     const query = executedQuery.toLowerCase().trim();
-    // Sem query: não mostrar nada
     if (!query && activeSegments.length === 0) return { products: [] as ProductItem[], services: [] as typeof mockResults, followUp: undefined, needLabel: undefined, suggestedServices: undefined };
-    // Sem query mas com segmentos selecionados
     if (!query && activeSegments.length > 0) {
       const allSvcs = getAllServices();
       return { products: [] as ProductItem[], services: allSvcs.filter((r: any) => activeSegments.includes(r.segment)), followUp: undefined, needLabel: undefined, suggestedServices: undefined };
