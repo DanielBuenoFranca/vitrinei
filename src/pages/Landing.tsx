@@ -649,14 +649,15 @@ const Landing = () => {
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {aiChat.length === 0 && (
                 <div className="bg-muted/50 rounded-xl p-4 text-sm text-muted-foreground">
-                  <p className="font-medium text-foreground mb-2">👋 Olá! Sou a IA do EcoMEI.</p>
-                  <p className="mb-3">Me conta o que você precisa — eu busco a melhor opção por:</p>
+                  <p className="font-medium text-foreground mb-2">👋 Me diga o que você precisa!</p>
+                  <p className="mb-3">Eu encontro o melhor profissional perto de você:</p>
                   <ul className="space-y-1.5">
-                    <li className="flex items-center gap-2"><DollarSign className="w-3.5 h-3.5 text-primary" /> Melhor preço</li>
-                    <li className="flex items-center gap-2"><Clock className="w-3.5 h-3.5 text-primary" /> Menor tempo de atendimento</li>
-                    <li className="flex items-center gap-2"><MapPin className="w-3.5 h-3.5 text-primary" /> Proximidade da sua região</li>
+                    <li className="flex items-center gap-2"><DollarSign className="w-3.5 h-3.5 text-primary" /> Melhor preço garantido</li>
+                    <li className="flex items-center gap-2"><Clock className="w-3.5 h-3.5 text-primary" /> Atendimento mais rápido</li>
+                    <li className="flex items-center gap-2"><MapPin className="w-3.5 h-3.5 text-primary" /> Profissionais na sua região</li>
+                    <li className="flex items-center gap-2"><Star className="w-3.5 h-3.5 fill-accent text-accent" /> Avaliados por clientes reais</li>
                   </ul>
-                  <p className="mt-3 text-xs">Se não encontrar, encaminho para a <strong>Central de Atendimento</strong> (SLA 24h).</p>
+                  <p className="mt-3 text-xs">Se não encontrar, a <strong>Central de Atendimento</strong> resolve em até <strong>24h</strong>.</p>
                 </div>
               )}
 
@@ -829,6 +830,25 @@ const Landing = () => {
                       </div>
                     </div>
                   )}
+                  {/* Central action buttons when no results */}
+                  {msg.role === 'ai' && (msg.searchResult as any)?._noResults && (
+                    <div className="w-full mt-2 pl-10 space-y-2">
+                      <Button size="sm" className="w-full gap-2 text-xs" onClick={() => {
+                        const sr = msg.searchResult as any;
+                        const params = new URLSearchParams({ query: sr._query, context: 'Chat IA', summary: sr._summary, type: 'both' });
+                        navigate(`/central-atendimento?${params.toString()}`);
+                      }}>
+                        <Headphones className="w-3.5 h-3.5" /> Acionar Central de Atendimento
+                      </Button>
+                      <Button size="sm" variant="outline" className="w-full gap-2 text-xs" onClick={() => {
+                        const sr = msg.searchResult as any;
+                        const params = new URLSearchParams({ query: sr._query, context: 'Incluir item', summary: sr._summary, type: 'both' });
+                        navigate(`/central-atendimento?${params.toString()}`);
+                      }}>
+                        <Plus className="w-3.5 h-3.5" /> Incluir serviço/produto no hub
+                      </Button>
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </div>
@@ -848,16 +868,14 @@ const Landing = () => {
               </div>
               <button
                 onClick={() => {
-                  setAiSpeaking(true);
-                  setAiChat((prev) => [...prev,
-                    { role: 'user', text: 'Não encontrei o que preciso, podem me ajudar?' },
-                    { role: 'ai', text: 'Claro! Encaminhando para a Central de Atendimento EcoMEI. Nosso SLA é de no máximo 24 horas. Você receberá uma notificação com a melhor solução! 📩✅' },
-                  ]);
-                  setTimeout(() => setAiSpeaking(false), 2000);
+                  const lastQuery = aiChat.filter(m => m.role === 'user').pop()?.text || 'serviço especializado';
+                  const summary = buildSupportSummary(aiChat, lastQuery);
+                  const params = new URLSearchParams({ query: lastQuery, context: 'Chat IA - Central', summary, type: 'both' });
+                  navigate(`/central-atendimento?${params.toString()}`);
                 }}
                 className="w-full mt-2 text-xs text-muted-foreground hover:text-primary transition-colors flex items-center justify-center gap-1 py-1.5"
               >
-                <Headphones className="w-3 h-3" /> Encaminhar para Central de Atendimento (SLA 24h)
+                <Headphones className="w-3 h-3" /> Central de Atendimento (SLA 24h)
               </button>
             </div>
           </motion.div>
