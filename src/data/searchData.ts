@@ -766,10 +766,10 @@ const contextualMap: {
     ],
   },
   {
-    keywords: ['pintura', 'pintor', 'parede', 'tinta', 'reboco', 'massa corrida', 'gesso', 'textura'],
+    keywords: ['pintura', 'pintor', 'parede', 'tinta', 'reboco', 'massa corrida', 'gesso', 'textura', 'gesseiro', 'pintar parede', 'pintar casa'],
     segment: 'manutencao',
     services: [
-      { name: 'Pintura Residencial', description: 'Pintura interna e externa de ambientes' },
+      { name: 'Pintor Residencial', description: 'Pintura interna e externa de ambientes' },
       { name: 'Aplicação de Textura', description: 'Texturas decorativas em paredes' },
       { name: 'Reparo em Gesso e Reboco', description: 'Correção de fissuras e buracos' },
     ],
