@@ -702,6 +702,266 @@ export function semanticSearchLegacy(query: string): { results: typeof mockResul
   return { results: services, followUp };
 }
 
+// ── Contextual Suggestion System ──
+// When the AI can't find direct results, it analyzes the query and suggests
+// related services/products by deriving the likely segment.
+
+export interface ContextualSuggestion {
+  segment: string;
+  segmentLabel: string;
+  suggestedServices: { name: string; description: string }[];
+  suggestedProducts: { name: string; description: string }[];
+  derivedContext: string;
+}
+
+/** Map of common terms to segments with service/product suggestions */
+const contextualMap: {
+  keywords: string[];
+  segment: string;
+  services: { name: string; description: string }[];
+  products: { name: string; description: string }[];
+}[] = [
+  {
+    keywords: ['esgoto', 'encanamento', 'cano', 'tubulação', 'desentupir', 'entupido', 'entupimento', 'ralo', 'fossa', 'sifão', 'pia', 'vaso sanitário', 'descarga', 'vazamento', 'torneira', 'água'],
+    segment: 'manutencao',
+    services: [
+      { name: 'Desentupimento de Esgoto', description: 'Desentupimento profissional de tubulações e ralos' },
+      { name: 'Troca de Encanamento', description: 'Substituição de canos danificados ou antigos' },
+      { name: 'Manutenção Hidráulica Geral', description: 'Reparos em torneiras, válvulas e conexões' },
+    ],
+    products: [
+      { name: 'Ácido Desentupidor Líquido 1L', description: 'Desentupidor químico para pias e ralos' },
+      { name: 'Pastilha Desodorizante p/ Esgoto', description: 'Elimina mau cheiro em ralos e tubulações' },
+      { name: 'Kit Vedação p/ Vaso Sanitário', description: 'Anel de vedação e parafusos para vaso' },
+    ],
+  },
+  {
+    keywords: ['telhado', 'goteira', 'infiltração', 'calha', 'telha', 'laje', 'impermeabilização'],
+    segment: 'manutencao',
+    services: [
+      { name: 'Reparo de Telhado', description: 'Troca de telhas quebradas e manutenção' },
+      { name: 'Impermeabilização de Laje', description: 'Proteção contra infiltrações' },
+      { name: 'Instalação de Calhas', description: 'Calhas e rufos para escoamento de água' },
+    ],
+    products: [
+      { name: 'Manta Asfáltica Impermeabilizante', description: 'Proteção contra infiltrações' },
+      { name: 'Telha de Fibrocimento', description: 'Telha resistente para reposição' },
+      { name: 'Selante Multiuso 280g', description: 'Vedação de frestas e juntas' },
+    ],
+  },
+  {
+    keywords: ['ar condicionado', 'climatização', 'ventilação', 'refrigeração', 'aquecedor', 'ar quente'],
+    segment: 'manutencao',
+    services: [
+      { name: 'Instalação de Ar Condicionado', description: 'Instalação profissional com garantia' },
+      { name: 'Manutenção Preventiva de AC', description: 'Limpeza e revisão de split' },
+      { name: 'Higienização de Ar Condicionado', description: 'Limpeza profunda do equipamento' },
+    ],
+    products: [
+      { name: 'Filtro para Ar Condicionado', description: 'Filtro de reposição universal' },
+      { name: 'Spray Higienizador AC 300ml', description: 'Limpeza bactericida para split' },
+      { name: 'Suporte para Condensadora', description: 'Suporte metálico para unidade externa' },
+    ],
+  },
+  {
+    keywords: ['pintura', 'pintor', 'parede', 'tinta', 'reboco', 'massa corrida', 'gesso', 'textura'],
+    segment: 'manutencao',
+    services: [
+      { name: 'Pintura Residencial', description: 'Pintura interna e externa de ambientes' },
+      { name: 'Aplicação de Textura', description: 'Texturas decorativas em paredes' },
+      { name: 'Reparo em Gesso e Reboco', description: 'Correção de fissuras e buracos' },
+    ],
+    products: [
+      { name: 'Tinta Acrílica Premium 18L', description: 'Tinta lavável de alta cobertura' },
+      { name: 'Kit Rolo + Bandeja + Pincel', description: 'Kit completo para pintura' },
+      { name: 'Massa Corrida PVA 25kg', description: 'Nivelamento de superfícies' },
+    ],
+  },
+  {
+    keywords: ['mudança', 'frete', 'carreto', 'transportar', 'transporte', 'caminhão'],
+    segment: 'casa',
+    services: [
+      { name: 'Mudança Residencial', description: 'Transporte de móveis e pertences' },
+      { name: 'Frete e Carreto', description: 'Transporte de itens avulsos' },
+      { name: 'Montagem/Desmontagem de Móveis', description: 'Montagem profissional' },
+    ],
+    products: [
+      { name: 'Caixa de Papelão Reforçada (5un)', description: 'Para embalar pertences' },
+      { name: 'Plástico Bolha Rolo 10m', description: 'Proteção de itens frágeis' },
+      { name: 'Fita Adesiva Larga 100m', description: 'Para lacrar caixas' },
+    ],
+  },
+  {
+    keywords: ['chaveiro', 'chave', 'fechadura', 'cadeado', 'trancado', 'cofre'],
+    segment: 'manutencao',
+    services: [
+      { name: 'Chaveiro 24h', description: 'Abertura de portas e veículos' },
+      { name: 'Troca de Fechadura', description: 'Instalação de novas fechaduras' },
+      { name: 'Cópia de Chaves', description: 'Duplicação de chaves residenciais e automotivas' },
+    ],
+    products: [
+      { name: 'Fechadura Digital Biométrica', description: 'Fechadura com senha e digital' },
+      { name: 'Cadeado de Alta Segurança', description: 'Cadeado reforçado anti-arrombamento' },
+      { name: 'Kit Maçaneta Interna', description: 'Maçaneta com fechadura embutida' },
+    ],
+  },
+  {
+    keywords: ['dedetização', 'barata', 'rato', 'formiga', 'cupim', 'mosquito', 'dengue', 'praga', 'inseto'],
+    segment: 'casa',
+    services: [
+      { name: 'Dedetização Residencial', description: 'Controle de pragas profissional' },
+      { name: 'Descupinização', description: 'Eliminação de cupins em madeira e alvenaria' },
+      { name: 'Controle de Roedores', description: 'Eliminação segura de ratos e ratazanas' },
+    ],
+    products: [
+      { name: 'Inseticida Spray Multiação 500ml', description: 'Elimina baratas, formigas e moscas' },
+      { name: 'Armadilha Adesiva para Insetos (5un)', description: 'Captura sem veneno' },
+      { name: 'Repelente Ultrassônico Eletrônico', description: 'Afasta insetos e roedores' },
+    ],
+  },
+  {
+    keywords: ['segurança', 'alarme', 'cerca elétrica', 'portão', 'interfone', 'câmera', 'vigilância', 'monitoramento'],
+    segment: 'tech',
+    services: [
+      { name: 'Instalação de Cerca Elétrica', description: 'Cerca elétrica perimetral' },
+      { name: 'Instalação de Alarme Residencial', description: 'Sistema de alarme com sensores' },
+      { name: 'Manutenção de Portão Eletrônico', description: 'Reparo e lubrificação de motores' },
+    ],
+    products: [
+      { name: 'Sensor de Presença Infravermelho', description: 'Detecção de movimento' },
+      { name: 'Sirene de Alarme 120dB', description: 'Sirene para sistema de segurança' },
+      { name: 'Controle Remoto p/ Portão', description: 'Controle extra para portão eletrônico' },
+    ],
+  },
+  {
+    keywords: ['costura', 'costureira', 'roupa ajustar', 'bainha', 'zíper', 'customização'],
+    segment: 'moda',
+    services: [
+      { name: 'Ajuste de Roupas', description: 'Bainha, ajuste de cintura e customizações' },
+      { name: 'Costura Sob Medida', description: 'Roupas feitas sob encomenda' },
+      { name: 'Conserto de Zíper e Botões', description: 'Reparos rápidos em vestuário' },
+    ],
+    products: [
+      { name: 'Kit Costura Completo', description: 'Linha, agulha, tesoura e acessórios' },
+      { name: 'Zíper Universal Kit 10un', description: 'Zíperes de vários tamanhos' },
+      { name: 'Botões Sortidos 100un', description: 'Botões de vários modelos e cores' },
+    ],
+  },
+  {
+    keywords: ['tatuagem', 'tattoo', 'piercing', 'body piercing', 'tatuador'],
+    segment: 'beleza',
+    services: [
+      { name: 'Tatuagem Artística', description: 'Tatuagem profissional com agendamento' },
+      { name: 'Colocação de Piercing', description: 'Piercing seguro e higiênico' },
+      { name: 'Cover-up de Tatuagem', description: 'Cobertura de tatuagens antigas' },
+    ],
+    products: [
+      { name: 'Pomada Cicatrizante p/ Tattoo', description: 'Cuidado pós-tatuagem' },
+      { name: 'Piercing Cirúrgico Aço Inox', description: 'Piercing hipoalergênico' },
+      { name: 'Filme Protetor p/ Tatuagem', description: 'Proteção durante a cicatrização' },
+    ],
+  },
+  {
+    keywords: ['acupuntura', 'quiropraxia', 'osteopatia', 'reflexologia', 'terapia alternativa', 'reiki', 'homeopatia'],
+    segment: 'bem_estar',
+    services: [
+      { name: 'Sessão de Acupuntura', description: 'Tratamento com agulhas terapêuticas' },
+      { name: 'Quiropraxia - Ajuste Postural', description: 'Alinhamento da coluna e articulações' },
+      { name: 'Reflexologia Podal', description: 'Massagem terapêutica nos pés' },
+    ],
+    products: [
+      { name: 'Tapete de Acupressão', description: 'Estimulação de pontos de pressão' },
+      { name: 'Óleo Essencial Terapêutico Mix', description: 'Blend para relaxamento profundo' },
+      { name: 'Almofada Ortopédica Cervical', description: 'Apoio para postura cervical' },
+    ],
+  },
+  {
+    keywords: ['fotografia', 'ensaio fotográfico', 'book', 'filmagem', 'vídeo casamento'],
+    segment: 'digital',
+    services: [
+      { name: 'Ensaio Fotográfico', description: 'Sessão profissional de fotos' },
+      { name: 'Filmagem de Eventos', description: 'Cobertura completa em vídeo' },
+      { name: 'Edição de Fotos e Vídeos', description: 'Tratamento e montagem profissional' },
+    ],
+    products: [
+      { name: 'Álbum de Fotos Premium 20x30', description: 'Álbum encadernado com capa dura' },
+      { name: 'Pendrive com Fotos HD', description: 'Entrega digital em pen drive personalizado' },
+      { name: 'Quadro Canvas Personalizado', description: 'Impressão em tela de algodão' },
+    ],
+  },
+];
+
+/**
+ * Generate contextual suggestions when no direct results are found.
+ * Analyzes the query to derive the segment and suggest related services/products.
+ */
+export function generateContextualSuggestions(query: string): ContextualSuggestion | null {
+  const q = normalize(query);
+  const tokens = tokenize(query);
+
+  // Try to match against contextual map
+  for (const entry of contextualMap) {
+    const match = entry.keywords.some(kw => {
+      const nkw = normalize(kw);
+      return q.includes(nkw) || nkw.includes(q) || tokens.some(t => nkw.includes(t) && t.length >= 3);
+    });
+    if (match) {
+      const seg = segments.find(s => s.id === entry.segment);
+      return {
+        segment: entry.segment,
+        segmentLabel: seg?.label || entry.segment,
+        suggestedServices: entry.services,
+        suggestedProducts: entry.products,
+        derivedContext: `Analisei sua pesquisa e identifiquei que você precisa de um profissional da área de **${seg?.label || entry.segment}**.`,
+      };
+    }
+  }
+
+  // Fallback: try to match against existing segment keywords
+  for (const seg of segments) {
+    const match = seg.keywords.some(kw => {
+      const nkw = normalize(kw);
+      return q.includes(nkw) || tokens.some(t => nkw.includes(t) && t.length >= 3);
+    });
+    if (match) {
+      return {
+        segment: seg.id,
+        segmentLabel: seg.label,
+        suggestedServices: [
+          { name: `Serviço de ${seg.label} - Básico`, description: `Atendimento profissional na área de ${seg.label}` },
+          { name: `Serviço de ${seg.label} - Completo`, description: `Pacote completo com avaliação e execução` },
+          { name: `Consultoria em ${seg.label}`, description: `Análise e orientação especializada` },
+        ],
+        suggestedProducts: [
+          { name: `Kit ${seg.label} Essencial`, description: `Produtos básicos para ${seg.label.toLowerCase()}` },
+          { name: `Produto Profissional ${seg.label}`, description: `Produto de alta qualidade` },
+          { name: `Acessório ${seg.label}`, description: `Complemento para o serviço` },
+        ],
+        derivedContext: `Analisei sua pesquisa e identifiquei que você precisa de um profissional da área de **${seg.label}**.`,
+      };
+    }
+  }
+
+  // Generic fallback: derive from query itself
+  const mainWord = tokens.find(t => t.length >= 3) || query.trim();
+  const capitalizedWord = mainWord.charAt(0).toUpperCase() + mainWord.slice(1);
+  return {
+    segment: 'manutencao',
+    segmentLabel: capitalizedWord,
+    suggestedServices: [
+      { name: `Serviço de ${capitalizedWord}`, description: `Profissional especializado em ${capitalizedWord.toLowerCase()}` },
+      { name: `Manutenção de ${capitalizedWord}`, description: `Reparo e manutenção relacionada` },
+      { name: `Instalação / ${capitalizedWord}`, description: `Instalação profissional com garantia` },
+    ],
+    suggestedProducts: [
+      { name: `Kit ${capitalizedWord} Básico`, description: `Produtos essenciais relacionados` },
+      { name: `Produto para ${capitalizedWord}`, description: `Produto profissional` },
+      { name: `Acessório ${capitalizedWord}`, description: `Complemento útil` },
+    ],
+    derivedContext: `Analisei sua pesquisa por "${query}" e preparei sugestões de serviços e produtos que podem atender sua necessidade.`,
+  };
+}
+
 // ── Dynamic Entry System (for Support Center Demo) ──
 export interface DynamicEntry {
   type: 'service' | 'product';
@@ -723,10 +983,8 @@ export function addDynamicEntries(entries: DynamicEntry[]) {
     if (entry.service) {
       const max = entry.maxPerSegment || 5;
       const segment = entry.service.segment;
-      // Count existing in segment
       const inSegment = [...mockResults, ...dynamicServices].filter(s => s.segment === segment);
       if (inSegment.length >= max) {
-        // Remove one dynamic entry from this segment, or mark to skip
         const dynIdx = dynamicServices.findIndex(s => s.segment === segment);
         if (dynIdx >= 0) dynamicServices.splice(dynIdx, 1);
       }
@@ -734,9 +992,8 @@ export function addDynamicEntries(entries: DynamicEntry[]) {
     }
     if (entry.products) {
       for (const product of entry.products) {
-        // 1:1 replacement by tags similarity
         if (dynamicProducts.length > 20) {
-          dynamicProducts.shift(); // Remove oldest
+          dynamicProducts.shift();
         }
         dynamicProducts.push(product);
       }

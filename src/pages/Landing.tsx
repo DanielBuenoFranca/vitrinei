@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
-import { segments, mockResults, semanticSearch, buildSupportSummary, type ProductItem, type SearchResult } from '@/data/searchData';
+import { segments, mockResults, semanticSearch, buildSupportSummary, generateContextualSuggestions, type ProductItem, type SearchResult, type ContextualSuggestion } from '@/data/searchData';
 
 
 const aiSuggestions = [
@@ -30,7 +30,7 @@ const Landing = () => {
   const [activeSegments, setActiveSegments] = useState<string[]>([]);
   const [showAiPanel, setShowAiPanel] = useState(false);
   const [aiMessage, setAiMessage] = useState('');
-  const [aiChat, setAiChat] = useState<{ role: 'user' | 'ai'; text: string; searchResult?: SearchResult }[]>([]);
+  const [aiChat, setAiChat] = useState<{ role: 'user' | 'ai'; text: string; searchResult?: SearchResult; contextualSuggestion?: ContextualSuggestion }[]>([]);
   const [currentSuggestion, setCurrentSuggestion] = useState(0);
   const [aiSpeaking, setAiSpeaking] = useState(false);
   const [expandedProducts, setExpandedProducts] = useState<number | null>(null);
@@ -38,6 +38,7 @@ const Landing = () => {
   const [showSearchProducts, setShowSearchProducts] = useState(false);
   const [productCart, setProductCart] = useState<ProductItem[]>([]);
   const [showProductCart, setShowProductCart] = useState(false);
+  const [pendingChatSuggestions, setPendingChatSuggestions] = useState<Map<number, Set<string>>>(new Map());
   const searchRef = useRef<HTMLInputElement>(null);
 
   const toggleProductInCart = (product: ProductItem) => {
@@ -148,13 +149,24 @@ const Landing = () => {
         setAiChat((prev) => [...prev, { role: 'ai', text: parts.join(''), searchResult }]);
         setSearchQuery(msg);
       } else {
-        // No results - show structured fallback with Central buttons
-        const summary = buildSupportSummary([...aiChat, { role: 'user', text: msg }], msg);
-        setAiChat((prev) => [...prev, {
-          role: 'ai',
-          text: `Não encontrei resultados para "${msg}" no hub atual. 😔\n\n📋 **Resumo preparado para a Central:**\n• Necessidade: ${msg}\n• Status: Indisponível\n• Ação recomendada: Acionar Central de Atendimento\n\nVocê pode acionar a Central abaixo para que busquemos profissionais e produtos na sua região (SLA: 24h).`,
-          searchResult: { products: [], services: [], _noResults: true, _query: msg, _summary: summary } as any
-        }]);
+        // ── CONTEXTUAL SUGGESTIONS ──
+        const contextSuggestion = generateContextualSuggestions(msg);
+        if (contextSuggestion) {
+          const text = `🧠 Não encontrei "${msg}" diretamente no hub, mas analisei o contexto!\n\n${contextSuggestion.derivedContext}\n\n📂 **Segmento:** ${contextSuggestion.segmentLabel}\n\nSelecione abaixo os serviços e produtos que correspondem ao que você precisa, ou escreva com mais detalhes:`;
+          setAiChat((prev) => [...prev, {
+            role: 'ai',
+            text,
+            contextualSuggestion: contextSuggestion,
+            searchResult: { products: [], services: [] } as SearchResult,
+          }]);
+        } else {
+          const summary = buildSupportSummary([...aiChat, { role: 'user', text: msg }], msg);
+          setAiChat((prev) => [...prev, {
+            role: 'ai',
+            text: `Não encontrei resultados para "${msg}" no hub atual. 😔\n\nAcione a Central abaixo para buscar profissionais (SLA: 24h).`,
+            searchResult: { products: [], services: [], _noResults: true, _query: msg, _summary: summary } as any
+          }]);
+        }
       }
       setTimeout(() => setAiSpeaking(false), 2000);
     }, 1200);
@@ -501,50 +513,87 @@ const Landing = () => {
                     </>
                   )}
 
-                  {filteredResults.length === 0 && searchResult.products.length === 0 && (
+                  {filteredResults.length === 0 && searchResult.products.length === 0 && searchQuery && (() => {
+                    const ctxSuggestion = generateContextualSuggestions(searchQuery);
+                    return (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-8">
-                      {/* Structured analysis */}
+                      {/* Contextual AI analysis */}
                       <Card className="border-primary/20 bg-primary/5 mb-4">
                         <CardContent className="p-5">
                           <div className="flex items-center gap-3 mb-3">
                             <AiAvatar size={48} speaking={true} onClick={() => setShowAiPanel(true)} />
                             <div>
-                              <h3 className="font-display font-bold text-foreground">Análise Inteligente</h3>
-                              <p className="text-xs text-muted-foreground">Nenhum resultado encontrado para "{searchQuery}"</p>
+                              <h3 className="font-display font-bold text-foreground">🧠 Análise Contextual da IA</h3>
+                              <p className="text-xs text-muted-foreground">Não encontrei "{searchQuery}" diretamente, mas identifiquei sugestões!</p>
                             </div>
                           </div>
-                          <div className="bg-card rounded-lg p-4 space-y-2 text-sm">
-                            <p className="font-semibold text-foreground">📋 Resumo da solicitação:</p>
-                            <ul className="text-xs text-muted-foreground space-y-1">
-                              <li>• <strong>Busca:</strong> "{searchQuery}"</li>
-                              <li>• <strong>Tipo:</strong> Serviço + Produtos relacionados</li>
-                              <li>• <strong>Status:</strong> Não disponível no hub atual</li>
-                              <li>• <strong>Ação:</strong> Encaminhar para Central de Atendimento</li>
-                            </ul>
-                          </div>
+                          {ctxSuggestion && (
+                            <div className="space-y-3">
+                              <p className="text-sm text-foreground">{ctxSuggestion.derivedContext}</p>
+                              <Badge className="bg-primary/10 text-primary border-primary/20">📂 Segmento: {ctxSuggestion.segmentLabel}</Badge>
+                              
+                              {/* Suggested Services */}
+                              <div>
+                                <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1">
+                                  <WrenchIcon className="w-3.5 h-3.5 text-primary" /> Serviços sugeridos
+                                </p>
+                                <div className="grid sm:grid-cols-3 gap-2">
+                                  {ctxSuggestion.suggestedServices.map((svc) => (
+                                    <Card key={svc.name} className="border-border/50 hover:border-primary/40 cursor-pointer transition-all"
+                                      onClick={() => {
+                                        const summary = buildSupportSummary(aiChat, svc.name);
+                                        const params = new URLSearchParams({ query: svc.name, context: `IA: ${ctxSuggestion.segmentLabel}`, summary, type: 'both', segment: ctxSuggestion.segment });
+                                        navigate(`/central-atendimento?${params.toString()}`);
+                                      }}>
+                                      <CardContent className="p-3">
+                                        <h4 className="font-semibold text-xs text-foreground mb-0.5">{svc.name}</h4>
+                                        <p className="text-[10px] text-muted-foreground">{svc.description}</p>
+                                      </CardContent>
+                                    </Card>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Suggested Products */}
+                              <div>
+                                <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1">
+                                  <ShoppingBag className="w-3.5 h-3.5 text-success" /> Produtos sugeridos
+                                </p>
+                                <div className="grid sm:grid-cols-3 gap-2">
+                                  {ctxSuggestion.suggestedProducts.map((prod) => (
+                                    <Card key={prod.name} className="border-border/50 hover:border-success/40 cursor-pointer transition-all"
+                                      onClick={() => {
+                                        const summary = buildSupportSummary(aiChat, prod.name);
+                                        const params = new URLSearchParams({ query: prod.name, context: `IA: ${ctxSuggestion.segmentLabel}`, summary, type: 'product', segment: ctxSuggestion.segment });
+                                        navigate(`/central-atendimento?${params.toString()}`);
+                                      }}>
+                                      <CardContent className="p-3">
+                                        <h4 className="font-semibold text-xs text-foreground mb-0.5">{prod.name}</h4>
+                                        <p className="text-[10px] text-muted-foreground">{prod.description}</p>
+                                      </CardContent>
+                                    </Card>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </CardContent>
                       </Card>
                       <div className="flex flex-col sm:flex-row gap-3 justify-center">
                         <Button className="gap-2" onClick={() => {
                           const summary = buildSupportSummary(aiChat, searchQuery);
-                          const params = new URLSearchParams({ query: searchQuery, context: 'Busca sem resultados', summary, type: 'both' });
+                          const params = new URLSearchParams({ query: searchQuery, context: 'Busca contextual', summary, type: 'both', segment: ctxSuggestion?.segment || '' });
                           navigate(`/central-atendimento?${params.toString()}`);
                         }}>
                           <Headphones className="w-4 h-4" /> Acionar Central (SLA 24h)
                         </Button>
-                        <Button variant="outline" className="gap-2" onClick={() => {
-                          const summary = buildSupportSummary(aiChat, searchQuery);
-                          const params = new URLSearchParams({ query: searchQuery, context: 'Incluir novo item', summary, type: 'both' });
-                          navigate(`/central-atendimento?${params.toString()}`);
-                        }}>
-                          <Plus className="w-4 h-4" /> Incluir serviço/produto
-                        </Button>
                         <Button variant="ghost" className="gap-2" onClick={() => setShowAiPanel(true)}>
-                          <Sparkles className="w-4 h-4" /> Falar com a IA
+                          <Sparkles className="w-4 h-4" /> Refinar com a IA
                         </Button>
                       </div>
                     </motion.div>
-                  )}
+                    );
+                  })()}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -830,8 +879,93 @@ const Landing = () => {
                       </div>
                     </div>
                   )}
-                  {/* Central action buttons when no results */}
-                  {msg.role === 'ai' && (msg.searchResult as any)?._noResults && (
+                  {/* Contextual suggestion cards in chat */}
+                  {msg.contextualSuggestion && (
+                    <div className="w-full mt-2 pl-10 space-y-2">
+                      <p className="text-[11px] font-semibold text-primary flex items-center gap-1">
+                        <WrenchIcon className="w-3.5 h-3.5" /> Serviços sugeridos ({msg.contextualSuggestion.segmentLabel})
+                      </p>
+                      {msg.contextualSuggestion.suggestedServices.map((svc) => {
+                        const isSelected = pendingChatSuggestions.get(idx)?.has(svc.name);
+                        return (
+                          <Card key={svc.name}
+                            className={`cursor-pointer transition-all ${isSelected ? 'border-primary bg-primary/5' : 'border-border/50 hover:border-primary/40'}`}
+                            onClick={() => {
+                              setPendingChatSuggestions(prev => {
+                                const next = new Map(prev);
+                                const set = new Set(next.get(idx) || []);
+                                if (set.has(svc.name)) set.delete(svc.name); else set.add(svc.name);
+                                next.set(idx, set);
+                                return next;
+                              });
+                            }}>
+                            <CardContent className="p-3">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-6 h-6 rounded-md flex items-center justify-center ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-primary/10'}`}>
+                                  {isSelected ? <CheckCircle2 className="w-3.5 h-3.5" /> : <WrenchIcon className="w-3.5 h-3.5 text-primary" />}
+                                </div>
+                                <div>
+                                  <h4 className="font-semibold text-xs text-foreground">{svc.name}</h4>
+                                  <p className="text-[10px] text-muted-foreground">{svc.description}</p>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                      <p className="text-[11px] font-semibold text-success flex items-center gap-1 mt-1">
+                        <ShoppingBag className="w-3.5 h-3.5" /> Produtos sugeridos
+                      </p>
+                      {msg.contextualSuggestion.suggestedProducts.map((prod) => {
+                        const isSelected = pendingChatSuggestions.get(idx)?.has(prod.name);
+                        return (
+                          <Card key={prod.name}
+                            className={`cursor-pointer transition-all ${isSelected ? 'border-success bg-success/5' : 'border-border/50 hover:border-success/40'}`}
+                            onClick={() => {
+                              setPendingChatSuggestions(prev => {
+                                const next = new Map(prev);
+                                const set = new Set(next.get(idx) || []);
+                                if (set.has(prod.name)) set.delete(prod.name); else set.add(prod.name);
+                                next.set(idx, set);
+                                return next;
+                              });
+                            }}>
+                            <CardContent className="p-3">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-6 h-6 rounded-md flex items-center justify-center ${isSelected ? 'bg-success text-white' : 'bg-success/10'}`}>
+                                  {isSelected ? <CheckCircle2 className="w-3.5 h-3.5" /> : <ShoppingBag className="w-3.5 h-3.5 text-success" />}
+                                </div>
+                                <div>
+                                  <h4 className="font-semibold text-xs text-foreground">{prod.name}</h4>
+                                  <p className="text-[10px] text-muted-foreground">{prod.description}</p>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                      {(pendingChatSuggestions.get(idx)?.size || 0) > 0 && (
+                        <Button size="sm" className="w-full gap-2 text-xs mt-2" onClick={() => {
+                          const selected = Array.from(pendingChatSuggestions.get(idx) || []);
+                          const summary = buildSupportSummary(aiChat, selected.join(', '));
+                          const params = new URLSearchParams({
+                            query: selected.join(', '),
+                            context: `IA: ${msg.contextualSuggestion!.segmentLabel}`,
+                            summary,
+                            type: 'both',
+                            segment: msg.contextualSuggestion!.segment,
+                            suggestions: JSON.stringify(selected),
+                          });
+                          navigate(`/central-atendimento?${params.toString()}`);
+                        }}>
+                          <Headphones className="w-3.5 h-3.5" /> Confirmar e acionar Central ({pendingChatSuggestions.get(idx)?.size} item(ns))
+                        </Button>
+                      )}
+                      <p className="text-[10px] text-muted-foreground text-center">Ou escreva com mais detalhes para refinar</p>
+                    </div>
+                  )}
+                  {/* Central action buttons when no results and no contextual suggestions */}
+                  {msg.role === 'ai' && (msg.searchResult as any)?._noResults && !msg.contextualSuggestion && (
                     <div className="w-full mt-2 pl-10 space-y-2">
                       <Button size="sm" className="w-full gap-2 text-xs" onClick={() => {
                         const sr = msg.searchResult as any;
@@ -839,13 +973,6 @@ const Landing = () => {
                         navigate(`/central-atendimento?${params.toString()}`);
                       }}>
                         <Headphones className="w-3.5 h-3.5" /> Acionar Central de Atendimento
-                      </Button>
-                      <Button size="sm" variant="outline" className="w-full gap-2 text-xs" onClick={() => {
-                        const sr = msg.searchResult as any;
-                        const params = new URLSearchParams({ query: sr._query, context: 'Incluir item', summary: sr._summary, type: 'both' });
-                        navigate(`/central-atendimento?${params.toString()}`);
-                      }}>
-                        <Plus className="w-3.5 h-3.5" /> Incluir serviço/produto no hub
                       </Button>
                     </div>
                   )}
