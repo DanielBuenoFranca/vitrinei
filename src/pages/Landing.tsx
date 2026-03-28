@@ -134,29 +134,29 @@ const Landing = () => {
   };
 
   // ── Motor de busca semântica universal ──
-  // Mostra APENAS resultados existentes na base. Sem query = sem resultados.
+  // Executa APENAS após o usuário clicar em Buscar ou pressionar Enter
   const searchResult = (() => {
-    const query = searchQuery.toLowerCase().trim();
-    // Sem query: não mostrar nada (apenas segmentos para navegar)
+    if (!searchExecuted) return { products: [] as ProductItem[], services: [] as typeof mockResults, followUp: undefined, needLabel: undefined, suggestedServices: undefined };
+    const query = executedQuery.toLowerCase().trim();
+    // Sem query: não mostrar nada
     if (!query && activeSegments.length === 0) return { products: [] as ProductItem[], services: [] as typeof mockResults, followUp: undefined, needLabel: undefined, suggestedServices: undefined };
-    // Sem query mas com segmentos selecionados: mostrar serviços do segmento da base
+    // Sem query mas com segmentos selecionados
     if (!query && activeSegments.length > 0) {
       const allSvcs = getAllServices();
       return { products: [] as ProductItem[], services: allSvcs.filter((r: any) => activeSegments.includes(r.segment)), followUp: undefined, needLabel: undefined, suggestedServices: undefined };
     }
 
     const result = semanticSearch(query);
-
-    // Apply segment filter on top
     const filteredServices = activeSegments.length === 0
       ? result.services
       : result.services.filter(r => activeSegments.includes(r.segment));
 
-    // Se não encontrou nada, retorna vazio (contextual suggestions cuidam do fallback)
     return { ...result, services: filteredServices };
   })();
 
   const filteredResults = searchResult.services;
+  const hasResults = searchExecuted && (filteredResults.length > 0 || searchResult.products.length > 0);
+  const noResults = searchExecuted && executedQuery && filteredResults.length === 0 && searchResult.products.length === 0;
 
   const handleAiSend = () => {
     if (!aiMessage.trim()) return;
