@@ -9,7 +9,7 @@ import {
   Search, ArrowRight, Zap, Sparkles, Clock, MapPin, DollarSign,
   Headphones, ShoppingCart, BarChart3, Send, Star,
   Package, TrendingDown, Navigation, Users, Shield, MessageCircle,
-  ChevronDown, ShoppingBag, Wrench as WrenchIcon, Store, Plus, CheckCircle2, X, Trash2
+  ChevronDown, ShoppingBag, Wrench as WrenchIcon, Store, Plus, CheckCircle2, X, Trash2, Settings
 } from 'lucide-react';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
@@ -219,6 +219,10 @@ const Landing = () => {
                   <button onClick={() => navigate('/jornada-cliente')} className="w-full text-left px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors">Jornada do Cliente</button>
                   <button onClick={() => navigate('/mei-acompanhamento')} className="w-full text-left px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors">Gestor MEI</button>
                   <button onClick={() => navigate('/dropshipping')} className="w-full text-left px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors">Drop-shipping Global</button>
+                  <div className="border-t border-border my-1" />
+                  <button onClick={() => navigate('/admin')} className="w-full text-left px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 rounded-md transition-colors flex items-center gap-2">
+                    <Settings className="w-4 h-4" /> Administrador
+                  </button>
                 </div>
               </div>
             </div>
