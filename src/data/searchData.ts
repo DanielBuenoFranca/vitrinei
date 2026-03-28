@@ -730,10 +730,11 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
   const q = normalize(query.trim());
   if (!q) return { products: [], services: [] };
 
+  const intentProfile = resolveIntentProfile(query);
+
   // ── Build enriched query from conversation context ──
   const contextTokens: string[] = [];
   if (conversationContext && conversationContext.length > 0) {
-    // Use last 5 user messages as context
     const recent = conversationContext.slice(-5);
     for (const msg of recent) {
       contextTokens.push(...tokenize(msg));
@@ -758,28 +759,24 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
   let matchedProducts: ProductItem[] = [];
 
   if (matched.length > 0) {
-    // Precision: use NL-mapped IDs first
     const nlProductIds = matched.flatMap((m) => m.relevantProductIds || []);
     const allProducts = getAllProducts();
     const fromNL = allProducts.filter((p) => nlProductIds.includes(p.id));
-    // Also fuzzy-match remaining products
     const fromFuzzy = allProducts
       .filter((p) => !nlProductIds.includes(p.id))
-      .map(p => ({ product: p, score: scoreProduct(p, allTokens) }))
-      .filter(x => x.score >= 4)
+      .map(p => ({ product: p, score: scoreProduct(p, allTokens, intentProfile) }))
+      .filter(x => x.score >= 6)
       .sort((a, b) => b.score - a.score)
       .map(x => x.product);
     matchedProducts = [...fromNL, ...fromFuzzy];
   } else {
-    // Pure fuzzy search across all products
     matchedProducts = getAllProducts()
-      .map(p => ({ product: p, score: scoreProduct(p, allTokens) }))
-      .filter(x => x.score >= 4)
+      .map(p => ({ product: p, score: scoreProduct(p, allTokens, intentProfile) }))
+      .filter(x => x.score >= (intentProfile.strict ? 10 : 4))
       .sort((a, b) => b.score - a.score)
       .map(x => x.product);
   }
 
-  // Remove duplicates
   matchedProducts = [...new Map(matchedProducts.map(p => [p.id, p])).values()];
 
   // ── 3. Find SERVICES ──
@@ -794,20 +791,18 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
       const nlSegments = matched.flatMap((m) => m.segments);
       matchedServices = allSvcs.filter((r) => nlSegments.includes(r.segment));
     }
-    // Also add fuzzy-matched services not already included
     const existingIds = new Set(matchedServices.map(s => s.id));
     const fuzzyServices = allSvcs
       .filter(s => !existingIds.has(s.id))
-      .map(s => ({ service: s, score: scoreService(s, allTokens) }))
-      .filter(x => x.score >= 6)
+      .map(s => ({ service: s, score: scoreService(s, allTokens, intentProfile) }))
+      .filter(x => x.score >= (intentProfile.strict ? 12 : 6))
       .sort((a, b) => b.score - a.score)
       .map(x => x.service);
     matchedServices = [...matchedServices, ...fuzzyServices];
   } else {
-    // Pure fuzzy search across all services
     matchedServices = allSvcs
-      .map(s => ({ service: s, score: scoreService(s, allTokens) }))
-      .filter(x => x.score >= 4)
+      .map(s => ({ service: s, score: scoreService(s, allTokens, intentProfile) }))
+      .filter(x => x.score >= (intentProfile.strict ? 12 : 4))
       .sort((a, b) => b.score - a.score)
       .map(x => x.service);
   }
@@ -819,6 +814,9 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
   if (matchedProducts.length > 0 && matchedServices.length === 0) {
     const relatedIds = [...new Set(matchedProducts.flatMap((p) => p.relatedServiceIds))];
     suggestedServices = allSvcs.filter((r) => relatedIds.includes(r.id));
+    if (intentProfile.strict && intentProfile.segmentId) {
+      suggestedServices = suggestedServices.filter((r) => r.segment === intentProfile.segmentId);
+    }
     suggestedServices.sort((a, b) => b.rating - a.rating);
   }
 
@@ -826,13 +824,20 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
   if (matchedServices.length > 0 && matchedProducts.length === 0) {
     const serviceIds = matchedServices.map(s => s.id);
     matchedProducts = getAllProducts().filter(p => p.relatedServiceIds.some(id => serviceIds.includes(id)));
+    if (intentProfile.strict && intentProfile.intentTerms.length > 0) {
+      matchedProducts = matchedProducts.filter((product) => scoreProduct(product, queryTokens, intentProfile) > 0);
+    }
     matchedProducts.sort((a, b) => b.rating - a.rating);
   }
 
   // ── 6. Generate dynamic labels if no NL match ──
   if (!needLabel && (matchedProducts.length > 0 || matchedServices.length > 0)) {
-    const matchedSegIds = [...new Set(matchedServices.map(s => s.segment))];
-    needLabel = generateNeedLabel(matchedSegIds, queryTokens);
+    if (intentProfile.matchedKeyword) {
+      needLabel = intentProfile.matchedKeyword.charAt(0).toUpperCase() + intentProfile.matchedKeyword.slice(1);
+    } else {
+      const matchedSegIds = [...new Set(matchedServices.map(s => s.segment))];
+      needLabel = generateNeedLabel(matchedSegIds, queryTokens);
+    }
   }
 
   if (!followUp && (matchedProducts.length > 0 || matchedServices.length > 0)) {
