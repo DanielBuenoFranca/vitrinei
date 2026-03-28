@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Send, Headphones, DollarSign, Clock, MapPin, Star, Package, ArrowRight, ChevronDown, ShoppingBag, Wrench as WrenchIcon, Store, Plus } from 'lucide-react';
+import { Sparkles, Send, Headphones, DollarSign, Clock, MapPin, Star, Package, ArrowRight, ChevronDown, ShoppingBag, Wrench as WrenchIcon, Store, Plus, CheckCircle2, ListChecks } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import avatarImg from '@/assets/ai-avatar.png';
-import { segments, semanticSearch, mockResults, buildSupportSummary, type ProductItem, type SearchResult } from '@/data/searchData';
+import { segments, semanticSearch, mockResults, buildSupportSummary, generateContextualSuggestions, type ProductItem, type SearchResult, type ContextualSuggestion } from '@/data/searchData';
 
 interface AiAvatarProps {
   size?: number;
@@ -88,6 +88,8 @@ type ChatMsg = {
   role: 'user' | 'ai';
   text: string;
   searchResult?: SearchResult;
+  contextualSuggestion?: ContextualSuggestion;
+  selectedSuggestions?: string[];
 };
 
 /** Product card in chat */
@@ -182,6 +184,7 @@ export const FloatingAiAvatar = () => {
   const [thinking, setThinking] = useState(false);
   const [expandedProducts, setExpandedProducts] = useState<number | null>(null);
   const [expandedServices, setExpandedServices] = useState<number | null>(null);
+  const [pendingSuggestions, setPendingSuggestions] = useState<Map<number, Set<string>>>(new Map());
 
   const navigateToDemo = (result: typeof mockResults[0]) => {
     const params = new URLSearchParams({
@@ -197,6 +200,33 @@ export const FloatingAiAvatar = () => {
     navigate(`/jornada-cliente?${params.toString()}`);
   };
 
+  const toggleSuggestionSelection = (msgIdx: number, item: string) => {
+    setPendingSuggestions(prev => {
+      const next = new Map(prev);
+      const current = new Set(next.get(msgIdx) || []);
+      if (current.has(item)) current.delete(item);
+      else current.add(item);
+      next.set(msgIdx, current);
+      return next;
+    });
+  };
+
+  const confirmSuggestions = (msgIdx: number, suggestion: ContextualSuggestion) => {
+    const selected = pendingSuggestions.get(msgIdx);
+    if (!selected || selected.size === 0) return;
+    const selectedItems = Array.from(selected);
+    const summary = buildSupportSummary(chat, selectedItems.join(', '));
+    const params = new URLSearchParams({
+      query: selectedItems.join(', '),
+      context: `IA identificou: ${suggestion.segmentLabel}`,
+      summary,
+      type: 'both',
+      segment: suggestion.segment,
+      suggestions: JSON.stringify(selectedItems),
+    });
+    navigate(`/central-atendimento?${params.toString()}`);
+  };
+
   const handleSend = () => {
     if (!message.trim()) return;
     const msg = message.trim();
@@ -204,7 +234,6 @@ export const FloatingAiAvatar = () => {
     setMessage('');
     setThinking(true);
 
-    // Build conversation context from previous user messages
     const userMsgs = chat.filter(m => m.role === 'user').map(m => m.text);
     const searchResult = semanticSearch(msg, [...userMsgs, msg]);
 
@@ -238,12 +267,24 @@ export const FloatingAiAvatar = () => {
 
         setChat(prev => [...prev, { role: 'ai', text: parts.join(''), searchResult }]);
       } else {
-        const summary = buildSupportSummary([...chat, { role: 'user', text: msg }], msg);
-        setChat(prev => [...prev, {
-          role: 'ai',
-          text: `Não encontrei "${msg}" no hub. 😔\n\nResumo preparado para a Central:\n• Necessidade: ${msg}\n• Status: Indisponível\n\nAcione a Central abaixo para buscar profissionais na sua região (SLA: 24h).`,
-          searchResult: { products: [], services: [], _noResults: true, _query: msg, _summary: summary } as any
-        }]);
+        // ── CONTEXTUAL SUGGESTIONS ──
+        const contextSuggestion = generateContextualSuggestions(msg);
+        if (contextSuggestion) {
+          const text = `🧠 Não encontrei "${msg}" diretamente no hub, mas analisei o contexto!\n\n${contextSuggestion.derivedContext}\n\n📂 **Segmento:** ${contextSuggestion.segmentLabel}\n\nSelecione abaixo os serviços e produtos que correspondem ao que você precisa, ou escreva com mais detalhes:`;
+          setChat(prev => [...prev, {
+            role: 'ai',
+            text,
+            contextualSuggestion: contextSuggestion,
+            searchResult: { products: [], services: [] } as SearchResult,
+          }]);
+        } else {
+          const summary = buildSupportSummary([...chat, { role: 'user', text: msg }], msg);
+          setChat(prev => [...prev, {
+            role: 'ai',
+            text: `Não encontrei "${msg}" no hub. 😔\n\nAcione a Central abaixo para buscar profissionais na sua região (SLA: 24h).`,
+            searchResult: { products: [], services: [], _noResults: true, _query: msg, _summary: summary } as any
+          }]);
+        }
       }
       setTimeout(() => setSpeaking(false), 2000);
     }, 1500);
@@ -322,6 +363,79 @@ export const FloatingAiAvatar = () => {
                     </div>
                   </div>
 
+                  {/* ── CONTEXTUAL SUGGESTION CARDS ── */}
+                  {msg.contextualSuggestion && (
+                    <div className="w-full mt-1.5 pl-8 space-y-2">
+                      {/* Services */}
+                      <p className="text-[10px] font-semibold text-primary flex items-center gap-1">
+                        <WrenchIcon className="w-3 h-3" /> Serviços sugeridos ({msg.contextualSuggestion.segmentLabel})
+                      </p>
+                      {msg.contextualSuggestion.suggestedServices.map((svc) => {
+                        const isSelected = pendingSuggestions.get(idx)?.has(svc.name);
+                        return (
+                          <motion.div key={svc.name} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
+                            <Card
+                              className={`cursor-pointer transition-all ${isSelected ? 'border-primary bg-primary/5' : 'border-border/50 hover:border-primary/40'}`}
+                              onClick={() => toggleSuggestionSelection(idx, svc.name)}
+                            >
+                              <CardContent className="p-2.5">
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-primary/10'}`}>
+                                    {isSelected ? <CheckCircle2 className="w-3 h-3" /> : <WrenchIcon className="w-3 h-3 text-primary" />}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <h4 className="font-semibold text-[11px] text-foreground">{svc.name}</h4>
+                                    <p className="text-[9px] text-muted-foreground">{svc.description}</p>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </motion.div>
+                        );
+                      })}
+
+                      {/* Products */}
+                      <p className="text-[10px] font-semibold text-success flex items-center gap-1 mt-2">
+                        <ShoppingBag className="w-3 h-3" /> Produtos sugeridos
+                      </p>
+                      {msg.contextualSuggestion.suggestedProducts.map((prod) => {
+                        const isSelected = pendingSuggestions.get(idx)?.has(prod.name);
+                        return (
+                          <motion.div key={prod.name} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
+                            <Card
+                              className={`cursor-pointer transition-all ${isSelected ? 'border-success bg-success/5' : 'border-border/50 hover:border-success/40'}`}
+                              onClick={() => toggleSuggestionSelection(idx, prod.name)}
+                            >
+                              <CardContent className="p-2.5">
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${isSelected ? 'bg-success text-white' : 'bg-success/10'}`}>
+                                    {isSelected ? <CheckCircle2 className="w-3 h-3" /> : <ShoppingBag className="w-3 h-3 text-success" />}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <h4 className="font-semibold text-[11px] text-foreground">{prod.name}</h4>
+                                    <p className="text-[9px] text-muted-foreground">{prod.description}</p>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </motion.div>
+                        );
+                      })}
+
+                      {/* Confirm button */}
+                      {(pendingSuggestions.get(idx)?.size || 0) > 0 && (
+                        <Button size="sm" className="w-full gap-1.5 text-[10px] h-7 mt-2" onClick={() => confirmSuggestions(idx, msg.contextualSuggestion!)}>
+                          <ListChecks className="w-3 h-3" />
+                          Confirmar {pendingSuggestions.get(idx)?.size} seleção(ões) e acionar Central
+                        </Button>
+                      )}
+
+                      <p className="text-[9px] text-muted-foreground text-center mt-1">
+                        Ou escreva com mais detalhes para refinar a busca
+                      </p>
+                    </div>
+                  )}
+
                   {/* Product cards */}
                   {msg.searchResult && msg.searchResult.products.length > 0 && (
                     <div className="w-full mt-1.5 pl-8">
@@ -385,8 +499,8 @@ export const FloatingAiAvatar = () => {
                       </div>
                     </div>
                   )}
-                  {/* Central action buttons when no results */}
-                  {msg.role === 'ai' && (msg.searchResult as any)?._noResults && (
+                  {/* Central action buttons when no results and no contextual suggestions */}
+                  {msg.role === 'ai' && (msg.searchResult as any)?._noResults && !msg.contextualSuggestion && (
                     <div className="w-full mt-1.5 pl-8 space-y-1">
                       <Button size="sm" className="w-full gap-1.5 text-[10px] h-7" onClick={() => {
                         const sr = msg.searchResult as any;
@@ -410,7 +524,7 @@ export const FloatingAiAvatar = () => {
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-1.5">
                   <AiAvatar size={24} thinking={true} />
                   <div className="bg-muted rounded-2xl rounded-bl-md px-3 py-2 text-xs text-muted-foreground">
-                    Analisando estoque e fornecedores...
+                    Analisando contexto e buscando sugestões...
                   </div>
                 </motion.div>
               )}
@@ -423,7 +537,7 @@ export const FloatingAiAvatar = () => {
                   value={message}
                   onChange={e => setMessage(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSend()}
-                  placeholder="Ex: dor de barriga, blusa, remédio..."
+                  placeholder="Ex: esgoto, tatuagem, acupuntura..."
                   className="rounded-xl text-xs h-8"
                 />
                 <Button size="icon" className="rounded-xl shrink-0 h-8 w-8" onClick={handleSend}>
@@ -447,3 +561,5 @@ export const FloatingAiAvatar = () => {
     </>
   );
 };
+
+export default AiAvatar;
