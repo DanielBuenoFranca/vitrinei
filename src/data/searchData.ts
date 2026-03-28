@@ -1006,15 +1006,19 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
   const nlKeywords = matched.flatMap((m) => m.keywords);
 
   if (matched.length > 0) {
-    const nlProductIds = matched.flatMap((m) => m.relevantProductIds || []);
+    const primaryMatch = naturalLanguageMatches[0]?.entry;
+    const useStrictNaturalLanguage = Boolean(primaryMatch);
+    const nlProductIds = primaryMatch ? [...new Set(primaryMatch.relevantProductIds || [])] : matched.flatMap((m) => m.relevantProductIds || []);
     const allProducts = getAllProducts();
     const fromNL = allProducts.filter((p) => nlProductIds.includes(p.id));
-    const fromFuzzy = allProducts
-      .filter((p) => !nlProductIds.includes(p.id))
-      .map(p => ({ product: p, score: scoreProduct(p, allTokens, intentProfile) }))
-      .filter(x => x.score >= 6)
-      .sort((a, b) => b.score - a.score)
-      .map(x => x.product);
+    const fromFuzzy = useStrictNaturalLanguage
+      ? []
+      : allProducts
+          .filter((p) => !nlProductIds.includes(p.id))
+          .map(p => ({ product: p, score: scoreProduct(p, allTokens, intentProfile) }))
+          .filter(x => x.score >= 6)
+          .sort((a, b) => b.score - a.score)
+          .map(x => x.product);
     matchedProducts = [...fromNL, ...fromFuzzy]
       .filter(p => isProductCoherentWithContext(p, nlSegments, nlKeywords));
   } else {
@@ -1032,19 +1036,23 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
   const allSvcs = getAllServices();
 
   if (matched.length > 0) {
-    const nlServiceIds = matched.flatMap((m) => m.relevantServiceIds || []);
+    const primaryMatch = naturalLanguageMatches[0]?.entry;
+    const useStrictNaturalLanguage = Boolean(primaryMatch);
+    const nlServiceIds = primaryMatch ? [...new Set(primaryMatch.relevantServiceIds || [])] : matched.flatMap((m) => m.relevantServiceIds || []);
     if (nlServiceIds.length > 0) {
       matchedServices = allSvcs.filter((r) => nlServiceIds.includes(r.id));
     } else {
       matchedServices = allSvcs.filter((r) => nlSegments.includes(r.segment));
     }
     const existingIds = new Set(matchedServices.map(s => s.id));
-    const fuzzyServices = allSvcs
-      .filter(s => !existingIds.has(s.id))
-      .map(s => ({ service: s, score: scoreService(s, allTokens, intentProfile) }))
-      .filter(x => x.score >= (intentProfile.strict ? 12 : 6))
-      .sort((a, b) => b.score - a.score)
-      .map(x => x.service);
+    const fuzzyServices = useStrictNaturalLanguage
+      ? []
+      : allSvcs
+          .filter(s => !existingIds.has(s.id))
+          .map(s => ({ service: s, score: scoreService(s, allTokens, intentProfile) }))
+          .filter(x => x.score >= (intentProfile.strict ? 12 : 6))
+          .sort((a, b) => b.score - a.score)
+          .map(x => x.service);
     matchedServices = [...matchedServices, ...fuzzyServices]
       .filter(s => isServiceCoherentWithContext(s, nlSegments, nlKeywords));
   } else {
