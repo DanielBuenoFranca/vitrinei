@@ -570,16 +570,23 @@ function scoreTriggerPhrase(text: string, textTokens: string[], trigger: string)
   const triggerTokens = tokenizePhrase(trigger);
 
   if (!normalizedTrigger || triggerTokens.length === 0) return 0;
-  if (text === normalizedTrigger) return 260;
-  if (text.includes(normalizedTrigger)) return 220 + normalizedTrigger.length;
+  if (text === normalizedTrigger) return 320;
+  if (text.includes(normalizedTrigger)) return 280 + normalizedTrigger.length;
 
   const overlap = triggerTokens.filter(token => textTokens.includes(token));
+  const missing = triggerTokens.filter(token => !textTokens.includes(token));
   let score = overlap.length * 28;
 
   if (overlap.length === triggerTokens.length) {
-    score += 140 + triggerTokens.join('').length;
-  } else if (overlap.length >= Math.max(1, triggerTokens.length - 1)) {
-    score += 70;
+    score += 170 + triggerTokens.join('').length;
+  } else if (triggerTokens.length >= 3 && overlap.length >= triggerTokens.length - 1) {
+    score += 55;
+  } else if (overlap.length === 1 && triggerTokens.length === 1) {
+    score += 24;
+  }
+
+  if (missing.length > 0) {
+    score -= missing.reduce((total, token) => total + Math.max(8, token.length * 2), 0);
   }
 
   for (const token of textTokens) {
@@ -591,7 +598,7 @@ function scoreTriggerPhrase(text: string, textTokens: string[], trigger: string)
     }
   }
 
-  return score;
+  return Math.max(0, score);
 }
 
 function scoreKeywordIntent(query: string, tokens: string[], keyword: string): number {
@@ -694,12 +701,23 @@ interface NaturalLanguageMatch {
   matchedTrigger: string;
 }
 
+function areNaturalLanguageEntriesCompatible(base: NaturalLanguageEntry, candidate: NaturalLanguageEntry): boolean {
+  const baseServices = new Set(base.relevantServiceIds || []);
+  const baseProducts = new Set(base.relevantProductIds || []);
+  const sharesServices = (candidate.relevantServiceIds || []).some(id => baseServices.has(id));
+  const sharesProducts = (candidate.relevantProductIds || []).some(id => baseProducts.has(id));
+  const sharesSegments = candidate.segments.some(segment => base.segments.includes(segment));
+  const sharesKeywords = candidate.keywords.some(keyword => base.keywords.includes(keyword));
+
+  return sharesServices || sharesProducts || (sharesSegments && sharesKeywords);
+}
+
 function findNaturalLanguageMatches(query: string, conversationContext?: string[]): NaturalLanguageMatch[] {
   const recentMessages = conversationContext?.slice(-5) ?? [];
   const combinedText = normalize([...recentMessages, query].filter(Boolean).join(' '));
   const combinedTokens = tokenizePhrase(combinedText);
 
-  return naturalLanguageMap
+  const rankedMatches = naturalLanguageMap
     .map((entry) => {
       let bestScore = 0;
       let bestTrigger = '';
@@ -716,6 +734,16 @@ function findNaturalLanguageMatches(query: string, conversationContext?: string[
     })
     .filter((match) => match.score >= 44)
     .sort((a, b) => b.score - a.score);
+
+  const primaryMatch = rankedMatches[0];
+  if (!primaryMatch) return [];
+
+  return rankedMatches.filter((match, index) => {
+    if (index === 0) return true;
+    const closeEnough = match.score >= Math.max(72, primaryMatch.score - 26);
+    if (!closeEnough) return false;
+    return areNaturalLanguageEntriesCompatible(primaryMatch.entry, match.entry);
+  });
 }
 
 function capitalizePhrase(text: string): string {
@@ -908,13 +936,23 @@ function isProductCoherentWithContext(p: ProductItem, nlSegments: string[], nlKe
   if (nlSegments.length === 0 && nlKeywords.length === 0) return true;
 
   const productText = normalize([p.name, p.provider, ...p.tags].join(' '));
+  const productTokens = new Set(tokenizePhrase(productText));
+  const normalizedKeywords = [...new Set(nlKeywords.map(normalize).filter(keyword => keyword.length >= 4))];
+  const exactKeywordMatch = normalizedKeywords.some(keyword => productText.includes(keyword));
+  const tokenKeywordMatch = normalizedKeywords.some(keyword => tokenizePhrase(keyword).some(token => productTokens.has(token)));
+  const segmentOnlyHealth = nlSegments.every(segment => segment === 'saude_clinica' || segment === 'natureza' || segment === 'bem_estar');
 
-  for (const kw of nlKeywords) {
-    const nkw = normalize(kw);
-    if (nkw.length >= 4 && productText.includes(nkw)) return true;
+  if (segmentOnlyHealth) {
+    return exactKeywordMatch || tokenKeywordMatch;
   }
 
-  return false;
+  if (nlSegments.length > 0) {
+    const relatedServices = getAllServices().filter(service => p.relatedServiceIds.includes(service.id));
+    const hasRelatedSegment = relatedServices.some(service => nlSegments.includes(service.segment));
+    if (!hasRelatedSegment && !exactKeywordMatch) return false;
+  }
+
+  return exactKeywordMatch || tokenKeywordMatch;
 }
 
 /**
@@ -923,21 +961,20 @@ function isProductCoherentWithContext(p: ProductItem, nlSegments: string[], nlKe
 function isServiceCoherentWithContext(s: typeof mockResults[0], nlSegments: string[], nlKeywords: string[]): boolean {
   if (nlSegments.length === 0 && nlKeywords.length === 0) return true;
 
-  if (nlSegments.includes(s.segment)) {
-    const serviceText = normalize([s.name, s.provider, ...s.products].join(' '));
-    for (const kw of nlKeywords) {
-      const nkw = normalize(kw);
-      if (nkw.length >= 4 && serviceText.includes(nkw)) return true;
-    }
-  }
-
   const serviceText = normalize([s.name, s.provider, ...s.products].join(' '));
-  for (const kw of nlKeywords) {
-    const nkw = normalize(kw);
-    if (nkw.length >= 4 && serviceText.includes(nkw)) return true;
+  const serviceTokens = new Set(tokenizePhrase(serviceText));
+  const normalizedKeywords = [...new Set(nlKeywords.map(normalize).filter(keyword => keyword.length >= 4))];
+  const exactKeywordMatch = normalizedKeywords.some(keyword => serviceText.includes(keyword));
+  const tokenKeywordMatch = normalizedKeywords.some(keyword => tokenizePhrase(keyword).some(token => serviceTokens.has(token)));
+  const inAllowedSegment = nlSegments.length === 0 || nlSegments.includes(s.segment);
+  const segmentOnlyHealth = nlSegments.every(segment => segment === 'saude_clinica' || segment === 'natureza' || segment === 'bem_estar');
+
+  if (segmentOnlyHealth) {
+    return inAllowedSegment && (exactKeywordMatch || tokenKeywordMatch);
   }
 
-  return false;
+  if (!inAllowedSegment && !exactKeywordMatch) return false;
+  return exactKeywordMatch || tokenKeywordMatch;
 }
 
 export function semanticSearch(query: string, conversationContext?: string[]): SearchResult {
@@ -969,15 +1006,19 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
   const nlKeywords = matched.flatMap((m) => m.keywords);
 
   if (matched.length > 0) {
-    const nlProductIds = matched.flatMap((m) => m.relevantProductIds || []);
+    const primaryMatch = naturalLanguageMatches[0]?.entry;
+    const useStrictNaturalLanguage = Boolean(primaryMatch);
+    const nlProductIds = primaryMatch ? [...new Set(primaryMatch.relevantProductIds || [])] : matched.flatMap((m) => m.relevantProductIds || []);
     const allProducts = getAllProducts();
     const fromNL = allProducts.filter((p) => nlProductIds.includes(p.id));
-    const fromFuzzy = allProducts
-      .filter((p) => !nlProductIds.includes(p.id))
-      .map(p => ({ product: p, score: scoreProduct(p, allTokens, intentProfile) }))
-      .filter(x => x.score >= 6)
-      .sort((a, b) => b.score - a.score)
-      .map(x => x.product);
+    const fromFuzzy = useStrictNaturalLanguage
+      ? []
+      : allProducts
+          .filter((p) => !nlProductIds.includes(p.id))
+          .map(p => ({ product: p, score: scoreProduct(p, allTokens, intentProfile) }))
+          .filter(x => x.score >= 6)
+          .sort((a, b) => b.score - a.score)
+          .map(x => x.product);
     matchedProducts = [...fromNL, ...fromFuzzy]
       .filter(p => isProductCoherentWithContext(p, nlSegments, nlKeywords));
   } else {
@@ -995,19 +1036,23 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
   const allSvcs = getAllServices();
 
   if (matched.length > 0) {
-    const nlServiceIds = matched.flatMap((m) => m.relevantServiceIds || []);
+    const primaryMatch = naturalLanguageMatches[0]?.entry;
+    const useStrictNaturalLanguage = Boolean(primaryMatch);
+    const nlServiceIds = primaryMatch ? [...new Set(primaryMatch.relevantServiceIds || [])] : matched.flatMap((m) => m.relevantServiceIds || []);
     if (nlServiceIds.length > 0) {
       matchedServices = allSvcs.filter((r) => nlServiceIds.includes(r.id));
     } else {
       matchedServices = allSvcs.filter((r) => nlSegments.includes(r.segment));
     }
     const existingIds = new Set(matchedServices.map(s => s.id));
-    const fuzzyServices = allSvcs
-      .filter(s => !existingIds.has(s.id))
-      .map(s => ({ service: s, score: scoreService(s, allTokens, intentProfile) }))
-      .filter(x => x.score >= (intentProfile.strict ? 12 : 6))
-      .sort((a, b) => b.score - a.score)
-      .map(x => x.service);
+    const fuzzyServices = useStrictNaturalLanguage
+      ? []
+      : allSvcs
+          .filter(s => !existingIds.has(s.id))
+          .map(s => ({ service: s, score: scoreService(s, allTokens, intentProfile) }))
+          .filter(x => x.score >= (intentProfile.strict ? 12 : 6))
+          .sort((a, b) => b.score - a.score)
+          .map(x => x.service);
     matchedServices = [...matchedServices, ...fuzzyServices]
       .filter(s => isServiceCoherentWithContext(s, nlSegments, nlKeywords));
   } else {
