@@ -5,6 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { FloatingAiAvatar } from "@/components/AiAvatarGlobal";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { loadDynamicEntries } from "@/data/searchData";
 import Landing from "./pages/Landing.tsx";
 import MeiPanel from "./pages/MeiPanel.tsx";
