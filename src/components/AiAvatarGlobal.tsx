@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Send, Headphones, DollarSign, Clock, MapPin, Star, Package, ArrowRight, ChevronDown, ShoppingBag, Wrench as WrenchIcon, Store } from 'lucide-react';
+import { Sparkles, Send, Headphones, DollarSign, Clock, MapPin, Star, Package, ArrowRight, ChevronDown, ShoppingBag, Wrench as WrenchIcon, Store, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import avatarImg from '@/assets/ai-avatar.png';
-import { segments, semanticSearch, mockResults, type ProductItem, type SearchResult } from '@/data/searchData';
+import { segments, semanticSearch, mockResults, buildSupportSummary, type ProductItem, type SearchResult } from '@/data/searchData';
 
 interface AiAvatarProps {
   size?: number;
@@ -238,9 +238,11 @@ export const FloatingAiAvatar = () => {
 
         setChat(prev => [...prev, { role: 'ai', text: parts.join(''), searchResult }]);
       } else {
+        const summary = buildSupportSummary([...chat, { role: 'user', text: msg }], msg);
         setChat(prev => [...prev, {
           role: 'ai',
-          text: 'Não encontrei resultados exatos, mas estou encaminhando para a Central de Atendimento. SLA: 24h para encontrar a melhor solução! 📩'
+          text: `Não encontrei "${msg}" no hub. 😔\n\nResumo preparado para a Central:\n• Necessidade: ${msg}\n• Status: Indisponível\n\nAcione a Central abaixo para buscar profissionais na sua região (SLA: 24h).`,
+          searchResult: { products: [], services: [], _noResults: true, _query: msg, _summary: summary } as any
         }]);
       }
       setTimeout(() => setSpeaking(false), 2000);
@@ -298,12 +300,13 @@ export const FloatingAiAvatar = () => {
             <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-[200px] max-h-[450px]">
               {chat.length === 0 && (
                 <div className="bg-muted/50 rounded-xl p-3 text-xs text-muted-foreground">
-                  <p className="font-medium text-foreground mb-1.5">👋 Olá! Sou a IA do EcoMEI.</p>
-                  <p className="mb-2">Me conta o que você precisa — produto ou serviço:</p>
+                  <p className="font-medium text-foreground mb-1.5">👋 Me diga o que você precisa!</p>
+                  <p className="mb-2">Eu encontro o melhor profissional perto de você:</p>
                   <ul className="space-y-1">
                     <li className="flex items-center gap-1.5"><ShoppingBag className="w-3 h-3 text-success" /> Produtos com estoque real</li>
-                    <li className="flex items-center gap-1.5"><WrenchIcon className="w-3 h-3 text-primary" /> Serviços profissionais</li>
+                    <li className="flex items-center gap-1.5"><WrenchIcon className="w-3 h-3 text-primary" /> Profissionais avaliados</li>
                     <li className="flex items-center gap-1.5"><Sparkles className="w-3 h-3 text-accent" /> IA cruza tudo por você</li>
+                    <li className="flex items-center gap-1.5"><Star className="w-3 h-3 fill-accent text-accent" /> 4.8 avaliação média</li>
                   </ul>
                 </div>
               )}
