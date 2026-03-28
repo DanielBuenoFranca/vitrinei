@@ -148,9 +148,12 @@ const Landing = () => {
         setAiChat((prev) => [...prev, { role: 'ai', text: parts.join(''), searchResult }]);
         setSearchQuery(msg);
       } else {
+        // No results - show structured fallback with Central buttons
+        const summary = buildSupportSummary([...aiChat, { role: 'user', text: msg }], msg);
         setAiChat((prev) => [...prev, {
           role: 'ai',
-          text: 'Não encontrei resultados exatos, mas estou encaminhando para a Central de Atendimento. SLA: 24h para encontrar a melhor solução! 📩'
+          text: `Não encontrei resultados para "${msg}" no hub atual. 😔\n\n📋 **Resumo preparado para a Central:**\n• Necessidade: ${msg}\n• Status: Indisponível\n• Ação recomendada: Acionar Central de Atendimento\n\nVocê pode acionar a Central abaixo para que busquemos profissionais e produtos na sua região (SLA: 24h).`,
+          searchResult: { products: [], services: [], _noResults: true, _query: msg, _summary: summary } as any
         }]);
       }
       setTimeout(() => setAiSpeaking(false), 2000);
