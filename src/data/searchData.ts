@@ -570,16 +570,23 @@ function scoreTriggerPhrase(text: string, textTokens: string[], trigger: string)
   const triggerTokens = tokenizePhrase(trigger);
 
   if (!normalizedTrigger || triggerTokens.length === 0) return 0;
-  if (text === normalizedTrigger) return 260;
-  if (text.includes(normalizedTrigger)) return 220 + normalizedTrigger.length;
+  if (text === normalizedTrigger) return 320;
+  if (text.includes(normalizedTrigger)) return 280 + normalizedTrigger.length;
 
   const overlap = triggerTokens.filter(token => textTokens.includes(token));
+  const missing = triggerTokens.filter(token => !textTokens.includes(token));
   let score = overlap.length * 28;
 
   if (overlap.length === triggerTokens.length) {
-    score += 140 + triggerTokens.join('').length;
-  } else if (overlap.length >= Math.max(1, triggerTokens.length - 1)) {
-    score += 70;
+    score += 170 + triggerTokens.join('').length;
+  } else if (triggerTokens.length >= 3 && overlap.length >= triggerTokens.length - 1) {
+    score += 55;
+  } else if (overlap.length === 1 && triggerTokens.length === 1) {
+    score += 24;
+  }
+
+  if (missing.length > 0) {
+    score -= missing.reduce((total, token) => total + Math.max(8, token.length * 2), 0);
   }
 
   for (const token of textTokens) {
@@ -591,7 +598,7 @@ function scoreTriggerPhrase(text: string, textTokens: string[], trigger: string)
     }
   }
 
-  return score;
+  return Math.max(0, score);
 }
 
 function scoreKeywordIntent(query: string, tokens: string[], keyword: string): number {
@@ -694,12 +701,23 @@ interface NaturalLanguageMatch {
   matchedTrigger: string;
 }
 
+function areNaturalLanguageEntriesCompatible(base: NaturalLanguageEntry, candidate: NaturalLanguageEntry): boolean {
+  const baseServices = new Set(base.relevantServiceIds || []);
+  const baseProducts = new Set(base.relevantProductIds || []);
+  const sharesServices = (candidate.relevantServiceIds || []).some(id => baseServices.has(id));
+  const sharesProducts = (candidate.relevantProductIds || []).some(id => baseProducts.has(id));
+  const sharesSegments = candidate.segments.some(segment => base.segments.includes(segment));
+  const sharesKeywords = candidate.keywords.some(keyword => base.keywords.includes(keyword));
+
+  return sharesServices || sharesProducts || (sharesSegments && sharesKeywords);
+}
+
 function findNaturalLanguageMatches(query: string, conversationContext?: string[]): NaturalLanguageMatch[] {
   const recentMessages = conversationContext?.slice(-5) ?? [];
   const combinedText = normalize([...recentMessages, query].filter(Boolean).join(' '));
   const combinedTokens = tokenizePhrase(combinedText);
 
-  return naturalLanguageMap
+  const rankedMatches = naturalLanguageMap
     .map((entry) => {
       let bestScore = 0;
       let bestTrigger = '';
@@ -716,6 +734,16 @@ function findNaturalLanguageMatches(query: string, conversationContext?: string[
     })
     .filter((match) => match.score >= 44)
     .sort((a, b) => b.score - a.score);
+
+  const primaryMatch = rankedMatches[0];
+  if (!primaryMatch) return [];
+
+  return rankedMatches.filter((match, index) => {
+    if (index === 0) return true;
+    const closeEnough = match.score >= Math.max(72, primaryMatch.score - 26);
+    if (!closeEnough) return false;
+    return areNaturalLanguageEntriesCompatible(primaryMatch.entry, match.entry);
+  });
 }
 
 function capitalizePhrase(text: string): string {
