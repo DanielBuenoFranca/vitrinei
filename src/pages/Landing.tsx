@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
-import { segments, mockResults, semanticSearch, buildSupportSummary, generateContextualSuggestions, type ProductItem, type SearchResult, type ContextualSuggestion } from '@/data/searchData';
+import { segments, mockResults, semanticSearch, buildSupportSummary, generateContextualSuggestions, getAllServices, type ProductItem, type SearchResult, type ContextualSuggestion } from '@/data/searchData';
 
 
 const aiSuggestions = [
@@ -97,9 +97,10 @@ const Landing = () => {
     const query = searchQuery.toLowerCase().trim();
     // Sem query: não mostrar nada (apenas segmentos para navegar)
     if (!query && activeSegments.length === 0) return { products: [] as ProductItem[], services: [] as typeof mockResults, followUp: undefined, needLabel: undefined, suggestedServices: undefined };
-    // Sem query mas com segmentos selecionados: mostrar serviços do segmento
+    // Sem query mas com segmentos selecionados: mostrar serviços do segmento da base
     if (!query && activeSegments.length > 0) {
-      return { products: [] as ProductItem[], services: mockResults.filter(r => activeSegments.includes(r.segment)), followUp: undefined, needLabel: undefined, suggestedServices: undefined };
+      const allSvcs = getAllServices();
+      return { products: [] as ProductItem[], services: allSvcs.filter((r: any) => activeSegments.includes(r.segment)), followUp: undefined, needLabel: undefined, suggestedServices: undefined };
     }
 
     const result = semanticSearch(query);
