@@ -27,6 +27,9 @@ const aiSuggestions = [
 const Landing = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [executedQuery, setExecutedQuery] = useState('');
+  const [searchExecuted, setSearchExecuted] = useState(false);
+  const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set());
   const [activeSegments, setActiveSegments] = useState<string[]>([]);
   const [showAiPanel, setShowAiPanel] = useState(false);
   const [aiMessage, setAiMessage] = useState('');
@@ -40,6 +43,45 @@ const Landing = () => {
   const [showProductCart, setShowProductCart] = useState(false);
   const [pendingChatSuggestions, setPendingChatSuggestions] = useState<Map<number, Set<string>>>(new Map());
   const searchRef = useRef<HTMLInputElement>(null);
+
+  const executeSearch = () => {
+    if (!searchQuery.trim() && activeSegments.length === 0) return;
+    setExecutedQuery(searchQuery.trim());
+    setSearchExecuted(true);
+    setSelectedSuggestions(new Set());
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') executeSearch();
+  };
+
+  const toggleSuggestionSelection = (name: string) => {
+    setSelectedSuggestions(prev => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
+
+  const handleSendSelectedSuggestions = (ctxSuggestion: ContextualSuggestion) => {
+    if (selectedSuggestions.size === 0) return;
+    const summary = buildSupportSummary(aiChat, Array.from(selectedSuggestions).join(', '));
+    const params = new URLSearchParams({
+      query: Array.from(selectedSuggestions).join(', '),
+      context: `IA: ${ctxSuggestion.segmentLabel}`,
+      summary,
+      type: 'both',
+      segment: ctxSuggestion.segment,
+    });
+    navigate(`/central-atendimento?${params.toString()}`);
+  };
+
+  const handleRefineSearch = () => {
+    setSearchExecuted(false);
+    setSelectedSuggestions(new Set());
+    searchRef.current?.focus();
+  };
 
   const toggleProductInCart = (product: ProductItem) => {
     setProductCart(prev => 
