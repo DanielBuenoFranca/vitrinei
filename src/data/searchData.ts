@@ -503,6 +503,25 @@ export interface SearchResult {
 
 // ── Helpers for universal fuzzy matching ──
 
+interface ContextualMapEntry {
+  keywords: string[];
+  segment: string;
+  services: { name: string; description: string }[];
+  products: { name: string; description: string }[];
+}
+
+interface IntentProfile {
+  strict: boolean;
+  segmentId?: string;
+  matchedKeyword?: string;
+  intentTerms: string[];
+}
+
+const GENERIC_INTENT_TOKENS = new Set([
+  'preciso', 'procuro', 'quero', 'busco', 'ajuda', 'ajudar', 'servico', 'servicos', 'serviço', 'serviços',
+  'profissional', 'profissionais', 'atendimento', 'contratar', 'encontrar', 'pesquisa', 'buscar', 'coisa'
+]);
+
 /** Normalize accents & lowercase */
 function normalize(s: string): string {
   return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -513,41 +532,166 @@ function tokenize(s: string): string[] {
   return normalize(s).split(/\s+/).filter(t => t.length >= 2);
 }
 
+function isMeaningfulIntentToken(token: string): boolean {
+  return token.length >= 4 && !GENERIC_INTENT_TOKENS.has(token);
+}
+
+function commonPrefixLength(a: string, b: string): number {
+  const left = normalize(a);
+  const right = normalize(b);
+  let i = 0;
+  while (i < left.length && i < right.length && left[i] === right[i]) i += 1;
+  return i;
+}
+
+function scoreKeywordIntent(query: string, tokens: string[], keyword: string): number {
+  const q = normalize(query);
+  const nkw = normalize(keyword);
+  const keywordTokens = tokenize(nkw).filter(isMeaningfulIntentToken);
+  let score = 0;
+
+  if (q === nkw) return 120;
+  if (keywordTokens.length > 0 && keywordTokens.every(token => tokens.includes(token))) {
+    score = Math.max(score, 90 + keywordTokens.join('').length);
+  }
+  if (q.includes(nkw)) score = Math.max(score, 60 + nkw.length);
+  if (nkw.includes(q) && q.length >= 6) score = Math.max(score, 45 + q.length);
+
+  for (const token of tokens) {
+    if (!isMeaningfulIntentToken(token)) continue;
+    if (token === nkw) score = Math.max(score, 100);
+    else if (nkw.includes(token) && token.length >= 6) score = Math.max(score, 40 + token.length);
+    else if (token.includes(nkw) && nkw.length >= 6) score = Math.max(score, 35 + nkw.length);
+    else {
+      const prefix = commonPrefixLength(token, nkw);
+      if (prefix >= 6) score = Math.max(score, 20 + prefix);
+    }
+  }
+
+  return score;
+}
+
+function scoreIntentAgainstTokens(intentTerms: string[], candidateTokens: string[]): number {
+  let score = 0;
+
+  for (const term of intentTerms) {
+    if (!isMeaningfulIntentToken(term)) continue;
+
+    for (const candidate of candidateTokens) {
+      if (!isMeaningfulIntentToken(candidate)) continue;
+      if (candidate === term) score += 24;
+      else if (candidate.includes(term) && term.length >= 5) score += term.length * 2;
+      else if (term.includes(candidate) && candidate.length >= 5) score += candidate.length;
+      else {
+        const prefix = commonPrefixLength(candidate, term);
+        if (prefix >= 6) score += prefix;
+      }
+    }
+  }
+
+  return score;
+}
+
+function findBestContextualEntry(query: string): { entry: ContextualMapEntry | null; score: number; matchedKeyword?: string; tokens: string[] } {
+  const q = normalize(query.trim());
+  const tokens = tokenize(q).filter(isMeaningfulIntentToken);
+  let bestEntry: ContextualMapEntry | null = null;
+  let bestKeyword: string | undefined;
+  let bestScore = 0;
+
+  for (const entry of contextualMap) {
+    for (const keyword of entry.keywords) {
+      const score = scoreKeywordIntent(q, tokens, keyword);
+      if (score > bestScore) {
+        bestScore = score;
+        bestEntry = entry;
+        bestKeyword = keyword;
+      }
+    }
+  }
+
+  return { entry: bestEntry, score: bestScore, matchedKeyword: bestKeyword, tokens };
+}
+
+function resolveIntentProfile(query: string): IntentProfile {
+  const match = findBestContextualEntry(query);
+
+  if (match.entry && match.score >= 12) {
+    const intentTerms = [...new Set([
+      ...match.tokens,
+      ...match.entry.keywords.flatMap(tokenize).filter(isMeaningfulIntentToken),
+    ])];
+
+    return {
+      strict: true,
+      segmentId: match.entry.segment,
+      matchedKeyword: match.matchedKeyword,
+      intentTerms,
+    };
+  }
+
+  return {
+    strict: false,
+    intentTerms: match.tokens,
+  };
+}
+
 /** Score how well a set of tokens matches a target string */
 function tokenMatchScore(tokens: string[], target: string): number {
   const t = normalize(target);
   let score = 0;
   for (const tok of tokens) {
-    if (t.includes(tok)) score += tok.length; // longer matches = higher score
+    if (t.includes(tok)) score += tok.length;
   }
   return score;
 }
 
 /** Score a product against query tokens */
-function scoreProduct(p: ProductItem, tokens: string[]): number {
+function scoreProduct(p: ProductItem, tokens: string[], intentProfile?: IntentProfile): number {
   let score = 0;
   score += tokenMatchScore(tokens, p.name) * 3;
-  score += tokenMatchScore(tokens, p.provider) * 1;
+  score += tokenMatchScore(tokens, p.provider);
   for (const tag of p.tags) {
     score += tokenMatchScore(tokens, tag) * 2;
   }
+
+  if (intentProfile?.strict && intentProfile.intentTerms.length > 0) {
+    const productTokens = [...new Set([
+      ...tokenize(p.name),
+      ...tokenize(p.provider),
+      ...p.tags.flatMap(tokenize),
+    ])];
+    const intentScore = scoreIntentAgainstTokens(intentProfile.intentTerms, productTokens);
+    if (intentScore === 0) return 0;
+    score += intentScore * 2;
+  }
+
   return score;
 }
 
 /** Score a service against query tokens */
-function scoreService(s: typeof mockResults[0], tokens: string[]): number {
+function scoreService(s: typeof mockResults[0], tokens: string[], intentProfile?: IntentProfile): number {
   let score = 0;
-  score += tokenMatchScore(tokens, s.name) * 3;
-  score += tokenMatchScore(tokens, s.provider) * 1;
+  score += tokenMatchScore(tokens, s.name) * 4;
+  score += tokenMatchScore(tokens, s.provider);
   for (const p of s.products) {
     score += tokenMatchScore(tokens, p) * 2;
   }
-  const seg = segments.find(sg => sg.id === s.segment);
-  if (seg) {
-    for (const kw of seg.keywords) {
-      score += tokenMatchScore(tokens, kw) * 1.5;
-    }
+
+  if (intentProfile?.strict && intentProfile.intentTerms.length > 0) {
+    if (intentProfile.segmentId && s.segment !== intentProfile.segmentId) return 0;
+
+    const serviceTokens = [...new Set([
+      ...tokenize(s.name),
+      ...tokenize(s.provider),
+      ...s.products.flatMap(tokenize),
+    ])];
+    const intentScore = scoreIntentAgainstTokens(intentProfile.intentTerms, serviceTokens);
+    if (intentScore === 0) return 0;
+    score += intentScore * 3;
+    return score;
   }
+
   return score;
 }
 
@@ -586,10 +730,11 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
   const q = normalize(query.trim());
   if (!q) return { products: [], services: [] };
 
+  const intentProfile = resolveIntentProfile(query);
+
   // ── Build enriched query from conversation context ──
   const contextTokens: string[] = [];
   if (conversationContext && conversationContext.length > 0) {
-    // Use last 5 user messages as context
     const recent = conversationContext.slice(-5);
     for (const msg of recent) {
       contextTokens.push(...tokenize(msg));
@@ -614,28 +759,24 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
   let matchedProducts: ProductItem[] = [];
 
   if (matched.length > 0) {
-    // Precision: use NL-mapped IDs first
     const nlProductIds = matched.flatMap((m) => m.relevantProductIds || []);
     const allProducts = getAllProducts();
     const fromNL = allProducts.filter((p) => nlProductIds.includes(p.id));
-    // Also fuzzy-match remaining products
     const fromFuzzy = allProducts
       .filter((p) => !nlProductIds.includes(p.id))
-      .map(p => ({ product: p, score: scoreProduct(p, allTokens) }))
-      .filter(x => x.score >= 4)
+      .map(p => ({ product: p, score: scoreProduct(p, allTokens, intentProfile) }))
+      .filter(x => x.score >= 6)
       .sort((a, b) => b.score - a.score)
       .map(x => x.product);
     matchedProducts = [...fromNL, ...fromFuzzy];
   } else {
-    // Pure fuzzy search across all products
     matchedProducts = getAllProducts()
-      .map(p => ({ product: p, score: scoreProduct(p, allTokens) }))
-      .filter(x => x.score >= 4)
+      .map(p => ({ product: p, score: scoreProduct(p, allTokens, intentProfile) }))
+      .filter(x => x.score >= (intentProfile.strict ? 10 : 4))
       .sort((a, b) => b.score - a.score)
       .map(x => x.product);
   }
 
-  // Remove duplicates
   matchedProducts = [...new Map(matchedProducts.map(p => [p.id, p])).values()];
 
   // ── 3. Find SERVICES ──
@@ -650,20 +791,18 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
       const nlSegments = matched.flatMap((m) => m.segments);
       matchedServices = allSvcs.filter((r) => nlSegments.includes(r.segment));
     }
-    // Also add fuzzy-matched services not already included
     const existingIds = new Set(matchedServices.map(s => s.id));
     const fuzzyServices = allSvcs
       .filter(s => !existingIds.has(s.id))
-      .map(s => ({ service: s, score: scoreService(s, allTokens) }))
-      .filter(x => x.score >= 6)
+      .map(s => ({ service: s, score: scoreService(s, allTokens, intentProfile) }))
+      .filter(x => x.score >= (intentProfile.strict ? 12 : 6))
       .sort((a, b) => b.score - a.score)
       .map(x => x.service);
     matchedServices = [...matchedServices, ...fuzzyServices];
   } else {
-    // Pure fuzzy search across all services
     matchedServices = allSvcs
-      .map(s => ({ service: s, score: scoreService(s, allTokens) }))
-      .filter(x => x.score >= 4)
+      .map(s => ({ service: s, score: scoreService(s, allTokens, intentProfile) }))
+      .filter(x => x.score >= (intentProfile.strict ? 12 : 4))
       .sort((a, b) => b.score - a.score)
       .map(x => x.service);
   }
@@ -675,6 +814,9 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
   if (matchedProducts.length > 0 && matchedServices.length === 0) {
     const relatedIds = [...new Set(matchedProducts.flatMap((p) => p.relatedServiceIds))];
     suggestedServices = allSvcs.filter((r) => relatedIds.includes(r.id));
+    if (intentProfile.strict && intentProfile.segmentId) {
+      suggestedServices = suggestedServices.filter((r) => r.segment === intentProfile.segmentId);
+    }
     suggestedServices.sort((a, b) => b.rating - a.rating);
   }
 
@@ -682,13 +824,20 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
   if (matchedServices.length > 0 && matchedProducts.length === 0) {
     const serviceIds = matchedServices.map(s => s.id);
     matchedProducts = getAllProducts().filter(p => p.relatedServiceIds.some(id => serviceIds.includes(id)));
+    if (intentProfile.strict && intentProfile.intentTerms.length > 0) {
+      matchedProducts = matchedProducts.filter((product) => scoreProduct(product, queryTokens, intentProfile) > 0);
+    }
     matchedProducts.sort((a, b) => b.rating - a.rating);
   }
 
   // ── 6. Generate dynamic labels if no NL match ──
   if (!needLabel && (matchedProducts.length > 0 || matchedServices.length > 0)) {
-    const matchedSegIds = [...new Set(matchedServices.map(s => s.segment))];
-    needLabel = generateNeedLabel(matchedSegIds, queryTokens);
+    if (intentProfile.matchedKeyword) {
+      needLabel = intentProfile.matchedKeyword.charAt(0).toUpperCase() + intentProfile.matchedKeyword.slice(1);
+    } else {
+      const matchedSegIds = [...new Set(matchedServices.map(s => s.segment))];
+      needLabel = generateNeedLabel(matchedSegIds, queryTokens);
+    }
   }
 
   if (!followUp && (matchedProducts.length > 0 || matchedServices.length > 0)) {
@@ -926,79 +1075,39 @@ const contextualMap: {
  * Analyzes the query to derive the segment and suggest related services/products.
  */
 export function generateContextualSuggestions(query: string): ContextualSuggestion | null {
-  const q = normalize(query);
-  const tokens = tokenize(query);
+  const q = normalize(query.trim());
+  const tokens = tokenize(query).filter(isMeaningfulIntentToken);
+  const bestMatch = findBestContextualEntry(query);
 
-  // Score each contextualMap entry — pick the BEST match, not the first
-  let bestEntry: typeof contextualMap[0] | null = null;
-  let bestScore = 0;
+  if (bestMatch.entry && bestMatch.score >= 12) {
+    const seg = segments.find(s => s.id === bestMatch.entry!.segment);
+    const matchedKeyword = bestMatch.matchedKeyword || tokens[0] || query.trim();
 
-  for (const entry of contextualMap) {
-    let score = 0;
-    for (const kw of entry.keywords) {
-      const nkw = normalize(kw);
-      // Exact match (query equals keyword)
-      if (q === nkw) { score += 100; continue; }
-      // Query contains keyword entirely
-      if (q.includes(nkw)) { score += nkw.length * 3; continue; }
-      // Keyword contains query entirely (e.g. "encanador" in "encanamento" — but not partial 3-char)
-      if (nkw.includes(q) && q.length >= 4) { score += q.length * 2; continue; }
-      // Token-level matching — require tokens >= 4 chars for precision
-      for (const t of tokens) {
-        if (t.length < 4) continue;
-        if (nkw === t) { score += t.length * 3; }
-        else if (nkw.includes(t) && t.length >= 5) { score += t.length; }
-        else if (t.includes(nkw) && nkw.length >= 5) { score += nkw.length; }
-      }
-    }
-    if (score > bestScore) {
-      bestScore = score;
-      bestEntry = entry;
-    }
-  }
-
-  if (bestEntry && bestScore >= 4) {
-    const seg = segments.find(s => s.id === bestEntry!.segment);
     return {
-      segment: bestEntry.segment,
-      segmentLabel: seg?.label || bestEntry.segment,
-      suggestedServices: bestEntry.services,
-      suggestedProducts: bestEntry.products,
-      derivedContext: `Analisei sua pesquisa por "${query}" e identifiquei que você precisa de um profissional da área de **${seg?.label || bestEntry.segment}**.`,
+      segment: bestMatch.entry.segment,
+      segmentLabel: seg?.label || bestMatch.entry.segment,
+      suggestedServices: bestMatch.entry.services,
+      suggestedProducts: bestMatch.entry.products,
+      derivedContext: `Analisei sua pesquisa por "${query}" e identifiquei o contexto exato de **${matchedKeyword}** dentro da área de **${seg?.label || bestMatch.entry.segment}**.`,
     };
   }
 
-  // Fallback: match against segment keywords with scoring
   let bestSeg: typeof segments[0] | null = null;
   let bestSegScore = 0;
 
   for (const seg of segments) {
-    let score = 0;
-    for (const kw of seg.keywords) {
-      const nkw = normalize(kw);
-      if (q === nkw) { score += 100; continue; }
-      if (q.includes(nkw)) { score += nkw.length * 3; continue; }
-      if (nkw.includes(q) && q.length >= 4) { score += q.length * 2; continue; }
-      for (const t of tokens) {
-        if (t.length < 4) continue;
-        if (nkw === t) { score += t.length * 3; }
-        else if (nkw.includes(t) && t.length >= 5) { score += t.length; }
-      }
-    }
+    const segTokens = seg.keywords.flatMap(tokenize).filter(isMeaningfulIntentToken);
+    const score = scoreIntentAgainstTokens(tokens, segTokens);
     if (score > bestSegScore) {
       bestSegScore = score;
       bestSeg = seg;
     }
   }
 
-  if (bestSeg && bestSegScore >= 4) {
-    // Generate specific suggestions based on the matched keyword
-    const matchedKw = bestSeg.keywords.find(kw => {
-      const nkw = normalize(kw);
-      return q === nkw || q.includes(nkw) || (nkw.includes(q) && q.length >= 4);
-    }) || tokens.find(t => t.length >= 3) || query.trim();
+  if (bestSeg && bestSegScore >= 8) {
+    const matchedKw = tokens[0] || query.trim();
     const capKw = matchedKw.charAt(0).toUpperCase() + matchedKw.slice(1);
-    
+
     return {
       segment: bestSeg.id,
       segmentLabel: bestSeg.label,
@@ -1008,31 +1117,30 @@ export function generateContextualSuggestions(query: string): ContextualSuggesti
         { name: `Consultoria em ${capKw}`, description: `Análise e orientação especializada` },
       ],
       suggestedProducts: [
-        { name: `Kit ${capKw} Essencial`, description: `Produtos básicos para ${matchedKw.toLowerCase()}` },
-        { name: `Material Profissional ${capKw}`, description: `Produto de alta qualidade` },
-        { name: `Acessório para ${capKw}`, description: `Complemento para o serviço` },
+        { name: `Kit ${capKw} Essencial`, description: `Produtos básicos relacionados a ${matchedKw.toLowerCase()}` },
+        { name: `Material Profissional ${capKw}`, description: `Produto de apoio para o serviço` },
+        { name: `Acessório para ${capKw}`, description: `Complemento útil para a necessidade pesquisada` },
       ],
-      derivedContext: `Analisei sua pesquisa por "${query}" e identifiquei que você precisa de um profissional da área de **${bestSeg.label}** — especificamente **${capKw}**.`,
+      derivedContext: `Analisei sua pesquisa por "${query}" e identifiquei uma intenção mais próxima em **${bestSeg.label}**, preservando o foco em **${capKw}**.`,
     };
   }
 
-  // Generic fallback: derive from query itself
-  const mainWord = tokens.find(t => t.length >= 3) || query.trim();
+  const mainWord = tokens[0] || query.trim();
   const capitalizedWord = mainWord.charAt(0).toUpperCase() + mainWord.slice(1);
   return {
     segment: 'manutencao',
     segmentLabel: capitalizedWord,
     suggestedServices: [
       { name: `Serviço de ${capitalizedWord}`, description: `Profissional especializado em ${capitalizedWord.toLowerCase()}` },
-      { name: `Manutenção de ${capitalizedWord}`, description: `Reparo e manutenção relacionada` },
-      { name: `Instalação / ${capitalizedWord}`, description: `Instalação profissional com garantia` },
+      { name: `Atendimento para ${capitalizedWord}`, description: `Avaliação e execução conforme sua necessidade` },
+      { name: `Consultoria em ${capitalizedWord}`, description: `Orientação para localizar o serviço correto` },
     ],
     suggestedProducts: [
-      { name: `Kit ${capitalizedWord} Básico`, description: `Produtos essenciais relacionados` },
-      { name: `Produto para ${capitalizedWord}`, description: `Produto profissional` },
-      { name: `Acessório ${capitalizedWord}`, description: `Complemento útil` },
+      { name: `Kit ${capitalizedWord} Básico`, description: `Itens relacionados ao termo pesquisado` },
+      { name: `Material para ${capitalizedWord}`, description: `Produto de apoio ao atendimento` },
+      { name: `Acessório ${capitalizedWord}`, description: `Complemento coerente com sua busca` },
     ],
-    derivedContext: `Analisei sua pesquisa por "${query}" e preparei sugestões de serviços e produtos que podem atender sua necessidade.`,
+    derivedContext: `Analisei sua pesquisa por "${query}" e mantive o foco exatamente no assunto pesquisado para evitar sugestões incorretas.`,
   };
 }
 
