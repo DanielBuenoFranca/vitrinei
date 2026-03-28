@@ -27,6 +27,9 @@ const aiSuggestions = [
 const Landing = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [executedQuery, setExecutedQuery] = useState('');
+  const [searchExecuted, setSearchExecuted] = useState(false);
+  const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set());
   const [activeSegments, setActiveSegments] = useState<string[]>([]);
   const [showAiPanel, setShowAiPanel] = useState(false);
   const [aiMessage, setAiMessage] = useState('');
@@ -40,6 +43,45 @@ const Landing = () => {
   const [showProductCart, setShowProductCart] = useState(false);
   const [pendingChatSuggestions, setPendingChatSuggestions] = useState<Map<number, Set<string>>>(new Map());
   const searchRef = useRef<HTMLInputElement>(null);
+
+  const executeSearch = () => {
+    if (!searchQuery.trim() && activeSegments.length === 0) return;
+    setExecutedQuery(searchQuery.trim());
+    setSearchExecuted(true);
+    setSelectedSuggestions(new Set());
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') executeSearch();
+  };
+
+  const toggleSuggestionSelection = (name: string) => {
+    setSelectedSuggestions(prev => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
+
+  const handleSendSelectedSuggestions = (ctxSuggestion: ContextualSuggestion) => {
+    if (selectedSuggestions.size === 0) return;
+    const summary = buildSupportSummary(aiChat, Array.from(selectedSuggestions).join(', '));
+    const params = new URLSearchParams({
+      query: Array.from(selectedSuggestions).join(', '),
+      context: `IA: ${ctxSuggestion.segmentLabel}`,
+      summary,
+      type: 'both',
+      segment: ctxSuggestion.segment,
+    });
+    navigate(`/central-atendimento?${params.toString()}`);
+  };
+
+  const handleRefineSearch = () => {
+    setSearchExecuted(false);
+    setSelectedSuggestions(new Set());
+    searchRef.current?.focus();
+  };
 
   const toggleProductInCart = (product: ProductItem) => {
     setProductCart(prev => 
@@ -88,33 +130,41 @@ const Landing = () => {
   }, []);
 
   const toggleSegment = (id: string) => {
-    setActiveSegments((prev) => prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]);
+    setActiveSegments((prev) => {
+      const next = prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id];
+      // Auto-execute search when toggling segments
+      setTimeout(() => {
+        setSearchExecuted(true);
+        setExecutedQuery(searchQuery.trim());
+      }, 0);
+      return next;
+    });
   };
 
   // ── Motor de busca semântica universal ──
-  // Mostra APENAS resultados existentes na base. Sem query = sem resultados.
+  // Executa APENAS após o usuário clicar em Buscar ou pressionar Enter
   const searchResult = (() => {
-    const query = searchQuery.toLowerCase().trim();
-    // Sem query: não mostrar nada (apenas segmentos para navegar)
+    if (!searchExecuted) return { products: [] as ProductItem[], services: [] as typeof mockResults, followUp: undefined, needLabel: undefined, suggestedServices: undefined };
+    const query = executedQuery.toLowerCase().trim();
+    // Sem query: não mostrar nada
     if (!query && activeSegments.length === 0) return { products: [] as ProductItem[], services: [] as typeof mockResults, followUp: undefined, needLabel: undefined, suggestedServices: undefined };
-    // Sem query mas com segmentos selecionados: mostrar serviços do segmento da base
+    // Sem query mas com segmentos selecionados
     if (!query && activeSegments.length > 0) {
       const allSvcs = getAllServices();
       return { products: [] as ProductItem[], services: allSvcs.filter((r: any) => activeSegments.includes(r.segment)), followUp: undefined, needLabel: undefined, suggestedServices: undefined };
     }
 
     const result = semanticSearch(query);
-
-    // Apply segment filter on top
     const filteredServices = activeSegments.length === 0
       ? result.services
       : result.services.filter(r => activeSegments.includes(r.segment));
 
-    // Se não encontrou nada, retorna vazio (contextual suggestions cuidam do fallback)
     return { ...result, services: filteredServices };
   })();
 
   const filteredResults = searchResult.services;
+  const hasResults = searchExecuted && (filteredResults.length > 0 || searchResult.products.length > 0);
+  const noResults = searchExecuted && executedQuery && filteredResults.length === 0 && searchResult.products.length === 0;
 
   const handleAiSend = () => {
     if (!aiMessage.trim()) return;
@@ -299,6 +349,7 @@ const Landing = () => {
                   ref={searchRef}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearchKeyDown}
                   placeholder={placeholders[placeholderIdx]}
                   className="border-0 pl-12 pr-4 py-6 text-base md:text-lg bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
                 />
@@ -307,7 +358,7 @@ const Landing = () => {
                     <MessageCircle className="w-4 h-4" />
                     <span className="hidden sm:inline text-xs">Falar com IA</span>
                   </Button>
-                  <Button size="sm" className="gap-1 rounded-xl">
+                  <Button size="sm" className="gap-1 rounded-xl" onClick={executeSearch}>
                     <Search className="w-4 h-4" /> Buscar
                   </Button>
                 </div>
@@ -355,249 +406,288 @@ const Landing = () => {
 
             {/* Results grid */}
             <AnimatePresence>
-              {(searchQuery || activeSegments.length > 0) && (
+              {searchExecuted && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }}>
-                  {/* AI Interpretation Banner */}
-                  {searchQuery && searchResult.needLabel && (
-                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-4 p-4 rounded-xl bg-primary/5 border border-primary/20">
-                      <div className="flex items-start gap-3">
-                        <AiAvatar size={36} speaking={false} onClick={() => setShowAiPanel(true)} />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge className="bg-primary/10 text-primary border-primary/20 text-xs">
-                              <Sparkles className="w-3 h-3 mr-1" /> IA identificou
-                            </Badge>
-                            <span className="font-semibold text-sm text-foreground">{searchResult.needLabel}</span>
+
+                  {/* ── FOUND IN DATABASE ── */}
+                  {hasResults && (
+                    <>
+                      {/* Found badge */}
+                      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-4 flex items-center gap-2">
+                        <Badge className="bg-success/10 text-success border-success/20 text-xs px-3 py-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> Encontrado na base de dados
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {filteredResults.length > 0 && `${filteredResults.length} serviço(s)`}
+                          {filteredResults.length > 0 && searchResult.products.length > 0 && ' · '}
+                          {searchResult.products.length > 0 && `${searchResult.products.length} produto(s)`}
+                        </span>
+                      </motion.div>
+
+                      {/* AI Interpretation Banner */}
+                      {executedQuery && searchResult.needLabel && (
+                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-4 p-4 rounded-xl bg-primary/5 border border-primary/20">
+                          <div className="flex items-start gap-3">
+                            <AiAvatar size={36} speaking={false} onClick={() => setShowAiPanel(true)} />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge className="bg-primary/10 text-primary border-primary/20 text-xs">
+                                  <Sparkles className="w-3 h-3 mr-1" /> IA identificou
+                                </Badge>
+                                <span className="font-semibold text-sm text-foreground">{searchResult.needLabel}</span>
+                              </div>
+                              {searchResult.followUp && (
+                                <p className="text-xs text-muted-foreground">{searchResult.followUp}</p>
+                              )}
+                            </div>
                           </div>
-                          {searchResult.followUp && (
-                            <p className="text-xs text-muted-foreground">{searchResult.followUp}</p>
-                          )}
-                          <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                            {searchResult.services.length > 0 && (
-                              <span className="flex items-center gap-1"><WrenchIcon className="w-3 h-3 text-primary" /> {searchResult.services.length} serviço(s)</span>
+                        </motion.div>
+                      )}
+
+                      {/* Products Section */}
+                      {executedQuery && searchResult.products.length > 0 && (
+                        <div className="mb-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                              <ShoppingBag className="w-4 h-4 text-success" /> Produtos disponíveis
+                            </h3>
+                            {searchResult.products.length > 6 && (
+                              <Button variant="ghost" size="sm" className="text-xs h-7 text-muted-foreground hover:text-primary gap-1"
+                                onClick={() => setShowSearchProducts(!showSearchProducts)}>
+                                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showSearchProducts ? 'rotate-180' : ''}`} />
+                                {showSearchProducts ? 'Mostrar menos' : `Ver todos (${searchResult.products.length})`}
+                              </Button>
                             )}
-                            {searchResult.products.length > 0 && (
-                              <span className="flex items-center gap-1"><ShoppingBag className="w-3 h-3 text-success" /> {searchResult.products.length} produto(s)</span>
-                            )}
+                          </div>
+                          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {(showSearchProducts ? searchResult.products : searchResult.products.slice(0, 6)).map((product, idx) => (
+                              <motion.div key={product.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}>
+                                <Card
+                                  className={`hover:shadow-md transition-all duration-200 cursor-pointer group ${
+                                    isInProductCart(product.id) 
+                                      ? 'border-success bg-success/5 shadow-sm' 
+                                      : 'border-border/50 hover:border-success/40'
+                                  }`}
+                                  onClick={() => toggleProductInCart(product)}
+                                >
+                                  <CardContent className="p-4">
+                                    <div className="flex items-start justify-between mb-2">
+                                      <div className="flex items-center gap-2">
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isInProductCart(product.id) ? 'bg-success/20' : 'bg-success/10'}`}>
+                                          {isInProductCart(product.id) ? <CheckCircle2 className="w-4 h-4 text-success" /> : <ShoppingBag className="w-4 h-4 text-success" />}
+                                        </div>
+                                        <div>
+                                          <h4 className="font-semibold text-sm text-foreground">{product.name}</h4>
+                                          <p className="text-xs text-muted-foreground">{product.provider}</p>
+                                        </div>
+                                      </div>
+                                      <Badge variant={product.stockType === 'fisico' ? 'default' : 'secondary'} className="text-[10px] px-2 py-0 shrink-0">
+                                        <Store className="w-2.5 h-2.5 mr-0.5" />
+                                        {product.stockType === 'fisico' ? 'Estoque' : 'Drop'}
+                                      </Badge>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                      <span className="flex items-center gap-1 font-semibold text-foreground"><DollarSign className="w-3 h-3" /> R$ {product.price}</span>
+                                      <span className="flex items-center gap-1"><Star className="w-3 h-3 fill-accent text-accent" /> {product.rating}</span>
+                                      <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {product.distance}</span>
+                                    </div>
+                                    <div className="mt-2 flex items-center gap-1 text-[10px] font-medium transition-opacity">
+                                      {isInProductCart(product.id) ? (
+                                        <span className="text-success flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Adicionado ao carrinho</span>
+                                      ) : (
+                                        <span className="text-success opacity-0 group-hover:opacity-100 flex items-center gap-1"><Plus className="w-3 h-3" /> Adicionar ao carrinho</span>
+                                      )}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              </motion.div>
+                            ))}
                           </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {/* Products Section */}
-                  {searchQuery && searchResult.products.length > 0 && (
-                    <div className="mb-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                          <ShoppingBag className="w-4 h-4 text-success" /> Produtos disponíveis
-                        </h3>
-                        {searchResult.products.length > 6 && (
-                          <Button variant="ghost" size="sm" className="text-xs h-7 text-muted-foreground hover:text-primary gap-1"
-                            onClick={() => setShowSearchProducts(!showSearchProducts)}>
-                            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showSearchProducts ? 'rotate-180' : ''}`} />
-                            {showSearchProducts ? 'Mostrar menos' : `Ver todos (${searchResult.products.length})`}
-                          </Button>
-                        )}
-                      </div>
-                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {(showSearchProducts ? searchResult.products : searchResult.products.slice(0, 6)).map((product, idx) => (
-                          <motion.div key={product.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}>
-                            <Card
-                              className={`hover:shadow-md transition-all duration-200 cursor-pointer group ${
-                                isInProductCart(product.id) 
-                                  ? 'border-success bg-success/5 shadow-sm' 
-                                  : 'border-border/50 hover:border-success/40'
-                              }`}
-                              onClick={() => toggleProductInCart(product)}
-                            >
-                              <CardContent className="p-4">
-                                <div className="flex items-start justify-between mb-2">
-                                  <div className="flex items-center gap-2">
-                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isInProductCart(product.id) ? 'bg-success/20' : 'bg-success/10'}`}>
-                                      {isInProductCart(product.id) ? <CheckCircle2 className="w-4 h-4 text-success" /> : <ShoppingBag className="w-4 h-4 text-success" />}
-                                    </div>
-                                    <div>
-                                      <h4 className="font-semibold text-sm text-foreground">{product.name}</h4>
-                                      <p className="text-xs text-muted-foreground">{product.provider}</p>
-                                    </div>
-                                  </div>
-                                  <Badge variant={product.stockType === 'fisico' ? 'default' : 'secondary'} className="text-[10px] px-2 py-0 shrink-0">
-                                    <Store className="w-2.5 h-2.5 mr-0.5" />
-                                    {product.stockType === 'fisico' ? 'Estoque' : 'Drop'}
-                                  </Badge>
-                                </div>
-                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                  <span className="flex items-center gap-1 font-semibold text-foreground"><DollarSign className="w-3 h-3" /> R$ {product.price}</span>
-                                  <span className="flex items-center gap-1"><Star className="w-3 h-3 fill-accent text-accent" /> {product.rating}</span>
-                                  <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {product.distance}</span>
-                                </div>
-                                <div className="mt-2 flex items-center gap-1 text-[10px] font-medium transition-opacity">
-                                  {isInProductCart(product.id) ? (
-                                    <span className="text-success flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Adicionado ao carrinho</span>
-                                  ) : (
-                                    <span className="text-success opacity-0 group-hover:opacity-100 flex items-center gap-1"><Plus className="w-3 h-3" /> Adicionar ao carrinho</span>
-                                  )}
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Services Section */}
-                  {filteredResults.length > 0 && (
-                    <>
-                      {searchQuery && searchResult.products.length > 0 && (
-                        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-                          <WrenchIcon className="w-4 h-4 text-primary" /> Serviços profissionais
-                        </h3>
                       )}
-                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
-                        {filteredResults.map((result, idx) => {
-                          const seg = segments.find((s) => s.id === result.segment);
-                          const SegIcon = seg?.icon || Sparkles;
-                          return (
-                            <motion.div key={result.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}>
-                              <Card
-                                className="border-border/50 hover:border-primary/30 hover:shadow-md transition-all duration-200 cursor-pointer group"
-                                onClick={() => {
-                                  const params = new URLSearchParams({
-                                    serviceName: result.name,
-                                    serviceProvider: result.provider,
-                                    servicePrice: String(result.price),
-                                    serviceRating: String(result.rating),
-                                    serviceDistance: result.distance,
-                                    serviceTime: result.time,
-                                    serviceSegment: result.segment,
-                                    serviceProducts: JSON.stringify(result.products),
-                                  });
-                                  navigate(`/jornada-cliente?${params.toString()}`);
-                                }}
-                              >
-                                <CardContent className="p-4">
-                                  <div className="flex items-start justify-between mb-2">
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                                        <SegIcon className="w-4 h-4 text-primary" />
+
+                      {/* Services Section */}
+                      {filteredResults.length > 0 && (
+                        <>
+                          {executedQuery && searchResult.products.length > 0 && (
+                            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
+                              <WrenchIcon className="w-4 h-4 text-primary" /> Serviços profissionais
+                            </h3>
+                          )}
+                          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+                            {filteredResults.map((result, idx) => {
+                              const seg = segments.find((s) => s.id === result.segment);
+                              const SegIcon = seg?.icon || Sparkles;
+                              return (
+                                <motion.div key={result.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}>
+                                  <Card
+                                    className="border-border/50 hover:border-primary/30 hover:shadow-md transition-all duration-200 cursor-pointer group"
+                                    onClick={() => {
+                                      const params = new URLSearchParams({
+                                        serviceName: result.name,
+                                        serviceProvider: result.provider,
+                                        servicePrice: String(result.price),
+                                        serviceRating: String(result.rating),
+                                        serviceDistance: result.distance,
+                                        serviceTime: result.time,
+                                        serviceSegment: result.segment,
+                                        serviceProducts: JSON.stringify(result.products),
+                                      });
+                                      navigate(`/jornada-cliente?${params.toString()}`);
+                                    }}
+                                  >
+                                    <CardContent className="p-4">
+                                      <div className="flex items-start justify-between mb-2">
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                                            <SegIcon className="w-4 h-4 text-primary" />
+                                          </div>
+                                          <div>
+                                            <h4 className="font-semibold text-sm text-foreground">{result.name}</h4>
+                                            <p className="text-xs text-muted-foreground">{result.provider}</p>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-1 text-xs text-accent-foreground">
+                                          <Star className="w-3 h-3 fill-accent text-accent" />
+                                          {result.rating}
+                                        </div>
                                       </div>
-                                      <div>
-                                        <h4 className="font-semibold text-sm text-foreground">{result.name}</h4>
-                                        <p className="text-xs text-muted-foreground">{result.provider}</p>
+                                      <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
+                                        <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> R$ {result.price}</span>
+                                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {result.time}</span>
+                                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {result.distance}</span>
                                       </div>
-                                    </div>
-                                    <div className="flex items-center gap-1 text-xs text-accent-foreground">
-                                      <Star className="w-3 h-3 fill-accent text-accent" />
-                                      {result.rating}
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
-                                    <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> R$ {result.price}</span>
-                                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {result.time}</span>
-                                    <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {result.distance}</span>
-                                  </div>
-                                  {result.products.length > 0 && (
-                                    <div className="flex flex-wrap gap-1">
-                                      {result.products.map((p) => (
-                                        <Badge key={p} variant="secondary" className="text-[10px] px-2 py-0">
-                                          <Package className="w-2.5 h-2.5 mr-1" />{p}
-                                        </Badge>
-                                      ))}
-                                    </div>
-                                  )}
-                                  <div className="mt-2 flex items-center gap-1 text-[10px] text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <ArrowRight className="w-3 h-3" /> Simular contratação
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            </motion.div>
-                          );
-                        })}
-                      </div>
+                                      {result.products.length > 0 && (
+                                        <div className="flex flex-wrap gap-1">
+                                          {result.products.map((p) => (
+                                            <Badge key={p} variant="secondary" className="text-[10px] px-2 py-0">
+                                              <Package className="w-2.5 h-2.5 mr-1" />{p}
+                                            </Badge>
+                                          ))}
+                                        </div>
+                                      )}
+                                      <div className="mt-2 flex items-center gap-1 text-[10px] text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <ArrowRight className="w-3 h-3" /> Simular contratação
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                </motion.div>
+                              );
+                            })}
+                          </div>
+                        </>
+                      )}
                     </>
                   )}
 
-                  {filteredResults.length === 0 && searchResult.products.length === 0 && searchQuery && (() => {
-                    const ctxSuggestion = generateContextualSuggestions(searchQuery);
+                  {/* ── NOT FOUND IN DATABASE ── */}
+                  {noResults && (() => {
+                    const ctxSuggestion = generateContextualSuggestions(executedQuery);
                     return (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-8">
-                      {/* Contextual AI analysis */}
-                      <Card className="border-primary/20 bg-primary/5 mb-4">
-                        <CardContent className="p-5">
-                          <div className="flex items-center gap-3 mb-3">
-                            <AiAvatar size={48} speaking={true} onClick={() => setShowAiPanel(true)} />
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-6">
+                        {/* Not found badge */}
+                        <div className="flex items-center gap-2 mb-4">
+                          <Badge className="bg-destructive/10 text-destructive border-destructive/20 text-xs px-3 py-1">
+                            <X className="w-3.5 h-3.5 mr-1.5" /> Não encontrado na base de dados
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">Pesquisa: "{executedQuery}"</span>
+                        </div>
+
+                        {/* AI contextual panel */}
+                        <div className="rounded-2xl border border-border bg-card p-5 mb-4">
+                          <div className="flex items-center gap-3 mb-4">
+                            <AiAvatar size={44} speaking={true} onClick={() => setShowAiPanel(true)} />
                             <div>
-                              <h3 className="font-display font-bold text-foreground">🧠 Análise Contextual da IA</h3>
-                              <p className="text-xs text-muted-foreground">Não encontrei "{searchQuery}" diretamente, mas identifiquei sugestões!</p>
+                              <h3 className="font-display font-bold text-foreground text-sm">🧠 Sugestões da IA</h3>
+                              <p className="text-xs text-muted-foreground">
+                                Não encontrei "{executedQuery}" na base, mas posso ajudar! Selecione o que mais se aproxima:
+                              </p>
                             </div>
                           </div>
-                          {ctxSuggestion && (
-                            <div className="space-y-3">
+
+                          {ctxSuggestion ? (
+                            <div className="space-y-4">
                               <p className="text-sm text-foreground">{ctxSuggestion.derivedContext}</p>
-                              <Badge className="bg-primary/10 text-primary border-primary/20">📂 Segmento: {ctxSuggestion.segmentLabel}</Badge>
-                              
-                              {/* Suggested Services */}
+                              <Badge className="bg-primary/10 text-primary border-primary/20 text-xs">📂 {ctxSuggestion.segmentLabel}</Badge>
+
+                              {/* Selectable suggestions as chips */}
                               <div>
-                                <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1">
-                                  <WrenchIcon className="w-3.5 h-3.5 text-primary" /> Serviços sugeridos
-                                </p>
-                                <div className="grid sm:grid-cols-3 gap-2">
-                                  {ctxSuggestion.suggestedServices.map((svc) => (
-                                    <Card key={svc.name} className="border-border/50 hover:border-primary/40 cursor-pointer transition-all"
-                                      onClick={() => {
-                                        const summary = buildSupportSummary(aiChat, svc.name);
-                                        const params = new URLSearchParams({ query: svc.name, context: `IA: ${ctxSuggestion.segmentLabel}`, summary, type: 'both', segment: ctxSuggestion.segment });
-                                        navigate(`/central-atendimento?${params.toString()}`);
-                                      }}>
-                                      <CardContent className="p-3">
-                                        <h4 className="font-semibold text-xs text-foreground mb-0.5">{svc.name}</h4>
-                                        <p className="text-[10px] text-muted-foreground">{svc.description}</p>
-                                      </CardContent>
-                                    </Card>
-                                  ))}
+                                <p className="text-xs font-semibold text-muted-foreground mb-2">Selecione uma ou mais opções:</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {ctxSuggestion.suggestedServices.map((svc) => {
+                                    const isSelected = selectedSuggestions.has(svc.name);
+                                    return (
+                                      <motion.button
+                                        key={svc.name}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => toggleSuggestionSelection(svc.name)}
+                                        className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs font-medium transition-all duration-200 border ${
+                                          isSelected
+                                            ? 'bg-primary text-primary-foreground border-primary shadow-md'
+                                            : 'bg-muted/50 text-foreground border-border hover:border-primary/40'
+                                        }`}
+                                      >
+                                        <WrenchIcon className="w-3.5 h-3.5" />
+                                        {svc.name}
+                                        {isSelected && <CheckCircle2 className="w-3.5 h-3.5" />}
+                                      </motion.button>
+                                    );
+                                  })}
+                                  {ctxSuggestion.suggestedProducts.map((prod) => {
+                                    const isSelected = selectedSuggestions.has(prod.name);
+                                    return (
+                                      <motion.button
+                                        key={prod.name}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => toggleSuggestionSelection(prod.name)}
+                                        className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs font-medium transition-all duration-200 border ${
+                                          isSelected
+                                            ? 'bg-success text-primary-foreground border-success shadow-md'
+                                            : 'bg-muted/50 text-foreground border-border hover:border-success/40'
+                                        }`}
+                                      >
+                                        <ShoppingBag className="w-3.5 h-3.5" />
+                                        {prod.name}
+                                        {isSelected && <CheckCircle2 className="w-3.5 h-3.5" />}
+                                      </motion.button>
+                                    );
+                                  })}
                                 </div>
                               </div>
 
-                              {/* Suggested Products */}
-                              <div>
-                                <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1">
-                                  <ShoppingBag className="w-3.5 h-3.5 text-success" /> Produtos sugeridos
-                                </p>
-                                <div className="grid sm:grid-cols-3 gap-2">
-                                  {ctxSuggestion.suggestedProducts.map((prod) => (
-                                    <Card key={prod.name} className="border-border/50 hover:border-success/40 cursor-pointer transition-all"
-                                      onClick={() => {
-                                        const summary = buildSupportSummary(aiChat, prod.name);
-                                        const params = new URLSearchParams({ query: prod.name, context: `IA: ${ctxSuggestion.segmentLabel}`, summary, type: 'product', segment: ctxSuggestion.segment });
-                                        navigate(`/central-atendimento?${params.toString()}`);
-                                      }}>
-                                      <CardContent className="p-3">
-                                        <h4 className="font-semibold text-xs text-foreground mb-0.5">{prod.name}</h4>
-                                        <p className="text-[10px] text-muted-foreground">{prod.description}</p>
-                                      </CardContent>
-                                    </Card>
-                                  ))}
-                                </div>
+                              {/* Action buttons */}
+                              <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                                {selectedSuggestions.size > 0 && (
+                                  <Button className="gap-2" onClick={() => handleSendSelectedSuggestions(ctxSuggestion)}>
+                                    <Headphones className="w-4 h-4" /> Enviar {selectedSuggestions.size} seleção(ões) para a Central
+                                  </Button>
+                                )}
+                                <Button variant="outline" className="gap-2" onClick={handleRefineSearch}>
+                                  <Search className="w-4 h-4" /> Refinar pesquisa
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              <p className="text-sm text-muted-foreground">
+                                Não consegui identificar sugestões automáticas para "{executedQuery}".
+                              </p>
+                              <div className="flex flex-col sm:flex-row gap-2">
+                                <Button className="gap-2" onClick={() => {
+                                  const summary = buildSupportSummary(aiChat, executedQuery);
+                                  const params = new URLSearchParams({ query: executedQuery, context: 'Busca sem resultado', summary, type: 'both', segment: '' });
+                                  navigate(`/central-atendimento?${params.toString()}`);
+                                }}>
+                                  <Headphones className="w-4 h-4" /> Acionar Central (SLA 24h)
+                                </Button>
+                                <Button variant="outline" className="gap-2" onClick={handleRefineSearch}>
+                                  <Search className="w-4 h-4" /> Refinar pesquisa
+                                </Button>
                               </div>
                             </div>
                           )}
-                        </CardContent>
-                      </Card>
-                      <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                        <Button className="gap-2" onClick={() => {
-                          const summary = buildSupportSummary(aiChat, searchQuery);
-                          const params = new URLSearchParams({ query: searchQuery, context: 'Busca contextual', summary, type: 'both', segment: ctxSuggestion?.segment || '' });
-                          navigate(`/central-atendimento?${params.toString()}`);
-                        }}>
-                          <Headphones className="w-4 h-4" /> Acionar Central (SLA 24h)
-                        </Button>
-                        <Button variant="ghost" className="gap-2" onClick={() => setShowAiPanel(true)}>
-                          <Sparkles className="w-4 h-4" /> Refinar com a IA
-                        </Button>
-                      </div>
-                    </motion.div>
+                        </div>
+                      </motion.div>
                     );
                   })()}
                 </motion.div>
@@ -605,7 +695,7 @@ const Landing = () => {
             </AnimatePresence>
 
             {/* Idle state */}
-            {!searchQuery && activeSegments.length === 0 && (
+            {!searchExecuted && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-center py-6">
                 <div className="grid sm:grid-cols-3 gap-4 max-w-3xl mx-auto mb-8">
                   {[
