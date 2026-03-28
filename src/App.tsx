@@ -42,6 +42,7 @@ const App = () => (
           <Route path="/mei-acompanhamento" element={<MeiManagerDemo />} />
           <Route path="/dropshipping" element={<DropshippingDemo />} />
           <Route path="/demos" element={<Demos />} />
+          <Route path="/central-atendimento" element={<SupportCenterDemo />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
