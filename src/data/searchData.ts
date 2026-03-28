@@ -900,6 +900,46 @@ function generateFollowUp(needLabel: string, productCount: number, serviceCount:
  * Pass previous user messages as `conversationContext` to enable
  * multi-turn intelligence (e.g. "remédio" → "barriga" → combined).
  */
+/**
+ * Validates whether a product is coherent with the identified NL context.
+ * Prevents showing e.g. painting products when user searched for stomach ache.
+ */
+function isProductCoherentWithContext(p: ProductItem, nlSegments: string[], nlKeywords: string[]): boolean {
+  if (nlSegments.length === 0 && nlKeywords.length === 0) return true;
+
+  const productText = normalize([p.name, p.provider, ...p.tags].join(' '));
+
+  for (const kw of nlKeywords) {
+    const nkw = normalize(kw);
+    if (nkw.length >= 4 && productText.includes(nkw)) return true;
+  }
+
+  return false;
+}
+
+/**
+ * Validates whether a service is coherent with the identified NL context.
+ */
+function isServiceCoherentWithContext(s: typeof mockResults[0], nlSegments: string[], nlKeywords: string[]): boolean {
+  if (nlSegments.length === 0 && nlKeywords.length === 0) return true;
+
+  if (nlSegments.includes(s.segment)) {
+    const serviceText = normalize([s.name, s.provider, ...s.products].join(' '));
+    for (const kw of nlKeywords) {
+      const nkw = normalize(kw);
+      if (nkw.length >= 4 && serviceText.includes(nkw)) return true;
+    }
+  }
+
+  const serviceText = normalize([s.name, s.provider, ...s.products].join(' '));
+  for (const kw of nlKeywords) {
+    const nkw = normalize(kw);
+    if (nkw.length >= 4 && serviceText.includes(nkw)) return true;
+  }
+
+  return false;
+}
+
 export function semanticSearch(query: string, conversationContext?: string[]): SearchResult {
   const q = normalize(query.trim());
   if (!q) return { products: [], services: [] };
@@ -925,6 +965,8 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
 
   // ── 2. Find PRODUCTS ──
   let matchedProducts: ProductItem[] = [];
+  const nlSegments = matched.flatMap((m) => m.segments);
+  const nlKeywords = matched.flatMap((m) => m.keywords);
 
   if (matched.length > 0) {
     const nlProductIds = matched.flatMap((m) => m.relevantProductIds || []);
@@ -936,7 +978,8 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
       .filter(x => x.score >= 6)
       .sort((a, b) => b.score - a.score)
       .map(x => x.product);
-    matchedProducts = [...fromNL, ...fromFuzzy];
+    matchedProducts = [...fromNL, ...fromFuzzy]
+      .filter(p => isProductCoherentWithContext(p, nlSegments, nlKeywords));
   } else {
     matchedProducts = getAllProducts()
       .map(p => ({ product: p, score: scoreProduct(p, allTokens, intentProfile) }))
@@ -956,7 +999,6 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
     if (nlServiceIds.length > 0) {
       matchedServices = allSvcs.filter((r) => nlServiceIds.includes(r.id));
     } else {
-      const nlSegments = matched.flatMap((m) => m.segments);
       matchedServices = allSvcs.filter((r) => nlSegments.includes(r.segment));
     }
     const existingIds = new Set(matchedServices.map(s => s.id));
@@ -966,7 +1008,8 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
       .filter(x => x.score >= (intentProfile.strict ? 12 : 6))
       .sort((a, b) => b.score - a.score)
       .map(x => x.service);
-    matchedServices = [...matchedServices, ...fuzzyServices];
+    matchedServices = [...matchedServices, ...fuzzyServices]
+      .filter(s => isServiceCoherentWithContext(s, nlSegments, nlKeywords));
   } else {
     matchedServices = allSvcs
       .map(s => ({ service: s, score: scoreService(s, allTokens, intentProfile) }))
@@ -991,7 +1034,9 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
   // ── 5. If services found but no products → pull related products ──
   if (matchedServices.length > 0 && matchedProducts.length === 0) {
     const serviceIds = matchedServices.map(s => s.id);
-    matchedProducts = getAllProducts().filter(p => p.relatedServiceIds.some(id => serviceIds.includes(id)));
+    matchedProducts = getAllProducts()
+      .filter(p => p.relatedServiceIds.some(id => serviceIds.includes(id)))
+      .filter(p => matched.length === 0 || isProductCoherentWithContext(p, nlSegments, nlKeywords));
     if (intentProfile.strict && intentProfile.intentTerms.length > 0) {
       matchedProducts = matchedProducts.filter((product) => scoreProduct(product, queryTokens, intentProfile) > 0);
     }
