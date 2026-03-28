@@ -752,6 +752,33 @@ const contextualMap: {
     ],
   },
   {
+    keywords: ['eletricista', 'elétrica', 'eletrica', 'tomada', 'disjuntor', 'fiação', 'curto circuito', 'chuveiro elétrico', 'luz', 'lustre', 'interruptor', 'quadro elétrico', 'instalação elétrica'],
+    segment: 'manutencao',
+    services: [
+      { name: 'Eletricista Residencial', description: 'Instalações e reparos elétricos em geral' },
+      { name: 'Troca de Fiação Elétrica', description: 'Substituição de fiação antiga ou danificada' },
+      { name: 'Instalação de Tomadas e Interruptores', description: 'Novas tomadas, interruptores e pontos de luz' },
+    ],
+    products: [
+      { name: 'Disjuntor Bipolar 20A', description: 'Disjuntor de proteção para circuitos' },
+      { name: 'Fio Elétrico Flexível 2.5mm 100m', description: 'Fio para instalações residenciais' },
+      { name: 'Kit Tomadas e Espelhos 10un', description: 'Tomadas e espelhos para acabamento' },
+    ],
+  },
+  {
+    keywords: ['pedreiro', 'alvenaria', 'construção', 'construcao', 'reforma', 'muro', 'laje', 'contrapiso', 'piso', 'revestimento', 'azulejo'],
+    segment: 'manutencao',
+    services: [
+      { name: 'Pedreiro - Obras e Reformas', description: 'Construção, reforma e alvenaria em geral' },
+      { name: 'Assentamento de Pisos e Azulejos', description: 'Instalação de revestimentos cerâmicos' },
+      { name: 'Construção de Muros e Lajes', description: 'Alvenaria estrutural' },
+    ],
+    products: [
+      { name: 'Cimento CP-II 50kg', description: 'Cimento para construção civil' },
+      { name: 'Argamassa Colante 20kg', description: 'Para assentamento de pisos e azulejos' },
+      { name: 'Tijolo Cerâmico 6 furos (100un)', description: 'Tijolo para alvenaria' },
+    ],
+  {
     keywords: ['ar condicionado', 'climatização', 'ventilação', 'refrigeração', 'aquecedor', 'ar quente'],
     segment: 'manutencao',
     services: [
