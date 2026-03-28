@@ -778,6 +778,7 @@ const contextualMap: {
       { name: 'Argamassa Colante 20kg', description: 'Para assentamento de pisos e azulejos' },
       { name: 'Tijolo Cerâmico 6 furos (100un)', description: 'Tijolo para alvenaria' },
     ],
+  },
   {
     keywords: ['ar condicionado', 'climatização', 'ventilação', 'refrigeração', 'aquecedor', 'ar quente'],
     segment: 'manutencao',
