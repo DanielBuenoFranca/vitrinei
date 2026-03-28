@@ -724,17 +724,17 @@ const contextualMap: {
   products: { name: string; description: string }[];
 }[] = [
   {
-    keywords: ['esgoto', 'encanamento', 'cano', 'tubulação', 'desentupir', 'entupido', 'entupimento', 'ralo', 'fossa', 'sifão', 'pia', 'vaso sanitário', 'descarga', 'vazamento', 'torneira', 'água'],
+    keywords: ['esgoto', 'encanamento', 'encanador', 'cano', 'tubulação', 'desentupir', 'entupido', 'entupimento', 'ralo', 'fossa', 'sifão', 'pia', 'vaso sanitário', 'descarga', 'vazamento', 'torneira', 'água', 'hidráulico', 'hidraulico', 'bomba d\'água', 'caixa d\'água', 'registro'],
     segment: 'manutencao',
     services: [
+      { name: 'Encanador - Reparos Hidráulicos', description: 'Reparos em torneiras, válvulas, canos e conexões' },
       { name: 'Desentupimento de Esgoto', description: 'Desentupimento profissional de tubulações e ralos' },
       { name: 'Troca de Encanamento', description: 'Substituição de canos danificados ou antigos' },
-      { name: 'Manutenção Hidráulica Geral', description: 'Reparos em torneiras, válvulas e conexões' },
     ],
     products: [
       { name: 'Ácido Desentupidor Líquido 1L', description: 'Desentupidor químico para pias e ralos' },
-      { name: 'Pastilha Desodorizante p/ Esgoto', description: 'Elimina mau cheiro em ralos e tubulações' },
       { name: 'Kit Vedação p/ Vaso Sanitário', description: 'Anel de vedação e parafusos para vaso' },
+      { name: 'Torneira Monocomando Inox', description: 'Torneira de cozinha/banheiro' },
     ],
   },
   {
