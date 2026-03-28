@@ -503,6 +503,25 @@ export interface SearchResult {
 
 // ── Helpers for universal fuzzy matching ──
 
+interface ContextualMapEntry {
+  keywords: string[];
+  segment: string;
+  services: { name: string; description: string }[];
+  products: { name: string; description: string }[];
+}
+
+interface IntentProfile {
+  strict: boolean;
+  segmentId?: string;
+  matchedKeyword?: string;
+  intentTerms: string[];
+}
+
+const GENERIC_INTENT_TOKENS = new Set([
+  'preciso', 'procuro', 'quero', 'busco', 'ajuda', 'ajudar', 'servico', 'servicos', 'serviço', 'serviços',
+  'profissional', 'profissionais', 'atendimento', 'contratar', 'encontrar', 'pesquisa', 'buscar', 'coisa'
+]);
+
 /** Normalize accents & lowercase */
 function normalize(s: string): string {
   return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -513,41 +532,166 @@ function tokenize(s: string): string[] {
   return normalize(s).split(/\s+/).filter(t => t.length >= 2);
 }
 
+function isMeaningfulIntentToken(token: string): boolean {
+  return token.length >= 4 && !GENERIC_INTENT_TOKENS.has(token);
+}
+
+function commonPrefixLength(a: string, b: string): number {
+  const left = normalize(a);
+  const right = normalize(b);
+  let i = 0;
+  while (i < left.length && i < right.length && left[i] === right[i]) i += 1;
+  return i;
+}
+
+function scoreKeywordIntent(query: string, tokens: string[], keyword: string): number {
+  const q = normalize(query);
+  const nkw = normalize(keyword);
+  const keywordTokens = tokenize(nkw).filter(isMeaningfulIntentToken);
+  let score = 0;
+
+  if (q === nkw) return 120;
+  if (keywordTokens.length > 0 && keywordTokens.every(token => tokens.includes(token))) {
+    score = Math.max(score, 90 + keywordTokens.join('').length);
+  }
+  if (q.includes(nkw)) score = Math.max(score, 60 + nkw.length);
+  if (nkw.includes(q) && q.length >= 6) score = Math.max(score, 45 + q.length);
+
+  for (const token of tokens) {
+    if (!isMeaningfulIntentToken(token)) continue;
+    if (token === nkw) score = Math.max(score, 100);
+    else if (nkw.includes(token) && token.length >= 6) score = Math.max(score, 40 + token.length);
+    else if (token.includes(nkw) && nkw.length >= 6) score = Math.max(score, 35 + nkw.length);
+    else {
+      const prefix = commonPrefixLength(token, nkw);
+      if (prefix >= 6) score = Math.max(score, 20 + prefix);
+    }
+  }
+
+  return score;
+}
+
+function scoreIntentAgainstTokens(intentTerms: string[], candidateTokens: string[]): number {
+  let score = 0;
+
+  for (const term of intentTerms) {
+    if (!isMeaningfulIntentToken(term)) continue;
+
+    for (const candidate of candidateTokens) {
+      if (!isMeaningfulIntentToken(candidate)) continue;
+      if (candidate === term) score += 24;
+      else if (candidate.includes(term) && term.length >= 5) score += term.length * 2;
+      else if (term.includes(candidate) && candidate.length >= 5) score += candidate.length;
+      else {
+        const prefix = commonPrefixLength(candidate, term);
+        if (prefix >= 6) score += prefix;
+      }
+    }
+  }
+
+  return score;
+}
+
+function findBestContextualEntry(query: string): { entry: ContextualMapEntry | null; score: number; matchedKeyword?: string; tokens: string[] } {
+  const q = normalize(query.trim());
+  const tokens = tokenize(q).filter(isMeaningfulIntentToken);
+  let bestEntry: ContextualMapEntry | null = null;
+  let bestKeyword: string | undefined;
+  let bestScore = 0;
+
+  for (const entry of contextualMap) {
+    for (const keyword of entry.keywords) {
+      const score = scoreKeywordIntent(q, tokens, keyword);
+      if (score > bestScore) {
+        bestScore = score;
+        bestEntry = entry;
+        bestKeyword = keyword;
+      }
+    }
+  }
+
+  return { entry: bestEntry, score: bestScore, matchedKeyword: bestKeyword, tokens };
+}
+
+function resolveIntentProfile(query: string): IntentProfile {
+  const match = findBestContextualEntry(query);
+
+  if (match.entry && match.score >= 12) {
+    const intentTerms = [...new Set([
+      ...match.tokens,
+      ...match.entry.keywords.flatMap(tokenize).filter(isMeaningfulIntentToken),
+    ])];
+
+    return {
+      strict: true,
+      segmentId: match.entry.segment,
+      matchedKeyword: match.matchedKeyword,
+      intentTerms,
+    };
+  }
+
+  return {
+    strict: false,
+    intentTerms: match.tokens,
+  };
+}
+
 /** Score how well a set of tokens matches a target string */
 function tokenMatchScore(tokens: string[], target: string): number {
   const t = normalize(target);
   let score = 0;
   for (const tok of tokens) {
-    if (t.includes(tok)) score += tok.length; // longer matches = higher score
+    if (t.includes(tok)) score += tok.length;
   }
   return score;
 }
 
 /** Score a product against query tokens */
-function scoreProduct(p: ProductItem, tokens: string[]): number {
+function scoreProduct(p: ProductItem, tokens: string[], intentProfile?: IntentProfile): number {
   let score = 0;
   score += tokenMatchScore(tokens, p.name) * 3;
-  score += tokenMatchScore(tokens, p.provider) * 1;
+  score += tokenMatchScore(tokens, p.provider);
   for (const tag of p.tags) {
     score += tokenMatchScore(tokens, tag) * 2;
   }
+
+  if (intentProfile?.strict && intentProfile.intentTerms.length > 0) {
+    const productTokens = [...new Set([
+      ...tokenize(p.name),
+      ...tokenize(p.provider),
+      ...p.tags.flatMap(tokenize),
+    ])];
+    const intentScore = scoreIntentAgainstTokens(intentProfile.intentTerms, productTokens);
+    if (intentScore === 0) return 0;
+    score += intentScore * 2;
+  }
+
   return score;
 }
 
 /** Score a service against query tokens */
-function scoreService(s: typeof mockResults[0], tokens: string[]): number {
+function scoreService(s: typeof mockResults[0], tokens: string[], intentProfile?: IntentProfile): number {
   let score = 0;
-  score += tokenMatchScore(tokens, s.name) * 3;
-  score += tokenMatchScore(tokens, s.provider) * 1;
+  score += tokenMatchScore(tokens, s.name) * 4;
+  score += tokenMatchScore(tokens, s.provider);
   for (const p of s.products) {
     score += tokenMatchScore(tokens, p) * 2;
   }
-  const seg = segments.find(sg => sg.id === s.segment);
-  if (seg) {
-    for (const kw of seg.keywords) {
-      score += tokenMatchScore(tokens, kw) * 1.5;
-    }
+
+  if (intentProfile?.strict && intentProfile.intentTerms.length > 0) {
+    if (intentProfile.segmentId && s.segment !== intentProfile.segmentId) return 0;
+
+    const serviceTokens = [...new Set([
+      ...tokenize(s.name),
+      ...tokenize(s.provider),
+      ...s.products.flatMap(tokenize),
+    ])];
+    const intentScore = scoreIntentAgainstTokens(intentProfile.intentTerms, serviceTokens);
+    if (intentScore === 0) return 0;
+    score += intentScore * 3;
+    return score;
   }
+
   return score;
 }
 
