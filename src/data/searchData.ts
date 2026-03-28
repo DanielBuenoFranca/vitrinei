@@ -616,9 +616,10 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
   if (matched.length > 0) {
     // Precision: use NL-mapped IDs first
     const nlProductIds = matched.flatMap((m) => m.relevantProductIds || []);
-    const fromNL = productInventory.filter((p) => nlProductIds.includes(p.id));
+    const allProducts = getAllProducts();
+    const fromNL = allProducts.filter((p) => nlProductIds.includes(p.id));
     // Also fuzzy-match remaining products
-    const fromFuzzy = productInventory
+    const fromFuzzy = allProducts
       .filter((p) => !nlProductIds.includes(p.id))
       .map(p => ({ product: p, score: scoreProduct(p, allTokens) }))
       .filter(x => x.score >= 4)
@@ -627,7 +628,7 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
     matchedProducts = [...fromNL, ...fromFuzzy];
   } else {
     // Pure fuzzy search across all products
-    matchedProducts = productInventory
+    matchedProducts = getAllProducts()
       .map(p => ({ product: p, score: scoreProduct(p, allTokens) }))
       .filter(x => x.score >= 4)
       .sort((a, b) => b.score - a.score)
@@ -639,18 +640,19 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
 
   // ── 3. Find SERVICES ──
   let matchedServices: typeof mockResults = [];
+  const allSvcs = getAllServices();
 
   if (matched.length > 0) {
     const nlServiceIds = matched.flatMap((m) => m.relevantServiceIds || []);
     if (nlServiceIds.length > 0) {
-      matchedServices = mockResults.filter((r) => nlServiceIds.includes(r.id));
+      matchedServices = allSvcs.filter((r) => nlServiceIds.includes(r.id));
     } else {
       const nlSegments = matched.flatMap((m) => m.segments);
-      matchedServices = mockResults.filter((r) => nlSegments.includes(r.segment));
+      matchedServices = allSvcs.filter((r) => nlSegments.includes(r.segment));
     }
     // Also add fuzzy-matched services not already included
     const existingIds = new Set(matchedServices.map(s => s.id));
-    const fuzzyServices = mockResults
+    const fuzzyServices = allSvcs
       .filter(s => !existingIds.has(s.id))
       .map(s => ({ service: s, score: scoreService(s, allTokens) }))
       .filter(x => x.score >= 6)
@@ -659,7 +661,7 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
     matchedServices = [...matchedServices, ...fuzzyServices];
   } else {
     // Pure fuzzy search across all services
-    matchedServices = mockResults
+    matchedServices = allSvcs
       .map(s => ({ service: s, score: scoreService(s, allTokens) }))
       .filter(x => x.score >= 4)
       .sort((a, b) => b.score - a.score)
@@ -672,14 +674,14 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
   let suggestedServices: typeof mockResults = [];
   if (matchedProducts.length > 0 && matchedServices.length === 0) {
     const relatedIds = [...new Set(matchedProducts.flatMap((p) => p.relatedServiceIds))];
-    suggestedServices = mockResults.filter((r) => relatedIds.includes(r.id));
+    suggestedServices = allSvcs.filter((r) => relatedIds.includes(r.id));
     suggestedServices.sort((a, b) => b.rating - a.rating);
   }
 
   // ── 5. If services found but no products → pull related products ──
   if (matchedServices.length > 0 && matchedProducts.length === 0) {
     const serviceIds = matchedServices.map(s => s.id);
-    matchedProducts = productInventory.filter(p => p.relatedServiceIds.some(id => serviceIds.includes(id)));
+    matchedProducts = getAllProducts().filter(p => p.relatedServiceIds.some(id => serviceIds.includes(id)));
     matchedProducts.sort((a, b) => b.rating - a.rating);
   }
 
@@ -962,7 +964,9 @@ export function generateContextualSuggestions(query: string): ContextualSuggesti
   };
 }
 
-// ── Dynamic Entry System (for Support Center Demo) ──
+// ── Dynamic Entry System (persisted to Supabase) ──
+import { supabase } from '@/integrations/supabase/client';
+
 export interface DynamicEntry {
   type: 'service' | 'product';
   service?: typeof mockResults[0];
@@ -970,31 +974,107 @@ export interface DynamicEntry {
   maxPerSegment?: number;
 }
 
-const dynamicServices: typeof mockResults = [];
-const dynamicProducts: ProductItem[] = [];
+// In-memory cache (loaded from DB on init)
+let dynamicServices: typeof mockResults = [];
+let dynamicProducts: ProductItem[] = [];
+let _loaded = false;
+
+/** Load dynamic entries from database into memory cache */
+export async function loadDynamicEntries(): Promise<void> {
+  if (_loaded) return;
+  try {
+    const [svcRes, prodRes] = await Promise.all([
+      supabase.from('dynamic_services').select('*').order('created_at', { ascending: true }),
+      supabase.from('dynamic_products').select('*').order('created_at', { ascending: true }),
+    ]);
+    if (svcRes.data) {
+      dynamicServices = svcRes.data.map((row: any) => ({
+        id: row.service_id,
+        name: row.name,
+        segment: row.segment,
+        provider: row.provider,
+        price: Number(row.price),
+        rating: Number(row.rating),
+        distance: row.distance,
+        time: row.time,
+        products: row.products || [],
+      }));
+    }
+    if (prodRes.data) {
+      dynamicProducts = prodRes.data.map((row: any) => ({
+        id: row.product_id,
+        name: row.name,
+        price: Number(row.price),
+        provider: row.provider,
+        stockType: row.stock_type as StockType,
+        rating: Number(row.rating),
+        distance: row.distance,
+        relatedServiceIds: row.related_service_ids || [],
+        tags: row.tags || [],
+      }));
+    }
+    _loaded = true;
+  } catch (e) {
+    console.error('Failed to load dynamic entries:', e);
+  }
+}
 
 /**
  * Add dynamic entries from the Support Center demo.
- * Implements 1:1 replacement: if segment has more than maxPerSegment,
- * removes the oldest entry before adding new ones.
+ * Persists to Supabase and applies 1:1 replacement rule.
  */
-export function addDynamicEntries(entries: DynamicEntry[]) {
+export async function addDynamicEntries(entries: DynamicEntry[]): Promise<void> {
   for (const entry of entries) {
     if (entry.service) {
       const max = entry.maxPerSegment || 5;
       const segment = entry.service.segment;
       const inSegment = [...mockResults, ...dynamicServices].filter(s => s.segment === segment);
+
+      // 1:1 replacement: remove oldest dynamic entry in segment if over limit
       if (inSegment.length >= max) {
-        const dynIdx = dynamicServices.findIndex(s => s.segment === segment);
-        if (dynIdx >= 0) dynamicServices.splice(dynIdx, 1);
+        const oldest = dynamicServices.find(s => s.segment === segment);
+        if (oldest) {
+          await supabase.from('dynamic_services').delete().eq('service_id', oldest.id);
+          // Also remove related products
+          await supabase.from('dynamic_products').delete().eq('provider', oldest.provider);
+          dynamicServices = dynamicServices.filter(s => s.id !== oldest.id);
+          dynamicProducts = dynamicProducts.filter(p => p.provider !== oldest.provider);
+        }
       }
+
+      // Insert new service
+      await supabase.from('dynamic_services').insert({
+        service_id: entry.service.id,
+        name: entry.service.name,
+        segment: entry.service.segment,
+        provider: entry.service.provider,
+        price: entry.service.price,
+        rating: entry.service.rating,
+        distance: entry.service.distance,
+        time: entry.service.time,
+        products: entry.service.products,
+      });
       dynamicServices.push(entry.service);
     }
     if (entry.products) {
       for (const product of entry.products) {
         if (dynamicProducts.length > 20) {
-          dynamicProducts.shift();
+          const removed = dynamicProducts.shift();
+          if (removed) {
+            await supabase.from('dynamic_products').delete().eq('product_id', removed.id);
+          }
         }
+        await supabase.from('dynamic_products').insert({
+          product_id: product.id,
+          name: product.name,
+          price: product.price,
+          provider: product.provider,
+          stock_type: product.stockType,
+          rating: product.rating,
+          distance: product.distance,
+          related_service_ids: product.relatedServiceIds,
+          tags: product.tags,
+        });
         dynamicProducts.push(product);
       }
     }
