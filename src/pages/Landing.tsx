@@ -130,7 +130,15 @@ const Landing = () => {
   }, []);
 
   const toggleSegment = (id: string) => {
-    setActiveSegments((prev) => prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]);
+    setActiveSegments((prev) => {
+      const next = prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id];
+      // Auto-execute search when toggling segments
+      setTimeout(() => {
+        setSearchExecuted(true);
+        setExecutedQuery(searchQuery.trim());
+      }, 0);
+      return next;
+    });
   };
 
   // ── Motor de busca semântica universal ──
