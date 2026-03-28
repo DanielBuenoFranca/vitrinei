@@ -29,6 +29,7 @@ const Landing = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [executedQuery, setExecutedQuery] = useState('');
   const [searchExecuted, setSearchExecuted] = useState(false);
+  const [searchVersion, setSearchVersion] = useState(0);
   const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set());
   const [activeSegments, setActiveSegments] = useState<string[]>([]);
   const [showAiPanel, setShowAiPanel] = useState(false);
@@ -48,7 +49,10 @@ const Landing = () => {
     if (!searchQuery.trim() && activeSegments.length === 0) return;
     setExecutedQuery(searchQuery.trim());
     setSearchExecuted(true);
+    setSearchVersion(v => v + 1);
     setSelectedSuggestions(new Set());
+    setShowSearchProducts(false);
+    setProductCart([]);
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent) => {
@@ -132,10 +136,10 @@ const Landing = () => {
   const toggleSegment = (id: string) => {
     setActiveSegments((prev) => {
       const next = prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id];
-      // Auto-execute search when toggling segments
       setTimeout(() => {
         setSearchExecuted(true);
         setExecutedQuery(searchQuery.trim());
+        setSearchVersion(v => v + 1);
       }, 0);
       return next;
     });
@@ -143,12 +147,12 @@ const Landing = () => {
 
   // ── Motor de busca semântica universal ──
   // Executa APENAS após o usuário clicar em Buscar ou pressionar Enter
+  // searchVersion forces re-evaluation on each click
   const searchResult = (() => {
+    void searchVersion; // force dependency on search version
     if (!searchExecuted) return { products: [] as ProductItem[], services: [] as typeof mockResults, followUp: undefined, needLabel: undefined, suggestedServices: undefined };
     const query = executedQuery.toLowerCase().trim();
-    // Sem query: não mostrar nada
     if (!query && activeSegments.length === 0) return { products: [] as ProductItem[], services: [] as typeof mockResults, followUp: undefined, needLabel: undefined, suggestedServices: undefined };
-    // Sem query mas com segmentos selecionados
     if (!query && activeSegments.length > 0) {
       const allSvcs = getAllServices();
       return { products: [] as ProductItem[], services: allSvcs.filter((r: any) => activeSegments.includes(r.segment)), followUp: undefined, needLabel: undefined, suggestedServices: undefined };
