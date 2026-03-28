@@ -27,7 +27,9 @@ const FloatingAvatarWrapper = () => {
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  useEffect(() => { loadDynamicEntries(); }, []);
+  return (
   <ThemeProvider>
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
