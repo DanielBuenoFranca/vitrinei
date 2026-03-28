@@ -616,9 +616,10 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
   if (matched.length > 0) {
     // Precision: use NL-mapped IDs first
     const nlProductIds = matched.flatMap((m) => m.relevantProductIds || []);
-    const fromNL = productInventory.filter((p) => nlProductIds.includes(p.id));
+    const allProducts = getAllProducts();
+    const fromNL = allProducts.filter((p) => nlProductIds.includes(p.id));
     // Also fuzzy-match remaining products
-    const fromFuzzy = productInventory
+    const fromFuzzy = allProducts
       .filter((p) => !nlProductIds.includes(p.id))
       .map(p => ({ product: p, score: scoreProduct(p, allTokens) }))
       .filter(x => x.score >= 4)
@@ -627,7 +628,7 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
     matchedProducts = [...fromNL, ...fromFuzzy];
   } else {
     // Pure fuzzy search across all products
-    matchedProducts = productInventory
+    matchedProducts = getAllProducts()
       .map(p => ({ product: p, score: scoreProduct(p, allTokens) }))
       .filter(x => x.score >= 4)
       .sort((a, b) => b.score - a.score)
@@ -639,18 +640,19 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
 
   // ── 3. Find SERVICES ──
   let matchedServices: typeof mockResults = [];
+  const allSvcs = getAllServices();
 
   if (matched.length > 0) {
     const nlServiceIds = matched.flatMap((m) => m.relevantServiceIds || []);
     if (nlServiceIds.length > 0) {
-      matchedServices = mockResults.filter((r) => nlServiceIds.includes(r.id));
+      matchedServices = allSvcs.filter((r) => nlServiceIds.includes(r.id));
     } else {
       const nlSegments = matched.flatMap((m) => m.segments);
-      matchedServices = mockResults.filter((r) => nlSegments.includes(r.segment));
+      matchedServices = allSvcs.filter((r) => nlSegments.includes(r.segment));
     }
     // Also add fuzzy-matched services not already included
     const existingIds = new Set(matchedServices.map(s => s.id));
-    const fuzzyServices = mockResults
+    const fuzzyServices = allSvcs
       .filter(s => !existingIds.has(s.id))
       .map(s => ({ service: s, score: scoreService(s, allTokens) }))
       .filter(x => x.score >= 6)
@@ -659,7 +661,7 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
     matchedServices = [...matchedServices, ...fuzzyServices];
   } else {
     // Pure fuzzy search across all services
-    matchedServices = mockResults
+    matchedServices = allSvcs
       .map(s => ({ service: s, score: scoreService(s, allTokens) }))
       .filter(x => x.score >= 4)
       .sort((a, b) => b.score - a.score)
@@ -672,14 +674,14 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
   let suggestedServices: typeof mockResults = [];
   if (matchedProducts.length > 0 && matchedServices.length === 0) {
     const relatedIds = [...new Set(matchedProducts.flatMap((p) => p.relatedServiceIds))];
-    suggestedServices = mockResults.filter((r) => relatedIds.includes(r.id));
+    suggestedServices = allSvcs.filter((r) => relatedIds.includes(r.id));
     suggestedServices.sort((a, b) => b.rating - a.rating);
   }
 
   // ── 5. If services found but no products → pull related products ──
   if (matchedServices.length > 0 && matchedProducts.length === 0) {
     const serviceIds = matchedServices.map(s => s.id);
-    matchedProducts = productInventory.filter(p => p.relatedServiceIds.some(id => serviceIds.includes(id)));
+    matchedProducts = getAllProducts().filter(p => p.relatedServiceIds.some(id => serviceIds.includes(id)));
     matchedProducts.sort((a, b) => b.rating - a.rating);
   }
 
