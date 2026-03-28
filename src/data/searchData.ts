@@ -1028,7 +1028,7 @@ export async function addDynamicEntries(entries: DynamicEntry[]): Promise<void> 
     if (entry.service) {
       const max = entry.maxPerSegment || 5;
       const segment = entry.service.segment;
-      const inSegment = [...mockResults, ...dynamicServices].filter(s => s.segment === segment);
+      const inSegment = dynamicServices.filter(s => s.segment === segment);
 
       // 1:1 replacement: remove oldest dynamic entry in segment if over limit
       if (inSegment.length >= max) {
