@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
-import { segments, mockResults, semanticSearch, type ProductItem, type SearchResult } from '@/data/searchData';
+import { segments, mockResults, semanticSearch, buildSupportSummary, type ProductItem, type SearchResult } from '@/data/searchData';
 
 
 const aiSuggestions = [
@@ -148,9 +148,12 @@ const Landing = () => {
         setAiChat((prev) => [...prev, { role: 'ai', text: parts.join(''), searchResult }]);
         setSearchQuery(msg);
       } else {
+        // No results - show structured fallback with Central buttons
+        const summary = buildSupportSummary([...aiChat, { role: 'user', text: msg }], msg);
         setAiChat((prev) => [...prev, {
           role: 'ai',
-          text: 'Não encontrei resultados exatos, mas estou encaminhando para a Central de Atendimento. SLA: 24h para encontrar a melhor solução! 📩'
+          text: `Não encontrei resultados para "${msg}" no hub atual. 😔\n\n📋 **Resumo preparado para a Central:**\n• Necessidade: ${msg}\n• Status: Indisponível\n• Ação recomendada: Acionar Central de Atendimento\n\nVocê pode acionar a Central abaixo para que busquemos profissionais e produtos na sua região (SLA: 24h).`,
+          searchResult: { products: [], services: [], _noResults: true, _query: msg, _summary: summary } as any
         }]);
       }
       setTimeout(() => setAiSpeaking(false), 2000);
@@ -216,13 +219,20 @@ const Landing = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
         <div className="container mx-auto text-center relative max-w-4xl">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <h1 className="font-display text-3xl md:text-5xl lg:text-6xl font-extrabold text-foreground mb-3 leading-tight tracking-tight">
-              Seu problema, <span className="text-primary">nossa solução.</span><br />
-              <span className="text-muted-foreground text-2xl md:text-3xl lg:text-4xl font-bold">A inteligência que encontra tudo por você.</span>
-            </h1>
-            <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-6">
-              Serviços, produtos, profissionais — tudo em um só lugar. Se não existir aqui, nossa IA vasculha o ecossistema inteiro e entrega a melhor opção.
-            </p>
+             <h1 className="font-display text-3xl md:text-5xl lg:text-6xl font-extrabold text-foreground mb-3 leading-tight tracking-tight">
+               Mais clientes para seu negócio, <span className="text-primary">todos os dias.</span><br />
+               <span className="text-muted-foreground text-2xl md:text-3xl lg:text-4xl font-bold">A inteligência que conecta quem precisa a quem resolve.</span>
+             </h1>
+             <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-4">
+               Serviços, produtos, profissionais — tudo em um só lugar. Se não existir aqui, nossa IA vasculha o ecossistema inteiro e entrega a melhor opção.
+             </p>
+             {/* Social proof bar */}
+             <div className="flex flex-wrap justify-center gap-4 text-xs sm:text-sm text-muted-foreground mb-6">
+               <span className="flex items-center gap-1.5 font-medium"><Users className="w-4 h-4 text-primary" /> <strong className="text-foreground">2.450+</strong> MEIs ativos</span>
+               <span className="flex items-center gap-1.5 font-medium"><Star className="w-4 h-4 fill-accent text-accent" /> <strong className="text-foreground">4.8</strong> avaliação média</span>
+               <span className="flex items-center gap-1.5 font-medium"><Shield className="w-4 h-4 text-success" /> Pagamento <strong className="text-foreground">100% seguro</strong></span>
+               <span className="flex items-center gap-1.5 font-medium"><CheckCircle2 className="w-4 h-4 text-success" /> <strong className="text-foreground">12.800+</strong> serviços realizados</span>
+             </div>
           </motion.div>
 
           {/* CTA buttons */}
@@ -255,10 +265,10 @@ const Landing = () => {
               className="mt-4 bg-card border border-border rounded-2xl rounded-tl-md px-5 py-3 shadow-md max-w-md relative"
             >
               <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-card border-l border-t border-border rotate-45" />
-              <p className="text-sm text-foreground font-medium relative z-10">
-                Olá! 👋 O que você procura hoje?<br />
-                <span className="text-muted-foreground font-normal">Serviço, produto ou profissional — me conta que eu resolvo.</span>
-              </p>
+               <p className="text-sm text-foreground font-medium relative z-10">
+                 Me diga o que você precisa 👋<br />
+                 <span className="text-muted-foreground font-normal">Eu encontro o melhor profissional perto de você.</span>
+               </p>
             </motion.div>
           </motion.div>
 
@@ -491,25 +501,46 @@ const Landing = () => {
                     </>
                   )}
 
-                  {filteredResults.length === 0 && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
-                      <AiAvatar size={72} speaking={true} onClick={() => setShowAiPanel(true)} />
-                      <h3 className="font-display font-bold text-lg text-foreground mb-2 mt-4">Não encontrou? Deixa comigo!</h3>
-                      <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
-                        Estou buscando em todos os fornecedores, estoques próprios e catálogos drop-shipping para encontrar a melhor opção por <strong>preço, tempo e proximidade</strong>.
-                      </p>
+                  {filteredResults.length === 0 && searchResult.products.length === 0 && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-8">
+                      {/* Structured analysis */}
+                      <Card className="border-primary/20 bg-primary/5 mb-4">
+                        <CardContent className="p-5">
+                          <div className="flex items-center gap-3 mb-3">
+                            <AiAvatar size={48} speaking={true} onClick={() => setShowAiPanel(true)} />
+                            <div>
+                              <h3 className="font-display font-bold text-foreground">Análise Inteligente</h3>
+                              <p className="text-xs text-muted-foreground">Nenhum resultado encontrado para "{searchQuery}"</p>
+                            </div>
+                          </div>
+                          <div className="bg-card rounded-lg p-4 space-y-2 text-sm">
+                            <p className="font-semibold text-foreground">📋 Resumo da solicitação:</p>
+                            <ul className="text-xs text-muted-foreground space-y-1">
+                              <li>• <strong>Busca:</strong> "{searchQuery}"</li>
+                              <li>• <strong>Tipo:</strong> Serviço + Produtos relacionados</li>
+                              <li>• <strong>Status:</strong> Não disponível no hub atual</li>
+                              <li>• <strong>Ação:</strong> Encaminhar para Central de Atendimento</li>
+                            </ul>
+                          </div>
+                        </CardContent>
+                      </Card>
                       <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                        <Button className="gap-2" onClick={() => setShowAiPanel(true)}>
-                          <Sparkles className="w-4 h-4" /> Pedir para a IA buscar
+                        <Button className="gap-2" onClick={() => {
+                          const summary = buildSupportSummary(aiChat, searchQuery);
+                          const params = new URLSearchParams({ query: searchQuery, context: 'Busca sem resultados', summary, type: 'both' });
+                          navigate(`/central-atendimento?${params.toString()}`);
+                        }}>
+                          <Headphones className="w-4 h-4" /> Acionar Central (SLA 24h)
                         </Button>
                         <Button variant="outline" className="gap-2" onClick={() => {
-                          setShowAiPanel(true);
-                          setAiChat((prev) => [...prev,
-                            { role: 'user', text: `Preciso de: ${searchQuery}` },
-                            { role: 'ai', text: 'Encaminhando para a Central de Atendimento EcoMEI. Prazo: até 24 horas. Você será notificado assim que encontrarmos a solução ideal! 📩' },
-                          ]);
+                          const summary = buildSupportSummary(aiChat, searchQuery);
+                          const params = new URLSearchParams({ query: searchQuery, context: 'Incluir novo item', summary, type: 'both' });
+                          navigate(`/central-atendimento?${params.toString()}`);
                         }}>
-                          <Headphones className="w-4 h-4" /> Central de Atendimento (SLA 24h)
+                          <Plus className="w-4 h-4" /> Incluir serviço/produto
+                        </Button>
+                        <Button variant="ghost" className="gap-2" onClick={() => setShowAiPanel(true)}>
+                          <Sparkles className="w-4 h-4" /> Falar com a IA
                         </Button>
                       </div>
                     </motion.div>
@@ -618,14 +649,15 @@ const Landing = () => {
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {aiChat.length === 0 && (
                 <div className="bg-muted/50 rounded-xl p-4 text-sm text-muted-foreground">
-                  <p className="font-medium text-foreground mb-2">👋 Olá! Sou a IA do EcoMEI.</p>
-                  <p className="mb-3">Me conta o que você precisa — eu busco a melhor opção por:</p>
+                  <p className="font-medium text-foreground mb-2">👋 Me diga o que você precisa!</p>
+                  <p className="mb-3">Eu encontro o melhor profissional perto de você:</p>
                   <ul className="space-y-1.5">
-                    <li className="flex items-center gap-2"><DollarSign className="w-3.5 h-3.5 text-primary" /> Melhor preço</li>
-                    <li className="flex items-center gap-2"><Clock className="w-3.5 h-3.5 text-primary" /> Menor tempo de atendimento</li>
-                    <li className="flex items-center gap-2"><MapPin className="w-3.5 h-3.5 text-primary" /> Proximidade da sua região</li>
+                    <li className="flex items-center gap-2"><DollarSign className="w-3.5 h-3.5 text-primary" /> Melhor preço garantido</li>
+                    <li className="flex items-center gap-2"><Clock className="w-3.5 h-3.5 text-primary" /> Atendimento mais rápido</li>
+                    <li className="flex items-center gap-2"><MapPin className="w-3.5 h-3.5 text-primary" /> Profissionais na sua região</li>
+                    <li className="flex items-center gap-2"><Star className="w-3.5 h-3.5 fill-accent text-accent" /> Avaliados por clientes reais</li>
                   </ul>
-                  <p className="mt-3 text-xs">Se não encontrar, encaminho para a <strong>Central de Atendimento</strong> (SLA 24h).</p>
+                  <p className="mt-3 text-xs">Se não encontrar, a <strong>Central de Atendimento</strong> resolve em até <strong>24h</strong>.</p>
                 </div>
               )}
 
@@ -798,6 +830,25 @@ const Landing = () => {
                       </div>
                     </div>
                   )}
+                  {/* Central action buttons when no results */}
+                  {msg.role === 'ai' && (msg.searchResult as any)?._noResults && (
+                    <div className="w-full mt-2 pl-10 space-y-2">
+                      <Button size="sm" className="w-full gap-2 text-xs" onClick={() => {
+                        const sr = msg.searchResult as any;
+                        const params = new URLSearchParams({ query: sr._query, context: 'Chat IA', summary: sr._summary, type: 'both' });
+                        navigate(`/central-atendimento?${params.toString()}`);
+                      }}>
+                        <Headphones className="w-3.5 h-3.5" /> Acionar Central de Atendimento
+                      </Button>
+                      <Button size="sm" variant="outline" className="w-full gap-2 text-xs" onClick={() => {
+                        const sr = msg.searchResult as any;
+                        const params = new URLSearchParams({ query: sr._query, context: 'Incluir item', summary: sr._summary, type: 'both' });
+                        navigate(`/central-atendimento?${params.toString()}`);
+                      }}>
+                        <Plus className="w-3.5 h-3.5" /> Incluir serviço/produto no hub
+                      </Button>
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </div>
@@ -817,16 +868,14 @@ const Landing = () => {
               </div>
               <button
                 onClick={() => {
-                  setAiSpeaking(true);
-                  setAiChat((prev) => [...prev,
-                    { role: 'user', text: 'Não encontrei o que preciso, podem me ajudar?' },
-                    { role: 'ai', text: 'Claro! Encaminhando para a Central de Atendimento EcoMEI. Nosso SLA é de no máximo 24 horas. Você receberá uma notificação com a melhor solução! 📩✅' },
-                  ]);
-                  setTimeout(() => setAiSpeaking(false), 2000);
+                  const lastQuery = aiChat.filter(m => m.role === 'user').pop()?.text || 'serviço especializado';
+                  const summary = buildSupportSummary(aiChat, lastQuery);
+                  const params = new URLSearchParams({ query: lastQuery, context: 'Chat IA - Central', summary, type: 'both' });
+                  navigate(`/central-atendimento?${params.toString()}`);
                 }}
                 className="w-full mt-2 text-xs text-muted-foreground hover:text-primary transition-colors flex items-center justify-center gap-1 py-1.5"
               >
-                <Headphones className="w-3 h-3" /> Encaminhar para Central de Atendimento (SLA 24h)
+                <Headphones className="w-3 h-3" /> Central de Atendimento (SLA 24h)
               </button>
             </div>
           </motion.div>

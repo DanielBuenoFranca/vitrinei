@@ -701,3 +701,64 @@ export function semanticSearchLegacy(query: string): { results: typeof mockResul
   const { services, followUp } = semanticSearch(query);
   return { results: services, followUp };
 }
+
+// ── Dynamic Entry System (for Support Center Demo) ──
+export interface DynamicEntry {
+  type: 'service' | 'product';
+  service?: typeof mockResults[0];
+  products?: ProductItem[];
+  maxPerSegment?: number;
+}
+
+const dynamicServices: typeof mockResults = [];
+const dynamicProducts: ProductItem[] = [];
+
+/**
+ * Add dynamic entries from the Support Center demo.
+ * Implements 1:1 replacement: if segment has more than maxPerSegment,
+ * removes the oldest entry before adding new ones.
+ */
+export function addDynamicEntries(entries: DynamicEntry[]) {
+  for (const entry of entries) {
+    if (entry.service) {
+      const max = entry.maxPerSegment || 5;
+      const segment = entry.service.segment;
+      // Count existing in segment
+      const inSegment = [...mockResults, ...dynamicServices].filter(s => s.segment === segment);
+      if (inSegment.length >= max) {
+        // Remove one dynamic entry from this segment, or mark to skip
+        const dynIdx = dynamicServices.findIndex(s => s.segment === segment);
+        if (dynIdx >= 0) dynamicServices.splice(dynIdx, 1);
+      }
+      dynamicServices.push(entry.service);
+    }
+    if (entry.products) {
+      for (const product of entry.products) {
+        // 1:1 replacement by tags similarity
+        if (dynamicProducts.length > 20) {
+          dynamicProducts.shift(); // Remove oldest
+        }
+        dynamicProducts.push(product);
+      }
+    }
+  }
+}
+
+/** Get all services including dynamically added ones */
+export function getAllServices(): typeof mockResults {
+  return [...mockResults, ...dynamicServices];
+}
+
+/** Get all products including dynamically added ones */
+export function getAllProducts(): ProductItem[] {
+  return [...productInventory, ...dynamicProducts];
+}
+
+/**
+ * Build a structured summary from conversation context for the Support Center.
+ */
+export function buildSupportSummary(messages: { role: string; text: string }[], query: string): string {
+  const userMsgs = messages.filter(m => m.role === 'user').map(m => m.text);
+  if (userMsgs.length === 0) return `Cliente buscou: "${query}". Nenhum resultado encontrado no hub.`;
+  return `Conversa do cliente:\n${userMsgs.map((m, i) => `${i + 1}. "${m}"`).join('\n')}\n\nNecessidade identificada: "${query}"\nStatus: Sem resultados no hub atual.`;
+}
