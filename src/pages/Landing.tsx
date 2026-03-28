@@ -149,13 +149,24 @@ const Landing = () => {
         setAiChat((prev) => [...prev, { role: 'ai', text: parts.join(''), searchResult }]);
         setSearchQuery(msg);
       } else {
-        // No results - show structured fallback with Central buttons
-        const summary = buildSupportSummary([...aiChat, { role: 'user', text: msg }], msg);
-        setAiChat((prev) => [...prev, {
-          role: 'ai',
-          text: `Não encontrei resultados para "${msg}" no hub atual. 😔\n\n📋 **Resumo preparado para a Central:**\n• Necessidade: ${msg}\n• Status: Indisponível\n• Ação recomendada: Acionar Central de Atendimento\n\nVocê pode acionar a Central abaixo para que busquemos profissionais e produtos na sua região (SLA: 24h).`,
-          searchResult: { products: [], services: [], _noResults: true, _query: msg, _summary: summary } as any
-        }]);
+        // ── CONTEXTUAL SUGGESTIONS ──
+        const contextSuggestion = generateContextualSuggestions(msg);
+        if (contextSuggestion) {
+          const text = `🧠 Não encontrei "${msg}" diretamente no hub, mas analisei o contexto!\n\n${contextSuggestion.derivedContext}\n\n📂 **Segmento:** ${contextSuggestion.segmentLabel}\n\nSelecione abaixo os serviços e produtos que correspondem ao que você precisa, ou escreva com mais detalhes:`;
+          setAiChat((prev) => [...prev, {
+            role: 'ai',
+            text,
+            contextualSuggestion: contextSuggestion,
+            searchResult: { products: [], services: [] } as SearchResult,
+          }]);
+        } else {
+          const summary = buildSupportSummary([...aiChat, { role: 'user', text: msg }], msg);
+          setAiChat((prev) => [...prev, {
+            role: 'ai',
+            text: `Não encontrei resultados para "${msg}" no hub atual. 😔\n\nAcione a Central abaixo para buscar profissionais (SLA: 24h).`,
+            searchResult: { products: [], services: [], _noResults: true, _query: msg, _summary: summary } as any
+          }]);
+        }
       }
       setTimeout(() => setAiSpeaking(false), 2000);
     }, 1200);
