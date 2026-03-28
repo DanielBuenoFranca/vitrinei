@@ -901,47 +901,91 @@ export function generateContextualSuggestions(query: string): ContextualSuggesti
   const q = normalize(query);
   const tokens = tokenize(query);
 
-  // Try to match against contextual map
+  // Score each contextualMap entry — pick the BEST match, not the first
+  let bestEntry: typeof contextualMap[0] | null = null;
+  let bestScore = 0;
+
   for (const entry of contextualMap) {
-    const match = entry.keywords.some(kw => {
+    let score = 0;
+    for (const kw of entry.keywords) {
       const nkw = normalize(kw);
-      return q.includes(nkw) || nkw.includes(q) || tokens.some(t => nkw.includes(t) && t.length >= 3);
-    });
-    if (match) {
-      const seg = segments.find(s => s.id === entry.segment);
-      return {
-        segment: entry.segment,
-        segmentLabel: seg?.label || entry.segment,
-        suggestedServices: entry.services,
-        suggestedProducts: entry.products,
-        derivedContext: `Analisei sua pesquisa e identifiquei que você precisa de um profissional da área de **${seg?.label || entry.segment}**.`,
-      };
+      // Exact match (query equals keyword)
+      if (q === nkw) { score += 100; continue; }
+      // Query contains keyword entirely
+      if (q.includes(nkw)) { score += nkw.length * 3; continue; }
+      // Keyword contains query entirely (e.g. "encanador" in "encanamento" — but not partial 3-char)
+      if (nkw.includes(q) && q.length >= 4) { score += q.length * 2; continue; }
+      // Token-level matching — require tokens >= 4 chars for precision
+      for (const t of tokens) {
+        if (t.length < 4) continue;
+        if (nkw === t) { score += t.length * 3; }
+        else if (nkw.includes(t) && t.length >= 5) { score += t.length; }
+        else if (t.includes(nkw) && nkw.length >= 5) { score += nkw.length; }
+      }
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      bestEntry = entry;
     }
   }
 
-  // Fallback: try to match against existing segment keywords
+  if (bestEntry && bestScore >= 4) {
+    const seg = segments.find(s => s.id === bestEntry!.segment);
+    return {
+      segment: bestEntry.segment,
+      segmentLabel: seg?.label || bestEntry.segment,
+      suggestedServices: bestEntry.services,
+      suggestedProducts: bestEntry.products,
+      derivedContext: `Analisei sua pesquisa por "${query}" e identifiquei que você precisa de um profissional da área de **${seg?.label || bestEntry.segment}**.`,
+    };
+  }
+
+  // Fallback: match against segment keywords with scoring
+  let bestSeg: typeof segments[0] | null = null;
+  let bestSegScore = 0;
+
   for (const seg of segments) {
-    const match = seg.keywords.some(kw => {
+    let score = 0;
+    for (const kw of seg.keywords) {
       const nkw = normalize(kw);
-      return q.includes(nkw) || tokens.some(t => nkw.includes(t) && t.length >= 3);
-    });
-    if (match) {
-      return {
-        segment: seg.id,
-        segmentLabel: seg.label,
-        suggestedServices: [
-          { name: `Serviço de ${seg.label} - Básico`, description: `Atendimento profissional na área de ${seg.label}` },
-          { name: `Serviço de ${seg.label} - Completo`, description: `Pacote completo com avaliação e execução` },
-          { name: `Consultoria em ${seg.label}`, description: `Análise e orientação especializada` },
-        ],
-        suggestedProducts: [
-          { name: `Kit ${seg.label} Essencial`, description: `Produtos básicos para ${seg.label.toLowerCase()}` },
-          { name: `Produto Profissional ${seg.label}`, description: `Produto de alta qualidade` },
-          { name: `Acessório ${seg.label}`, description: `Complemento para o serviço` },
-        ],
-        derivedContext: `Analisei sua pesquisa e identifiquei que você precisa de um profissional da área de **${seg.label}**.`,
-      };
+      if (q === nkw) { score += 100; continue; }
+      if (q.includes(nkw)) { score += nkw.length * 3; continue; }
+      if (nkw.includes(q) && q.length >= 4) { score += q.length * 2; continue; }
+      for (const t of tokens) {
+        if (t.length < 4) continue;
+        if (nkw === t) { score += t.length * 3; }
+        else if (nkw.includes(t) && t.length >= 5) { score += t.length; }
+      }
     }
+    if (score > bestSegScore) {
+      bestSegScore = score;
+      bestSeg = seg;
+    }
+  }
+
+  if (bestSeg && bestSegScore >= 4) {
+    // Generate specific suggestions based on the matched keyword
+    const matchedKw = bestSeg.keywords.find(kw => {
+      const nkw = normalize(kw);
+      return q === nkw || q.includes(nkw) || (nkw.includes(q) && q.length >= 4);
+    }) || tokens.find(t => t.length >= 3) || query.trim();
+    const capKw = matchedKw.charAt(0).toUpperCase() + matchedKw.slice(1);
+    
+    return {
+      segment: bestSeg.id,
+      segmentLabel: bestSeg.label,
+      suggestedServices: [
+        { name: `${capKw} - Atendimento Profissional`, description: `Profissional especializado em ${matchedKw.toLowerCase()}` },
+        { name: `${capKw} - Serviço Completo`, description: `Pacote completo com avaliação e execução` },
+        { name: `Consultoria em ${capKw}`, description: `Análise e orientação especializada` },
+      ],
+      suggestedProducts: [
+        { name: `Kit ${capKw} Essencial`, description: `Produtos básicos para ${matchedKw.toLowerCase()}` },
+        { name: `Material Profissional ${capKw}`, description: `Produto de alta qualidade` },
+        { name: `Acessório para ${capKw}`, description: `Complemento para o serviço` },
+      ],
+      derivedContext: `Analisei sua pesquisa por "${query}" e identifiquei que você precisa de um profissional da área de **${bestSeg.label}** — especificamente **${capKw}**.`,
+    };
   }
 
   // Generic fallback: derive from query itself
