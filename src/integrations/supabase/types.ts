@@ -23,6 +23,7 @@ export type Database = {
           price: number
           product_id: number
           provider: string
+          provider_id: number | null
           rating: number
           related_service_ids: number[]
           stock_type: string
@@ -36,6 +37,7 @@ export type Database = {
           price?: number
           product_id: number
           provider: string
+          provider_id?: number | null
           rating?: number
           related_service_ids?: number[]
           stock_type?: string
@@ -49,12 +51,21 @@ export type Database = {
           price?: number
           product_id?: number
           provider?: string
+          provider_id?: number | null
           rating?: number
           related_service_ids?: number[]
           stock_type?: string
           tags?: string[]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "dynamic_products_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dynamic_services: {
         Row: {
@@ -65,6 +76,7 @@ export type Database = {
           price: number
           products: string[]
           provider: string
+          provider_id: number | null
           rating: number
           segment: string
           service_id: number
@@ -78,6 +90,7 @@ export type Database = {
           price?: number
           products?: string[]
           provider: string
+          provider_id?: number | null
           rating?: number
           segment: string
           service_id: number
@@ -91,10 +104,64 @@ export type Database = {
           price?: number
           products?: string[]
           provider?: string
+          provider_id?: number | null
           rating?: number
           segment?: string
           service_id?: number
           time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dynamic_services_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      providers: {
+        Row: {
+          active: boolean
+          address: string | null
+          city: string | null
+          created_at: string
+          distance: string
+          email: string | null
+          id: number
+          name: string
+          phone: string | null
+          rating: number
+          segment: string
+          type: string
+        }
+        Insert: {
+          active?: boolean
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          distance?: string
+          email?: string | null
+          id?: number
+          name: string
+          phone?: string | null
+          rating?: number
+          segment: string
+          type?: string
+        }
+        Update: {
+          active?: boolean
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          distance?: string
+          email?: string | null
+          id?: number
+          name?: string
+          phone?: string | null
+          rating?: number
+          segment?: string
+          type?: string
         }
         Relationships: []
       }
