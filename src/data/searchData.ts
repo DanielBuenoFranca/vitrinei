@@ -19,6 +19,91 @@ export const segments = [
   { id: 'natureza', label: 'Natureza & Vida Natural', icon: Leaf, color: 'hsl(145 60% 35%)', keywords: ['jardinagem', 'horta', 'fitoterapia', 'comida natural', 'vegano', 'orgânico', 'plantas medicinais', 'aromaterapia', 'permacultura', 'compostagem', 'floral'] },
 ];
 
+// ── Classification: terms that are ALWAYS products (never services) ──
+const PRODUCT_ONLY_TERMS = new Set([
+  'torneira', 'inox', 'aço', 'pia', 'vaso', 'cano', 'tubo', 'fio', 'cabo',
+  'disjuntor', 'tomada', 'lâmpada', 'lampada', 'chuveiro', 'resistência',
+  'tinta', 'rolo', 'pincel', 'lixa', 'massa', 'cimento', 'argamassa',
+  'tijolo', 'telha', 'parafuso', 'prego', 'broca', 'serra', 'martelo',
+  'chave', 'alicate', 'furadeira', 'trena', 'nível', 'nivel',
+  'shampoo', 'condicionador', 'creme', 'gel', 'pomada', 'spray',
+  'esmalte', 'ração', 'racao', 'coleira', 'guia',
+  'óleo', 'oleo', 'filtro', 'vela', 'amortecedor', 'pastilha', 'pneu',
+  'graxa', 'engrenagem', 'correia', 'mangueira',
+  'caderno', 'apostila', 'livro', 'caneta',
+  'corda', 'palheta', 'metrônomo', 'metronomo', 'afinador',
+  'mesa', 'cadeira', 'sofá', 'sofa', 'estante', 'armário', 'armario',
+  'cortina', 'tapete', 'luminária', 'luminaria', 'espelho',
+  'panela', 'frigideira', 'prato', 'copo', 'talher', 'jarra',
+]);
+
+// ── Classification: terms that indicate a SERVICE need ──
+const SERVICE_INTENT_VERBS = new Set([
+  'pintar', 'consertar', 'instalar', 'trocar', 'arrumar', 'limpar',
+  'lavar', 'cortar', 'podar', 'desentupir', 'reformar', 'construir',
+  'montar', 'desmontar', 'reparar', 'formatar', 'alinhar', 'balancear',
+  'regular', 'calibrar', 'higienizar', 'impermeabilizar', 'soldar',
+  'ensinar', 'treinar', 'adestrar', 'consultar', 'examinar', 'avaliar',
+  'fotografar', 'filmar', 'editar', 'programar', 'desenvolver',
+]);
+
+// ── Broad context mapping: single-word searches that expand to full contexts ──
+const BROAD_CONTEXT_MAP: Record<string, {
+  segments: string[];
+  serviceKeywords: string[];
+  productKeywords: string[];
+  label: string;
+}> = {
+  casa: {
+    segments: ['casa', 'manutencao'],
+    serviceKeywords: ['limpeza', 'faxina', 'encanador', 'eletricista', 'pintor', 'jardineiro', 'dedetização', 'mudança', 'organização', 'decoração'],
+    productKeywords: ['limpeza', 'casa', 'desinfetante', 'vassoura', 'pano', 'balde', 'torneira', 'chuveiro', 'tinta', 'fio'],
+    label: 'Casa — Serviços e Produtos Residenciais',
+  },
+  carro: {
+    segments: ['auto'],
+    serviceKeywords: ['mecânico', 'lavagem', 'polimento', 'guincho', 'funilaria', 'alinhamento', 'balanceamento'],
+    productKeywords: ['óleo', 'filtro', 'pneu', 'vela', 'amortecedor', 'pastilha', 'shampoo', 'cera', 'carro'],
+    label: 'Carro — Serviços e Produtos Automotivos',
+  },
+  pet: {
+    segments: ['pet'],
+    serviceKeywords: ['veterinário', 'banho', 'tosa', 'adestramento', 'dog walker'],
+    productKeywords: ['ração', 'shampoo', 'coleira', 'guia', 'pet', 'cachorro', 'gato'],
+    label: 'Pet — Cuidados e Produtos para Animais',
+  },
+  beleza: {
+    segments: ['beleza'],
+    serviceKeywords: ['cabelo', 'manicure', 'estética', 'maquiagem', 'depilação', 'sobrancelha', 'barbeiro'],
+    productKeywords: ['shampoo', 'condicionador', 'esmalte', 'tintura', 'creme', 'maquiagem'],
+    label: 'Beleza — Serviços e Produtos Estéticos',
+  },
+  saude: {
+    segments: ['saude_clinica', 'bem_estar', 'natureza'],
+    serviceKeywords: ['médico', 'dentista', 'fisioterapia', 'massagem', 'yoga', 'fitoterapia'],
+    productKeywords: ['remédio', 'chá', 'pomada', 'gel', 'vitamina'],
+    label: 'Saúde — Profissionais e Produtos',
+  },
+  musica: {
+    segments: ['musica'],
+    serviceKeywords: ['aula', 'professor', 'produção musical'],
+    productKeywords: ['violão', 'guitarra', 'piano', 'teclado', 'bateria', 'corda', 'palheta'],
+    label: 'Música — Aulas e Instrumentos',
+  },
+  tecnologia: {
+    segments: ['tech'],
+    serviceKeywords: ['formatação', 'conserto', 'instalação', 'câmera', 'cftv'],
+    productKeywords: ['computador', 'celular', 'cabo', 'antivírus', 'película'],
+    label: 'Tecnologia — Serviços e Acessórios',
+  },
+  jardim: {
+    segments: ['natureza', 'casa'],
+    serviceKeywords: ['jardineiro', 'paisagismo', 'poda', 'corte de grama'],
+    productKeywords: ['adubo', 'semente', 'vaso', 'tesoura', 'luva', 'terra'],
+    label: 'Jardim — Jardinagem e Insumos',
+  },
+};
+
 // ── NL Map: now with specific service & product IDs for precision ──
 export const naturalLanguageMap: {
   triggers: string[];
@@ -32,7 +117,7 @@ export const naturalLanguageMap: {
   {
     triggers: ['dor de barriga', 'dor de estômago', 'dor abdominal', 'mal estar', 'enjoo', 'náusea', 'azia', 'gastrite', 'indigestão'],
     segments: ['natureza', 'saude_clinica'], keywords: ['fitoterapia', 'fitoterápico', 'chá', 'remédio', 'abdominal'],
-    relevantServiceIds: [27, 38, 4], // Fitoterapia, Florais, Teleconsulta
+    relevantServiceIds: [27, 38, 4],
     relevantProductIds: [101, 102, 103, 104, 105, 106],
     needLabel: 'Desconforto abdominal',
     aiFollowUp: 'Identifiquei: **Desconforto abdominal**. Separei produtos para alívio imediato e profissionais especializados.'
@@ -277,6 +362,23 @@ export const naturalLanguageMap: {
     needLabel: 'Evento / Festa',
     aiFollowUp: 'Identifiquei: **Evento/Festa**. Separei itens de decoração/doces e profissionais.'
   },
+  // ── Service intent triggers (verb-based) ──
+  {
+    triggers: ['quero pintar minha casa', 'pintar casa', 'pintar parede', 'pintar minha casa', 'preciso de pintor', 'pintura residencial', 'pintura interna', 'pintura externa'],
+    segments: ['manutencao'], keywords: ['pintor', 'pintura', 'tinta', 'parede'],
+    relevantServiceIds: [50],
+    relevantProductIds: [],
+    needLabel: 'Pintura Residencial',
+    aiFollowUp: 'Identifiquei: **Pintura Residencial**. Encontrei pintores e materiais para o serviço.'
+  },
+  {
+    triggers: ['mecânico', 'mecanico', 'oficina mecânica', 'oficina mecanica', 'revisão do carro', 'manutenção do carro', 'problema no motor'],
+    segments: ['auto'], keywords: ['mecânico', 'mecanico', 'motor', 'revisão', 'manutenção'],
+    relevantServiceIds: [33, 11],
+    relevantProductIds: [401, 402, 403, 404],
+    needLabel: 'Mecânica Automotiva',
+    aiFollowUp: 'Identifiquei: **Mecânica Automotiva**. Separei serviços mecânicos e peças disponíveis.'
+  },
 ];
 
 // ── Product Inventory (individual products with stock type) ──
@@ -489,6 +591,7 @@ export const mockResults = [
   { id: 47, name: 'Relógios e Óculos', segment: 'acessorios', provider: 'TempoStyle MEI', price: 95, rating: 4.6, distance: '2.8 km', time: 'Pronta entrega', products: ['Relógio Digital Esportivo', 'Óculos de Sol UV400', 'Relógio Analógico Clássico'] },
   { id: 48, name: 'Remédios Naturais e Fitoterápicos', segment: 'saude_clinica', provider: 'NaturalFarma MEI', price: 35, rating: 4.8, distance: '1 km', time: 'Pronta entrega', products: ['Chá Camomila 30g', 'Própolis Spray', 'Arnica Gel', 'Pomada Calêndula'] },
   { id: 49, name: 'Fisioterapia Domiciliar', segment: 'saude_clinica', provider: 'FisioHome', price: 140, rating: 4.9, distance: '2 km', time: '1h', products: ['Faixa Elástica Reabilitação', 'Bolsa Térmica Gel'] },
+  { id: 50, name: 'Pintor Residencial', segment: 'manutencao', provider: 'Carlos Pintor', price: 180, rating: 4.7, distance: '3 km', time: '4h', products: ['Tinta Acrílica', 'Rolo de Pintura', 'Massa Corrida'] },
 ];
 
 // ── Intelligent Search Engine ──
@@ -518,6 +621,8 @@ interface IntentProfile {
   segmentId?: string;
   matchedKeyword?: string;
   intentTerms: string[];
+  isProductSearch?: boolean;
+  isServiceSearch?: boolean;
 }
 
 const GENERIC_INTENT_TOKENS = new Set([
@@ -563,6 +668,42 @@ function commonPrefixLength(a: string, b: string): number {
   let i = 0;
   while (i < left.length && i < right.length && left[i] === right[i]) i += 1;
   return i;
+}
+
+/**
+ * Classify whether a query is primarily about a PRODUCT or a SERVICE.
+ * Returns 'product', 'service', or 'both'.
+ */
+function classifyQueryIntent(query: string): 'product' | 'service' | 'both' {
+  const q = normalize(query);
+  const tokens = tokenizePhrase(query);
+  
+  // Check for service intent verbs
+  const hasServiceVerb = tokens.some(t => {
+    for (const verb of SERVICE_INTENT_VERBS) {
+      const nv = normalize(verb);
+      if (t === nv || t.startsWith(nv.slice(0, -1))) return true; // stem match (pintar -> pint)
+    }
+    return false;
+  });
+  
+  // Check for product-only terms
+  const hasProductTerm = tokens.some(t => {
+    for (const term of PRODUCT_ONLY_TERMS) {
+      const nt = normalize(term);
+      if (t === nt || (t.length >= 5 && nt.includes(t)) || (nt.length >= 5 && t.includes(nt))) return true;
+    }
+    return false;
+  });
+
+  // If query contains a service verb (quero pintar, preciso instalar), it's a service search
+  if (hasServiceVerb && !hasProductTerm) return 'service';
+  // If query is a pure product name (torneira inox, amortecedor), it's a product search
+  if (hasProductTerm && !hasServiceVerb) return 'product';
+  // Both
+  if (hasProductTerm && hasServiceVerb) return 'both';
+  
+  return 'both';
 }
 
 function scoreTriggerPhrase(text: string, textTokens: string[], trigger: string): number {
@@ -672,6 +813,7 @@ function findBestContextualEntry(query: string): { entry: ContextualMapEntry | n
 
 function resolveIntentProfile(query: string): IntentProfile {
   const match = findBestContextualEntry(query);
+  const classification = classifyQueryIntent(query);
 
   if (match.entry && match.score >= 12) {
     const intentTerms = [...new Set([
@@ -684,12 +826,16 @@ function resolveIntentProfile(query: string): IntentProfile {
       segmentId: match.entry.segment,
       matchedKeyword: match.matchedKeyword,
       intentTerms,
+      isProductSearch: classification === 'product',
+      isServiceSearch: classification === 'service',
     };
   }
 
   return {
     strict: false,
     intentTerms: match.tokens,
+    isProductSearch: classification === 'product',
+    isServiceSearch: classification === 'service',
   };
 }
 
@@ -768,6 +914,87 @@ function pushUniqueSuggestion(
   }
 }
 
+// ── Context-specific suggestion templates for different professions ──
+const PROFESSION_SPECIFIC_SUGGESTIONS: Record<string, {
+  services: { name: string; description: string }[];
+  products: { name: string; description: string }[];
+}> = {
+  mecanico: {
+    services: [
+      { name: 'Alinhamento e Balanceamento', description: 'Alinhamento de direção e balanceamento de rodas' },
+      { name: 'Regulagem de Motor', description: 'Ajuste fino do motor para melhor desempenho' },
+      { name: 'Manutenção Preventiva', description: 'Revisão completa com troca de fluidos e filtros' },
+      { name: 'Troca de Pastilhas de Freio', description: 'Substituição de pastilhas e verificação do sistema de freios' },
+    ],
+    products: [
+      { name: 'Graxa Automotiva 500g', description: 'Graxa para rolamentos e articulações' },
+      { name: 'Amortecedor Dianteiro', description: 'Amortecedor para suspensão dianteira' },
+      { name: 'Kit Correia Dentada', description: 'Correia + tensor para motor' },
+      { name: 'Pastilha de Freio Cerâmica', description: 'Pastilha de alta durabilidade' },
+    ],
+  },
+  eletricista: {
+    services: [
+      { name: 'Instalação de Quadro Elétrico', description: 'Montagem e instalação de quadro de distribuição' },
+      { name: 'Troca de Fiação', description: 'Substituição de fiação antiga por nova' },
+      { name: 'Instalação de Tomadas e Interruptores', description: 'Pontos novos de energia e iluminação' },
+    ],
+    products: [
+      { name: 'Disjuntor Bipolar 32A', description: 'Disjuntor para circuitos de alta carga' },
+      { name: 'Fio Flexível 4mm 100m', description: 'Fio para circuitos de potência' },
+      { name: 'Kit Tomadas + Espelhos', description: 'Conjunto de tomadas e acabamentos' },
+    ],
+  },
+  encanador: {
+    services: [
+      { name: 'Desentupimento de Tubulação', description: 'Desentupimento profissional com equipamento' },
+      { name: 'Instalação de Caixa d\'Água', description: 'Instalação e conexão de reservatório' },
+      { name: 'Reparo de Vazamento', description: 'Localização e reparo de vazamentos em tubulações' },
+    ],
+    products: [
+      { name: 'Torneira Monocomando Inox', description: 'Torneira para cozinha ou banheiro' },
+      { name: 'Kit Conexões PVC', description: 'Conjunto de conexões para encanamento' },
+      { name: 'Registro de Pressão 3/4"', description: 'Registro para controle de fluxo' },
+    ],
+  },
+  pintor: {
+    services: [
+      { name: 'Pintura Interna Residencial', description: 'Pintura de paredes internas com acabamento profissional' },
+      { name: 'Pintura Externa / Fachada', description: 'Pintura de fachadas e muros externos' },
+      { name: 'Aplicação de Textura Decorativa', description: 'Texturas e efeitos decorativos em paredes' },
+    ],
+    products: [
+      { name: 'Tinta Acrílica Premium 18L', description: 'Tinta lavável de alta cobertura' },
+      { name: 'Kit Rolo + Bandeja + Pincel', description: 'Kit completo para pintura' },
+      { name: 'Massa Corrida PVA 25kg', description: 'Para nivelamento de superfícies' },
+    ],
+  },
+  jardineiro: {
+    services: [
+      { name: 'Corte e Manutenção de Grama', description: 'Corte regular e manutenção do gramado' },
+      { name: 'Poda de Árvores e Arbustos', description: 'Poda técnica para saúde e estética' },
+      { name: 'Projeto Paisagístico', description: 'Planejamento e execução de jardim' },
+    ],
+    products: [
+      { name: 'Adubo Orgânico 10kg', description: 'Adubo natural para jardim e horta' },
+      { name: 'Tesoura de Poda Profissional', description: 'Tesoura para poda de galhos' },
+      { name: 'Substrato para Plantio 20L', description: 'Terra preparada para vasos e canteiros' },
+    ],
+  },
+  veterinario: {
+    services: [
+      { name: 'Consulta Veterinária Domiciliar', description: 'Atendimento veterinário em casa' },
+      { name: 'Vacinação de Pets', description: 'Aplicação de vacinas obrigatórias e opcionais' },
+      { name: 'Castração', description: 'Procedimento cirúrgico com acompanhamento' },
+    ],
+    products: [
+      { name: 'Antipulgas e Carrapatos', description: 'Tratamento preventivo contra parasitas' },
+      { name: 'Ração Premium', description: 'Ração de alta qualidade para pets' },
+      { name: 'Kit Higiene Pet', description: 'Shampoo, condicionador e escova' },
+    ],
+  },
+};
+
 function buildSuggestionsFromNaturalLanguageEntry(entry: NaturalLanguageEntry): {
   segment: string;
   segmentLabel: string;
@@ -783,22 +1010,34 @@ function buildSuggestionsFromNaturalLanguageEntry(entry: NaturalLanguageEntry): 
   const suggestedServices: { name: string; description: string }[] = [];
   const suggestedProducts: { name: string; description: string }[] = [];
 
+  // Check for profession-specific suggestions first
+  const normalizedKeyword = normalize(primaryKeyword);
+  for (const [profession, suggestions] of Object.entries(PROFESSION_SPECIFIC_SUGGESTIONS)) {
+    if (normalizedKeyword.includes(profession) || normalize(needLabel).includes(profession)) {
+      suggestions.services.forEach(s => pushUniqueSuggestion(suggestedServices, s));
+      suggestions.products.forEach(p => pushUniqueSuggestion(suggestedProducts, p));
+      return {
+        segment: entry.segments[0] || 'manutencao',
+        segmentLabel: buildSegmentLabel(entry.segments),
+        suggestedServices: suggestedServices.slice(0, 4),
+        suggestedProducts: suggestedProducts.slice(0, 4),
+        derivedContext: `Entendi sua frase como **${needLabel}** e identifiquei serviços e produtos específicos da área.`,
+        confidence: 'high',
+        source: 'local_nl',
+      };
+    }
+  }
+
   for (const segmentId of entry.segments) {
     if (segmentId === 'saude_clinica') {
       pushUniqueSuggestion(suggestedServices, { name: 'Atendimento médico', description: `Avaliação clínica para ${needLabelLower} e orientação segura.` });
       pushUniqueSuggestion(suggestedServices, { name: 'Teleconsulta clínica', description: `Atendimento remoto para entender o quadro de ${needLabelLower}.` });
-      pushUniqueSuggestion(suggestedServices, { name: 'Orientação farmacêutica', description: `Ajuda para identificar opções seguras relacionadas a ${needLabelLower}.` });
-
       pushUniqueSuggestion(suggestedProducts, { name: `Remédios para ${needLabelLower}`, description: `Opções de alívio relacionadas ao contexto de ${needLabelLower}.` });
-      pushUniqueSuggestion(suggestedProducts, { name: `Kit de cuidados para ${needLabelLower}`, description: 'Itens de apoio e alívio inicial conforme a necessidade identificada.' });
     }
 
     if (segmentId === 'natureza') {
       pushUniqueSuggestion(suggestedServices, { name: `Fitoterapia para ${needLabelLower}`, description: `Acompanhamento natural com foco em ${needLabelLower}.` });
-      pushUniqueSuggestion(suggestedServices, { name: 'Orientação integrativa', description: `Sugestões complementares para lidar com ${needLabelLower}.` });
-
       pushUniqueSuggestion(suggestedProducts, { name: `Chás e suporte natural para ${needLabelLower}`, description: 'Alternativas naturais relacionadas ao desconforto identificado.' });
-      pushUniqueSuggestion(suggestedProducts, { name: `Fitoterápicos para ${needLabelLower}`, description: `Produtos de apoio natural associados a ${needLabelLower}.` });
     }
 
     if (segmentId === 'bem_estar') {
@@ -808,9 +1047,7 @@ function buildSuggestionsFromNaturalLanguageEntry(entry: NaturalLanguageEntry): 
 
     if (segmentId === 'manutencao') {
       pushUniqueSuggestion(suggestedServices, { name: `Atendimento profissional em ${primaryKeyword}`, description: `Visita técnica e execução especializada em ${primaryKeyword}.` });
-      pushUniqueSuggestion(suggestedServices, { name: `Diagnóstico de ${primaryKeyword}`, description: 'Identificação da causa do problema antes do reparo.' });
       pushUniqueSuggestion(suggestedProducts, { name: `Materiais para ${primaryKeyword}`, description: `Itens e peças normalmente usados em demandas de ${primaryKeyword}.` });
-      pushUniqueSuggestion(suggestedProducts, { name: `Kit essencial de ${primaryKeyword}`, description: 'Produtos básicos relacionados ao reparo ou manutenção.' });
     }
 
     if (segmentId === 'casa') {
@@ -904,7 +1141,6 @@ function generateNeedLabel(matchedSegs: string[], tokens: string[]): string {
     .filter(Boolean)
     .slice(0, 2);
   if (segLabels.length > 0) return segLabels.join(' + ');
-  // Fallback: capitalize first meaningful token
   const main = tokens.find(t => t.length >= 3);
   return main ? main.charAt(0).toUpperCase() + main.slice(1) : 'Busca personalizada';
 }
@@ -924,13 +1160,7 @@ function generateFollowUp(needLabel: string, productCount: number, serviceCount:
 }
 
 /**
- * Universal semantic search with optional conversation context.
- * Pass previous user messages as `conversationContext` to enable
- * multi-turn intelligence (e.g. "remédio" → "barriga" → combined).
- */
-/**
  * Validates whether a product is coherent with the identified NL context.
- * Prevents showing e.g. painting products when user searched for stomach ache.
  */
 function isProductCoherentWithContext(p: ProductItem, nlSegments: string[], nlKeywords: string[]): boolean {
   if (nlSegments.length === 0 && nlKeywords.length === 0) return true;
@@ -977,11 +1207,58 @@ function isServiceCoherentWithContext(s: typeof mockResults[0], nlSegments: stri
   return exactKeywordMatch || tokenKeywordMatch;
 }
 
+/**
+ * Handle broad context searches like "casa", "carro", "pet" etc.
+ * Returns all related services and products from the database.
+ */
+function handleBroadContextSearch(query: string): SearchResult | null {
+  const q = normalize(query.trim());
+  const tokens = tokenizePhrase(query);
+  
+  // Only trigger for short queries (1-2 meaningful tokens)
+  if (tokens.length > 2) return null;
+  
+  for (const [key, ctx] of Object.entries(BROAD_CONTEXT_MAP)) {
+    const nk = normalize(key);
+    if (q === nk || tokens.includes(nk) || tokens.some(t => nk.includes(t) && t.length >= 4)) {
+      const allSvcs = getAllServices();
+      const allProds = getAllProducts();
+      
+      const services = allSvcs.filter(s => 
+        ctx.segments.includes(s.segment) ||
+        ctx.serviceKeywords.some(kw => normalize(s.name).includes(normalize(kw)))
+      );
+      
+      const products = allProds.filter(p => {
+        const pText = normalize([p.name, ...p.tags].join(' '));
+        return ctx.productKeywords.some(kw => pText.includes(normalize(kw))) ||
+          p.relatedServiceIds.some(id => services.some(s => s.id === id));
+      });
+      
+      return {
+        products: [...new Map(products.map(p => [p.id, p])).values()],
+        services: services.sort((a, b) => b.rating - a.rating),
+        followUp: `Identifiquei: **${ctx.label}**. Separei ${services.length} serviço(s) e ${products.length} produto(s) relacionados.`,
+        needLabel: ctx.label,
+      };
+    }
+  }
+  
+  return null;
+}
+
 export function semanticSearch(query: string, conversationContext?: string[]): SearchResult {
   const q = normalize(query.trim());
   if (!q) return { products: [], services: [] };
 
+  // ── 0. Check broad context first (single-word like "casa", "carro") ──
+  const broadResult = handleBroadContextSearch(query);
+  if (broadResult && (broadResult.products.length > 0 || broadResult.services.length > 0)) {
+    return broadResult;
+  }
+
   const intentProfile = resolveIntentProfile(query);
+  const queryClassification = classifyQueryIntent(query);
   const naturalLanguageMatches = findNaturalLanguageMatches(query, conversationContext);
   const matched = naturalLanguageMatches.map((match) => match.entry);
   const primaryNaturalLanguageMatch = naturalLanguageMatches[0]?.entry;
@@ -1063,6 +1340,13 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
       .map(x => x.service);
   }
 
+  // ── Classification filter: if query is product-only, deprioritize services; vice versa ──
+  if (queryClassification === 'product' && matchedProducts.length > 0) {
+    // Show products prominently, but still show related services as suggestions
+  } else if (queryClassification === 'service' && matchedServices.length > 0) {
+    // Show services prominently, pull related products
+  }
+
   matchedServices.sort((a, b) => b.rating - a.rating);
 
   // ── 4. Cross-suggestion ──
@@ -1112,8 +1396,6 @@ export function semanticSearchLegacy(query: string): { results: typeof mockResul
 }
 
 // ── Contextual Suggestion System ──
-// When the AI can't find direct results, it analyzes the query and suggests
-// related services/products by deriving the likely segment.
 
 export interface ContextualSuggestion {
   segment: string;
@@ -1127,12 +1409,7 @@ export interface ContextualSuggestion {
 }
 
 /** Map of common terms to segments with service/product suggestions */
-const contextualMap: {
-  keywords: string[];
-  segment: string;
-  services: { name: string; description: string }[];
-  products: { name: string; description: string }[];
-}[] = [
+const contextualMap: ContextualMapEntry[] = [
   {
     keywords: ['esgoto', 'encanamento', 'encanador', 'cano', 'tubulação', 'desentupir', 'entupido', 'entupimento', 'ralo', 'fossa', 'sifão', 'pia', 'vaso sanitário', 'descarga', 'vazamento', 'torneira', 'água', 'hidráulico', 'hidraulico', 'bomba d\'água', 'caixa d\'água', 'registro'],
     segment: 'manutencao',
@@ -1142,9 +1419,9 @@ const contextualMap: {
       { name: 'Troca de Encanamento', description: 'Substituição de canos danificados ou antigos' },
     ],
     products: [
-      { name: 'Ácido Desentupidor Líquido 1L', description: 'Desentupidor químico para pias e ralos' },
-      { name: 'Kit Vedação p/ Vaso Sanitário', description: 'Anel de vedação e parafusos para vaso' },
       { name: 'Torneira Monocomando Inox', description: 'Torneira de cozinha/banheiro' },
+      { name: 'Kit Vedação p/ Vaso Sanitário', description: 'Anel de vedação e parafusos para vaso' },
+      { name: 'Desentupidor Líquido 1L', description: 'Desentupidor químico para pias e ralos' },
     ],
   },
   {
@@ -1329,11 +1606,27 @@ const contextualMap: {
       { name: 'Quadro Canvas Personalizado', description: 'Impressão em tela de algodão' },
     ],
   },
+  // ── Mecânica (specific suggestions) ──
+  {
+    keywords: ['mecânico', 'mecanico', 'oficina', 'motor', 'freio', 'suspensão', 'embreagem', 'câmbio', 'direção', 'escapamento'],
+    segment: 'auto',
+    services: [
+      { name: 'Alinhamento e Balanceamento', description: 'Alinhamento de direção e balanceamento de rodas' },
+      { name: 'Regulagem de Motor', description: 'Ajuste fino do motor para melhor desempenho' },
+      { name: 'Manutenção Preventiva Completa', description: 'Revisão de fluidos, filtros, correias e freios' },
+      { name: 'Troca de Pastilhas de Freio', description: 'Substituição e verificação do sistema de frenagem' },
+    ],
+    products: [
+      { name: 'Graxa Automotiva 500g', description: 'Graxa para rolamentos e articulações' },
+      { name: 'Amortecedor Dianteiro Par', description: 'Amortecedores para suspensão dianteira' },
+      { name: 'Kit Correia Dentada + Tensor', description: 'Correia e tensor para motor' },
+      { name: 'Pastilha de Freio Cerâmica', description: 'Pastilha de alta durabilidade para freios' },
+    ],
+  },
 ];
 
 /**
  * Generate contextual suggestions when no direct results are found.
- * Analyzes the query to derive the segment and suggest related services/products.
  */
 export function generateContextualSuggestions(query: string): ContextualSuggestion | null {
   const naturalLanguageMatch = findNaturalLanguageMatches(query)[0]?.entry;
@@ -1347,6 +1640,22 @@ export function generateContextualSuggestions(query: string): ContextualSuggesti
   if (bestMatch.entry && bestMatch.score >= 12) {
     const seg = segments.find(s => s.id === bestMatch.entry!.segment);
     const matchedKeyword = bestMatch.matchedKeyword || tokens[0] || query.trim();
+
+    // Check for profession-specific suggestions
+    const nk = normalize(matchedKeyword);
+    for (const [profession, suggestions] of Object.entries(PROFESSION_SPECIFIC_SUGGESTIONS)) {
+      if (nk.includes(profession) || normalize(query).includes(profession)) {
+        return {
+          segment: bestMatch.entry.segment,
+          segmentLabel: seg?.label || bestMatch.entry.segment,
+          suggestedServices: suggestions.services.slice(0, 4),
+          suggestedProducts: suggestions.products.slice(0, 4),
+          derivedContext: `Analisei sua pesquisa por "${query}" e identifiquei serviços e produtos específicos da área de **${matchedKeyword}**.`,
+          confidence: 'high',
+          source: 'local_contextual',
+        };
+      }
+    }
 
     return {
       segment: bestMatch.entry.segment,
@@ -1374,6 +1683,22 @@ export function generateContextualSuggestions(query: string): ContextualSuggesti
   if (bestSeg && bestSegScore >= 8) {
     const matchedKw = tokens[0] || query.trim();
     const capKw = matchedKw.charAt(0).toUpperCase() + matchedKw.slice(1);
+
+    // Check for profession-specific suggestions
+    const nk = normalize(matchedKw);
+    for (const [profession, suggestions] of Object.entries(PROFESSION_SPECIFIC_SUGGESTIONS)) {
+      if (nk.includes(profession)) {
+        return {
+          segment: bestSeg.id,
+          segmentLabel: bestSeg.label,
+          suggestedServices: suggestions.services.slice(0, 4),
+          suggestedProducts: suggestions.products.slice(0, 4),
+          derivedContext: `Analisei sua pesquisa por "${query}" e identifiquei serviços e produtos específicos para **${capKw}**.`,
+          confidence: 'high',
+          source: 'local_segment',
+        };
+      }
+    }
 
     return {
       segment: bestSeg.id,
@@ -1477,9 +1802,16 @@ export async function loadDynamicEntries(): Promise<void> {
   }
 }
 
+/** Force reload dynamic entries */
+export async function reloadDynamicEntries(): Promise<void> {
+  _loaded = false;
+  dynamicServices = [];
+  dynamicProducts = [];
+  await loadDynamicEntries();
+}
+
 /**
  * Add dynamic entries from the Support Center demo.
- * Persists to Supabase and applies 1:1 replacement rule.
  */
 export async function addDynamicEntries(entries: DynamicEntry[]): Promise<void> {
   for (const entry of entries) {
@@ -1488,19 +1820,16 @@ export async function addDynamicEntries(entries: DynamicEntry[]): Promise<void> 
       const segment = entry.service.segment;
       const inSegment = dynamicServices.filter(s => s.segment === segment);
 
-      // 1:1 replacement: remove oldest dynamic entry in segment if over limit
       if (inSegment.length >= max) {
         const oldest = dynamicServices.find(s => s.segment === segment);
         if (oldest) {
           await supabase.from('dynamic_services').delete().eq('service_id', oldest.id);
-          // Also remove related products
           await supabase.from('dynamic_products').delete().eq('provider', oldest.provider);
           dynamicServices = dynamicServices.filter(s => s.id !== oldest.id);
           dynamicProducts = dynamicProducts.filter(p => p.provider !== oldest.provider);
         }
       }
 
-      // Insert new service
       await supabase.from('dynamic_services').insert({
         service_id: entry.service.id,
         name: entry.service.name,
