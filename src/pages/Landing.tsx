@@ -43,7 +43,17 @@ const Landing = () => {
   const [productCart, setProductCart] = useState<ProductItem[]>([]);
   const [showProductCart, setShowProductCart] = useState(false);
   const [pendingChatSuggestions, setPendingChatSuggestions] = useState<Map<number, Set<string>>>(new Map());
+  const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
   const searchRef = useRef<HTMLInputElement>(null);
+
+  const toggleProviderExpanded = (providerName: string) => {
+    setExpandedProviders(prev => {
+      const next = new Set(prev);
+      if (next.has(providerName)) next.delete(providerName);
+      else next.add(providerName);
+      return next;
+    });
+  };
 
   const executeSearch = () => {
     if (!searchQuery.trim() && activeSegments.length === 0) return;
@@ -469,8 +479,11 @@ const Landing = () => {
                             {providerEntries.map(([providerName, data], provIdx) => (
                               <motion.div key={providerName} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: provIdx * 0.08 }}>
                                 <div className="rounded-xl border border-border bg-card/50 overflow-hidden">
-                                  {/* Provider Header */}
-                                  <div className="px-4 py-3 bg-muted/30 border-b border-border flex items-center justify-between">
+                                  {/* Provider Header — clickable to expand/collapse */}
+                                  <div
+                                    onClick={() => toggleProviderExpanded(providerName)}
+                                    className="px-4 py-3 bg-muted/30 border-b border-border flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors"
+                                  >
                                     <div className="flex items-center gap-2">
                                       <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                                         <Store className="w-4 h-4 text-primary" />
@@ -484,114 +497,145 @@ const Landing = () => {
                                         </p>
                                       </div>
                                     </div>
-                                    {data.services.length > 0 && (
-                                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                        <MapPin className="w-3 h-3" /> {data.services[0].distance}
-                                        <span className="mx-1">·</span>
-                                        <Star className="w-3 h-3 fill-accent text-accent" /> {data.services[0].rating}
-                                      </div>
-                                    )}
+                                    <div className="flex items-center gap-2">
+                                      {(data.services.length > 0 || data.products.length > 0) && (
+                                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                          {data.services[0] && (
+                                            <>
+                                              <MapPin className="w-3 h-3" /> {data.services[0].distance}
+                                              <span className="mx-1">·</span>
+                                              <Star className="w-3 h-3 fill-accent text-accent" /> {data.services[0].rating}
+                                            </>
+                                          )}
+                                          {!data.services[0] && data.products[0] && (
+                                            <>
+                                              <MapPin className="w-3 h-3" /> {data.products[0].distance}
+                                              <span className="mx-1">·</span>
+                                              <Star className="w-3 h-3 fill-accent text-accent" /> {data.products[0].rating}
+                                            </>
+                                          )}
+                                        </div>
+                                      )}
+                                      <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${expandedProviders.has(providerName) ? 'rotate-180' : ''}`} />
+                                    </div>
                                   </div>
 
-                                  <div className="p-4 space-y-3">
-                                    {/* Services from this provider */}
-                                    {data.services.length > 0 && (
-                                      <div>
-                                        <p className="text-[11px] font-semibold text-primary mb-2 flex items-center gap-1">
-                                          <WrenchIcon className="w-3.5 h-3.5" /> Serviços
-                                        </p>
-                                        <div className="grid sm:grid-cols-2 gap-2">
-                                          {data.services.map((result) => {
-                                            const seg = segments.find((s) => s.id === result.segment);
-                                            const SegIcon = seg?.icon || Sparkles;
-                                            return (
-                                              <Card key={result.id} className="border-border/50 hover:border-primary/30 hover:shadow-md transition-all cursor-pointer group"
-                                                onClick={() => {
-                                                  const params = new URLSearchParams({
-                                                    serviceName: result.name, serviceProvider: result.provider,
-                                                    servicePrice: String(result.price), serviceRating: String(result.rating),
-                                                    serviceDistance: result.distance, serviceTime: result.time,
-                                                    serviceSegment: result.segment, serviceProducts: JSON.stringify(result.products),
-                                                  });
-                                                  navigate(`/jornada-cliente?${params.toString()}`);
-                                                }}>
-                                                <CardContent className="p-3">
-                                                  <div className="flex items-center gap-2 mb-1">
-                                                    <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                                                      <SegIcon className="w-3.5 h-3.5 text-primary" />
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                      <h4 className="font-semibold text-sm text-foreground truncate">{result.name}</h4>
-                                                    </div>
-                                                  </div>
-                                                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                                    <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> R$ {result.price}</span>
-                                                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {result.time}</span>
-                                                  </div>
-                                                  {result.products.length > 0 && (
-                                                    <div className="flex flex-wrap gap-1 mt-1.5">
-                                                      {result.products.slice(0, 3).map((p) => (
-                                                        <Badge key={p} variant="secondary" className="text-[10px] px-1.5 py-0">
-                                                          <Package className="w-2.5 h-2.5 mr-0.5" />{p}
+                                  {/* Expandable content */}
+                                  <AnimatePresence>
+                                    {expandedProviders.has(providerName) && (
+                                      <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        transition={{ duration: 0.25 }}
+                                        className="overflow-hidden"
+                                      >
+                                        <div className="p-4 space-y-3">
+                                          {/* Services from this provider */}
+                                          {data.services.length > 0 && (
+                                            <div>
+                                              <p className="text-[11px] font-semibold text-primary mb-2 flex items-center gap-1">
+                                                <WrenchIcon className="w-3.5 h-3.5" /> Serviços
+                                              </p>
+                                              <div className="grid sm:grid-cols-2 gap-2">
+                                                {data.services.map((result) => {
+                                                  const seg = segments.find((s) => s.id === result.segment);
+                                                  const SegIcon = seg?.icon || Sparkles;
+                                                  return (
+                                                    <Card key={result.id} className="border-border/50 hover:border-primary/30 hover:shadow-md transition-all cursor-pointer group"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const params = new URLSearchParams({
+                                                          serviceName: result.name, serviceProvider: result.provider,
+                                                          servicePrice: String(result.price), serviceRating: String(result.rating),
+                                                          serviceDistance: result.distance, serviceTime: result.time,
+                                                          serviceSegment: result.segment, serviceProducts: JSON.stringify(result.products),
+                                                        });
+                                                        navigate(`/jornada-cliente?${params.toString()}`);
+                                                      }}>
+                                                      <CardContent className="p-3">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                                            <SegIcon className="w-3.5 h-3.5 text-primary" />
+                                                          </div>
+                                                          <div className="min-w-0">
+                                                            <h4 className="font-semibold text-sm text-foreground truncate">{result.name}</h4>
+                                                          </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                                          <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> R$ {result.price}</span>
+                                                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {result.time}</span>
+                                                        </div>
+                                                        {result.products.length > 0 && (
+                                                          <div className="flex flex-wrap gap-1 mt-1.5">
+                                                            {result.products.slice(0, 3).map((p) => (
+                                                              <Badge key={p} variant="secondary" className="text-[10px] px-1.5 py-0">
+                                                                <Package className="w-2.5 h-2.5 mr-0.5" />{p}
+                                                              </Badge>
+                                                            ))}
+                                                          </div>
+                                                        )}
+                                                        <div className="mt-1.5 flex items-center gap-1 text-[10px] text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                                                          <ArrowRight className="w-3 h-3" /> Contratar
+                                                        </div>
+                                                      </CardContent>
+                                                    </Card>
+                                                  );
+                                                })}
+                                              </div>
+                                            </div>
+                                          )}
+
+                                          {/* Products from this provider */}
+                                          {data.products.length > 0 && (
+                                            <div>
+                                              <p className="text-[11px] font-semibold text-success mb-2 flex items-center gap-1">
+                                                <ShoppingBag className="w-3.5 h-3.5" /> Estoque do prestador
+                                              </p>
+                                              <div className="grid sm:grid-cols-2 gap-2">
+                                                {data.products.map((product) => (
+                                                  <Card key={product.id}
+                                                    className={`transition-all cursor-pointer group ${
+                                                      isInProductCart(product.id)
+                                                        ? 'border-success bg-success/5 shadow-sm'
+                                                        : 'border-border/50 hover:border-success/40'
+                                                    }`}
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      toggleProductInCart(product);
+                                                    }}>
+                                                    <CardContent className="p-3">
+                                                      <div className="flex items-start justify-between mb-1">
+                                                        <div className="flex items-center gap-2">
+                                                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isInProductCart(product.id) ? 'bg-success/20' : 'bg-success/10'}`}>
+                                                            {isInProductCart(product.id) ? <CheckCircle2 className="w-3.5 h-3.5 text-success" /> : <ShoppingBag className="w-3.5 h-3.5 text-success" />}
+                                                          </div>
+                                                          <h4 className="font-semibold text-xs text-foreground">{product.name}</h4>
+                                                        </div>
+                                                        <Badge variant={product.stockType === 'fisico' ? 'default' : 'secondary'} className="text-[10px] px-1.5 py-0 shrink-0">
+                                                          <Store className="w-2.5 h-2.5 mr-0.5" />
+                                                          {product.stockType === 'fisico' ? 'Estoque' : 'Drop'}
                                                         </Badge>
-                                                      ))}
-                                                    </div>
-                                                  )}
-                                                  <div className="mt-1.5 flex items-center gap-1 text-[10px] text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <ArrowRight className="w-3 h-3" /> Contratar
-                                                  </div>
-                                                </CardContent>
-                                              </Card>
-                                            );
-                                          })}
+                                                      </div>
+                                                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                                        <span className="flex items-center gap-1 font-semibold text-foreground"><DollarSign className="w-3 h-3" /> R$ {product.price}</span>
+                                                        <span className="flex items-center gap-1"><Star className="w-3 h-3 fill-accent text-accent" /> {product.rating}</span>
+                                                      </div>
+                                                      <div className="mt-1 flex items-center gap-1 text-[10px] font-medium">
+                                                        {isInProductCart(product.id)
+                                                          ? <span className="text-success flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> No carrinho</span>
+                                                          : <span className="text-success opacity-0 group-hover:opacity-100 flex items-center gap-1"><Plus className="w-3 h-3" /> Adicionar</span>}
+                                                      </div>
+                                                    </CardContent>
+                                                  </Card>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
                                         </div>
-                                      </div>
+                                      </motion.div>
                                     )}
-
-                                    {/* Products from this provider */}
-                                    {data.products.length > 0 && (
-                                      <div>
-                                        <p className="text-[11px] font-semibold text-success mb-2 flex items-center gap-1">
-                                          <ShoppingBag className="w-3.5 h-3.5" /> Estoque do prestador
-                                        </p>
-                                        <div className="grid sm:grid-cols-2 gap-2">
-                                          {data.products.map((product) => (
-                                            <Card key={product.id}
-                                              className={`transition-all cursor-pointer group ${
-                                                isInProductCart(product.id)
-                                                  ? 'border-success bg-success/5 shadow-sm'
-                                                  : 'border-border/50 hover:border-success/40'
-                                              }`}
-                                              onClick={() => toggleProductInCart(product)}>
-                                              <CardContent className="p-3">
-                                                <div className="flex items-start justify-between mb-1">
-                                                  <div className="flex items-center gap-2">
-                                                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isInProductCart(product.id) ? 'bg-success/20' : 'bg-success/10'}`}>
-                                                      {isInProductCart(product.id) ? <CheckCircle2 className="w-3.5 h-3.5 text-success" /> : <ShoppingBag className="w-3.5 h-3.5 text-success" />}
-                                                    </div>
-                                                    <h4 className="font-semibold text-xs text-foreground">{product.name}</h4>
-                                                  </div>
-                                                  <Badge variant={product.stockType === 'fisico' ? 'default' : 'secondary'} className="text-[10px] px-1.5 py-0 shrink-0">
-                                                    <Store className="w-2.5 h-2.5 mr-0.5" />
-                                                    {product.stockType === 'fisico' ? 'Estoque' : 'Drop'}
-                                                  </Badge>
-                                                </div>
-                                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                                  <span className="flex items-center gap-1 font-semibold text-foreground"><DollarSign className="w-3 h-3" /> R$ {product.price}</span>
-                                                  <span className="flex items-center gap-1"><Star className="w-3 h-3 fill-accent text-accent" /> {product.rating}</span>
-                                                </div>
-                                                <div className="mt-1 flex items-center gap-1 text-[10px] font-medium">
-                                                  {isInProductCart(product.id)
-                                                    ? <span className="text-success flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> No carrinho</span>
-                                                    : <span className="text-success opacity-0 group-hover:opacity-100 flex items-center gap-1"><Plus className="w-3 h-3" /> Adicionar</span>}
-                                                </div>
-                                              </CardContent>
-                                            </Card>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
+                                  </AnimatePresence>
                                 </div>
                               </motion.div>
                             ))}
