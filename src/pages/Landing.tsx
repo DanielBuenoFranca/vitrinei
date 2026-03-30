@@ -69,13 +69,11 @@ const Landing = () => {
   };
 
   const executeSearch = () => {
-    if (!searchQuery.trim() && activeSegments.length === 0) return;
     setExecutedQuery(searchQuery.trim());
     setSearchExecuted(true);
     setSearchVersion(v => v + 1);
     setSelectedSuggestions(new Set());
     setShowSearchProducts(false);
-    setProductCart([]);
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent) => {
