@@ -24,6 +24,18 @@ const aiSuggestions = [
 ];
 
 
+interface ServiceCartItem {
+  id: number;
+  name: string;
+  segment: string;
+  provider: string;
+  price: number;
+  rating: number;
+  distance: string;
+  time: string;
+  products: string[];
+}
+
 const Landing = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
@@ -41,7 +53,8 @@ const Landing = () => {
   const [expandedServices, setExpandedServices] = useState<number | null>(null);
   const [showSearchProducts, setShowSearchProducts] = useState(false);
   const [productCart, setProductCart] = useState<ProductItem[]>([]);
-  const [showProductCart, setShowProductCart] = useState(false);
+  const [serviceCart, setServiceCart] = useState<ServiceCartItem[]>([]);
+  const [showCartDetails, setShowCartDetails] = useState(false);
   const [pendingChatSuggestions, setPendingChatSuggestions] = useState<Map<number, Set<string>>>(new Map());
   const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
   const searchRef = useRef<HTMLInputElement>(null);
