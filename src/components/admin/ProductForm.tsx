@@ -44,6 +44,16 @@ export function ProductForm({ open, onClose, onSaved, product, providers }: Prod
     product_id: Math.floor(Math.random() * 9000) + 1000,
   });
   const [saving, setSaving] = useState(false);
+  const [allProductNames, setAllProductNames] = useState<string[]>([]);
+  const { suggestions, loading: sugLoading, suggest, clear: clearSuggestions } = useNameSuggestion();
+
+  useEffect(() => {
+    if (open) {
+      supabase.from('dynamic_products').select('name').then(({ data }) => {
+        setAllProductNames((data || []).map((d: any) => d.name));
+      });
+    }
+  }, [open]);
 
   useEffect(() => {
     if (product) {
