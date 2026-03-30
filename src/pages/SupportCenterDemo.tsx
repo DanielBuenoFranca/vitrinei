@@ -438,12 +438,12 @@ const SupportCenterDemo = () => {
 
   // After provider form submit, advance to step 4
   useEffect(() => {
-    if (registeredProviders.length > 0 && step === 3 && !showProviderForm) {
-      setInternalLogs(prev => prev.map(l => l.status === 'running' && l.title === 'Cadastro de novo prestador' ? { ...l, status: 'done' as const } : l));
+    if (registeredProviders.length > 0 && step === 3 && !showProviderForm && !showProviderChoice) {
+      setInternalLogs(prev => prev.map(l => (l.status === 'running' && (l.title === 'Cadastro de novo prestador' || l.title === 'Seleção de prestador')) ? { ...l, status: 'done' as const } : l));
       setStep(4);
       setWaitingUser(true);
     }
-  }, [registeredProviders, step, showProviderForm]);
+  }, [registeredProviders, step, showProviderForm, showProviderChoice]);
 
   // After service form submit, advance to step 5
   useEffect(() => {
