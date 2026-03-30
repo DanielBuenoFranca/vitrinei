@@ -862,72 +862,7 @@ const Landing = () => {
                 </motion.div>
               )}
             </AnimatePresence>
-
-            {/* Idle state */}
-            {!searchExecuted && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-center py-6">
-                <div className="grid sm:grid-cols-3 gap-4 max-w-3xl mx-auto mb-8">
-                  {[
-                    { icon: TrendingDown, title: 'Melhor Preço', desc: 'IA compara todos os fornecedores e acha o menor preço do ecossistema', color: 'text-primary' },
-                    { icon: Navigation, title: 'Mais Próximo', desc: 'Prioriza prestadores na sua região para atendimento rápido', color: 'text-success' },
-                    { icon: Clock, title: 'Menor Tempo', desc: 'Agenda automática com o profissional disponível mais cedo', color: 'text-accent-foreground' },
-                  ].map((feat, idx) => (
-                    <motion.div
-                      key={feat.title}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.8 + idx * 0.15 }}
-                    >
-                      <Card className="border-border/50 hover:border-primary/20 transition-all duration-300 h-full">
-                        <CardContent className="p-5 text-center">
-                          <motion.div
-                            animate={{ y: [0, -4, 0] }}
-                            transition={{ duration: 2, repeat: Infinity, delay: idx * 0.3 }}
-                            className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3"
-                          >
-                            <feat.icon className={`w-6 h-6 ${feat.color}`} />
-                          </motion.div>
-                          <h3 className="font-display font-bold text-foreground mb-1">{feat.title}</h3>
-                          <p className="text-xs text-muted-foreground">{feat.desc}</p>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  ))}
-                </div>
-
-                {/* Trust bar */}
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }} className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1.5"><Users className="w-4 h-4 text-primary" /> 2.450+ MEIs ativos</span>
-                  <span className="flex items-center gap-1.5"><Shield className="w-4 h-4 text-success" /> Pagamento seguro</span>
-                  <span className="flex items-center gap-1.5"><Star className="w-4 h-4 text-accent" /> 4.8 avaliação média</span>
-                  <span className="flex items-center gap-1.5"><Headphones className="w-4 h-4 text-primary" /> Suporte 24h</span>
-                </motion.div>
-
-                {/* Not found CTA */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1.4 }}
-                  className="mt-8 mx-auto max-w-2xl"
-                >
-                  <Card className="border-primary/20 bg-primary/5 overflow-hidden relative">
-                    <CardContent className="p-6 flex flex-col sm:flex-row items-center gap-4">
-                      <AiAvatar size={56} speaking={false} onClick={() => setShowAiPanel(true)} />
-                      <div className="text-left">
-                        <h3 className="font-display font-bold text-foreground mb-1">Não achou o que precisa?</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Fale comigo! Eu cruzo <strong>todos os fornecedores</strong>, estoques e catálogos drop-shipping do ecossistema.
-                          Se eu não encontrar, a <strong>Central de Atendimento</strong> resolve em até <strong>24 horas</strong>.
-                        </p>
-                      </div>
-                      <Button variant="outline" className="shrink-0 gap-1" onClick={() => setShowAiPanel(true)}>
-                        <Sparkles className="w-4 h-4" /> Conversar
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              </motion.div>
-            )}
+            </div>
           </motion.div>
         </div>
       </section>
