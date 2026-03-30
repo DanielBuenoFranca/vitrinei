@@ -318,12 +318,6 @@ const Landing = () => {
             <ThemeSwitcher />
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/client')}>
-              <ShoppingCart className="w-4 h-4 mr-1" /> App Cliente
-            </Button>
-            <Button size="sm" onClick={() => navigate('/mei')}>
-              <BarChart3 className="w-4 h-4 mr-1" /> Painel MEI
-            </Button>
             <div className="relative group">
               <Button variant="ghost" size="sm" className="text-muted-foreground">
                 Mais ▾
