@@ -564,7 +564,7 @@ const Landing = () => {
                                               </p>
                                               <div className="grid sm:grid-cols-2 gap-2">
                                                 {data.services.map((result) => {
-                                                  const seg = segments.find((s) => s.id === result.segment);
+                                                  const seg = staticSegments.find((s) => s.id === result.segment);
                                                   const SegIcon = seg?.icon || Sparkles;
                                                   return (
                                                     <Card key={result.id}
