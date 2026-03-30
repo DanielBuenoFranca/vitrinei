@@ -413,32 +413,57 @@ const Landing = () => {
               </AnimatePresence>
             </div>
 
-            {/* Category filters */}
-            <div className="flex flex-wrap gap-1.5 mb-3 justify-center">
-              {dbSegments.map((seg) => {
-                const isActive = activeSegments.includes(seg.id);
-                // Try to find a matching static segment for icon, fallback to Tag
-                const staticSeg = staticSegments.find(s => s.id === seg.id || s.label.toLowerCase() === seg.label.toLowerCase());
-                const Icon = staticSeg?.icon || Sparkles;
-                return (
-                  <button
-                    key={seg.id}
-                    onClick={() => toggleSegment(seg.id)}
-                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all border ${
-                      isActive
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-muted/30 text-muted-foreground border-transparent hover:border-border hover:text-foreground'
-                    }`}
-                  >
-                    <Icon className="w-3 h-3" />
-                    {seg.label}
-                  </button>
-                );
-              })}
-            </div>
+            {/* Layout: Sidebar filters + Results */}
+            <div className="flex gap-3">
+              {/* Segment sidebar */}
+              <div className="hidden sm:flex flex-col gap-1 w-[140px] shrink-0 max-h-[calc(100vh-220px)] overflow-y-auto pr-1">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 px-1">Segmentos</p>
+                {dbSegments.map((seg) => {
+                  const isActive = activeSegments.includes(seg.id);
+                  const staticSeg = staticSegments.find(s => s.id === seg.id || s.label.toLowerCase() === seg.label.toLowerCase());
+                  const Icon = staticSeg?.icon || Sparkles;
+                  return (
+                    <button
+                      key={seg.id}
+                      onClick={() => toggleSegment(seg.id)}
+                      className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all text-left ${
+                        isActive
+                          ? 'bg-primary text-primary-foreground shadow-sm'
+                          : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                      }`}
+                    >
+                      <Icon className="w-3 h-3 shrink-0" />
+                      <span className="truncate">{seg.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
 
-            {/* Results */}
-            <div className="max-h-[calc(100vh-240px)] overflow-y-auto rounded-xl pr-1">
+              {/* Mobile: horizontal chips */}
+              <div className="flex sm:hidden flex-wrap gap-1.5 mb-2 w-full">
+                {dbSegments.map((seg) => {
+                  const isActive = activeSegments.includes(seg.id);
+                  const staticSeg = staticSegments.find(s => s.id === seg.id || s.label.toLowerCase() === seg.label.toLowerCase());
+                  const Icon = staticSeg?.icon || Sparkles;
+                  return (
+                    <button
+                      key={seg.id}
+                      onClick={() => toggleSegment(seg.id)}
+                      className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium transition-all border ${
+                        isActive
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-muted/30 text-muted-foreground border-transparent hover:border-border hover:text-foreground'
+                      }`}
+                    >
+                      <Icon className="w-3 h-3" />
+                      {seg.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Results */}
+              <div className="flex-1 min-w-0 max-h-[calc(100vh-220px)] overflow-y-auto rounded-xl pr-1">
             <AnimatePresence>
               {searchExecuted && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
@@ -844,6 +869,7 @@ const Landing = () => {
                 </motion.div>
               )}
             </AnimatePresence>
+            </div>
             </div>
           </motion.div>
         </div>
