@@ -177,11 +177,20 @@ const Landing = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-load all inventory on mount
+  // Load data from database on mount
   useEffect(() => {
-    setSearchExecuted(true);
-    setExecutedQuery('');
-    setSearchVersion(1);
+    const loadData = async () => {
+      await reloadDynamicEntries();
+      const { data: segs } = await supabase.from('segments').select('*').order('name');
+      if (segs) {
+        setDbSegments(segs.map((s: any) => ({ id: s.name, label: s.name, name: s.name })));
+      }
+      setDataLoaded(true);
+      setSearchExecuted(true);
+      setExecutedQuery('');
+      setSearchVersion(1);
+    };
+    loadData();
   }, []);
 
   const toggleSegment = (id: string) => {
