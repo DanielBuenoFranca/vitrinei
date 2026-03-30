@@ -574,21 +574,20 @@ const Landing = () => {
                                                   const seg = segments.find((s) => s.id === result.segment);
                                                   const SegIcon = seg?.icon || Sparkles;
                                                   return (
-                                                    <Card key={result.id} className="border-border/50 hover:border-primary/30 hover:shadow-md transition-all cursor-pointer group"
+                                                    <Card key={result.id}
+                                                      className={`transition-all cursor-pointer group ${
+                                                        isInServiceCart(result.id)
+                                                          ? 'border-primary bg-primary/5 shadow-sm'
+                                                          : 'border-border/50 hover:border-primary/30 hover:shadow-md'
+                                                      }`}
                                                       onClick={(e) => {
                                                         e.stopPropagation();
-                                                        const params = new URLSearchParams({
-                                                          serviceName: result.name, serviceProvider: result.provider,
-                                                          servicePrice: String(result.price), serviceRating: String(result.rating),
-                                                          serviceDistance: result.distance, serviceTime: result.time,
-                                                          serviceSegment: result.segment, serviceProducts: JSON.stringify(result.products),
-                                                        });
-                                                        navigate(`/jornada-cliente?${params.toString()}`);
+                                                        toggleServiceInCart(result);
                                                       }}>
                                                       <CardContent className="p-3">
                                                         <div className="flex items-center gap-2 mb-1">
-                                                          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                                                            <SegIcon className="w-3.5 h-3.5 text-primary" />
+                                                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isInServiceCart(result.id) ? 'bg-primary/20' : 'bg-primary/10'}`}>
+                                                            {isInServiceCart(result.id) ? <CheckCircle2 className="w-3.5 h-3.5 text-primary" /> : <SegIcon className="w-3.5 h-3.5 text-primary" />}
                                                           </div>
                                                           <div className="min-w-0">
                                                             <h4 className="font-semibold text-sm text-foreground truncate">{result.name}</h4>
@@ -607,8 +606,10 @@ const Landing = () => {
                                                             ))}
                                                           </div>
                                                         )}
-                                                        <div className="mt-1.5 flex items-center gap-1 text-[10px] text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                                                          <ArrowRight className="w-3 h-3" /> Contratar
+                                                        <div className="mt-1.5 flex items-center gap-1 text-[10px] font-medium">
+                                                          {isInServiceCart(result.id)
+                                                            ? <span className="text-primary flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> No carrinho</span>
+                                                            : <span className="text-primary opacity-0 group-hover:opacity-100 flex items-center gap-1"><Plus className="w-3 h-3" /> Adicionar</span>}
                                                         </div>
                                                       </CardContent>
                                                     </Card>
