@@ -24,6 +24,18 @@ const aiSuggestions = [
 ];
 
 
+interface ServiceCartItem {
+  id: number;
+  name: string;
+  segment: string;
+  provider: string;
+  price: number;
+  rating: number;
+  distance: string;
+  time: string;
+  products: string[];
+}
+
 const Landing = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
@@ -41,7 +53,8 @@ const Landing = () => {
   const [expandedServices, setExpandedServices] = useState<number | null>(null);
   const [showSearchProducts, setShowSearchProducts] = useState(false);
   const [productCart, setProductCart] = useState<ProductItem[]>([]);
-  const [showProductCart, setShowProductCart] = useState(false);
+  const [serviceCart, setServiceCart] = useState<ServiceCartItem[]>([]);
+  const [showCartDetails, setShowCartDetails] = useState(false);
   const [pendingChatSuggestions, setPendingChatSuggestions] = useState<Map<number, Set<string>>>(new Map());
   const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
   const searchRef = useRef<HTMLInputElement>(null);
@@ -107,19 +120,38 @@ const Landing = () => {
 
   const isInProductCart = (productId: number) => productCart.some(p => p.id === productId);
 
-  const navigateToProductDemo = () => {
-    if (productCart.length === 0) return;
+  const toggleServiceInCart = (service: ServiceCartItem) => {
+    setServiceCart(prev =>
+      prev.some(s => s.id === service.id)
+        ? prev.filter(s => s.id !== service.id)
+        : [...prev, service]
+    );
+  };
+
+  const isInServiceCart = (serviceId: number) => serviceCart.some(s => s.id === serviceId);
+
+  const totalCartItems = productCart.length + serviceCart.length;
+  const totalCartValue = productCart.reduce((s, p) => s + p.price, 0) + serviceCart.reduce((s, svc) => s + svc.price, 0);
+
+  const navigateToCheckout = () => {
+    if (totalCartItems === 0) return;
     const params = new URLSearchParams({
+      services: JSON.stringify(serviceCart.map(s => ({
+        name: s.name, provider: s.provider, price: s.price, rating: s.rating,
+        distance: s.distance, time: s.time, segment: s.segment, products: s.products,
+      }))),
       products: JSON.stringify(productCart.map(p => ({
-        name: p.name,
-        type: p.stockType,
-        price: p.price,
-        provider: p.provider,
-        rating: p.rating,
-        distance: p.distance,
+        name: p.name, type: p.stockType, price: p.price, provider: p.provider,
+        rating: p.rating, distance: p.distance,
       }))),
     });
-    navigate(`/dropshipping?${params.toString()}`);
+    navigate(`/jornada-cliente?${params.toString()}`);
+  };
+
+  const clearCart = () => {
+    setProductCart([]);
+    setServiceCart([]);
+    setShowCartDetails(false);
   };
 
   useEffect(() => {
@@ -542,21 +574,20 @@ const Landing = () => {
                                                   const seg = segments.find((s) => s.id === result.segment);
                                                   const SegIcon = seg?.icon || Sparkles;
                                                   return (
-                                                    <Card key={result.id} className="border-border/50 hover:border-primary/30 hover:shadow-md transition-all cursor-pointer group"
+                                                    <Card key={result.id}
+                                                      className={`transition-all cursor-pointer group ${
+                                                        isInServiceCart(result.id)
+                                                          ? 'border-primary bg-primary/5 shadow-sm'
+                                                          : 'border-border/50 hover:border-primary/30 hover:shadow-md'
+                                                      }`}
                                                       onClick={(e) => {
                                                         e.stopPropagation();
-                                                        const params = new URLSearchParams({
-                                                          serviceName: result.name, serviceProvider: result.provider,
-                                                          servicePrice: String(result.price), serviceRating: String(result.rating),
-                                                          serviceDistance: result.distance, serviceTime: result.time,
-                                                          serviceSegment: result.segment, serviceProducts: JSON.stringify(result.products),
-                                                        });
-                                                        navigate(`/jornada-cliente?${params.toString()}`);
+                                                        toggleServiceInCart(result);
                                                       }}>
                                                       <CardContent className="p-3">
                                                         <div className="flex items-center gap-2 mb-1">
-                                                          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                                                            <SegIcon className="w-3.5 h-3.5 text-primary" />
+                                                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isInServiceCart(result.id) ? 'bg-primary/20' : 'bg-primary/10'}`}>
+                                                            {isInServiceCart(result.id) ? <CheckCircle2 className="w-3.5 h-3.5 text-primary" /> : <SegIcon className="w-3.5 h-3.5 text-primary" />}
                                                           </div>
                                                           <div className="min-w-0">
                                                             <h4 className="font-semibold text-sm text-foreground truncate">{result.name}</h4>
@@ -575,8 +606,10 @@ const Landing = () => {
                                                             ))}
                                                           </div>
                                                         )}
-                                                        <div className="mt-1.5 flex items-center gap-1 text-[10px] text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                                                          <ArrowRight className="w-3 h-3" /> Contratar
+                                                        <div className="mt-1.5 flex items-center gap-1 text-[10px] font-medium">
+                                                          {isInServiceCart(result.id)
+                                                            ? <span className="text-primary flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> No carrinho</span>
+                                                            : <span className="text-primary opacity-0 group-hover:opacity-100 flex items-center gap-1"><Plus className="w-3 h-3" /> Adicionar</span>}
                                                         </div>
                                                       </CardContent>
                                                     </Card>
@@ -1235,9 +1268,9 @@ const Landing = () => {
         )}
       </AnimatePresence>
 
-      {/* Floating Product Cart Bar */}
+      {/* Floating Unified Cart Bar */}
       <AnimatePresence>
-        {productCart.length > 0 && (
+        {totalCartItems > 0 && (
           <motion.div
             initial={{ y: 80, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -1245,51 +1278,74 @@ const Landing = () => {
             transition={{ type: 'spring', damping: 20 }}
             className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-2xl"
           >
-            <Card className="border-success shadow-2xl bg-card/95 backdrop-blur-sm">
+            <Card className="border-primary shadow-2xl bg-card/95 backdrop-blur-sm">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center shrink-0">
-                      <ShoppingCart className="w-5 h-5 text-success" />
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <ShoppingCart className="w-5 h-5 text-primary" />
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-bold text-foreground">
-                        {productCart.length} produto{productCart.length > 1 ? 's' : ''} selecionado{productCart.length > 1 ? 's' : ''}
+                        {totalCartItems} ite{totalCartItems > 1 ? 'ns' : 'm'} no carrinho
                       </p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>R$ {productCart.reduce((s, p) => s + p.price, 0).toFixed(2)}</span>
-                        <span>•</span>
-                        <span>{productCart.filter(p => p.stockType === 'fisico').length} estoque</span>
-                        <span>{productCart.filter(p => p.stockType === 'drop').length} drop</span>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                        <span className="font-semibold text-foreground">R$ {totalCartValue.toFixed(2)}</span>
+                        {serviceCart.length > 0 && <span className="flex items-center gap-0.5"><WrenchIcon className="w-3 h-3" /> {serviceCart.length} serviço(s)</span>}
+                        {productCart.length > 0 && <span className="flex items-center gap-0.5"><ShoppingBag className="w-3 h-3" /> {productCart.length} produto(s)</span>}
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <Button variant="ghost" size="sm" className="text-xs text-muted-foreground h-8 px-2" onClick={() => setShowProductCart(!showProductCart)}>
-                      {showProductCart ? 'Fechar' : 'Ver itens'}
+                    <Button variant="ghost" size="sm" className="text-xs text-muted-foreground h-8 px-2" onClick={() => setShowCartDetails(!showCartDetails)}>
+                      {showCartDetails ? 'Fechar' : 'Ver itens'}
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => setProductCart([])}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={clearCart}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
-                    <Button size="sm" className="gap-1 text-xs" onClick={navigateToProductDemo}>
-                      <ArrowRight className="w-3 h-3" /> Ver Demo
+                    <Button size="sm" className="gap-1.5 font-semibold" onClick={navigateToCheckout}>
+                      <ShoppingCart className="w-3.5 h-3.5" /> Finalizar Carrinho
                     </Button>
                   </div>
                 </div>
 
                 {/* Expanded cart items */}
                 <AnimatePresence>
-                  {showProductCart && (
+                  {showCartDetails && (
                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
                       className="mt-3 pt-3 border-t border-border space-y-2 overflow-hidden">
+                      {serviceCart.length > 0 && (
+                        <p className="text-[10px] font-semibold text-primary flex items-center gap-1 mb-1">
+                          <WrenchIcon className="w-3 h-3" /> Serviços
+                        </p>
+                      )}
+                      {serviceCart.map(svc => (
+                        <div key={`svc-${svc.id}`} className="flex items-center justify-between text-xs bg-primary/5 rounded-lg px-3 py-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Badge className="bg-primary/10 text-primary border-primary/20 text-[8px] px-1.5 py-0 shrink-0">🔧</Badge>
+                            <span className="font-medium text-foreground truncate">{svc.name}</span>
+                            <span className="text-muted-foreground shrink-0">R$ {svc.price}</span>
+                            <span className="text-[10px] text-muted-foreground shrink-0">• {svc.provider}</span>
+                          </div>
+                          <button onClick={() => toggleServiceInCart(svc)} className="text-muted-foreground hover:text-destructive ml-2 shrink-0">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                      {productCart.length > 0 && (
+                        <p className="text-[10px] font-semibold text-success flex items-center gap-1 mb-1 mt-2">
+                          <ShoppingBag className="w-3 h-3" /> Produtos
+                        </p>
+                      )}
                       {productCart.map(product => (
-                        <div key={product.id} className="flex items-center justify-between text-xs bg-muted/50 rounded-lg px-3 py-2">
+                        <div key={`prod-${product.id}`} className="flex items-center justify-between text-xs bg-success/5 rounded-lg px-3 py-2">
                           <div className="flex items-center gap-2 min-w-0">
                             <Badge variant={product.stockType === 'fisico' ? 'default' : 'secondary'} className="text-[8px] px-1.5 py-0 shrink-0">
                               {product.stockType === 'fisico' ? '📦' : '🌍'}
                             </Badge>
                             <span className="font-medium text-foreground truncate">{product.name}</span>
                             <span className="text-muted-foreground shrink-0">R$ {product.price}</span>
+                            <span className="text-[10px] text-muted-foreground shrink-0">• {product.provider}</span>
                           </div>
                           <button onClick={() => toggleProductInCart(product)} className="text-muted-foreground hover:text-destructive ml-2 shrink-0">
                             <X className="w-3.5 h-3.5" />
