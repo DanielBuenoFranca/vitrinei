@@ -43,7 +43,17 @@ const Landing = () => {
   const [productCart, setProductCart] = useState<ProductItem[]>([]);
   const [showProductCart, setShowProductCart] = useState(false);
   const [pendingChatSuggestions, setPendingChatSuggestions] = useState<Map<number, Set<string>>>(new Map());
+  const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
   const searchRef = useRef<HTMLInputElement>(null);
+
+  const toggleProviderExpanded = (providerName: string) => {
+    setExpandedProviders(prev => {
+      const next = new Set(prev);
+      if (next.has(providerName)) next.delete(providerName);
+      else next.add(providerName);
+      return next;
+    });
+  };
 
   const executeSearch = () => {
     if (!searchQuery.trim() && activeSegments.length === 0) return;
