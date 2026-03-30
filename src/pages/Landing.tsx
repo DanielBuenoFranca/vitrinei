@@ -420,9 +420,11 @@ const Landing = () => {
 
             {/* Category filters */}
             <div className="flex flex-wrap gap-1.5 mb-3 justify-center">
-              {segments.map((seg) => {
-                const Icon = seg.icon;
+              {dbSegments.map((seg) => {
                 const isActive = activeSegments.includes(seg.id);
+                // Try to find a matching static segment for icon, fallback to Tag
+                const staticSeg = staticSegments.find(s => s.id === seg.id || s.label.toLowerCase() === seg.label.toLowerCase());
+                const Icon = staticSeg?.icon || Sparkles;
                 return (
                   <button
                     key={seg.id}
