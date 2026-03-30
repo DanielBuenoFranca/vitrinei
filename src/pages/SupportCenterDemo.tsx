@@ -499,7 +499,7 @@ const SupportCenterDemo = () => {
 
   const stepLabels: Record<number, string> = {
     1: 'Iniciar busca de profissionais',
-    3: 'Cadastrar novo prestador',
+    3: 'Selecionar ou cadastrar prestador',
     4: 'Cadastrar serviço para este prestador',
     5: 'Cadastrar produto/estoque',
     6: 'Injetar no catálogo e notificar cliente',
