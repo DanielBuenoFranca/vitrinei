@@ -317,13 +317,13 @@ const SupportCenterDemo = () => {
       setIsSearching(true);
       setSearchProgress(0);
     } else if (step === 3) {
-      // Show provider registration form
-      setShowProviderForm(true);
+      // Show provider choice: existing or new
+      setShowProviderChoice(true);
       addLog({
-        title: 'Cadastro de novo prestador',
-        description: 'Preencha os dados do novo profissional para atender a demanda',
+        title: 'Seleção de prestador',
+        description: 'Selecione um prestador existente na base ou cadastre um novo',
         status: 'running',
-        icon: <UserPlus className="w-4 h-4" />,
+        icon: <Users className="w-4 h-4" />,
       });
     } else if (step === 4) {
       // Show service registration form
