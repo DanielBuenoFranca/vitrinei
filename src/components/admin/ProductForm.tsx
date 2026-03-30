@@ -109,7 +109,8 @@ export function ProductForm({ open, onClose, onSaved, product, providers }: Prod
         <div className="grid gap-4 py-2">
           <div className="grid gap-2">
             <Label>Nome *</Label>
-            <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Nome do produto" />
+            <Input value={form.name} onChange={e => { setForm(f => ({ ...f, name: e.target.value })); suggest(e.target.value, 'product', allProductNames); }} placeholder="Nome do produto" />
+            <NameSuggestions suggestions={suggestions} loading={sugLoading} onSelect={(n) => { setForm(f => ({ ...f, name: n })); clearSuggestions(); }} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
