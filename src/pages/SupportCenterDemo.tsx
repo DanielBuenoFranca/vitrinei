@@ -774,6 +774,68 @@ const SupportCenterDemo = () => {
                 </motion.div>
               )}
 
+              {/* Provider Choice: Existing or New */}
+              <AnimatePresence>
+                {showProviderChoice && (
+                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                    <Card className="border-l-4 border-l-primary border-primary/30 shadow-lg">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Users className="w-4 h-4 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-sm text-foreground">Selecionar Prestador</p>
+                            <p className="text-[10px] text-muted-foreground">Escolha um existente na base ou cadastre um novo</p>
+                          </div>
+                        </div>
+
+                        {existingProviders.length > 0 && (
+                          <div className="space-y-2 mb-4">
+                            <label className="text-[11px] font-medium text-muted-foreground block">Prestadores cadastrados na base ({existingProviders.length})</label>
+                            <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
+                              {existingProviders.map(p => (
+                                <button
+                                  key={p.id}
+                                  onClick={() => handleSelectExistingProvider(p)}
+                                  className="w-full text-left p-2.5 rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-sm">👩‍🔧</div>
+                                      <div>
+                                        <p className="font-medium text-xs text-foreground">{p.name}</p>
+                                        <p className="text-[10px] text-muted-foreground">{p.segment} • {p.distance}</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                      <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                                      {p.rating.toFixed(1)}
+                                    </div>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {existingProviders.length === 0 && (
+                          <div className="p-3 rounded-lg bg-muted/50 border border-border/50 mb-4">
+                            <p className="text-xs text-muted-foreground text-center">Nenhum prestador cadastrado na base de dados</p>
+                          </div>
+                        )}
+
+                        <div className="border-t border-border pt-3">
+                          <Button className="w-full gap-2" variant="outline" onClick={handleShowNewProviderForm}>
+                            <UserPlus className="w-4 h-4" /> Cadastrar Novo Prestador
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Provider Registration Form */}
               <AnimatePresence>
                 {showProviderForm && (
