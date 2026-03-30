@@ -17,10 +17,11 @@ import { segments, mockResults, semanticSearch, buildSupportSummary, generateCon
 
 
 const aiSuggestions = [
-  '🔌 Baseado no seu perfil, recomendamos uma revisão elétrica completa — você não faz há 8 meses!',
-  '💇 Agende seu corte mensal com 15% de desconto no seu plano Prata!',
-  '🏠 Combo Casa Limpa: Faxina + Jardinagem com 20% OFF juntos',
-  '🚗 Seu carro está próximo da revisão dos 30.000 km — agende agora!',
+  '💡 A inteligência encontra o que você precisa — sem esforço.',
+  '🔍 Pesquise qualquer necessidade. Se não tivermos, a IA encontra para você.',
+  '🚀 Mais de 2.450 profissionais prontos para atender agora mesmo.',
+  '✨ Assine e tenha acesso a serviços exclusivos com até 30% de economia.',
+  '🤝 É prestador? Cadastre-se e conquiste novos clientes todo dia.',
 ];
 
 
@@ -335,14 +336,23 @@ const Landing = () => {
         </div>
       </nav>
 
-      {/* Hero - Compact */}
-      <section className="pt-16 pb-1 px-4">
+      {/* Hero - Commercial */}
+      <section className="pt-16 pb-2 px-4">
         <div className="container mx-auto text-center max-w-4xl">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-            <h1 className="font-display text-xl md:text-2xl font-bold text-foreground mb-1">
-              O que você precisa <span className="text-primary">hoje</span>?
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+            <h1 className="font-display text-2xl md:text-3xl font-extrabold text-foreground mb-1 leading-tight">
+              Seu problema, <span className="text-primary">nossa solução.</span>
             </h1>
-            <div className="flex justify-center gap-3 text-[11px] text-muted-foreground mb-1">
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+              className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto mb-2 leading-relaxed"
+            >
+              Serviços, produtos, profissionais — <strong className="text-foreground">tudo em um só lugar.</strong>{' '}
+              <span className="hidden sm:inline">Se não existir aqui, nossa IA vasculha o ecossistema inteiro e entrega a melhor opção.</span>
+            </motion.p>
+            <div className="flex justify-center gap-3 text-[11px] text-muted-foreground">
               <span className="flex items-center gap-1"><Users className="w-3 h-3 text-primary" /> <strong className="text-foreground">2.450+</strong> MEIs</span>
               <span className="flex items-center gap-1"><Star className="w-3 h-3 fill-accent text-accent" /> <strong className="text-foreground">4.8</strong></span>
               <span className="flex items-center gap-1"><Shield className="w-3 h-3 text-success" /> Seguro</span>
@@ -1230,15 +1240,29 @@ const Landing = () => {
       </AnimatePresence>
 
       {/* Footer */}
-      <footer className="border-t border-border py-3 px-4">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-1.5">
-            <div className="w-5 h-5 rounded bg-primary flex items-center justify-center">
-              <Zap className="w-3 h-3 text-primary-foreground" />
+      <footer className="border-t border-border py-4 px-4 bg-card/50">
+        <div className="container mx-auto">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 rounded bg-primary flex items-center justify-center">
+                <Zap className="w-3 h-3 text-primary-foreground" />
+              </div>
+              <span className="font-display text-sm font-bold text-foreground">EcoMEI</span>
+              <span className="text-[10px] text-muted-foreground ml-1">© 2026</span>
             </div>
-            <span className="font-display text-sm font-bold text-foreground">EcoMEI</span>
+            <p className="text-xs text-muted-foreground text-center max-w-md">
+              <Sparkles className="w-3 h-3 text-accent inline mr-1" />
+              <strong className="text-foreground">É prestador de serviço?</strong> Cadastre-se e conquiste novos clientes todos os dias. Planos a partir de R$ 29,90/mês.
+            </p>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="text-xs gap-1 h-8" onClick={() => navigate('/mei')}>
+                <Users className="w-3 h-3" /> Sou Prestador
+              </Button>
+              <Button size="sm" className="text-xs gap-1 h-8" onClick={() => navigate('/client')}>
+                <ShoppingCart className="w-3 h-3" /> Sou Cliente
+              </Button>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground">© 2026 EcoMEI — Demo</p>
         </div>
       </footer>
     </div>
