@@ -145,7 +145,7 @@ const SupportCenterDemo = () => {
 
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [internalLogs, isSearching, waitingUser, showProviderForm, showServiceForm, showProductForm]);
+  }, [internalLogs, isSearching, waitingUser, showProviderForm, showProviderChoice, showServiceForm, showProductForm]);
 
   useEffect(() => {
     phoneEndRef.current?.scrollIntoView({ behavior: 'smooth' });
