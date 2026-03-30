@@ -1006,7 +1006,7 @@ const Landing = () => {
                       </p>
                       <div className="space-y-2">
                         {msg.searchResult.suggestedServices.slice(0, 2).map((r) => {
-                          const seg = segments.find((s) => s.id === r.segment);
+                          const seg = staticSegments.find((s) => s.id === r.segment);
                           const SegIcon = seg?.icon || Sparkles;
                           return (
                             <motion.div key={r.id} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
