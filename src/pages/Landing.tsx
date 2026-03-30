@@ -173,6 +173,13 @@ const Landing = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Auto-load all inventory on mount
+  useEffect(() => {
+    setSearchExecuted(true);
+    setExecutedQuery('');
+    setSearchVersion(1);
+  }, []);
+
   const toggleSegment = (id: string) => {
     setActiveSegments((prev) => {
       const next = prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id];
