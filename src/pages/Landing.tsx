@@ -335,14 +335,23 @@ const Landing = () => {
         </div>
       </nav>
 
-      {/* Hero - Compact */}
-      <section className="pt-16 pb-1 px-4">
+      {/* Hero - Commercial */}
+      <section className="pt-16 pb-2 px-4">
         <div className="container mx-auto text-center max-w-4xl">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-            <h1 className="font-display text-xl md:text-2xl font-bold text-foreground mb-1">
-              O que você precisa <span className="text-primary">hoje</span>?
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+            <h1 className="font-display text-2xl md:text-3xl font-extrabold text-foreground mb-1 leading-tight">
+              Seu problema, <span className="text-primary">nossa solução.</span>
             </h1>
-            <div className="flex justify-center gap-3 text-[11px] text-muted-foreground mb-1">
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+              className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto mb-2 leading-relaxed"
+            >
+              Serviços, produtos, profissionais — <strong className="text-foreground">tudo em um só lugar.</strong>{' '}
+              <span className="hidden sm:inline">Se não existir aqui, nossa IA vasculha o ecossistema inteiro e entrega a melhor opção.</span>
+            </motion.p>
+            <div className="flex justify-center gap-3 text-[11px] text-muted-foreground">
               <span className="flex items-center gap-1"><Users className="w-3 h-3 text-primary" /> <strong className="text-foreground">2.450+</strong> MEIs</span>
               <span className="flex items-center gap-1"><Star className="w-3 h-3 fill-accent text-accent" /> <strong className="text-foreground">4.8</strong></span>
               <span className="flex items-center gap-1"><Shield className="w-3 h-3 text-success" /> Seguro</span>
