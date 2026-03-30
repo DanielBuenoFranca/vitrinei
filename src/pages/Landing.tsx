@@ -1240,15 +1240,29 @@ const Landing = () => {
       </AnimatePresence>
 
       {/* Footer */}
-      <footer className="border-t border-border py-3 px-4">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-1.5">
-            <div className="w-5 h-5 rounded bg-primary flex items-center justify-center">
-              <Zap className="w-3 h-3 text-primary-foreground" />
+      <footer className="border-t border-border py-4 px-4 bg-card/50">
+        <div className="container mx-auto">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 rounded bg-primary flex items-center justify-center">
+                <Zap className="w-3 h-3 text-primary-foreground" />
+              </div>
+              <span className="font-display text-sm font-bold text-foreground">EcoMEI</span>
+              <span className="text-[10px] text-muted-foreground ml-1">© 2026</span>
             </div>
-            <span className="font-display text-sm font-bold text-foreground">EcoMEI</span>
+            <p className="text-xs text-muted-foreground text-center max-w-md">
+              <Sparkles className="w-3 h-3 text-accent inline mr-1" />
+              <strong className="text-foreground">É prestador de serviço?</strong> Cadastre-se e conquiste novos clientes todos os dias. Planos a partir de R$ 29,90/mês.
+            </p>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="text-xs gap-1 h-8" onClick={() => navigate('/mei')}>
+                <Users className="w-3 h-3" /> Sou Prestador
+              </Button>
+              <Button size="sm" className="text-xs gap-1 h-8" onClick={() => navigate('/client')}>
+                <ShoppingCart className="w-3 h-3" /> Sou Cliente
+              </Button>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground">© 2026 EcoMEI — Demo</p>
         </div>
       </footer>
     </div>
