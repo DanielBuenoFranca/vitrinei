@@ -884,131 +884,95 @@ const Landing = () => {
                       {msg.text}
                     </div>
                   </div>
-                  {/* Product cards */}
-                  {msg.searchResult && msg.searchResult.products.length > 0 && (
-                    <div className="w-full mt-2 pl-10">
-                      <p className="text-[11px] font-semibold text-success mb-1.5 flex items-center gap-1">
-                        <ShoppingBag className="w-3.5 h-3.5" /> Produtos disponíveis
-                      </p>
-                      <div className="space-y-2">
-                        {(expandedProducts === idx ? msg.searchResult.products : msg.searchResult.products.slice(0, 3)).map((product) => (
-                          <motion.div key={product.id} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
-                            <Card className={`cursor-pointer transition-all group ${isInProductCart(product.id) ? 'border-success bg-success/5' : 'border-border/50 hover:border-success/40'}`}
-                              onClick={() => toggleProductInCart(product)}>
-                              <CardContent className="p-3">
-                                <div className="flex items-start justify-between mb-1">
-                                  <div className="flex items-center gap-2">
-                                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isInProductCart(product.id) ? 'bg-success/20' : 'bg-success/10'}`}>
-                                      {isInProductCart(product.id) ? <CheckCircle2 className="w-3.5 h-3.5 text-success" /> : <ShoppingBag className="w-3.5 h-3.5 text-success" />}
-                                    </div>
-                                    <div>
-                                      <h4 className="font-semibold text-xs text-foreground">{product.name}</h4>
-                                      <p className="text-[11px] text-muted-foreground">{product.provider}</p>
-                                    </div>
+                  {/* Grouped by provider — same layout as main search */}
+                  {msg.searchResult && (msg.searchResult.products.length > 0 || msg.searchResult.services.length > 0) && (() => {
+                    const providerMap = new Map<string, { services: typeof msg.searchResult.services; products: typeof msg.searchResult.products }>();
+                    msg.searchResult.services.forEach(s => {
+                      if (!providerMap.has(s.provider)) providerMap.set(s.provider, { services: [], products: [] });
+                      providerMap.get(s.provider)!.services.push(s);
+                    });
+                    msg.searchResult.products.forEach(p => {
+                      if (!providerMap.has(p.provider)) providerMap.set(p.provider, { services: [], products: [] });
+                      providerMap.get(p.provider)!.products.push(p);
+                    });
+                    return (
+                      <div className="w-full mt-2 pl-10 space-y-2">
+                        {Array.from(providerMap.entries()).map(([providerName, data]) => (
+                          <div key={providerName} className="rounded-xl border border-border/50 overflow-hidden bg-card">
+                            <button onClick={() => toggleProviderExpanded(providerName)}
+                              className="w-full flex items-center justify-between p-3 hover:bg-muted/30 transition-colors text-left">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-sm">
+                                  <Store className="w-3.5 h-3.5 text-primary" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="font-semibold text-xs text-foreground truncate">{providerName}</p>
+                                  <p className="text-[10px] text-muted-foreground">
+                                    {data.services.length > 0 && `${data.services.length} serviço(s)`}
+                                    {data.services.length > 0 && data.products.length > 0 && ' · '}
+                                    {data.products.length > 0 && `${data.products.length} produto(s)`}
+                                  </p>
+                                </div>
+                              </div>
+                              <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${expandedProviders.has(providerName) ? 'rotate-180' : ''}`} />
+                            </button>
+                            <AnimatePresence>
+                              {expandedProviders.has(providerName) && (
+                                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                                  <div className="p-3 pt-0 space-y-2">
+                                    {data.services.map(r => {
+                                      const seg = segments.find(s => s.id === r.segment);
+                                      const SegIcon = seg?.icon || Sparkles;
+                                      return (
+                                        <Card key={r.id} className={`transition-all cursor-pointer group ${isInServiceCart(r.id) ? 'border-primary bg-primary/5' : 'border-border/50 hover:border-primary/30'}`}
+                                          onClick={() => toggleServiceInCart(r)}>
+                                          <CardContent className="p-2.5">
+                                            <div className="flex items-center gap-2 mb-1">
+                                              <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${isInServiceCart(r.id) ? 'bg-primary/20' : 'bg-primary/10'}`}>
+                                                {isInServiceCart(r.id) ? <CheckCircle2 className="w-3 h-3 text-primary" /> : <SegIcon className="w-3 h-3 text-primary" />}
+                                              </div>
+                                              <h4 className="font-semibold text-xs text-foreground truncate">{r.name}</h4>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                                              <span><DollarSign className="w-2.5 h-2.5 inline" /> R$ {r.price}</span>
+                                              <span><Clock className="w-2.5 h-2.5 inline" /> {r.time}</span>
+                                              <span><Star className="w-2.5 h-2.5 fill-accent text-accent inline" /> {r.rating}</span>
+                                            </div>
+                                          </CardContent>
+                                        </Card>
+                                      );
+                                    })}
+                                    {data.products.map(product => (
+                                      <Card key={product.id} className={`transition-all cursor-pointer group ${isInProductCart(product.id) ? 'border-success bg-success/5' : 'border-border/50 hover:border-success/40'}`}
+                                        onClick={() => toggleProductInCart(product)}>
+                                        <CardContent className="p-2.5">
+                                          <div className="flex items-start justify-between mb-1">
+                                            <div className="flex items-center gap-2">
+                                              <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${isInProductCart(product.id) ? 'bg-success/20' : 'bg-success/10'}`}>
+                                                {isInProductCart(product.id) ? <CheckCircle2 className="w-3 h-3 text-success" /> : <ShoppingBag className="w-3 h-3 text-success" />}
+                                              </div>
+                                              <h4 className="font-semibold text-xs text-foreground truncate">{product.name}</h4>
+                                            </div>
+                                            <Badge variant={product.stockType === 'fisico' ? 'default' : 'secondary'} className="text-[8px] px-1 py-0 shrink-0">
+                                              {product.stockType === 'fisico' ? 'Local' : 'Drop'}
+                                            </Badge>
+                                          </div>
+                                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                                            <span className="font-semibold text-foreground">R$ {product.price}</span>
+                                            <span><Star className="w-2.5 h-2.5 fill-accent text-accent inline" /> {product.rating}</span>
+                                          </div>
+                                        </CardContent>
+                                      </Card>
+                                    ))}
                                   </div>
-                                  <Badge variant={product.stockType === 'fisico' ? 'default' : 'secondary'} className="text-[9px] px-1.5 py-0 shrink-0">
-                                    <Store className="w-2.5 h-2.5 mr-0.5" />
-                                    {product.stockType === 'fisico' ? 'Estoque' : 'Drop'}
-                                  </Badge>
-                                </div>
-                                <div className="flex items-center gap-3 text-[11px] text-muted-foreground mb-1">
-                                  <span className="flex items-center gap-0.5 font-semibold text-foreground"><DollarSign className="w-3 h-3" /> R$ {product.price}</span>
-                                  <span className="flex items-center gap-0.5"><Star className="w-3 h-3 fill-accent text-accent" /> {product.rating}</span>
-                                  <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" /> {product.distance}</span>
-                                </div>
-                                <div className="mt-1 flex items-center gap-1 text-[10px] font-medium">
-                                  {isInProductCart(product.id)
-                                    ? <span className="text-success flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> No carrinho</span>
-                                    : <span className="text-success opacity-0 group-hover:opacity-100 flex items-center gap-1"><Plus className="w-3 h-3" /> Adicionar</span>}
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </motion.div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
                         ))}
-                        {msg.searchResult.products.length > 3 && expandedProducts !== idx && (
-                          <Button variant="ghost" size="sm" className="w-full text-xs h-8 text-muted-foreground hover:text-primary gap-1"
-                            onClick={() => setExpandedProducts(idx)}>
-                            <ChevronDown className="w-3.5 h-3.5" />
-                            Ver todos os {msg.searchResult.products.length} produtos
-                          </Button>
-                        )}
-                        {expandedProducts === idx && msg.searchResult.products.length > 3 && (
-                          <Button variant="ghost" size="sm" className="w-full text-xs h-8 text-muted-foreground hover:text-primary"
-                            onClick={() => setExpandedProducts(null)}>Mostrar menos</Button>
-                        )}
                       </div>
-                    </div>
-                  )}
-
-                  {/* Service cards */}
-                  {msg.searchResult && msg.searchResult.services.length > 0 && (
-                    <div className="w-full mt-2 pl-10">
-                      <p className="text-[11px] font-semibold text-primary mb-1.5 flex items-center gap-1">
-                        <WrenchIcon className="w-3.5 h-3.5" /> Serviços profissionais
-                      </p>
-                      <div className="space-y-2">
-                        {(expandedServices === idx ? msg.searchResult.services : msg.searchResult.services.slice(0, 3)).map((r) => {
-                          const seg = segments.find((s) => s.id === r.segment);
-                          const SegIcon = seg?.icon || Sparkles;
-                          return (
-                            <motion.div key={r.id} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
-                              <Card className="border-border/50 hover:border-primary/40 cursor-pointer transition-all group"
-                                onClick={() => navigateToDemo(r)}>
-                                <CardContent className="p-3">
-                                  <div className="flex items-start justify-between mb-1">
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                                        <SegIcon className="w-3.5 h-3.5 text-primary" />
-                                      </div>
-                                      <div>
-                                        <h4 className="font-semibold text-xs text-foreground">{r.name}</h4>
-                                        <p className="text-[11px] text-muted-foreground">{r.provider}</p>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center gap-0.5 text-xs text-accent-foreground shrink-0">
-                                      <Star className="w-3 h-3 fill-accent text-accent" />
-                                      {r.rating}
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-3 text-[11px] text-muted-foreground mb-2">
-                                    <span className="flex items-center gap-0.5"><DollarSign className="w-3 h-3" /> R$ {r.price}</span>
-                                    <span className="flex items-center gap-0.5"><Clock className="w-3 h-3" /> {r.time}</span>
-                                    <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" /> {r.distance}</span>
-                                  </div>
-                                  {r.products.length > 0 && (
-                                    <div className="flex flex-wrap gap-1">
-                                      {r.products.slice(0, 3).map((p) => (
-                                        <Badge key={p} variant="secondary" className="text-[9px] px-1.5 py-0">
-                                          <Package className="w-2.5 h-2.5 mr-0.5" />{p}
-                                        </Badge>
-                                      ))}
-                                      {r.products.length > 3 && (
-                                        <Badge variant="secondary" className="text-[9px] px-1.5 py-0">+{r.products.length - 3}</Badge>
-                                      )}
-                                    </div>
-                                  )}
-                                  <div className="mt-1.5 flex items-center gap-1 text-[10px] text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <ArrowRight className="w-3 h-3" /> Contratar agora
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            </motion.div>
-                          );
-                        })}
-                        {msg.searchResult.services.length > 3 && expandedServices !== idx && (
-                          <Button variant="ghost" size="sm" className="w-full text-xs h-8 text-muted-foreground hover:text-primary gap-1"
-                            onClick={() => setExpandedServices(idx)}>
-                            <ChevronDown className="w-3.5 h-3.5" />
-                            Ver todos os {msg.searchResult.services.length} serviços
-                          </Button>
-                        )}
-                        {expandedServices === idx && msg.searchResult.services.length > 3 && (
-                          <Button variant="ghost" size="sm" className="w-full text-xs h-8 text-muted-foreground hover:text-primary"
-                            onClick={() => setExpandedServices(null)}>Mostrar menos</Button>
-                        )}
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* AI-suggested services */}
                   {msg.searchResult?.suggestedServices && msg.searchResult.suggestedServices.length > 0 && (

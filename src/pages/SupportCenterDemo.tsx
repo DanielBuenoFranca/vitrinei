@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import {
   ArrowLeft, Bell, CheckCircle2, Star, DollarSign, MapPin, Clock,
@@ -10,11 +11,18 @@ import {
   ShoppingBag, Store, ArrowRight, Play, Zap, Phone, FileText,
   UserPlus, BellRing, Truck, AlertTriangle, RefreshCw, Pause,
   MessageCircle, Bot, User, ChevronDown, Loader2, Monitor, Smartphone,
-  Database, Globe, Server, Activity, Terminal, Wifi
+  Database, Globe, Server, Activity, Terminal, Wifi, Plus, Save
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
 import { addDynamicEntries, segments, type DynamicEntry } from '@/data/searchData';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type PhoneMessage = {
   id: number;
@@ -32,6 +40,31 @@ type InternalLog = {
   icon: React.ReactNode;
   details?: React.ReactNode;
   timestamp: string;
+};
+
+type ProviderFormData = {
+  name: string;
+  specialty: string;
+  phone: string;
+  email: string;
+  address: string;
+  city: string;
+  distance: string;
+  segment: string;
+};
+
+type ServiceFormData = {
+  name: string;
+  price: string;
+  time: string;
+  description: string;
+};
+
+type ProductFormData = {
+  name: string;
+  price: string;
+  stockType: 'fisico' | 'drop';
+  description: string;
 };
 
 const SupportCenterDemo = () => {
@@ -57,35 +90,29 @@ const SupportCenterDemo = () => {
   const phoneEndRef = useRef<HTMLDivElement>(null);
   const hasInitialized = useRef(false);
 
-  const userSelections: string[] = suggestionsParam ? (() => { try { return JSON.parse(suggestionsParam); } catch { return []; } })() : [];
+  // Registration form states
+  const [showProviderForm, setShowProviderForm] = useState(false);
+  const [showServiceForm, setShowServiceForm] = useState(false);
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [registeredProviders, setRegisteredProviders] = useState<(ProviderFormData & { rating: number })[]>([]);
+  const [registeredServices, setRegisteredServices] = useState<(ServiceFormData & { providerName: string })[]>([]);
+  const [registeredProducts, setRegisteredProducts] = useState<(ProductFormData & { providerName: string })[]>([]);
 
+  const [providerForm, setProviderForm] = useState<ProviderFormData>({
+    name: '', specialty: '', phone: '', email: '', address: '', city: '', distance: '2.5 km', segment: segmentParam,
+  });
+  const [serviceForm, setServiceForm] = useState<ServiceFormData>({
+    name: '', price: '', time: '45 min', description: '',
+  });
+  const [productForm, setProductForm] = useState<ProductFormData>({
+    name: '', price: '', stockType: 'fisico', description: '',
+  });
+
+  const userSelections: string[] = suggestionsParam ? (() => { try { return JSON.parse(suggestionsParam); } catch { return []; } })() : [];
   const contextName = query.split(',')[0]?.trim() || query;
   const contextTitle = contextName.charAt(0).toUpperCase() + contextName.slice(1);
   const segInfo = segments.find(s => s.id === segmentParam);
   const segmentLabel = segInfo?.label || contextTitle;
-
-  const newProviders = [
-    { name: `${contextTitle} - Ana Mendes`, rating: 4.9, distance: '1.8 km', price: 120, specialty: `Especialista em ${contextTitle}` },
-    { name: `${contextTitle} - Carlos Lima`, rating: 4.7, distance: '3.2 km', price: 95, specialty: `Profissional ${segmentLabel}` },
-  ];
-
-  const newProducts = [
-    { name: userSelections.find(s => s.toLowerCase().includes('produto') || s.toLowerCase().includes('kit')) || `Kit ${contextTitle} Profissional`, price: 89, provider: newProviders[0].name, stockType: 'fisico' as const },
-    { name: `${contextTitle} - Produto Essencial`, price: 45, provider: newProviders[0].name, stockType: 'fisico' as const },
-    { name: `Acessório ${contextTitle} Premium`, price: 65, provider: newProviders[1].name, stockType: 'drop' as const },
-  ];
-
-  const webResearchedServices = [
-    { name: `${contextTitle} - Manutenção Preventiva`, description: 'Serviço mais buscado na web para esta área' },
-    { name: `Instalação de ${contextTitle}`, description: 'Segundo serviço mais procurado online' },
-    { name: `Consultoria ${segmentLabel}`, description: 'Avaliação e orçamento especializado' },
-  ];
-
-  const webResearchedProducts = [
-    { name: `${contextTitle} - Kit Completo`, description: 'Produto mais vendido na categoria' },
-    { name: `Ferramenta para ${contextTitle}`, description: 'Acessório profissional' },
-    { name: `Proteção ${contextTitle}`, description: 'Equipamento de segurança' },
-  ];
 
   const now = () => {
     const d = new Date();
@@ -104,16 +131,14 @@ const SupportCenterDemo = () => {
     setInternalLogs(prev => prev.map(l => l.id === id ? { ...l, status } : l));
   }, []);
 
-  // Auto-scroll
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [internalLogs, isSearching, waitingUser]);
+  }, [internalLogs, isSearching, waitingUser, showProviderForm, showServiceForm, showProductForm]);
 
   useEffect(() => {
     phoneEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [phoneMessages]);
 
-  // Initialize
   useEffect(() => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
@@ -123,33 +148,23 @@ const SupportCenterDemo = () => {
   const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
   const startProcess = async () => {
-    // Step 0: Client sends message on phone
     addPhoneMsg({
       type: 'outgoing',
       content: `Olá, estou procurando "${contextTitle}" mas não encontrei no app. Podem me ajudar?`,
     });
-
     await sleep(1500);
-
-    // System receives and opens protocol
     addPhoneMsg({
       type: 'incoming',
       content: `Olá! Recebemos sua solicitação. Protocolo #${protocolNumber}. Nossa equipe já está trabalhando para encontrar o que você precisa. Você será notificado assim que tivermos novidades! 😊`,
     });
-
     await sleep(1000);
-
-    // Internal: protocol opened
     addLog({
       title: 'Protocolo aberto',
       description: `#${protocolNumber} • Cliente solicitou: "${contextTitle}"`,
       status: 'done',
       icon: <FileText className="w-4 h-4" />,
     });
-
     await sleep(800);
-
-    // Internal: context analysis
     addLog({
       title: 'Análise de contexto pela IA',
       description: `Processando solicitação do cliente...`,
@@ -180,16 +195,106 @@ const SupportCenterDemo = () => {
         </div>
       ),
     });
-
     setStep(1);
     setWaitingUser(true);
+  };
+
+  const handleRegisterProvider = () => {
+    if (!providerForm.name || !providerForm.specialty) return;
+    const provider = { ...providerForm, rating: 4.5 + Math.random() * 0.5 };
+    setRegisteredProviders(prev => [...prev, provider]);
+    addLog({
+      title: `Prestador cadastrado: ${providerForm.name}`,
+      description: `${providerForm.specialty} • ${providerForm.distance} • ${providerForm.city || 'Região local'}`,
+      status: 'done',
+      icon: <UserPlus className="w-4 h-4" />,
+      details: (
+        <div className="mt-2 p-2.5 rounded-lg bg-muted/50 border border-border/50">
+          <div className="flex items-start gap-2">
+            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-sm">👩‍🔧</div>
+            <div>
+              <p className="font-semibold text-xs text-foreground">{providerForm.name}</p>
+              <p className="text-[10px] text-muted-foreground">{providerForm.specialty}</p>
+              <div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground">
+                <span className="flex items-center gap-0.5"><MapPin className="w-2.5 h-2.5" /> {providerForm.distance}</span>
+                {providerForm.phone && <span className="flex items-center gap-0.5"><Phone className="w-2.5 h-2.5" /> {providerForm.phone}</span>}
+                {providerForm.email && <span className="flex items-center gap-0.5">✉️ {providerForm.email}</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+    });
+    addPhoneMsg({
+      type: 'incoming',
+      content: `✅ Encontramos um profissional para você: ${providerForm.name} — ${providerForm.specialty}. Estamos verificando serviços e estoque disponíveis...`,
+    });
+    setProviderForm({ name: '', specialty: '', phone: '', email: '', address: '', city: '', distance: '2.5 km', segment: segmentParam });
+    setShowProviderForm(false);
+  };
+
+  const handleRegisterService = () => {
+    if (!serviceForm.name || !serviceForm.price || registeredProviders.length === 0) return;
+    const providerName = registeredProviders[registeredProviders.length - 1].name;
+    setRegisteredServices(prev => [...prev, { ...serviceForm, providerName }]);
+    addLog({
+      title: `Serviço cadastrado: ${serviceForm.name}`,
+      description: `Vinculado a ${providerName} • R$ ${serviceForm.price} • ${serviceForm.time}`,
+      status: 'done',
+      icon: <Sparkles className="w-4 h-4" />,
+      details: (
+        <div className="mt-2 p-2 rounded-lg bg-primary/5 border border-primary/10">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-3 h-3 text-primary shrink-0" />
+            <div>
+              <p className="font-medium text-xs text-foreground">{serviceForm.name}</p>
+              <p className="text-[10px] text-muted-foreground">{providerName} • R$ {serviceForm.price} • {serviceForm.time}</p>
+            </div>
+          </div>
+        </div>
+      ),
+    });
+    setServiceForm({ name: '', price: '', time: '45 min', description: '' });
+    setShowServiceForm(false);
+  };
+
+  const handleRegisterProduct = () => {
+    if (!productForm.name || !productForm.price || registeredProviders.length === 0) return;
+    const providerName = registeredProviders[registeredProviders.length - 1].name;
+    setRegisteredProducts(prev => [...prev, { ...productForm, providerName }]);
+    addLog({
+      title: `Produto cadastrado: ${productForm.name}`,
+      description: `${providerName} • R$ ${productForm.price} • ${productForm.stockType === 'fisico' ? 'Estoque Local' : 'Drop-shipping'}`,
+      status: 'done',
+      icon: <Package className="w-4 h-4" />,
+      details: (
+        <div className="mt-2 p-2 rounded-lg bg-muted/50 border border-border/50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ShoppingBag className="w-3 h-3 text-success shrink-0" />
+              <div>
+                <p className="font-medium text-xs text-foreground">{productForm.name}</p>
+                <p className="text-[10px] text-muted-foreground">{providerName}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Badge variant={productForm.stockType === 'fisico' ? 'default' : 'secondary'} className="text-[8px] px-1.5">
+                {productForm.stockType === 'fisico' ? 'Local' : 'Drop'}
+              </Badge>
+              <span className="text-xs font-semibold text-foreground">R${productForm.price}</span>
+            </div>
+          </div>
+        </div>
+      ),
+    });
+    setProductForm({ name: '', price: '', stockType: 'fisico', description: '' });
+    setShowProductForm(false);
   };
 
   const handleNext = async () => {
     setWaitingUser(false);
 
     if (step === 1) {
-      // Internal: start searching professionals
       addLog({
         title: 'Busca de profissionais iniciada',
         description: `Pesquisando base de dados de ${segmentLabel} na região...`,
@@ -200,110 +305,79 @@ const SupportCenterDemo = () => {
       setIsSearching(true);
       setSearchProgress(0);
     } else if (step === 3) {
-      // Internal: web research
-      const logId = internalLogs.length;
+      // Show provider registration form
+      setShowProviderForm(true);
       addLog({
-        title: 'Pesquisa web em andamento',
-        description: `Consultando fontes externas sobre "${contextTitle}"...`,
+        title: 'Cadastro de novo prestador',
+        description: 'Preencha os dados do novo profissional para atender a demanda',
         status: 'running',
-        icon: <Globe className="w-4 h-4" />,
+        icon: <UserPlus className="w-4 h-4" />,
       });
-
-      await sleep(2500);
-
-      updateLogStatus(logId, 'done');
-
-      addLog({
-        title: 'Serviços e produtos mapeados',
-        description: `${webResearchedServices.length} serviços + ${webResearchedProducts.length} produtos identificados`,
-        status: 'done',
-        icon: <Database className="w-4 h-4" />,
-        details: (
-          <div className="mt-2 space-y-3">
-            <div>
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">🌐 Serviços (pesquisa web)</p>
-              <div className="space-y-1.5">
-                {webResearchedServices.map((svc, idx) => (
-                  <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 border border-primary/10">
-                    <Sparkles className="w-3 h-3 text-primary shrink-0" />
-                    <div className="min-w-0">
-                      <p className="font-medium text-xs text-foreground truncate">{svc.name}</p>
-                      <p className="text-[10px] text-muted-foreground">{svc.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div>
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">📦 Produtos (pesquisa web)</p>
-              <div className="space-y-1.5">
-                {webResearchedProducts.map((prod, idx) => (
-                  <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-success/5 border border-success/10">
-                    <ShoppingBag className="w-3 h-3 text-success shrink-0" />
-                    <div className="min-w-0">
-                      <p className="font-medium text-xs text-foreground truncate">{prod.name}</p>
-                      <p className="text-[10px] text-muted-foreground">{prod.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        ),
-      });
-
-      setStep(4);
-      setWaitingUser(true);
     } else if (step === 4) {
-      // Internal: stock injection
-      const logId = internalLogs.length;
+      // Show service registration form
+      setShowServiceForm(true);
       addLog({
-        title: 'Atualizando catálogo e estoque',
-        description: `Injetando ${newProducts.length} produtos nos profissionais cadastrados...`,
+        title: 'Cadastro de serviço',
+        description: `Vincular novo serviço ao prestador ${registeredProviders[registeredProviders.length - 1]?.name}`,
+        status: 'running',
+        icon: <Sparkles className="w-4 h-4" />,
+      });
+    } else if (step === 5) {
+      // Show product registration form
+      setShowProductForm(true);
+      addLog({
+        title: 'Cadastro de produto/estoque',
+        description: `Vincular produto ao prestador ${registeredProviders[registeredProviders.length - 1]?.name}`,
         status: 'running',
         icon: <Package className="w-4 h-4" />,
       });
-
+    } else if (step === 6) {
+      // Inject and notify
+      const logId = internalLogs.length;
+      addLog({
+        title: 'Atualizando catálogo e estoque',
+        description: `Injetando ${registeredProviders.length} prestador(es), ${registeredServices.length} serviço(s) e ${registeredProducts.length} produto(s)...`,
+        status: 'running',
+        icon: <Database className="w-4 h-4" />,
+      });
       await sleep(2000);
-
       updateLogStatus(logId, 'done');
 
-      addLog({
-        title: 'Estoque atualizado',
-        description: `${newProducts.length} produtos vinculados com substituição 1:1`,
-        status: 'done',
-        icon: <Store className="w-4 h-4" />,
-        details: (
-          <div className="mt-2 space-y-1.5">
-            {newProducts.map((product, idx) => (
-              <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 border border-border/50">
-                <div className="flex items-center gap-2 min-w-0">
-                  <ShoppingBag className="w-3 h-3 text-success shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium text-foreground truncate">{product.name}</p>
-                    <p className="text-[10px] text-muted-foreground truncate">{product.provider}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <Badge variant={product.stockType === 'fisico' ? 'default' : 'secondary'} className="text-[8px] px-1.5">
-                    {product.stockType === 'fisico' ? 'Local' : 'Drop'}
-                  </Badge>
-                  <span className="text-xs font-semibold text-foreground">R${product.price}</span>
-                </div>
-              </div>
-            ))}
-            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-1">
-              <RefreshCw className="w-3 h-3 text-primary" />
-              Substituição 1:1 aplicada para equilíbrio do catálogo
-            </div>
-          </div>
-        ),
-      });
+      // Inject items
+      if (!injectedItems) {
+        const entries: DynamicEntry[] = registeredProviders.map((p, i) => {
+          const provServices = registeredServices.filter(s => s.providerName === p.name);
+          const provProducts = registeredProducts.filter(pr => pr.providerName === p.name);
+          return {
+            type: 'service' as const,
+            service: {
+              id: 9000 + Math.floor(Math.random() * 1000) + i,
+              name: provServices[0]?.name || `${contextTitle} - ${p.name}`,
+              segment: p.segment || segmentParam,
+              provider: p.name,
+              price: provServices[0] ? parseFloat(provServices[0].price) : 120,
+              rating: parseFloat(p.rating.toFixed(1)),
+              distance: p.distance,
+              time: provServices[0]?.time || '45 min',
+              products: provProducts.map(pr => pr.name),
+            },
+            products: provProducts.map((pr, j) => ({
+              id: 9500 + Math.floor(Math.random() * 1000) + j,
+              name: pr.name,
+              price: parseFloat(pr.price),
+              provider: p.name,
+              stockType: pr.stockType,
+              rating: 4.7,
+              distance: p.distance,
+              relatedServiceIds: [9000 + i],
+              tags: [query.toLowerCase(), contextTitle.toLowerCase(), segmentParam],
+            })),
+            maxPerSegment: 5,
+          };
+        });
+        addDynamicEntries(entries).then(() => setInjectedItems(true));
+      }
 
-      setStep(5);
-      setWaitingUser(true);
-    } else if (step === 5) {
-      // Internal: sending push notification
       addLog({
         title: 'Enviando notificação push',
         description: `Notificando cliente sobre disponibilidade de "${contextTitle}"`,
@@ -311,49 +385,14 @@ const SupportCenterDemo = () => {
         icon: <BellRing className="w-4 h-4" />,
       });
 
-      // Inject items
-      if (!injectedItems) {
-        const entries: DynamicEntry[] = newProviders.map((p, i) => ({
-          type: 'service' as const,
-          service: {
-            id: 9000 + Math.floor(Math.random() * 1000) + i,
-            name: p.name,
-            segment: segmentParam,
-            provider: p.specialty,
-            price: p.price,
-            rating: p.rating,
-            distance: p.distance,
-            time: '45 min',
-            products: newProducts.filter(np => np.provider === p.name).map(np => np.name),
-          },
-          products: newProducts.filter(np => np.provider === p.name).map((np, j) => ({
-            id: 9500 + Math.floor(Math.random() * 1000) + j,
-            name: np.name,
-            price: np.price,
-            provider: np.provider,
-            stockType: np.stockType,
-            rating: 4.7,
-            distance: p.distance,
-            relatedServiceIds: [9000 + i],
-            tags: [query.toLowerCase(), contextTitle.toLowerCase(), segmentParam],
-          })),
-          maxPerSegment: 5,
-        }));
-        addDynamicEntries(entries).then(() => setInjectedItems(true));
-      }
-
       await sleep(1000);
-
-      // Show push on phone
       setShowPush(true);
       addPhoneMsg({
         type: 'incoming',
-        content: `🎉 Boa notícia! O serviço "${contextTitle}" que você procurou já está disponível! 2 profissionais qualificados prontos para atender na sua região. Toque para agendar.`,
+        content: `🎉 Boa notícia! O serviço "${contextTitle}" que você procurou já está disponível! ${registeredProviders.length} profissional(is) qualificado(s) pronto(s) para atender na sua região. Toque para agendar.`,
       });
-
       setTimeout(() => setShowPush(false), 4000);
 
-      // Internal: final summary
       await sleep(1500);
       addLog({
         title: 'Processo concluído',
@@ -363,28 +402,54 @@ const SupportCenterDemo = () => {
         details: (
           <div className="mt-2 grid grid-cols-3 gap-2">
             <div className="text-center p-2 rounded-lg bg-success/5 border border-success/20">
-              <p className="text-lg font-bold text-success">2</p>
-              <p className="text-[9px] text-muted-foreground">Profissionais</p>
+              <p className="text-lg font-bold text-success">{registeredProviders.length}</p>
+              <p className="text-[9px] text-muted-foreground">Prestador(es)</p>
             </div>
             <div className="text-center p-2 rounded-lg bg-success/5 border border-success/20">
-              <p className="text-lg font-bold text-success">{newProducts.length}</p>
-              <p className="text-[9px] text-muted-foreground">Produtos</p>
+              <p className="text-lg font-bold text-success">{registeredServices.length}</p>
+              <p className="text-[9px] text-muted-foreground">Serviço(s)</p>
             </div>
             <div className="text-center p-2 rounded-lg bg-primary/5 border border-primary/20">
-              <p className="text-lg font-bold text-primary">1:1</p>
-              <p className="text-[9px] text-muted-foreground">Substituição</p>
+              <p className="text-lg font-bold text-primary">{registeredProducts.length}</p>
+              <p className="text-[9px] text-muted-foreground">Produto(s)</p>
             </div>
           </div>
         ),
       });
 
-      setStep(6);
+      setStep(7);
       setWaitingUser(true);
-    } else if (step === 6) {
-      // Navigate back
+    } else if (step === 7) {
       navigate('/');
     }
   };
+
+  // After provider form submit, advance to step 4
+  useEffect(() => {
+    if (registeredProviders.length > 0 && step === 3 && !showProviderForm) {
+      setInternalLogs(prev => prev.map(l => l.status === 'running' && l.title === 'Cadastro de novo prestador' ? { ...l, status: 'done' as const } : l));
+      setStep(4);
+      setWaitingUser(true);
+    }
+  }, [registeredProviders, step, showProviderForm]);
+
+  // After service form submit, advance to step 5
+  useEffect(() => {
+    if (registeredServices.length > 0 && step === 4 && !showServiceForm) {
+      setInternalLogs(prev => prev.map(l => l.status === 'running' && l.title === 'Cadastro de serviço' ? { ...l, status: 'done' as const } : l));
+      setStep(5);
+      setWaitingUser(true);
+    }
+  }, [registeredServices, step, showServiceForm]);
+
+  // After product form submit, advance to step 6
+  useEffect(() => {
+    if (registeredProducts.length > 0 && step === 5 && !showProductForm) {
+      setInternalLogs(prev => prev.map(l => l.status === 'running' && l.title === 'Cadastro de produto/estoque' ? { ...l, status: 'done' as const } : l));
+      setStep(6);
+      setWaitingUser(true);
+    }
+  }, [registeredProducts, step, showProductForm]);
 
   // Search progress animation
   useEffect(() => {
@@ -395,40 +460,17 @@ const SupportCenterDemo = () => {
         if (p >= 100) {
           clearInterval(interval);
           setIsSearching(false);
-          // Update the running log to done
           setInternalLogs(prev => prev.map(l => l.status === 'running' ? { ...l, status: 'done' as const } : l));
-          // Show results
           setTimeout(() => {
             addLog({
-              title: 'Profissionais encontrados',
-              description: `2 profissionais qualificados localizados na região`,
+              title: 'Nenhum prestador encontrado na base',
+              description: `Nenhum profissional de "${contextTitle}" cadastrado na região. Necessário cadastro manual.`,
               status: 'done',
-              icon: <Users className="w-4 h-4" />,
+              icon: <AlertTriangle className="w-4 h-4" />,
               details: (
-                <div className="mt-2 space-y-2">
-                  {newProviders.map((provider, idx) => (
-                    <div key={idx} className="p-2.5 rounded-lg bg-muted/50 border border-border/50">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-sm">
-                            {['👩‍🔧', '👨‍🔧'][idx]}
-                          </div>
-                          <div>
-                            <p className="font-semibold text-xs text-foreground">{provider.name}</p>
-                            <p className="text-[10px] text-muted-foreground">{provider.specialty}</p>
-                          </div>
-                        </div>
-                        <Badge className="bg-success/10 text-success border-success/20 text-[9px]">
-                          <CheckCircle2 className="w-2.5 h-2.5 mr-0.5" /> Verificado
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
-                        <span className="flex items-center gap-0.5"><Star className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" /> {provider.rating}</span>
-                        <span className="flex items-center gap-0.5"><MapPin className="w-2.5 h-2.5" /> {provider.distance}</span>
-                        <span className="flex items-center gap-0.5"><DollarSign className="w-2.5 h-2.5" /> R$ {provider.price}</span>
-                      </div>
-                    </div>
-                  ))}
+                <div className="mt-2 p-2 rounded-lg bg-destructive/5 border border-destructive/20 text-xs text-muted-foreground">
+                  <p>A busca nas bases internas não retornou prestadores para esta especialidade.</p>
+                  <p className="mt-1 font-semibold text-foreground">→ Ação necessária: Cadastrar novo prestador</p>
                 </div>
               ),
             });
@@ -445,11 +487,14 @@ const SupportCenterDemo = () => {
 
   const stepLabels: Record<number, string> = {
     1: 'Iniciar busca de profissionais',
-    3: 'Pesquisar serviços e produtos na web',
-    4: 'Atualizar catálogo e estoque',
-    5: 'Notificar cliente e finalizar',
-    6: 'Buscar no hub agora',
+    3: 'Cadastrar novo prestador',
+    4: 'Cadastrar serviço para este prestador',
+    5: 'Cadastrar produto/estoque',
+    6: 'Injetar no catálogo e notificar cliente',
+    7: 'Buscar no hub agora',
   };
+
+  const isFormOpen = showProviderForm || showServiceForm || showProductForm;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -494,7 +539,7 @@ const SupportCenterDemo = () => {
                     <p className="text-xs text-muted-foreground">Push enviada ao cliente • agora</p>
                     <p className="text-sm font-bold text-foreground">🎉 Notificação entregue!</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      "{contextTitle}" — 2 profissionais prontos para atender.
+                      "{contextTitle}" — {registeredProviders.length} profissional(is) pronto(s) para atender.
                     </p>
                   </div>
                 </div>
@@ -515,11 +560,8 @@ const SupportCenterDemo = () => {
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Visão do Cliente</span>
             </div>
             <div className="w-72 bg-foreground/5 border-2 border-foreground/20 rounded-[2rem] p-2 shadow-xl">
-              {/* Phone notch */}
               <div className="w-20 h-5 bg-foreground/20 rounded-full mx-auto mb-1" />
-              {/* Phone screen */}
               <div className="bg-background rounded-2xl overflow-hidden h-[420px] flex flex-col">
-                {/* Phone header */}
                 <div className="bg-primary px-3 py-2.5 flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-primary-foreground/20 flex items-center justify-center">
                     <Zap className="w-3 h-3 text-primary-foreground" />
@@ -529,7 +571,6 @@ const SupportCenterDemo = () => {
                     <p className="text-[9px] text-primary-foreground/70">Central de Atendimento</p>
                   </div>
                 </div>
-                {/* Phone messages */}
                 <div className="flex-1 overflow-y-auto p-3 space-y-3">
                   <AnimatePresence>
                     {phoneMessages.map((msg) => (
@@ -563,7 +604,6 @@ const SupportCenterDemo = () => {
                   <div ref={phoneEndRef} />
                 </div>
               </div>
-              {/* Phone bottom bar */}
               <div className="w-16 h-1 bg-foreground/20 rounded-full mx-auto mt-1.5" />
             </div>
           </div>
@@ -659,8 +699,8 @@ const SupportCenterDemo = () => {
                             </motion.p>
                           )}
                           {searchProgress > 90 && (
-                            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[10px] text-success font-semibold flex items-center gap-1">
-                              <Sparkles className="w-2.5 h-2.5" /> Profissionais encontrados!
+                            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[10px] text-muted-foreground flex items-center gap-1">
+                              <AlertTriangle className="w-2.5 h-2.5 text-destructive" /> Nenhum profissional encontrado...
                             </motion.p>
                           )}
                         </div>
@@ -670,6 +710,197 @@ const SupportCenterDemo = () => {
                 </motion.div>
               )}
 
+              {/* Provider Registration Form */}
+              <AnimatePresence>
+                {showProviderForm && (
+                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                    <Card className="border-l-4 border-l-primary border-primary/30 shadow-lg">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <UserPlus className="w-4 h-4 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-sm text-foreground">Cadastrar Novo Prestador</p>
+                            <p className="text-[10px] text-muted-foreground">Preencha os dados do profissional para atender "{contextTitle}"</p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="col-span-2">
+                            <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Nome completo *</label>
+                            <Input value={providerForm.name} onChange={e => setProviderForm(f => ({ ...f, name: e.target.value }))}
+                              placeholder="Ex: Ana Mendes" className="h-9 text-sm" />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Especialidade *</label>
+                            <Input value={providerForm.specialty} onChange={e => setProviderForm(f => ({ ...f, specialty: e.target.value }))}
+                              placeholder={`Ex: Especialista em ${contextTitle}`} className="h-9 text-sm" />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Telefone</label>
+                            <Input value={providerForm.phone} onChange={e => setProviderForm(f => ({ ...f, phone: e.target.value }))}
+                              placeholder="(11) 99999-0000" className="h-9 text-sm" />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-muted-foreground mb-1 block">E-mail</label>
+                            <Input value={providerForm.email} onChange={e => setProviderForm(f => ({ ...f, email: e.target.value }))}
+                              placeholder="email@exemplo.com" className="h-9 text-sm" />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Cidade</label>
+                            <Input value={providerForm.city} onChange={e => setProviderForm(f => ({ ...f, city: e.target.value }))}
+                              placeholder="São Paulo" className="h-9 text-sm" />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Distância aprox.</label>
+                            <Input value={providerForm.distance} onChange={e => setProviderForm(f => ({ ...f, distance: e.target.value }))}
+                              placeholder="2.5 km" className="h-9 text-sm" />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Endereço</label>
+                            <Input value={providerForm.address} onChange={e => setProviderForm(f => ({ ...f, address: e.target.value }))}
+                              placeholder="Rua, número, bairro" className="h-9 text-sm" />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Segmento</label>
+                            <Select value={providerForm.segment} onValueChange={v => setProviderForm(f => ({ ...f, segment: v }))}>
+                              <SelectTrigger className="h-9 text-sm">
+                                <SelectValue placeholder="Selecione o segmento" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {segments.map(seg => (
+                                  <SelectItem key={seg.id} value={seg.id}>{seg.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 mt-4">
+                          <Button className="flex-1 gap-2" onClick={handleRegisterProvider}
+                            disabled={!providerForm.name || !providerForm.specialty}>
+                            <Save className="w-4 h-4" /> Cadastrar Prestador
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setShowProviderForm(false)}>
+                            Cancelar
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Service Registration Form */}
+              <AnimatePresence>
+                {showServiceForm && (
+                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                    <Card className="border-l-4 border-l-primary border-primary/30 shadow-lg">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Sparkles className="w-4 h-4 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-sm text-foreground">Cadastrar Serviço</p>
+                            <p className="text-[10px] text-muted-foreground">Vincular a: {registeredProviders[registeredProviders.length - 1]?.name}</p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="col-span-2">
+                            <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Nome do serviço *</label>
+                            <Input value={serviceForm.name} onChange={e => setServiceForm(f => ({ ...f, name: e.target.value }))}
+                              placeholder={`Ex: ${contextTitle} - Completo`} className="h-9 text-sm" />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Preço (R$) *</label>
+                            <Input value={serviceForm.price} onChange={e => setServiceForm(f => ({ ...f, price: e.target.value }))}
+                              placeholder="120" type="number" className="h-9 text-sm" />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Tempo estimado</label>
+                            <Input value={serviceForm.time} onChange={e => setServiceForm(f => ({ ...f, time: e.target.value }))}
+                              placeholder="45 min" className="h-9 text-sm" />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Descrição</label>
+                            <Input value={serviceForm.description} onChange={e => setServiceForm(f => ({ ...f, description: e.target.value }))}
+                              placeholder="Descrição breve do serviço" className="h-9 text-sm" />
+                          </div>
+                        </div>
+                        <div className="flex gap-2 mt-4">
+                          <Button className="flex-1 gap-2" onClick={handleRegisterService}
+                            disabled={!serviceForm.name || !serviceForm.price}>
+                            <Save className="w-4 h-4" /> Cadastrar Serviço
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setShowServiceForm(false)}>
+                            Cancelar
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Product Registration Form */}
+              <AnimatePresence>
+                {showProductForm && (
+                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                    <Card className="border-l-4 border-l-primary border-primary/30 shadow-lg">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center">
+                            <Package className="w-4 h-4 text-success" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-sm text-foreground">Cadastrar Produto/Estoque</p>
+                            <p className="text-[10px] text-muted-foreground">Vincular a: {registeredProviders[registeredProviders.length - 1]?.name}</p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="col-span-2">
+                            <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Nome do produto *</label>
+                            <Input value={productForm.name} onChange={e => setProductForm(f => ({ ...f, name: e.target.value }))}
+                              placeholder={`Ex: Kit ${contextTitle} Profissional`} className="h-9 text-sm" />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Preço (R$) *</label>
+                            <Input value={productForm.price} onChange={e => setProductForm(f => ({ ...f, price: e.target.value }))}
+                              placeholder="89" type="number" className="h-9 text-sm" />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Tipo de estoque</label>
+                            <Select value={productForm.stockType} onValueChange={v => setProductForm(f => ({ ...f, stockType: v as 'fisico' | 'drop' }))}>
+                              <SelectTrigger className="h-9 text-sm">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="fisico">Estoque Local</SelectItem>
+                                <SelectItem value="drop">Drop-shipping</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="col-span-2">
+                            <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Descrição</label>
+                            <Input value={productForm.description} onChange={e => setProductForm(f => ({ ...f, description: e.target.value }))}
+                              placeholder="Descrição breve do produto" className="h-9 text-sm" />
+                          </div>
+                        </div>
+                        <div className="flex gap-2 mt-4">
+                          <Button className="flex-1 gap-2" onClick={handleRegisterProduct}
+                            disabled={!productForm.name || !productForm.price}>
+                            <Save className="w-4 h-4" /> Cadastrar Produto
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setShowProductForm(false)}>
+                            Cancelar
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               <div ref={logsEndRef} />
             </div>
           </div>
@@ -677,7 +908,7 @@ const SupportCenterDemo = () => {
       </div>
 
       {/* Bottom Action Bar */}
-      {waitingUser && step <= 6 && (
+      {waitingUser && !isFormOpen && step <= 7 && (
         <motion.div
           initial={{ y: 50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -689,7 +920,7 @@ const SupportCenterDemo = () => {
               {stepLabels[step] || 'Continuar'}
             </Button>
             <p className="text-[10px] text-muted-foreground text-center mt-1.5">
-              {step < 6 ? `Clique para avançar • Etapa ${step} de 5` : 'Processo finalizado — ver resultados no hub'}
+              {step < 7 ? `Clique para avançar • Etapa ${step} de 6` : 'Processo finalizado — ver resultados no hub'}
             </p>
           </div>
         </motion.div>
