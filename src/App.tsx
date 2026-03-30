@@ -21,8 +21,6 @@ import SupportCenterDemo from "./pages/SupportCenterDemo.tsx";
 import AdminPanel from "./pages/AdminPanel.tsx";
 
 const FloatingAvatarWrapper = () => {
-  const location = useLocation();
-  if (location.pathname === '/') return null;
   return <FloatingAiAvatar />;
 };
 
