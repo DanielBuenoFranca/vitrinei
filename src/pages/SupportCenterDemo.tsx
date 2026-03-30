@@ -16,6 +16,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
 import { addDynamicEntries, segments, type DynamicEntry } from '@/data/searchData';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Select,
   SelectContent,
@@ -92,6 +93,8 @@ const SupportCenterDemo = () => {
 
   // Registration form states
   const [showProviderForm, setShowProviderForm] = useState(false);
+  const [showProviderChoice, setShowProviderChoice] = useState(false);
+  const [existingProviders, setExistingProviders] = useState<Array<{id: number; name: string; segment: string; distance: string; rating: number; phone: string | null; email: string | null; city: string | null; address: string | null; type: string}>>([]);
   const [showServiceForm, setShowServiceForm] = useState(false);
   const [showProductForm, setShowProductForm] = useState(false);
   const [registeredProviders, setRegisteredProviders] = useState<(ProviderFormData & { rating: number })[]>([]);
@@ -107,6 +110,15 @@ const SupportCenterDemo = () => {
   const [productForm, setProductForm] = useState<ProductFormData>({
     name: '', price: '', stockType: 'fisico', description: '',
   });
+
+  // Fetch existing providers from DB
+  useEffect(() => {
+    const fetchProviders = async () => {
+      const { data } = await supabase.from('providers').select('*').eq('active', true);
+      if (data) setExistingProviders(data);
+    };
+    fetchProviders();
+  }, []);
 
   const userSelections: string[] = suggestionsParam ? (() => { try { return JSON.parse(suggestionsParam); } catch { return []; } })() : [];
   const contextName = query.split(',')[0]?.trim() || query;
@@ -133,7 +145,7 @@ const SupportCenterDemo = () => {
 
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [internalLogs, isSearching, waitingUser, showProviderForm, showServiceForm, showProductForm]);
+  }, [internalLogs, isSearching, waitingUser, showProviderForm, showProviderChoice, showServiceForm, showProductForm]);
 
   useEffect(() => {
     phoneEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -305,13 +317,13 @@ const SupportCenterDemo = () => {
       setIsSearching(true);
       setSearchProgress(0);
     } else if (step === 3) {
-      // Show provider registration form
-      setShowProviderForm(true);
+      // Show provider choice: existing or new
+      setShowProviderChoice(true);
       addLog({
-        title: 'Cadastro de novo prestador',
-        description: 'Preencha os dados do novo profissional para atender a demanda',
+        title: 'Seleção de prestador',
+        description: 'Selecione um prestador existente na base ou cadastre um novo',
         status: 'running',
-        icon: <UserPlus className="w-4 h-4" />,
+        icon: <Users className="w-4 h-4" />,
       });
     } else if (step === 4) {
       // Show service registration form
@@ -426,12 +438,12 @@ const SupportCenterDemo = () => {
 
   // After provider form submit, advance to step 4
   useEffect(() => {
-    if (registeredProviders.length > 0 && step === 3 && !showProviderForm) {
-      setInternalLogs(prev => prev.map(l => l.status === 'running' && l.title === 'Cadastro de novo prestador' ? { ...l, status: 'done' as const } : l));
+    if (registeredProviders.length > 0 && step === 3 && !showProviderForm && !showProviderChoice) {
+      setInternalLogs(prev => prev.map(l => (l.status === 'running' && (l.title === 'Cadastro de novo prestador' || l.title === 'Seleção de prestador')) ? { ...l, status: 'done' as const } : l));
       setStep(4);
       setWaitingUser(true);
     }
-  }, [registeredProviders, step, showProviderForm]);
+  }, [registeredProviders, step, showProviderForm, showProviderChoice]);
 
   // After service form submit, advance to step 5
   useEffect(() => {
@@ -487,14 +499,66 @@ const SupportCenterDemo = () => {
 
   const stepLabels: Record<number, string> = {
     1: 'Iniciar busca de profissionais',
-    3: 'Cadastrar novo prestador',
+    3: 'Selecionar ou cadastrar prestador',
     4: 'Cadastrar serviço para este prestador',
     5: 'Cadastrar produto/estoque',
     6: 'Injetar no catálogo e notificar cliente',
     7: 'Buscar no hub agora',
   };
 
-  const isFormOpen = showProviderForm || showServiceForm || showProductForm;
+  const handleSelectExistingProvider = (provider: typeof existingProviders[0]) => {
+    const providerData: ProviderFormData & { rating: number } = {
+      name: provider.name,
+      specialty: provider.segment,
+      phone: provider.phone || '',
+      email: provider.email || '',
+      address: provider.address || '',
+      city: provider.city || '',
+      distance: provider.distance,
+      segment: provider.segment,
+      rating: provider.rating,
+    };
+    setRegisteredProviders(prev => [...prev, providerData]);
+    addLog({
+      title: `Prestador selecionado: ${provider.name}`,
+      description: `${provider.segment} • ${provider.distance} • ${provider.city || 'Região local'}`,
+      status: 'done',
+      icon: <Users className="w-4 h-4" />,
+      details: (
+        <div className="mt-2 p-2.5 rounded-lg bg-muted/50 border border-border/50">
+          <div className="flex items-start gap-2">
+            <div className="w-7 h-7 rounded-full bg-success/10 flex items-center justify-center text-sm">✅</div>
+            <div>
+              <p className="font-semibold text-xs text-foreground">{provider.name}</p>
+              <p className="text-[10px] text-muted-foreground">{provider.segment} • ⭐ {provider.rating.toFixed(1)}</p>
+            </div>
+          </div>
+        </div>
+      ),
+    });
+    addPhoneMsg({
+      type: 'incoming',
+      content: `✅ Encontramos o profissional ${provider.name} já cadastrado na nossa base! Estamos verificando serviços e estoque disponíveis...`,
+    });
+    setShowProviderChoice(false);
+    // Update running log
+    setInternalLogs(prev => prev.map(l => l.status === 'running' && l.title === 'Seleção de prestador' ? { ...l, status: 'done' as const } : l));
+  };
+
+  const handleShowNewProviderForm = () => {
+    setShowProviderChoice(false);
+    setShowProviderForm(true);
+    // Update the log
+    setInternalLogs(prev => prev.map(l => l.status === 'running' && l.title === 'Seleção de prestador' ? { ...l, status: 'done' as const, title: 'Cadastro de novo prestador', description: 'Preencha os dados do novo profissional' } : l));
+    addLog({
+      title: 'Cadastro de novo prestador',
+      description: 'Preencha os dados do novo profissional para atender a demanda',
+      status: 'running',
+      icon: <UserPlus className="w-4 h-4" />,
+    });
+  };
+
+  const isFormOpen = showProviderForm || showProviderChoice || showServiceForm || showProductForm;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -709,6 +773,68 @@ const SupportCenterDemo = () => {
                   </Card>
                 </motion.div>
               )}
+
+              {/* Provider Choice: Existing or New */}
+              <AnimatePresence>
+                {showProviderChoice && (
+                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                    <Card className="border-l-4 border-l-primary border-primary/30 shadow-lg">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Users className="w-4 h-4 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-sm text-foreground">Selecionar Prestador</p>
+                            <p className="text-[10px] text-muted-foreground">Escolha um existente na base ou cadastre um novo</p>
+                          </div>
+                        </div>
+
+                        {existingProviders.length > 0 && (
+                          <div className="space-y-2 mb-4">
+                            <label className="text-[11px] font-medium text-muted-foreground block">Prestadores cadastrados na base ({existingProviders.length})</label>
+                            <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
+                              {existingProviders.map(p => (
+                                <button
+                                  key={p.id}
+                                  onClick={() => handleSelectExistingProvider(p)}
+                                  className="w-full text-left p-2.5 rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-sm">👩‍🔧</div>
+                                      <div>
+                                        <p className="font-medium text-xs text-foreground">{p.name}</p>
+                                        <p className="text-[10px] text-muted-foreground">{p.segment} • {p.distance}</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                      <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                                      {p.rating.toFixed(1)}
+                                    </div>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {existingProviders.length === 0 && (
+                          <div className="p-3 rounded-lg bg-muted/50 border border-border/50 mb-4">
+                            <p className="text-xs text-muted-foreground text-center">Nenhum prestador cadastrado na base de dados</p>
+                          </div>
+                        )}
+
+                        <div className="border-t border-border pt-3">
+                          <Button className="w-full gap-2" variant="outline" onClick={handleShowNewProviderForm}>
+                            <UserPlus className="w-4 h-4" /> Cadastrar Novo Prestador
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Provider Registration Form */}
               <AnimatePresence>
