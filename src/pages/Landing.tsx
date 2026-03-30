@@ -196,20 +196,22 @@ const Landing = () => {
   // Executa APENAS após o usuário clicar em Buscar ou pressionar Enter
   // searchVersion forces re-evaluation on each click
   const searchResult = (() => {
-    void searchVersion; // force dependency on search version
+    void searchVersion;
     if (!searchExecuted) return { products: [] as ProductItem[], services: [] as typeof mockResults, followUp: undefined, needLabel: undefined, suggestedServices: undefined };
     const query = executedQuery.toLowerCase().trim();
-    if (!query && activeSegments.length === 0) return { products: [] as ProductItem[], services: [] as typeof mockResults, followUp: undefined, needLabel: undefined, suggestedServices: undefined };
-    if (!query && activeSegments.length > 0) {
-      const allSvcs = getAllServices();
-      return { products: [] as ProductItem[], services: allSvcs.filter((r: any) => activeSegments.includes(r.segment)), followUp: undefined, needLabel: undefined, suggestedServices: undefined };
+    if (!query && activeSegments.length === 0) {
+      return { products: getAllProducts(), services: getAllServices(), followUp: undefined, needLabel: undefined, suggestedServices: undefined };
     }
-
+    if (!query && activeSegments.length > 0) {
+      const allSvcs = getAllServices().filter((r: any) => activeSegments.includes(r.segment));
+      const provNames = new Set(allSvcs.map((s: any) => s.provider));
+      const allProds = getAllProducts().filter((p: any) => provNames.has(p.provider));
+      return { products: allProds, services: allSvcs, followUp: undefined, needLabel: undefined, suggestedServices: undefined };
+    }
     const result = semanticSearch(query);
     const filteredServices = activeSegments.length === 0
       ? result.services
       : result.services.filter(r => activeSegments.includes(r.segment));
-
     return { ...result, services: filteredServices };
   })();
 
