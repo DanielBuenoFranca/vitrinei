@@ -120,19 +120,38 @@ const Landing = () => {
 
   const isInProductCart = (productId: number) => productCart.some(p => p.id === productId);
 
-  const navigateToProductDemo = () => {
-    if (productCart.length === 0) return;
+  const toggleServiceInCart = (service: ServiceCartItem) => {
+    setServiceCart(prev =>
+      prev.some(s => s.id === service.id)
+        ? prev.filter(s => s.id !== service.id)
+        : [...prev, service]
+    );
+  };
+
+  const isInServiceCart = (serviceId: number) => serviceCart.some(s => s.id === serviceId);
+
+  const totalCartItems = productCart.length + serviceCart.length;
+  const totalCartValue = productCart.reduce((s, p) => s + p.price, 0) + serviceCart.reduce((s, svc) => s + svc.price, 0);
+
+  const navigateToCheckout = () => {
+    if (totalCartItems === 0) return;
     const params = new URLSearchParams({
+      services: JSON.stringify(serviceCart.map(s => ({
+        name: s.name, provider: s.provider, price: s.price, rating: s.rating,
+        distance: s.distance, time: s.time, segment: s.segment, products: s.products,
+      }))),
       products: JSON.stringify(productCart.map(p => ({
-        name: p.name,
-        type: p.stockType,
-        price: p.price,
-        provider: p.provider,
-        rating: p.rating,
-        distance: p.distance,
+        name: p.name, type: p.stockType, price: p.price, provider: p.provider,
+        rating: p.rating, distance: p.distance,
       }))),
     });
-    navigate(`/dropshipping?${params.toString()}`);
+    navigate(`/jornada-cliente?${params.toString()}`);
+  };
+
+  const clearCart = () => {
+    setProductCart([]);
+    setServiceCart([]);
+    setShowCartDetails(false);
   };
 
   useEffect(() => {
