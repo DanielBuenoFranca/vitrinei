@@ -497,7 +497,7 @@ const Landing = () => {
                       )}
 
                       {/* ── Grouped by Provider ── */}
-                      {executedQuery && (() => {
+                      {(() => {
                         // Group products and services by provider
                         const providerMap = new Map<string, { products: typeof searchResult.products; services: typeof filteredResults }>();
                         searchResult.products.forEach(p => {
