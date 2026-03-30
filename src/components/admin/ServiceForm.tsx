@@ -67,6 +67,16 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
   const [linkedProductIds, setLinkedProductIds] = useState<number[]>([]);
   const [availableProducts, setAvailableProducts] = useState<AvailableProduct[]>([]);
   const [saving, setSaving] = useState(false);
+  const [allServiceNames, setAllServiceNames] = useState<string[]>([]);
+  const { suggestions, loading: sugLoading, suggest, clear: clearSuggestions } = useNameSuggestion();
+
+  useEffect(() => {
+    if (open) {
+      supabase.from('dynamic_services').select('name').then(({ data }) => {
+        setAllServiceNames((data || []).map((d: any) => d.name));
+      });
+    }
+  }, [open]);
 
   useEffect(() => {
     if (open) {
