@@ -83,6 +83,17 @@ const demos = [
     badge: 'Dashboard',
     category: 'fluxo',
   },
+  {
+    id: 'central-atendimento',
+    title: 'Central de Atendimento',
+    description: 'Simulação do fluxo operacional da central: análise por IA, busca de profissionais, cadastro e despacho de chamados.',
+    perspective: 'Visão Operacional',
+    steps: 6,
+    emoji: '🎧',
+    route: '/central-atendimento',
+    badge: 'Operacional',
+    category: 'fluxo',
+  },
 ];
 
 const categoryLabels: Record<string, { label: string; icon: React.ReactNode }> = {

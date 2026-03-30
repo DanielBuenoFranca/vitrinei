@@ -61,6 +61,17 @@ const demos = [
     color: 'bg-orange-500/10 border-orange-500/20',
     badge: 'Técnico',
   },
+  {
+    id: 'central-atendimento',
+    title: 'Central de Atendimento',
+    description: 'Simulação do fluxo operacional da central: análise por IA, busca de profissionais, cadastro e despacho de chamados.',
+    perspective: 'Visão Operacional',
+    steps: 6,
+    emoji: '🎧',
+    route: '/central-atendimento',
+    color: 'bg-accent/10 border-accent/20',
+    badge: 'Operacional',
+  },
 ];
 
 const DemoPortfolio = () => {
