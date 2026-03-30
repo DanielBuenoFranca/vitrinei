@@ -601,6 +601,71 @@ const Landing = () => {
                     </>
                   )}
 
+                  {/* ── AI SUGGESTIONS (shown after DB results OR when no results) ── */}
+                  {hasResults && executedQuery && (() => {
+                    const ctxSuggestion = generateContextualSuggestions(executedQuery);
+                    if (!ctxSuggestion) return null;
+                    // Filter out suggestions that already exist in the DB results
+                    const existingServiceNames = new Set(filteredResults.map(s => s.name.toLowerCase()));
+                    const existingProductNames = new Set(searchResult.products.map(p => p.name.toLowerCase()));
+                    const newServices = ctxSuggestion.suggestedServices.filter(s => !existingServiceNames.has(s.name.toLowerCase()));
+                    const newProducts = ctxSuggestion.suggestedProducts.filter(p => !existingProductNames.has(p.name.toLowerCase()));
+                    if (newServices.length === 0 && newProducts.length === 0) return null;
+                    return (
+                      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-6 rounded-2xl border border-accent/30 bg-accent/5 p-5">
+                        <div className="flex items-center gap-3 mb-4">
+                          <AiAvatar size={36} speaking={false} onClick={() => setShowAiPanel(true)} />
+                          <div>
+                            <h3 className="font-display font-bold text-foreground text-sm flex items-center gap-2">
+                              <Sparkles className="w-4 h-4 text-accent" /> Sugestões adicionais da IA
+                            </h3>
+                            <p className="text-xs text-muted-foreground">
+                              Itens relacionados que ainda não estão cadastrados. Selecione para solicitar via Central.
+                            </p>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground mb-2">Selecione para acionar a Central de Atendimento:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {newServices.map((svc) => {
+                              const isSelected = selectedSuggestions.has(svc.name);
+                              return (
+                                <motion.button key={svc.name} whileTap={{ scale: 0.95 }}
+                                  onClick={() => toggleSuggestionSelection(svc.name)}
+                                  className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs font-medium transition-all duration-200 border ${
+                                    isSelected ? 'bg-primary text-primary-foreground border-primary shadow-md' : 'bg-muted/50 text-foreground border-border hover:border-primary/40'
+                                  }`}>
+                                  <WrenchIcon className="w-3.5 h-3.5" /> {svc.name}
+                                  {isSelected && <CheckCircle2 className="w-3.5 h-3.5" />}
+                                </motion.button>
+                              );
+                            })}
+                            {newProducts.map((prod) => {
+                              const isSelected = selectedSuggestions.has(prod.name);
+                              return (
+                                <motion.button key={prod.name} whileTap={{ scale: 0.95 }}
+                                  onClick={() => toggleSuggestionSelection(prod.name)}
+                                  className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs font-medium transition-all duration-200 border ${
+                                    isSelected ? 'bg-success text-primary-foreground border-success shadow-md' : 'bg-muted/50 text-foreground border-border hover:border-success/40'
+                                  }`}>
+                                  <ShoppingBag className="w-3.5 h-3.5" /> {prod.name}
+                                  {isSelected && <CheckCircle2 className="w-3.5 h-3.5" />}
+                                </motion.button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        {selectedSuggestions.size > 0 && (
+                          <div className="flex gap-2 pt-3">
+                            <Button className="gap-2" onClick={() => handleSendSelectedSuggestions(ctxSuggestion)}>
+                              <Headphones className="w-4 h-4" /> Enviar {selectedSuggestions.size} seleção(ões) para a Central
+                            </Button>
+                          </div>
+                        )}
+                      </motion.div>
+                    );
+                  })()}
+
                   {/* ── NOT FOUND IN DATABASE ── */}
                   {noResults && (() => {
                     const ctxSuggestion = generateContextualSuggestions(executedQuery);
