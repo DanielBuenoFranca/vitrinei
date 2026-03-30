@@ -16,6 +16,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
 import { addDynamicEntries, segments, type DynamicEntry } from '@/data/searchData';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Select,
   SelectContent,
