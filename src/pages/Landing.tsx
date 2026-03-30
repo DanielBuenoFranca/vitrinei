@@ -17,10 +17,11 @@ import { segments, mockResults, semanticSearch, buildSupportSummary, generateCon
 
 
 const aiSuggestions = [
-  '🔌 Baseado no seu perfil, recomendamos uma revisão elétrica completa — você não faz há 8 meses!',
-  '💇 Agende seu corte mensal com 15% de desconto no seu plano Prata!',
-  '🏠 Combo Casa Limpa: Faxina + Jardinagem com 20% OFF juntos',
-  '🚗 Seu carro está próximo da revisão dos 30.000 km — agende agora!',
+  '💡 A inteligência encontra o que você precisa — sem esforço.',
+  '🔍 Pesquise qualquer necessidade. Se não tivermos, a IA encontra para você.',
+  '🚀 Mais de 2.450 profissionais prontos para atender agora mesmo.',
+  '✨ Assine e tenha acesso a serviços exclusivos com até 30% de economia.',
+  '🤝 É prestador? Cadastre-se e conquiste novos clientes todo dia.',
 ];
 
 
