@@ -93,6 +93,8 @@ const SupportCenterDemo = () => {
 
   // Registration form states
   const [showProviderForm, setShowProviderForm] = useState(false);
+  const [showProviderChoice, setShowProviderChoice] = useState(false);
+  const [existingProviders, setExistingProviders] = useState<Array<{id: number; name: string; segment: string; distance: string; rating: number; phone: string | null; email: string | null; city: string | null; address: string | null; type: string}>>([]);
   const [showServiceForm, setShowServiceForm] = useState(false);
   const [showProductForm, setShowProductForm] = useState(false);
   const [registeredProviders, setRegisteredProviders] = useState<(ProviderFormData & { rating: number })[]>([]);
@@ -108,6 +110,15 @@ const SupportCenterDemo = () => {
   const [productForm, setProductForm] = useState<ProductFormData>({
     name: '', price: '', stockType: 'fisico', description: '',
   });
+
+  // Fetch existing providers from DB
+  useEffect(() => {
+    const fetchProviders = async () => {
+      const { data } = await supabase.from('providers').select('*').eq('active', true);
+      if (data) setExistingProviders(data);
+    };
+    fetchProviders();
+  }, []);
 
   const userSelections: string[] = suggestionsParam ? (() => { try { return JSON.parse(suggestionsParam); } catch { return []; } })() : [];
   const contextName = query.split(',')[0]?.trim() || query;
