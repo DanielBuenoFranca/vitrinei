@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
-import { segments, mockResults, semanticSearch, buildSupportSummary, generateContextualSuggestions, getAllServices, type ProductItem, type SearchResult, type ContextualSuggestion } from '@/data/searchData';
+import { segments, mockResults, semanticSearch, buildSupportSummary, generateContextualSuggestions, getAllServices, getAllProducts, type ProductItem, type SearchResult, type ContextualSuggestion } from '@/data/searchData';
 
 
 const aiSuggestions = [
@@ -69,13 +69,11 @@ const Landing = () => {
   };
 
   const executeSearch = () => {
-    if (!searchQuery.trim() && activeSegments.length === 0) return;
     setExecutedQuery(searchQuery.trim());
     setSearchExecuted(true);
     setSearchVersion(v => v + 1);
     setSelectedSuggestions(new Set());
     setShowSearchProducts(false);
-    setProductCart([]);
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent) => {
@@ -175,6 +173,13 @@ const Landing = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Auto-load all inventory on mount
+  useEffect(() => {
+    setSearchExecuted(true);
+    setExecutedQuery('');
+    setSearchVersion(1);
+  }, []);
+
   const toggleSegment = (id: string) => {
     setActiveSegments((prev) => {
       const next = prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id];
@@ -191,20 +196,22 @@ const Landing = () => {
   // Executa APENAS após o usuário clicar em Buscar ou pressionar Enter
   // searchVersion forces re-evaluation on each click
   const searchResult = (() => {
-    void searchVersion; // force dependency on search version
+    void searchVersion;
     if (!searchExecuted) return { products: [] as ProductItem[], services: [] as typeof mockResults, followUp: undefined, needLabel: undefined, suggestedServices: undefined };
     const query = executedQuery.toLowerCase().trim();
-    if (!query && activeSegments.length === 0) return { products: [] as ProductItem[], services: [] as typeof mockResults, followUp: undefined, needLabel: undefined, suggestedServices: undefined };
-    if (!query && activeSegments.length > 0) {
-      const allSvcs = getAllServices();
-      return { products: [] as ProductItem[], services: allSvcs.filter((r: any) => activeSegments.includes(r.segment)), followUp: undefined, needLabel: undefined, suggestedServices: undefined };
+    if (!query && activeSegments.length === 0) {
+      return { products: getAllProducts(), services: getAllServices(), followUp: undefined, needLabel: undefined, suggestedServices: undefined };
     }
-
+    if (!query && activeSegments.length > 0) {
+      const allSvcs = getAllServices().filter((r: any) => activeSegments.includes(r.segment));
+      const provNames = new Set(allSvcs.map((s: any) => s.provider));
+      const allProds = getAllProducts().filter((p: any) => provNames.has(p.provider));
+      return { products: allProds, services: allSvcs, followUp: undefined, needLabel: undefined, suggestedServices: undefined };
+    }
     const result = semanticSearch(query);
     const filteredServices = activeSegments.length === 0
       ? result.services
       : result.services.filter(r => activeSegments.includes(r.segment));
-
     return { ...result, services: filteredServices };
   })();
 
@@ -328,63 +335,26 @@ const Landing = () => {
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="pt-24 pb-4 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-        <div className="container mx-auto text-center relative max-w-4xl">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-             <h1 className="font-display text-3xl md:text-5xl lg:text-6xl font-extrabold text-foreground mb-3 leading-tight tracking-tight">
-               Mais clientes para seu negócio, <span className="text-primary">todos os dias.</span><br />
-               <span className="text-muted-foreground text-2xl md:text-3xl lg:text-4xl font-bold">A inteligência que conecta quem precisa a quem resolve.</span>
-             </h1>
-             <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-4">
-               Serviços, produtos, profissionais — tudo em um só lugar. Se não existir aqui, nossa IA vasculha o ecossistema inteiro e entrega a melhor opção.
-             </p>
-             {/* Social proof bar */}
-             <div className="flex flex-wrap justify-center gap-4 text-xs sm:text-sm text-muted-foreground mb-6">
-               <span className="flex items-center gap-1.5 font-medium"><Users className="w-4 h-4 text-primary" /> <strong className="text-foreground">2.450+</strong> MEIs ativos</span>
-               <span className="flex items-center gap-1.5 font-medium"><Star className="w-4 h-4 fill-accent text-accent" /> <strong className="text-foreground">4.8</strong> avaliação média</span>
-               <span className="flex items-center gap-1.5 font-medium"><Shield className="w-4 h-4 text-success" /> Pagamento <strong className="text-foreground">100% seguro</strong></span>
-               <span className="flex items-center gap-1.5 font-medium"><CheckCircle2 className="w-4 h-4 text-success" /> <strong className="text-foreground">12.800+</strong> serviços realizados</span>
-             </div>
-          </motion.div>
-
-          {/* CTA buttons */}
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }} className="flex gap-3 justify-center mb-6">
-            <Button size="lg" className="gap-2 px-6" onClick={() => navigate('/mei')}>
-              <BarChart3 className="w-4 h-4" /> Painel MEI
-            </Button>
-            <Button size="lg" variant="outline" className="gap-2 px-6" onClick={() => navigate('/client')}>
-              <ShoppingCart className="w-4 h-4" /> App Cliente
-            </Button>
+      {/* Hero - Compact */}
+      <section className="pt-16 pb-1 px-4">
+        <div className="container mx-auto text-center max-w-4xl">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+            <h1 className="font-display text-xl md:text-2xl font-bold text-foreground mb-1">
+              O que você precisa <span className="text-primary">hoje</span>?
+            </h1>
+            <div className="flex justify-center gap-3 text-[11px] text-muted-foreground mb-1">
+              <span className="flex items-center gap-1"><Users className="w-3 h-3 text-primary" /> <strong className="text-foreground">2.450+</strong> MEIs</span>
+              <span className="flex items-center gap-1"><Star className="w-3 h-3 fill-accent text-accent" /> <strong className="text-foreground">4.8</strong></span>
+              <span className="flex items-center gap-1"><Shield className="w-3 h-3 text-success" /> Seguro</span>
+              <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-success" /> <strong className="text-foreground">12.800+</strong> serviços</span>
+            </div>
           </motion.div>
         </div>
       </section>
 
-      {/* AI Avatar + Search Section */}
-      <section className="px-4 pb-8">
+      {/* Search Section */}
+      <section className="px-4 pb-2">
         <div className="container mx-auto max-w-5xl">
-          {/* Avatar + greeting */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.4, duration: 0.6, type: 'spring' }}
-            className="flex flex-col items-center mb-6"
-          >
-            <AiAvatar size={80} speaking={aiSpeaking} onClick={() => setShowAiPanel(true)} />
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
-              className="mt-4 bg-card border border-border rounded-2xl rounded-tl-md px-5 py-3 shadow-md max-w-md relative"
-            >
-              <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-card border-l border-t border-border rotate-45" />
-               <p className="text-sm text-foreground font-medium relative z-10">
-                 Me diga o que você precisa 👋<br />
-                 <span className="text-muted-foreground font-normal">Eu encontro o melhor profissional perto de você.</span>
-               </p>
-            </motion.div>
-          </motion.div>
 
           <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5, duration: 0.5 }}>
             {/* Search bar */}
@@ -426,42 +396,41 @@ const Landing = () => {
               </AnimatePresence>
             </div>
 
-            {/* Segment chips */}
-            <div className="flex flex-wrap gap-2 mb-6 justify-center">
+            {/* Category filters */}
+            <div className="flex flex-wrap gap-1.5 mb-3 justify-center">
               {segments.map((seg) => {
                 const Icon = seg.icon;
                 const isActive = activeSegments.includes(seg.id);
                 return (
-                  <motion.button
+                  <button
                     key={seg.id}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
                     onClick={() => toggleSegment(seg.id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border ${
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all border ${
                       isActive
-                        ? 'bg-primary text-primary-foreground border-primary shadow-md'
-                        : 'bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-muted/30 text-muted-foreground border-transparent hover:border-border hover:text-foreground'
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className="w-3 h-3" />
                     {seg.label}
-                  </motion.button>
+                  </button>
                 );
               })}
             </div>
 
-            {/* Results grid */}
+            {/* Results */}
+            <div className="max-h-[calc(100vh-240px)] overflow-y-auto rounded-xl pr-1">
             <AnimatePresence>
               {searchExecuted && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }}>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
 
                   {/* ── FOUND IN DATABASE ── */}
                   {hasResults && (
                     <>
                       {/* Found badge */}
-                      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-4 flex items-center gap-2">
+                      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-3 flex items-center gap-2">
                         <Badge className="bg-success/10 text-success border-success/20 text-xs px-3 py-1">
-                          <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> Encontrado na base de dados
+                          <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> {executedQuery ? 'Encontrado na base de dados' : 'Catálogo disponível'}
                         </Badge>
                         <span className="text-xs text-muted-foreground">
                           {filteredResults.length > 0 && `${filteredResults.length} serviço(s)`}
@@ -491,7 +460,7 @@ const Landing = () => {
                       )}
 
                       {/* ── Grouped by Provider ── */}
-                      {executedQuery && (() => {
+                      {(() => {
                         // Group products and services by provider
                         const providerMap = new Map<string, { products: typeof searchResult.products; services: typeof filteredResults }>();
                         searchResult.products.forEach(p => {
@@ -856,72 +825,7 @@ const Landing = () => {
                 </motion.div>
               )}
             </AnimatePresence>
-
-            {/* Idle state */}
-            {!searchExecuted && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-center py-6">
-                <div className="grid sm:grid-cols-3 gap-4 max-w-3xl mx-auto mb-8">
-                  {[
-                    { icon: TrendingDown, title: 'Melhor Preço', desc: 'IA compara todos os fornecedores e acha o menor preço do ecossistema', color: 'text-primary' },
-                    { icon: Navigation, title: 'Mais Próximo', desc: 'Prioriza prestadores na sua região para atendimento rápido', color: 'text-success' },
-                    { icon: Clock, title: 'Menor Tempo', desc: 'Agenda automática com o profissional disponível mais cedo', color: 'text-accent-foreground' },
-                  ].map((feat, idx) => (
-                    <motion.div
-                      key={feat.title}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.8 + idx * 0.15 }}
-                    >
-                      <Card className="border-border/50 hover:border-primary/20 transition-all duration-300 h-full">
-                        <CardContent className="p-5 text-center">
-                          <motion.div
-                            animate={{ y: [0, -4, 0] }}
-                            transition={{ duration: 2, repeat: Infinity, delay: idx * 0.3 }}
-                            className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3"
-                          >
-                            <feat.icon className={`w-6 h-6 ${feat.color}`} />
-                          </motion.div>
-                          <h3 className="font-display font-bold text-foreground mb-1">{feat.title}</h3>
-                          <p className="text-xs text-muted-foreground">{feat.desc}</p>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  ))}
-                </div>
-
-                {/* Trust bar */}
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }} className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1.5"><Users className="w-4 h-4 text-primary" /> 2.450+ MEIs ativos</span>
-                  <span className="flex items-center gap-1.5"><Shield className="w-4 h-4 text-success" /> Pagamento seguro</span>
-                  <span className="flex items-center gap-1.5"><Star className="w-4 h-4 text-accent" /> 4.8 avaliação média</span>
-                  <span className="flex items-center gap-1.5"><Headphones className="w-4 h-4 text-primary" /> Suporte 24h</span>
-                </motion.div>
-
-                {/* Not found CTA */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1.4 }}
-                  className="mt-8 mx-auto max-w-2xl"
-                >
-                  <Card className="border-primary/20 bg-primary/5 overflow-hidden relative">
-                    <CardContent className="p-6 flex flex-col sm:flex-row items-center gap-4">
-                      <AiAvatar size={56} speaking={false} onClick={() => setShowAiPanel(true)} />
-                      <div className="text-left">
-                        <h3 className="font-display font-bold text-foreground mb-1">Não achou o que precisa?</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Fale comigo! Eu cruzo <strong>todos os fornecedores</strong>, estoques e catálogos drop-shipping do ecossistema.
-                          Se eu não encontrar, a <strong>Central de Atendimento</strong> resolve em até <strong>24 horas</strong>.
-                        </p>
-                      </div>
-                      <Button variant="outline" className="shrink-0 gap-1" onClick={() => setShowAiPanel(true)}>
-                        <Sparkles className="w-4 h-4" /> Conversar
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              </motion.div>
-            )}
+            </div>
           </motion.div>
         </div>
       </section>
@@ -1362,15 +1266,15 @@ const Landing = () => {
       </AnimatePresence>
 
       {/* Footer */}
-      <footer className="border-t border-border py-6 px-4">
-        <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
-              <Zap className="w-4 h-4 text-primary-foreground" />
+      <footer className="border-t border-border py-3 px-4">
+        <div className="container mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-1.5">
+            <div className="w-5 h-5 rounded bg-primary flex items-center justify-center">
+              <Zap className="w-3 h-3 text-primary-foreground" />
             </div>
-            <span className="font-display font-bold text-foreground">EcoMEI</span>
+            <span className="font-display text-sm font-bold text-foreground">EcoMEI</span>
           </div>
-          <p className="text-sm text-muted-foreground">© 2026 EcoMEI — Demo para apresentação a investidores</p>
+          <p className="text-xs text-muted-foreground">© 2026 EcoMEI — Demo</p>
         </div>
       </footer>
     </div>
