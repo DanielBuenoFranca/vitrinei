@@ -945,7 +945,7 @@ const Landing = () => {
                                 <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                                   <div className="p-3 pt-0 space-y-2">
                                     {data.services.map(r => {
-                                      const seg = segments.find(s => s.id === r.segment);
+                                      const seg = staticSegments.find(s => s.id === r.segment);
                                       const SegIcon = seg?.icon || Sparkles;
                                       return (
                                         <Card key={r.id} className={`transition-all cursor-pointer group ${isInServiceCart(r.id) ? 'border-primary bg-primary/5' : 'border-border/50 hover:border-primary/30'}`}
