@@ -433,7 +433,7 @@ const AdminPanel = () => {
 
       {/* Dialogs */}
       <ProviderForm open={providerForm.open} onClose={() => setProviderForm({ open: false, item: null })} onSaved={fetchData} provider={providerForm.item} segments={segmentList} />
-      <ProductForm open={productForm.open} onClose={() => setProductForm({ open: false, item: null })} onSaved={fetchData} product={productForm.item} providers={providerList} />
+      <ProductForm open={productForm.open} onClose={() => setProductForm({ open: false, item: null })} onSaved={fetchData} product={productForm.item} providers={providerList} segments={segmentList} />
       <ServiceForm open={serviceForm.open} onClose={() => setServiceForm({ open: false, item: null })} onSaved={fetchData} service={serviceForm.item} providers={providerList} segments={segmentList} />
       <SegmentForm open={segmentForm.open} onClose={() => setSegmentForm({ open: false, item: null })} onSaved={fetchData} segment={segmentForm.item} />
       <ClearDataDialog open={clearDialog} onClose={() => setClearDialog(false)} onCleared={fetchData} counts={{ providers: providers.length, services: services.length, products: products.length, segments: segments.length }} />

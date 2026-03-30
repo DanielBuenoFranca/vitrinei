@@ -13,7 +13,8 @@ import {
 } from 'lucide-react';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
-import { segments, mockResults, semanticSearch, buildSupportSummary, generateContextualSuggestions, getAllServices, getAllProducts, type ProductItem, type SearchResult, type ContextualSuggestion } from '@/data/searchData';
+import { segments as staticSegments, mockResults, semanticSearch, buildSupportSummary, generateContextualSuggestions, getAllServices, getAllProducts, loadDynamicEntries, reloadDynamicEntries, type ProductItem, type SearchResult, type ContextualSuggestion } from '@/data/searchData';
+import { supabase } from '@/integrations/supabase/client';
 
 
 const aiSuggestions = [
@@ -58,6 +59,8 @@ const Landing = () => {
   const [showCartDetails, setShowCartDetails] = useState(false);
   const [pendingChatSuggestions, setPendingChatSuggestions] = useState<Map<number, Set<string>>>(new Map());
   const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
+  const [dbSegments, setDbSegments] = useState<{ id: string; label: string; name: string }[]>([]);
+  const [dataLoaded, setDataLoaded] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   const toggleProviderExpanded = (providerName: string) => {
@@ -174,11 +177,20 @@ const Landing = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-load all inventory on mount
+  // Load data from database on mount
   useEffect(() => {
-    setSearchExecuted(true);
-    setExecutedQuery('');
-    setSearchVersion(1);
+    const loadData = async () => {
+      await reloadDynamicEntries();
+      const { data: segs } = await supabase.from('segments').select('*').order('name');
+      if (segs) {
+        setDbSegments(segs.map((s: any) => ({ id: s.name, label: s.name, name: s.name })));
+      }
+      setDataLoaded(true);
+      setSearchExecuted(true);
+      setExecutedQuery('');
+      setSearchVersion(1);
+    };
+    loadData();
   }, []);
 
   const toggleSegment = (id: string) => {
@@ -408,9 +420,11 @@ const Landing = () => {
 
             {/* Category filters */}
             <div className="flex flex-wrap gap-1.5 mb-3 justify-center">
-              {segments.map((seg) => {
-                const Icon = seg.icon;
+              {dbSegments.map((seg) => {
                 const isActive = activeSegments.includes(seg.id);
+                // Try to find a matching static segment for icon, fallback to Tag
+                const staticSeg = staticSegments.find(s => s.id === seg.id || s.label.toLowerCase() === seg.label.toLowerCase());
+                const Icon = staticSeg?.icon || Sparkles;
                 return (
                   <button
                     key={seg.id}
@@ -550,7 +564,7 @@ const Landing = () => {
                                               </p>
                                               <div className="grid sm:grid-cols-2 gap-2">
                                                 {data.services.map((result) => {
-                                                  const seg = segments.find((s) => s.id === result.segment);
+                                                  const seg = staticSegments.find((s) => s.id === result.segment);
                                                   const SegIcon = seg?.icon || Sparkles;
                                                   return (
                                                     <Card key={result.id}
@@ -931,7 +945,7 @@ const Landing = () => {
                                 <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                                   <div className="p-3 pt-0 space-y-2">
                                     {data.services.map(r => {
-                                      const seg = segments.find(s => s.id === r.segment);
+                                      const seg = staticSegments.find(s => s.id === r.segment);
                                       const SegIcon = seg?.icon || Sparkles;
                                       return (
                                         <Card key={r.id} className={`transition-all cursor-pointer group ${isInServiceCart(r.id) ? 'border-primary bg-primary/5' : 'border-border/50 hover:border-primary/30'}`}
@@ -992,7 +1006,7 @@ const Landing = () => {
                       </p>
                       <div className="space-y-2">
                         {msg.searchResult.suggestedServices.slice(0, 2).map((r) => {
-                          const seg = segments.find((s) => s.id === r.segment);
+                          const seg = staticSegments.find((s) => s.id === r.segment);
                           const SegIcon = seg?.icon || Sparkles;
                           return (
                             <motion.div key={r.id} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>

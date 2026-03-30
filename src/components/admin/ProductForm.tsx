@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNameSuggestion } from '@/hooks/useNameSuggestion';
 import { NameSuggestions } from '@/components/admin/NameSuggestions';
+import { X, Plus, Loader2, Sparkles } from 'lucide-react';
 
 interface DynamicProduct {
   id: number;
@@ -28,21 +30,32 @@ interface Provider {
   segment: string;
 }
 
+interface Segment {
+  id: number;
+  name: string;
+}
+
 interface ProductFormProps {
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
   product?: DynamicProduct | null;
   providers: Provider[];
+  segments?: Segment[];
 }
 
-export function ProductForm({ open, onClose, onSaved, product, providers }: ProductFormProps) {
+export function ProductForm({ open, onClose, onSaved, product, providers, segments = [] }: ProductFormProps) {
   const isEdit = !!product;
   const [form, setForm] = useState({
     name: '', price: 0, provider: '', provider_id: null as number | null,
-    stock_type: 'fisico', rating: 4.5, distance: '2 km', tags: '',
+    stock_type: 'fisico', rating: 4.5, distance: '2 km',
     product_id: Math.floor(Math.random() * 9000) + 1000,
   });
+  const [selectedSegments, setSelectedSegments] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
+  const [loadingTags, setLoadingTags] = useState(false);
+  const [newTag, setNewTag] = useState('');
   const [saving, setSaving] = useState(false);
   const [allProductNames, setAllProductNames] = useState<string[]>([]);
   const { suggestions, loading: sugLoading, suggest, clear: clearSuggestions } = useNameSuggestion();
@@ -61,29 +74,80 @@ export function ProductForm({ open, onClose, onSaved, product, providers }: Prod
         name: product.name, price: product.price, provider: product.provider,
         provider_id: product.provider_id, stock_type: product.stock_type,
         rating: product.rating, distance: product.distance,
-        tags: (product.tags || []).join(', '), product_id: product.product_id,
+        product_id: product.product_id,
       });
+      setSelectedTags(product.tags || []);
+      // Try to infer segments from provider
+      if (product.provider_id) {
+        const prov = providers.find(p => p.id === product.provider_id);
+        if (prov) setSelectedSegments([prov.segment]);
+      }
     } else {
-      setForm({ name: '', price: 0, provider: '', provider_id: null, stock_type: 'fisico', rating: 4.5, distance: '2 km', tags: '', product_id: Math.floor(Math.random() * 9000) + 1000 });
+      setForm({ name: '', price: 0, provider: '', provider_id: null, stock_type: 'fisico', rating: 4.5, distance: '2 km', product_id: Math.floor(Math.random() * 9000) + 1000 });
+      setSelectedTags([]);
+      setSelectedSegments([]);
+      setSuggestedTags([]);
     }
-  }, [product, open]);
+  }, [product, open, providers]);
+
+  const fetchSuggestedTags = useCallback(async (segmentNames: string[]) => {
+    if (segmentNames.length === 0) { setSuggestedTags([]); return; }
+    setLoadingTags(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('suggest-tags', {
+        body: { segment: segmentNames.join(', '), existingTags: selectedTags },
+      });
+      if (!error && data?.tags) {
+        setSuggestedTags(data.tags.filter((t: string) => !selectedTags.includes(t)));
+      }
+    } catch { /* ignore */ }
+    setLoadingTags(false);
+  }, [selectedTags]);
+
+  const handleSegmentToggle = (segName: string) => {
+    setSelectedSegments(prev => {
+      const next = prev.includes(segName) ? prev.filter(s => s !== segName) : [...prev, segName];
+      fetchSuggestedTags(next);
+      return next;
+    });
+  };
 
   const handleProviderSelect = (providerId: string) => {
     const prov = providers.find(p => p.id === Number(providerId));
     if (prov) {
       setForm(f => ({ ...f, provider: prov.name, provider_id: prov.id }));
+      if (!selectedSegments.includes(prov.segment)) {
+        const next = [...selectedSegments, prov.segment];
+        setSelectedSegments(next);
+        fetchSuggestedTags(next);
+      }
+    }
+  };
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev =>
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    );
+    setSuggestedTags(prev => prev.filter(t => t !== tag));
+  };
+
+  const addNewTag = () => {
+    const trimmed = newTag.trim().toLowerCase();
+    if (trimmed && !selectedTags.includes(trimmed)) {
+      setSelectedTags(prev => [...prev, trimmed]);
+      setNewTag('');
     }
   };
 
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Nome é obrigatório'); return; }
     if (!form.provider.trim()) { toast.error('Fornecedor é obrigatório'); return; }
+    if (selectedSegments.length === 0) { toast.error('Selecione pelo menos um segmento'); return; }
     setSaving(true);
-    const tagsArray = form.tags.split(',').map(t => t.trim()).filter(Boolean);
     const data = {
       name: form.name, price: form.price, provider: form.provider,
       provider_id: form.provider_id, stock_type: form.stock_type,
-      rating: form.rating, distance: form.distance, tags: tagsArray,
+      rating: form.rating, distance: form.distance, tags: selectedTags,
       product_id: form.product_id, related_service_ids: [] as number[],
     };
     if (isEdit) {
@@ -141,6 +205,80 @@ export function ProductForm({ open, onClose, onSaved, product, providers }: Prod
               <Input value={form.provider} onChange={e => setForm(f => ({ ...f, provider: e.target.value }))} placeholder="Nome do fornecedor" />
             )}
           </div>
+
+          {/* Segment selection */}
+          <div className="grid gap-2">
+            <Label>Segmento(s) *</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {segments.map(seg => (
+                <button
+                  key={seg.id}
+                  type="button"
+                  onClick={() => handleSegmentToggle(seg.name)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
+                    selectedSegments.includes(seg.name)
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-muted/30 text-muted-foreground border-border hover:border-primary/40'
+                  }`}
+                >
+                  {seg.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tags section */}
+          <div className="grid gap-2">
+            <Label className="flex items-center gap-2">
+              Tags
+              {loadingTags && <Loader2 className="w-3 h-3 animate-spin text-primary" />}
+            </Label>
+            {/* Selected tags */}
+            {selectedTags.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {selectedTags.map(tag => (
+                  <Badge key={tag} variant="default" className="gap-1 text-xs">
+                    {tag}
+                    <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedTags(prev => prev.filter(t => t !== tag))} />
+                  </Badge>
+                ))}
+              </div>
+            )}
+            {/* AI-suggested tags */}
+            {suggestedTags.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-accent" /> Tags sugeridas pela IA para {selectedSegments.join(', ')}:
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {suggestedTags.map(tag => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => toggleTag(tag)}
+                      className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-accent/10 text-accent-foreground border border-accent/20 hover:bg-accent/20 transition-colors"
+                    >
+                      + {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Add new tag */}
+            <div className="flex gap-2">
+              <Input
+                value={newTag}
+                onChange={e => setNewTag(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addNewTag())}
+                placeholder="Nova tag personalizada..."
+                className="text-sm"
+              />
+              <Button type="button" variant="outline" size="sm" onClick={addNewTag} disabled={!newTag.trim()}>
+                <Plus className="w-3 h-3 mr-1" /> Tag
+              </Button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
               <Label>Avaliação</Label>
@@ -150,10 +288,6 @@ export function ProductForm({ open, onClose, onSaved, product, providers }: Prod
               <Label>Distância</Label>
               <Input value={form.distance} onChange={e => setForm(f => ({ ...f, distance: e.target.value }))} />
             </div>
-          </div>
-          <div className="grid gap-2">
-            <Label>Tags (separadas por vírgula)</Label>
-            <Input value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))} placeholder="torneira, inox, cozinha" />
           </div>
         </div>
         <DialogFooter>
