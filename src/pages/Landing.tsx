@@ -465,9 +465,9 @@ const Landing = () => {
                   {hasResults && (
                     <>
                       {/* Found badge */}
-                      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-4 flex items-center gap-2">
+                      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-3 flex items-center gap-2">
                         <Badge className="bg-success/10 text-success border-success/20 text-xs px-3 py-1">
-                          <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> Encontrado na base de dados
+                          <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> {executedQuery ? 'Encontrado na base de dados' : 'Catálogo disponível'}
                         </Badge>
                         <span className="text-xs text-muted-foreground">
                           {filteredResults.length > 0 && `${filteredResults.length} serviço(s)`}
