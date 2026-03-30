@@ -1303,15 +1303,15 @@ const Landing = () => {
       </AnimatePresence>
 
       {/* Footer */}
-      <footer className="border-t border-border py-6 px-4">
-        <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
-              <Zap className="w-4 h-4 text-primary-foreground" />
+      <footer className="border-t border-border py-3 px-4">
+        <div className="container mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-1.5">
+            <div className="w-5 h-5 rounded bg-primary flex items-center justify-center">
+              <Zap className="w-3 h-3 text-primary-foreground" />
             </div>
-            <span className="font-display font-bold text-foreground">EcoMEI</span>
+            <span className="font-display text-sm font-bold text-foreground">EcoMEI</span>
           </div>
-          <p className="text-sm text-muted-foreground">© 2026 EcoMEI — Demo para apresentação a investidores</p>
+          <p className="text-xs text-muted-foreground">© 2026 EcoMEI — Demo</p>
         </div>
       </footer>
     </div>
