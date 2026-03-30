@@ -455,10 +455,11 @@ const Landing = () => {
               })}
             </div>
 
-            {/* Results grid */}
+            {/* Results */}
+            <div className="max-h-[calc(100vh-240px)] overflow-y-auto rounded-xl pr-1">
             <AnimatePresence>
               {searchExecuted && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }}>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
 
                   {/* ── FOUND IN DATABASE ── */}
                   {hasResults && (
