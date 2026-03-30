@@ -4,8 +4,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { X } from 'lucide-react';
+import { useNameSuggestion } from '@/hooks/useNameSuggestion';
+import { NameSuggestions } from '@/components/admin/NameSuggestions';
 
 interface DynamicService {
   id: number;
@@ -19,6 +24,8 @@ interface DynamicService {
   distance: string;
   time: string;
   products: string[];
+  labor_cost?: number;
+  linked_product_ids?: number[];
 }
 
 interface Provider {
@@ -27,40 +34,71 @@ interface Provider {
   segment: string;
 }
 
+interface AvailableProduct {
+  id: number;
+  name: string;
+  price: number;
+  provider: string;
+  provider_id: number | null;
+  stock_type: string;
+}
+
+interface Segment {
+  id: number;
+  name: string;
+}
+
 interface ServiceFormProps {
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
   service?: DynamicService | null;
   providers: Provider[];
+  segments: Segment[];
 }
 
-const SEGMENTS = [
-  'manutencao', 'saude_clinica', 'bem_estar', 'beleza', 'casa', 'auto',
-  'digital', 'tech', 'educacao', 'pet', 'eventos', 'musica', 'natureza',
-];
-
-export function ServiceForm({ open, onClose, onSaved, service, providers }: ServiceFormProps) {
+export function ServiceForm({ open, onClose, onSaved, service, providers, segments }: ServiceFormProps) {
   const isEdit = !!service;
   const [form, setForm] = useState({
-    name: '', segment: 'manutencao', provider: '', provider_id: null as number | null,
-    price: 0, rating: 4.5, distance: '2 km', time: '45 min', products: '',
+    name: '', segment: '', provider: '', provider_id: null as number | null,
+    labor_cost: 0, rating: 4.5, distance: '2 km', time: '45 min',
     service_id: Math.floor(Math.random() * 9000) + 1000,
   });
+  const [linkedProductIds, setLinkedProductIds] = useState<number[]>([]);
+  const [availableProducts, setAvailableProducts] = useState<AvailableProduct[]>([]);
   const [saving, setSaving] = useState(false);
+  const [allServiceNames, setAllServiceNames] = useState<string[]>([]);
+  const { suggestions, loading: sugLoading, suggest, clear: clearSuggestions } = useNameSuggestion();
+
+  useEffect(() => {
+    if (open) {
+      supabase.from('dynamic_services').select('name').then(({ data }) => {
+        setAllServiceNames((data || []).map((d: any) => d.name));
+      });
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (open) {
+      supabase.from('dynamic_products').select('id, name, price, provider, provider_id, stock_type')
+        .then(({ data }) => setAvailableProducts((data as AvailableProduct[]) || []));
+    }
+  }, [open]);
 
   useEffect(() => {
     if (service) {
       setForm({
         name: service.name, segment: service.segment, provider: service.provider,
-        provider_id: service.provider_id, price: service.price, rating: service.rating,
-        distance: service.distance, time: service.time,
-        products: (service.products || []).join(', '), service_id: service.service_id,
+        provider_id: service.provider_id, labor_cost: service.labor_cost || 0,
+        rating: service.rating, distance: service.distance, time: service.time,
+        service_id: service.service_id,
       });
+      setLinkedProductIds(service.linked_product_ids || []);
     } else {
-      setForm({ name: '', segment: 'manutencao', provider: '', provider_id: null, price: 0, rating: 4.5, distance: '2 km', time: '45 min', products: '', service_id: Math.floor(Math.random() * 9000) + 1000 });
+      setForm({ name: '', segment: segments[0]?.name || '', provider: '', provider_id: null, labor_cost: 0, rating: 4.5, distance: '2 km', time: '45 min', service_id: Math.floor(Math.random() * 9000) + 1000 });
+      setLinkedProductIds([]);
     }
-  }, [service, open]);
+  }, [service, open, segments]);
 
   const handleProviderSelect = (providerId: string) => {
     const prov = providers.find(p => p.id === Number(providerId));
@@ -69,16 +107,28 @@ export function ServiceForm({ open, onClose, onSaved, service, providers }: Serv
     }
   };
 
+  const toggleProduct = (productId: number) => {
+    setLinkedProductIds(prev =>
+      prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]
+    );
+  };
+
+  const linkedProducts = availableProducts.filter(p => linkedProductIds.includes(p.id));
+  const productsCost = linkedProducts.reduce((sum, p) => sum + p.price, 0);
+  const totalPrice = form.labor_cost + productsCost;
+
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Nome é obrigatório'); return; }
     if (!form.provider.trim()) { toast.error('Prestador é obrigatório'); return; }
+    if (!form.segment) { toast.error('Segmento é obrigatório'); return; }
     setSaving(true);
-    const productsArray = form.products.split(',').map(t => t.trim()).filter(Boolean);
+    const productsNames = linkedProducts.map(p => p.name);
     const data = {
       name: form.name, segment: form.segment, provider: form.provider,
-      provider_id: form.provider_id, price: form.price, rating: form.rating,
-      distance: form.distance, time: form.time, products: productsArray,
-      service_id: form.service_id,
+      provider_id: form.provider_id, price: totalPrice, rating: form.rating,
+      distance: form.distance, time: form.time, products: productsNames,
+      service_id: form.service_id, labor_cost: form.labor_cost,
+      linked_product_ids: linkedProductIds,
     };
     if (isEdit) {
       const { error } = await supabase.from('dynamic_services').update(data).eq('id', service!.id);
@@ -94,6 +144,28 @@ export function ServiceForm({ open, onClose, onSaved, service, providers }: Serv
     onClose();
   };
 
+  // Group products: provider's own stock, dropship, other providers
+  const providerProducts = availableProducts.filter(p => p.provider_id === form.provider_id && p.stock_type !== 'drop');
+  const dropProducts = availableProducts.filter(p => p.stock_type === 'drop');
+  const otherProducts = availableProducts.filter(p => p.provider_id !== form.provider_id && p.stock_type !== 'drop');
+
+  const renderProductGroup = (title: string, prods: AvailableProduct[]) => {
+    if (prods.length === 0) return null;
+    return (
+      <div className="space-y-1">
+        <p className="text-xs font-medium text-muted-foreground">{title}</p>
+        {prods.map(p => (
+          <label key={p.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-muted/50 cursor-pointer text-sm">
+            <Checkbox checked={linkedProductIds.includes(p.id)} onCheckedChange={() => toggleProduct(p.id)} />
+            <span className="flex-1">{p.name}</span>
+            <span className="text-muted-foreground text-xs">R$ {p.price.toFixed(2)}</span>
+            {p.stock_type === 'drop' && <Badge variant="outline" className="text-[9px] py-0">Drop</Badge>}
+          </label>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
@@ -103,36 +175,76 @@ export function ServiceForm({ open, onClose, onSaved, service, providers }: Serv
         <div className="grid gap-4 py-2">
           <div className="grid gap-2">
             <Label>Nome *</Label>
-            <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Nome do serviço" />
+            <Input value={form.name} onChange={e => { setForm(f => ({ ...f, name: e.target.value })); suggest(e.target.value, 'service', allServiceNames); }} placeholder="Nome do serviço" />
+            <NameSuggestions suggestions={suggestions} loading={sugLoading} onSelect={(n) => { setForm(f => ({ ...f, name: n })); clearSuggestions(); }} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
-              <Label>Segmento</Label>
+              <Label>Segmento *</Label>
               <Select value={form.segment} onValueChange={v => setForm(f => ({ ...f, segment: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
-                  {SEGMENTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  {segments.map(s => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label>Preço (R$)</Label>
-              <Input type="number" step="0.01" value={form.price} onChange={e => setForm(f => ({ ...f, price: parseFloat(e.target.value) || 0 }))} />
+              <Label>Prestador *</Label>
+              {providers.length > 0 ? (
+                <Select value={form.provider_id ? String(form.provider_id) : ''} onValueChange={handleProviderSelect}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    {providers.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input value={form.provider} onChange={e => setForm(f => ({ ...f, provider: e.target.value }))} placeholder="Nome do prestador" />
+              )}
             </div>
           </div>
+
+          {/* Products linking */}
           <div className="grid gap-2">
-            <Label>Prestador *</Label>
-            {providers.length > 0 ? (
-              <Select value={form.provider_id ? String(form.provider_id) : ''} onValueChange={handleProviderSelect}>
-                <SelectTrigger><SelectValue placeholder="Selecione um prestador" /></SelectTrigger>
-                <SelectContent>
-                  {providers.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.name} ({p.segment})</SelectItem>)}
-                </SelectContent>
-              </Select>
-            ) : (
-              <Input value={form.provider} onChange={e => setForm(f => ({ ...f, provider: e.target.value }))} placeholder="Nome do prestador" />
+            <Label>Produtos Vinculados</Label>
+            {linkedProducts.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-1">
+                {linkedProducts.map(p => (
+                  <Badge key={p.id} variant="secondary" className="gap-1 text-xs">
+                    {p.name} (R$ {p.price.toFixed(2)})
+                    <X className="h-3 w-3 cursor-pointer" onClick={() => toggleProduct(p.id)} />
+                  </Badge>
+                ))}
+              </div>
             )}
+            <div className="border rounded-md p-2 max-h-40 overflow-y-auto space-y-2">
+              {availableProducts.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-2">Nenhum produto cadastrado</p>
+              ) : (
+                <>
+                  {renderProductGroup('📦 Estoque do Prestador', providerProducts)}
+                  {renderProductGroup('🚚 Dropshipping', dropProducts)}
+                  {renderProductGroup('🏪 Outros Prestadores', otherProducts)}
+                </>
+              )}
+            </div>
           </div>
+
+          {/* Pricing */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="grid gap-2">
+              <Label>Mão de Obra (R$)</Label>
+              <Input type="number" step="0.01" value={form.labor_cost} onChange={e => setForm(f => ({ ...f, labor_cost: parseFloat(e.target.value) || 0 }))} />
+            </div>
+            <div className="grid gap-2">
+              <Label>Produtos (R$)</Label>
+              <Input type="number" value={productsCost.toFixed(2)} disabled className="bg-muted" />
+            </div>
+            <div className="grid gap-2">
+              <Label className="font-bold text-primary">Total (R$)</Label>
+              <Input type="number" value={totalPrice.toFixed(2)} disabled className="bg-primary/10 font-bold" />
+            </div>
+          </div>
+
           <div className="grid grid-cols-3 gap-3">
             <div className="grid gap-2">
               <Label>Avaliação</Label>
@@ -146,10 +258,6 @@ export function ServiceForm({ open, onClose, onSaved, service, providers }: Serv
               <Label>Tempo</Label>
               <Input value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} placeholder="45 min" />
             </div>
-          </div>
-          <div className="grid gap-2">
-            <Label>Produtos (separados por vírgula)</Label>
-            <Input value={form.products} onChange={e => setForm(f => ({ ...f, products: e.target.value }))} placeholder="Produto A, Produto B" />
           </div>
         </div>
         <DialogFooter>

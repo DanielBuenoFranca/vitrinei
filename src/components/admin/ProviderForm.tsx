@@ -9,35 +9,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface Provider {
-  id: number;
-  name: string;
-  type: string;
-  segment: string;
-  phone: string | null;
-  email: string | null;
-  address: string | null;
-  city: string | null;
-  distance: string;
-  rating: number;
-  active: boolean;
+  id: number; name: string; type: string; segment: string;
+  phone: string | null; email: string | null; address: string | null; city: string | null;
+  distance: string; rating: number; active: boolean;
 }
+
+interface Segment { id: number; name: string; }
 
 interface ProviderFormProps {
-  open: boolean;
-  onClose: () => void;
-  onSaved: () => void;
-  provider?: Provider | null;
+  open: boolean; onClose: () => void; onSaved: () => void;
+  provider?: Provider | null; segments: Segment[];
 }
 
-const SEGMENTS = [
-  'manutencao', 'saude_clinica', 'bem_estar', 'beleza', 'casa', 'auto',
-  'digital', 'tech', 'educacao', 'pet', 'eventos', 'musica', 'natureza',
-];
-
-export function ProviderForm({ open, onClose, onSaved, provider }: ProviderFormProps) {
+export function ProviderForm({ open, onClose, onSaved, provider, segments }: ProviderFormProps) {
   const isEdit = !!provider;
   const [form, setForm] = useState({
-    name: '', type: 'mei', segment: 'manutencao', phone: '', email: '',
+    name: '', type: 'mei', segment: '', phone: '', email: '',
     address: '', city: '', distance: '2 km', rating: 4.5, active: true,
   });
   const [saving, setSaving] = useState(false);
@@ -51,12 +38,13 @@ export function ProviderForm({ open, onClose, onSaved, provider }: ProviderFormP
         distance: provider.distance, rating: provider.rating, active: provider.active,
       });
     } else {
-      setForm({ name: '', type: 'mei', segment: 'manutencao', phone: '', email: '', address: '', city: '', distance: '2 km', rating: 4.5, active: true });
+      setForm({ name: '', type: 'mei', segment: segments[0]?.name || '', phone: '', email: '', address: '', city: '', distance: '2 km', rating: 4.5, active: true });
     }
-  }, [provider, open]);
+  }, [provider, open, segments]);
 
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Nome é obrigatório'); return; }
+    if (!form.segment) { toast.error('Segmento é obrigatório'); return; }
     setSaving(true);
     const data = { ...form, phone: form.phone || null, email: form.email || null, address: form.address || null, city: form.city || null };
     if (isEdit) {
@@ -68,9 +56,7 @@ export function ProviderForm({ open, onClose, onSaved, provider }: ProviderFormP
       if (error) { toast.error('Erro ao criar'); setSaving(false); return; }
       toast.success('Prestador criado');
     }
-    setSaving(false);
-    onSaved();
-    onClose();
+    setSaving(false); onSaved(); onClose();
   };
 
   return (
@@ -96,11 +82,11 @@ export function ProviderForm({ open, onClose, onSaved, provider }: ProviderFormP
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label>Segmento</Label>
+              <Label>Segmento *</Label>
               <Select value={form.segment} onValueChange={v => setForm(f => ({ ...f, segment: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
-                  {SEGMENTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  {segments.map(s => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

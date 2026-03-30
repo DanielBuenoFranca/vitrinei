@@ -6,6 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useNameSuggestion } from '@/hooks/useNameSuggestion';
+import { NameSuggestions } from '@/components/admin/NameSuggestions';
 
 interface DynamicProduct {
   id: number;
@@ -42,6 +44,16 @@ export function ProductForm({ open, onClose, onSaved, product, providers }: Prod
     product_id: Math.floor(Math.random() * 9000) + 1000,
   });
   const [saving, setSaving] = useState(false);
+  const [allProductNames, setAllProductNames] = useState<string[]>([]);
+  const { suggestions, loading: sugLoading, suggest, clear: clearSuggestions } = useNameSuggestion();
+
+  useEffect(() => {
+    if (open) {
+      supabase.from('dynamic_products').select('name').then(({ data }) => {
+        setAllProductNames((data || []).map((d: any) => d.name));
+      });
+    }
+  }, [open]);
 
   useEffect(() => {
     if (product) {
@@ -97,7 +109,8 @@ export function ProductForm({ open, onClose, onSaved, product, providers }: Prod
         <div className="grid gap-4 py-2">
           <div className="grid gap-2">
             <Label>Nome *</Label>
-            <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Nome do produto" />
+            <Input value={form.name} onChange={e => { setForm(f => ({ ...f, name: e.target.value })); suggest(e.target.value, 'product', allProductNames); }} placeholder="Nome do produto" />
+            <NameSuggestions suggestions={suggestions} loading={sugLoading} onSelect={(n) => { setForm(f => ({ ...f, name: n })); clearSuggestions(); }} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
