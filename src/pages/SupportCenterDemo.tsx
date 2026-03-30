@@ -506,7 +506,59 @@ const SupportCenterDemo = () => {
     7: 'Buscar no hub agora',
   };
 
-  const isFormOpen = showProviderForm || showServiceForm || showProductForm;
+  const handleSelectExistingProvider = (provider: typeof existingProviders[0]) => {
+    const providerData: ProviderFormData & { rating: number } = {
+      name: provider.name,
+      specialty: provider.segment,
+      phone: provider.phone || '',
+      email: provider.email || '',
+      address: provider.address || '',
+      city: provider.city || '',
+      distance: provider.distance,
+      segment: provider.segment,
+      rating: provider.rating,
+    };
+    setRegisteredProviders(prev => [...prev, providerData]);
+    addLog({
+      title: `Prestador selecionado: ${provider.name}`,
+      description: `${provider.segment} • ${provider.distance} • ${provider.city || 'Região local'}`,
+      status: 'done',
+      icon: <Users className="w-4 h-4" />,
+      details: (
+        <div className="mt-2 p-2.5 rounded-lg bg-muted/50 border border-border/50">
+          <div className="flex items-start gap-2">
+            <div className="w-7 h-7 rounded-full bg-success/10 flex items-center justify-center text-sm">✅</div>
+            <div>
+              <p className="font-semibold text-xs text-foreground">{provider.name}</p>
+              <p className="text-[10px] text-muted-foreground">{provider.segment} • ⭐ {provider.rating.toFixed(1)}</p>
+            </div>
+          </div>
+        </div>
+      ),
+    });
+    addPhoneMsg({
+      type: 'incoming',
+      content: `✅ Encontramos o profissional ${provider.name} já cadastrado na nossa base! Estamos verificando serviços e estoque disponíveis...`,
+    });
+    setShowProviderChoice(false);
+    // Update running log
+    setInternalLogs(prev => prev.map(l => l.status === 'running' && l.title === 'Seleção de prestador' ? { ...l, status: 'done' as const } : l));
+  };
+
+  const handleShowNewProviderForm = () => {
+    setShowProviderChoice(false);
+    setShowProviderForm(true);
+    // Update the log
+    setInternalLogs(prev => prev.map(l => l.status === 'running' && l.title === 'Seleção de prestador' ? { ...l, status: 'done' as const, title: 'Cadastro de novo prestador', description: 'Preencha os dados do novo profissional' } : l));
+    addLog({
+      title: 'Cadastro de novo prestador',
+      description: 'Preencha os dados do novo profissional para atender a demanda',
+      status: 'running',
+      icon: <UserPlus className="w-4 h-4" />,
+    });
+  };
+
+  const isFormOpen = showProviderForm || showProviderChoice || showServiceForm || showProductForm;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
