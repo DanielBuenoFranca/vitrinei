@@ -72,6 +72,8 @@ export type Database = {
           created_at: string
           distance: string
           id: number
+          labor_cost: number
+          linked_product_ids: number[]
           name: string
           price: number
           products: string[]
@@ -86,6 +88,8 @@ export type Database = {
           created_at?: string
           distance?: string
           id?: number
+          labor_cost?: number
+          linked_product_ids?: number[]
           name: string
           price?: number
           products?: string[]
@@ -100,6 +104,8 @@ export type Database = {
           created_at?: string
           distance?: string
           id?: number
+          labor_cost?: number
+          linked_product_ids?: number[]
           name?: string
           price?: number
           products?: string[]
@@ -162,6 +168,24 @@ export type Database = {
           rating?: number
           segment?: string
           type?: string
+        }
+        Relationships: []
+      }
+      segments: {
+        Row: {
+          created_at: string
+          id: number
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          name?: string
         }
         Relationships: []
       }
