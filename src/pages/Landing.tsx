@@ -335,63 +335,26 @@ const Landing = () => {
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="pt-24 pb-4 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-        <div className="container mx-auto text-center relative max-w-4xl">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-             <h1 className="font-display text-3xl md:text-5xl lg:text-6xl font-extrabold text-foreground mb-3 leading-tight tracking-tight">
-               Mais clientes para seu negócio, <span className="text-primary">todos os dias.</span><br />
-               <span className="text-muted-foreground text-2xl md:text-3xl lg:text-4xl font-bold">A inteligência que conecta quem precisa a quem resolve.</span>
-             </h1>
-             <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-4">
-               Serviços, produtos, profissionais — tudo em um só lugar. Se não existir aqui, nossa IA vasculha o ecossistema inteiro e entrega a melhor opção.
-             </p>
-             {/* Social proof bar */}
-             <div className="flex flex-wrap justify-center gap-4 text-xs sm:text-sm text-muted-foreground mb-6">
-               <span className="flex items-center gap-1.5 font-medium"><Users className="w-4 h-4 text-primary" /> <strong className="text-foreground">2.450+</strong> MEIs ativos</span>
-               <span className="flex items-center gap-1.5 font-medium"><Star className="w-4 h-4 fill-accent text-accent" /> <strong className="text-foreground">4.8</strong> avaliação média</span>
-               <span className="flex items-center gap-1.5 font-medium"><Shield className="w-4 h-4 text-success" /> Pagamento <strong className="text-foreground">100% seguro</strong></span>
-               <span className="flex items-center gap-1.5 font-medium"><CheckCircle2 className="w-4 h-4 text-success" /> <strong className="text-foreground">12.800+</strong> serviços realizados</span>
-             </div>
-          </motion.div>
-
-          {/* CTA buttons */}
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }} className="flex gap-3 justify-center mb-6">
-            <Button size="lg" className="gap-2 px-6" onClick={() => navigate('/mei')}>
-              <BarChart3 className="w-4 h-4" /> Painel MEI
-            </Button>
-            <Button size="lg" variant="outline" className="gap-2 px-6" onClick={() => navigate('/client')}>
-              <ShoppingCart className="w-4 h-4" /> App Cliente
-            </Button>
+      {/* Hero - Compact */}
+      <section className="pt-16 pb-1 px-4">
+        <div className="container mx-auto text-center max-w-4xl">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+            <h1 className="font-display text-xl md:text-2xl font-bold text-foreground mb-1">
+              O que você precisa <span className="text-primary">hoje</span>?
+            </h1>
+            <div className="flex justify-center gap-3 text-[11px] text-muted-foreground mb-1">
+              <span className="flex items-center gap-1"><Users className="w-3 h-3 text-primary" /> <strong className="text-foreground">2.450+</strong> MEIs</span>
+              <span className="flex items-center gap-1"><Star className="w-3 h-3 fill-accent text-accent" /> <strong className="text-foreground">4.8</strong></span>
+              <span className="flex items-center gap-1"><Shield className="w-3 h-3 text-success" /> Seguro</span>
+              <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-success" /> <strong className="text-foreground">12.800+</strong> serviços</span>
+            </div>
           </motion.div>
         </div>
       </section>
 
-      {/* AI Avatar + Search Section */}
-      <section className="px-4 pb-8">
+      {/* Search Section */}
+      <section className="px-4 pb-2">
         <div className="container mx-auto max-w-5xl">
-          {/* Avatar + greeting */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.4, duration: 0.6, type: 'spring' }}
-            className="flex flex-col items-center mb-6"
-          >
-            <AiAvatar size={80} speaking={aiSpeaking} onClick={() => setShowAiPanel(true)} />
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
-              className="mt-4 bg-card border border-border rounded-2xl rounded-tl-md px-5 py-3 shadow-md max-w-md relative"
-            >
-              <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-card border-l border-t border-border rotate-45" />
-               <p className="text-sm text-foreground font-medium relative z-10">
-                 Me diga o que você precisa 👋<br />
-                 <span className="text-muted-foreground font-normal">Eu encontro o melhor profissional perto de você.</span>
-               </p>
-            </motion.div>
-          </motion.div>
 
           <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5, duration: 0.5 }}>
             {/* Search bar */}
