@@ -1868,30 +1868,14 @@ export async function addDynamicEntries(entries: DynamicEntry[]): Promise<void> 
   }
 }
 
-/** Get all services — static inventory + database (dynamic entries), deduplicated by ID */
+/** Get all services — ONLY from database (dynamic entries) */
 export function getAllServices(): typeof mockResults {
-  const merged = [...mockResults];
-  const existingIds = new Set(merged.map(s => s.id));
-  for (const ds of dynamicServices) {
-    if (!existingIds.has(ds.id)) {
-      merged.push(ds);
-      existingIds.add(ds.id);
-    }
-  }
-  return merged;
+  return [...dynamicServices];
 }
 
-/** Get all products — static inventory + database (dynamic entries), deduplicated by ID */
+/** Get all products — ONLY from database (dynamic entries) */
 export function getAllProducts(): ProductItem[] {
-  const merged = [...productInventory];
-  const existingIds = new Set(merged.map(p => p.id));
-  for (const dp of dynamicProducts) {
-    if (!existingIds.has(dp.id)) {
-      merged.push(dp);
-      existingIds.add(dp.id);
-    }
-  }
-  return merged;
+  return [...dynamicProducts];
 }
 
 /**

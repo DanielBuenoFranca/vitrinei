@@ -13,7 +13,8 @@ import {
 } from 'lucide-react';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
-import { segments, mockResults, semanticSearch, buildSupportSummary, generateContextualSuggestions, getAllServices, getAllProducts, type ProductItem, type SearchResult, type ContextualSuggestion } from '@/data/searchData';
+import { segments as staticSegments, mockResults, semanticSearch, buildSupportSummary, generateContextualSuggestions, getAllServices, getAllProducts, loadDynamicEntries, reloadDynamicEntries, type ProductItem, type SearchResult, type ContextualSuggestion } from '@/data/searchData';
+import { supabase } from '@/integrations/supabase/client';
 
 
 const aiSuggestions = [
