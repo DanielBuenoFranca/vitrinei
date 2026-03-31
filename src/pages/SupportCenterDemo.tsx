@@ -793,8 +793,14 @@ const SupportCenterDemo = () => {
                         {existingProviders.length > 0 && (
                           <div className="space-y-2 mb-4">
                             <label className="text-[11px] font-medium text-muted-foreground block">Prestadores cadastrados na base ({existingProviders.length})</label>
+                            <Input
+                              value={providerFilter}
+                              onChange={e => setProviderFilter(e.target.value)}
+                              placeholder="Filtrar por nome..."
+                              className="h-8 text-xs mb-1"
+                            />
                             <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
-                              {existingProviders.map(p => (
+                              {existingProviders.filter(p => p.name.toLowerCase().includes(providerFilter.toLowerCase())).map(p => (
                                 <button
                                   key={p.id}
                                   onClick={() => handleSelectExistingProvider(p)}
