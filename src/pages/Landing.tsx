@@ -439,25 +439,40 @@ const Landing = () => {
                 })}
               </div>
 
-              {/* Mobile: horizontal chips */}
-              <div className="flex sm:hidden flex-wrap gap-1.5 mb-2 w-full">
+              {/* Mobile: icon-only vertical sidebar */}
+              <div className="flex sm:hidden flex-col gap-1 shrink-0">
+                <p className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider text-center mb-0.5">Seg.</p>
                 {dbSegments.map((seg) => {
                   const isActive = activeSegments.includes(seg.id);
                   const staticSeg = staticSegments.find(s => s.id === seg.id || s.label.toLowerCase() === seg.label.toLowerCase());
                   const Icon = staticSeg?.icon || Sparkles;
+                  const isRevealed = mobileRevealedSeg === seg.id;
                   return (
-                    <button
-                      key={seg.id}
-                      onClick={() => toggleSegment(seg.id)}
-                      className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium transition-all border ${
-                        isActive
-                          ? 'bg-primary text-primary-foreground border-primary'
-                          : 'bg-muted/30 text-muted-foreground border-transparent hover:border-border hover:text-foreground'
-                      }`}
-                    >
-                      <Icon className="w-3 h-3" />
-                      {seg.label}
-                    </button>
+                    <div key={seg.id} className="relative">
+                      <button
+                        onClick={() => {
+                          if (isRevealed) {
+                            toggleSegment(seg.id);
+                            setMobileRevealedSeg(null);
+                          } else {
+                            setMobileRevealedSeg(seg.id);
+                          }
+                        }}
+                        className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all ${
+                          isActive
+                            ? 'bg-primary text-primary-foreground shadow-sm'
+                            : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                        }`}
+                        title={seg.label}
+                      >
+                        <Icon className="w-4 h-4" />
+                      </button>
+                      {isRevealed && !isActive && (
+                        <div className="absolute left-10 top-0 z-30 bg-card border border-border rounded-md px-2 py-1 shadow-lg whitespace-nowrap">
+                          <span className="text-[10px] font-medium text-foreground">{seg.label}</span>
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
