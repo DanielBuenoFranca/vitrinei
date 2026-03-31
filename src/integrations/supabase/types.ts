@@ -176,16 +176,19 @@ export type Database = {
           created_at: string
           id: number
           name: string
+          suggested_tags: string[]
         }
         Insert: {
           created_at?: string
           id?: number
           name: string
+          suggested_tags?: string[]
         }
         Update: {
           created_at?: string
           id?: number
           name?: string
+          suggested_tags?: string[]
         }
         Relationships: []
       }
