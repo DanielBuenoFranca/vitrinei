@@ -94,6 +94,16 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
     if (segmentNames.length === 0) { setSuggestedTags([]); return; }
     setLoadingTags(true);
     try {
+      // First try to load pre-saved tags from segments table
+      const { data: segData } = await supabase.from('segments').select('suggested_tags').in('name', segmentNames);
+      const savedTags = (segData || []).flatMap((s: any) => s.suggested_tags || []);
+      const uniqueSaved = [...new Set(savedTags)].filter((t: string) => !selectedTags.includes(t));
+      if (uniqueSaved.length > 0) {
+        setSuggestedTags(uniqueSaved);
+        setLoadingTags(false);
+        return;
+      }
+      // Fallback to AI generation
       const { data, error } = await supabase.functions.invoke('suggest-tags', {
         body: { segment: segmentNames.join(', '), existingTags: selectedTags },
       });
