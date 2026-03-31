@@ -94,6 +94,7 @@ const SupportCenterDemo = () => {
   // Registration form states
   const [showProviderForm, setShowProviderForm] = useState(false);
   const [showProviderChoice, setShowProviderChoice] = useState(false);
+  const [providerFilter, setProviderFilter] = useState('');
   const [existingProviders, setExistingProviders] = useState<Array<{id: number; name: string; segment: string; distance: string; rating: number; phone: string | null; email: string | null; city: string | null; address: string | null; type: string}>>([]);
   const [showServiceForm, setShowServiceForm] = useState(false);
   const [showProductForm, setShowProductForm] = useState(false);
@@ -793,8 +794,14 @@ const SupportCenterDemo = () => {
                         {existingProviders.length > 0 && (
                           <div className="space-y-2 mb-4">
                             <label className="text-[11px] font-medium text-muted-foreground block">Prestadores cadastrados na base ({existingProviders.length})</label>
+                            <Input
+                              value={providerFilter}
+                              onChange={e => setProviderFilter(e.target.value)}
+                              placeholder="Filtrar por nome..."
+                              className="h-8 text-xs mb-1"
+                            />
                             <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
-                              {existingProviders.map(p => (
+                              {existingProviders.filter(p => p.name.toLowerCase().includes(providerFilter.toLowerCase())).map(p => (
                                 <button
                                   key={p.id}
                                   onClick={() => handleSelectExistingProvider(p)}
@@ -931,6 +938,32 @@ const SupportCenterDemo = () => {
                             <p className="text-[10px] text-muted-foreground">Vincular a: {registeredProviders[registeredProviders.length - 1]?.name}</p>
                           </div>
                         </div>
+
+                        {/* AI Suggested items from context */}
+                        {userSelections.length > 0 && (
+                          <div className="mb-3 p-2.5 rounded-lg bg-accent/5 border border-accent/20">
+                            <p className="text-[10px] font-medium text-muted-foreground mb-1.5 flex items-center gap-1">
+                              <Sparkles className="w-3 h-3 text-primary" /> Sugestões da IA (selecione para preencher):
+                            </p>
+                            <div className="flex flex-wrap gap-1">
+                              {userSelections.map((sel, i) => (
+                                <button
+                                  key={i}
+                                  type="button"
+                                  onClick={() => setServiceForm(f => ({ ...f, name: sel }))}
+                                  className={`px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
+                                    serviceForm.name === sel
+                                      ? 'bg-primary text-primary-foreground border-primary'
+                                      : 'bg-muted/30 text-muted-foreground border-border hover:border-primary/40'
+                                  }`}
+                                >
+                                  {sel}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         <div className="grid grid-cols-2 gap-3">
                           <div className="col-span-2">
                             <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Nome do serviço *</label>
@@ -983,6 +1016,32 @@ const SupportCenterDemo = () => {
                             <p className="text-[10px] text-muted-foreground">Vincular a: {registeredProviders[registeredProviders.length - 1]?.name}</p>
                           </div>
                         </div>
+
+                        {/* AI Suggested products from context */}
+                        {userSelections.length > 0 && (
+                          <div className="mb-3 p-2.5 rounded-lg bg-accent/5 border border-accent/20">
+                            <p className="text-[10px] font-medium text-muted-foreground mb-1.5 flex items-center gap-1">
+                              <Sparkles className="w-3 h-3 text-primary" /> Sugestões da IA (selecione para preencher):
+                            </p>
+                            <div className="flex flex-wrap gap-1">
+                              {userSelections.map((sel, i) => (
+                                <button
+                                  key={i}
+                                  type="button"
+                                  onClick={() => setProductForm(f => ({ ...f, name: sel }))}
+                                  className={`px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
+                                    productForm.name === sel
+                                      ? 'bg-primary text-primary-foreground border-primary'
+                                      : 'bg-muted/30 text-muted-foreground border-border hover:border-primary/40'
+                                  }`}
+                                >
+                                  {sel}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         <div className="grid grid-cols-2 gap-3">
                           <div className="col-span-2">
                             <label className="text-[11px] font-medium text-muted-foreground mb-1 block">Nome do produto *</label>

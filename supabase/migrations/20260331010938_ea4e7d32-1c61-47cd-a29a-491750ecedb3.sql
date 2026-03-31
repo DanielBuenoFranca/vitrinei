@@ -1,0 +1,1 @@
+ALTER TABLE public.segments ADD COLUMN suggested_tags text[] NOT NULL DEFAULT '{}'::text[];
