@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Sparkles, X } from 'lucide-react';
+import { Loader2, Sparkles, X, Plus, Pencil, Check } from 'lucide-react';
 
 interface Segment {
   id: number;
@@ -26,47 +26,73 @@ export function SegmentForm({ open, onClose, onSaved, segment }: SegmentFormProp
   const isEdit = !!segment;
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
-  const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
   const [loadingTags, setLoadingTags] = useState(false);
-  const [tagsFetched, setTagsFetched] = useState(false);
+  const [newTag, setNewTag] = useState('');
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [editValue, setEditValue] = useState('');
 
   useEffect(() => {
     setName(segment?.name || '');
     setSelectedTags(segment?.suggested_tags || []);
     setSuggestedTags([]);
-    setTagsFetched(false);
+    setLoadingTags(false);
+    setNewTag('');
+    setEditingIdx(null);
   }, [segment, open]);
 
-  const fetchTags = async (segName: string) => {
-    if (segName.trim().length < 2) return;
+  const fetchTags = async () => {
+    const trimmed = name.trim();
+    if (trimmed.length < 2) { toast.error('Digite o nome do segmento primeiro'); return; }
     setLoadingTags(true);
     try {
       const { data, error } = await supabase.functions.invoke('suggest-tags', {
-        body: { segment: segName.trim(), existingTags: selectedTags },
+        body: { segment: trimmed, existingTags: selectedTags },
       });
       if (!error && data?.tags) {
-        setSuggestedTags(data.tags.filter((t: string) => !selectedTags.includes(t)));
-        setTagsFetched(true);
+        const newTags = (data.tags as string[]).filter(t => !selectedTags.includes(t));
+        setSuggestedTags(newTags);
+        if (newTags.length === 0) toast.info('Nenhuma tag nova sugerida');
+      } else {
+        toast.error('Erro ao buscar sugestões');
       }
-    } catch { /* ignore */ }
+    } catch {
+      toast.error('Erro ao conectar com IA');
+    }
     setLoadingTags(false);
   };
 
-  const handleNameBlur = () => {
-    if (!tagsFetched && name.trim().length >= 2) {
-      fetchTags(name);
-    }
+  const addSuggested = (tag: string) => {
+    setSelectedTags(prev => [...prev, tag]);
+    setSuggestedTags(prev => prev.filter(t => t !== tag));
   };
 
-  const toggleTag = (tag: string) => {
-    if (selectedTags.includes(tag)) {
-      setSelectedTags(prev => prev.filter(t => t !== tag));
-      setSuggestedTags(prev => [...prev, tag]);
-    } else {
-      setSelectedTags(prev => [...prev, tag]);
-      setSuggestedTags(prev => prev.filter(t => t !== tag));
-    }
+  const removeTag = (idx: number) => {
+    setSelectedTags(prev => prev.filter((_, i) => i !== idx));
+    setEditingIdx(null);
+  };
+
+  const startEdit = (idx: number) => {
+    setEditingIdx(idx);
+    setEditValue(selectedTags[idx]);
+  };
+
+  const confirmEdit = () => {
+    if (editingIdx === null) return;
+    const v = editValue.trim().toLowerCase();
+    if (!v) { removeTag(editingIdx); return; }
+    setSelectedTags(prev => prev.map((t, i) => i === editingIdx ? v : t));
+    setEditingIdx(null);
+    setEditValue('');
+  };
+
+  const addManualTag = () => {
+    const v = newTag.trim().toLowerCase();
+    if (!v) return;
+    if (selectedTags.includes(v)) { toast.error('Tag já existe'); return; }
+    setSelectedTags(prev => [...prev, v]);
+    setNewTag('');
   };
 
   const handleSave = async () => {
@@ -95,52 +121,89 @@ export function SegmentForm({ open, onClose, onSaved, segment }: SegmentFormProp
           <DialogTitle>{isEdit ? 'Editar Segmento' : 'Novo Segmento'}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-2">
+          {/* Nome + Botão IA */}
           <div className="grid gap-2">
             <Label>Nome do Segmento *</Label>
-            <Input
-              value={name}
-              onChange={e => { setName(e.target.value); setTagsFetched(false); }}
-              onBlur={handleNameBlur}
-              placeholder="Ex: beleza, saude, automotivo"
-            />
-            <p className="text-[10px] text-muted-foreground">Ao sair do campo, a IA sugere tags de produtos para este segmento</p>
+            <div className="flex gap-2">
+              <Input
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="Ex: beleza, saude, automotivo"
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={fetchTags}
+                disabled={loadingTags || name.trim().length < 2}
+                className="shrink-0 gap-1"
+              >
+                {loadingTags ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 text-primary" />}
+                {loadingTags ? 'Analisando...' : 'Gerar Tags'}
+              </Button>
+            </div>
+            <p className="text-[10px] text-muted-foreground">Clique em "Gerar Tags" para a IA sugerir tags de produtos para este segmento</p>
           </div>
 
-          {/* Loading */}
-          {loadingTags && (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              <span>Analisando tags com IA...</span>
-            </div>
-          )}
-
-          {/* Selected tags */}
+          {/* Tags selecionadas */}
           {selectedTags.length > 0 && (
             <div className="grid gap-2">
-              <Label className="text-xs">Tags selecionadas ({selectedTags.length})</Label>
+              <Label className="text-xs">Tags do segmento ({selectedTags.length})</Label>
               <div className="flex flex-wrap gap-1">
-                {selectedTags.map(tag => (
-                  <Badge key={tag} variant="default" className="gap-1 text-xs">
-                    {tag}
-                    <X className="h-3 w-3 cursor-pointer" onClick={() => toggleTag(tag)} />
-                  </Badge>
+                {selectedTags.map((tag, idx) => (
+                  <div key={`${tag}-${idx}`}>
+                    {editingIdx === idx ? (
+                      <div className="flex items-center gap-0.5">
+                        <Input
+                          value={editValue}
+                          onChange={e => setEditValue(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && confirmEdit()}
+                          className="h-6 w-24 text-xs px-1"
+                          autoFocus
+                        />
+                        <button onClick={confirmEdit} className="text-primary"><Check className="h-3 w-3" /></button>
+                        <button onClick={() => setEditingIdx(null)} className="text-muted-foreground"><X className="h-3 w-3" /></button>
+                      </div>
+                    ) : (
+                      <Badge variant="default" className="gap-0.5 text-xs pr-0.5">
+                        {tag}
+                        <button onClick={() => startEdit(idx)} className="ml-0.5 hover:text-primary-foreground/70"><Pencil className="h-2.5 w-2.5" /></button>
+                        <button onClick={() => removeTag(idx)} className="hover:text-destructive"><X className="h-3 w-3" /></button>
+                      </Badge>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Suggested tags */}
+          {/* Adicionar tag manual */}
+          <div className="flex gap-1.5 items-center">
+            <Input
+              value={newTag}
+              onChange={e => setNewTag(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addManualTag())}
+              placeholder="Adicionar tag manualmente"
+              className="h-8 text-xs flex-1"
+            />
+            <Button type="button" size="sm" variant="ghost" onClick={addManualTag} disabled={!newTag.trim()} className="h-8 px-2">
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+
+          {/* Sugestões da IA */}
           {suggestedTags.length > 0 && (
             <div className="grid gap-2">
               <Label className="text-xs flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-primary" /> Sugestões da IA
+                <Sparkles className="w-3 h-3 text-primary" /> Sugestões da IA (clique para adicionar)
               </Label>
               <div className="flex flex-wrap gap-1">
                 {suggestedTags.map(tag => (
                   <button
                     key={tag}
                     type="button"
-                    onClick={() => toggleTag(tag)}
+                    onClick={() => addSuggested(tag)}
                     className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-accent/10 text-accent-foreground border border-accent/20 hover:bg-accent/20 transition-colors"
                   >
                     + {tag}
