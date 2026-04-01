@@ -69,11 +69,38 @@ export function ProviderForm({ open, onClose, onSaved, provider, segments }: Pro
 
   const removeLogo = () => setLogoUrl(null);
 
+  const generateAiLogo = async (name: string, segment: string): Promise<string | null> => {
+    try {
+      toast.info('🎨 Gerando arte com IA...');
+      const { data, error } = await supabase.functions.invoke('generate-provider-logo', {
+        body: { providerName: name, segment },
+      });
+      if (error || !data?.logoUrl) {
+        console.error('AI logo error:', error || data);
+        toast.warning('Não foi possível gerar arte automática');
+        return null;
+      }
+      toast.success('🎨 Arte gerada pela IA!');
+      return data.logoUrl;
+    } catch (e) {
+      console.error('AI logo error:', e);
+      return null;
+    }
+  };
+
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Nome é obrigatório'); return; }
     if (!form.segment) { toast.error('Segmento é obrigatório'); return; }
     setSaving(true);
-    const data: any = { ...form, phone: form.phone || null, email: form.email || null, address: form.address || null, city: form.city || null, logo_url: logoUrl };
+
+    // Auto-generate logo if none provided
+    let finalLogoUrl = logoUrl;
+    if (!finalLogoUrl && form.name.trim()) {
+      finalLogoUrl = await generateAiLogo(form.name.trim(), form.segment);
+      if (finalLogoUrl) setLogoUrl(finalLogoUrl);
+    }
+
+    const data: any = { ...form, phone: form.phone || null, email: form.email || null, address: form.address || null, city: form.city || null, logo_url: finalLogoUrl };
     if (isEdit) {
       const { error } = await supabase.from('providers').update(data).eq('id', provider!.id);
       if (error) { toast.error('Erro ao atualizar'); setSaving(false); return; }

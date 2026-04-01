@@ -243,11 +243,17 @@ const Landing = () => {
     });
   };
 
-  // ── DB provider names (real providers) ──
+  // ── DB providers with logos ──
+  const [dbProviders, setDbProviders] = useState<Map<string, { logo_url: string | null }>>(new Map());
   const [dbProviderNames, setDbProviderNames] = useState<Set<string>>(new Set());
   useEffect(() => {
-    supabase.from('providers').select('name').then(({ data }) => {
-      if (data) setDbProviderNames(new Set(data.map((p: any) => p.name)));
+    supabase.from('providers').select('name, logo_url').then(({ data }) => {
+      if (data) {
+        setDbProviderNames(new Set(data.map((p: any) => p.name)));
+        const map = new Map<string, { logo_url: string | null }>();
+        data.forEach((p: any) => map.set(p.name, { logo_url: p.logo_url }));
+        setDbProviders(map);
+      }
     });
   }, []);
 
@@ -608,9 +614,17 @@ const Landing = () => {
                                     className="px-4 py-3 bg-muted/30 border-b border-border flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors"
                                   >
                                     <div className="flex items-center gap-2">
-                                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                                        <Store className="w-4 h-4 text-primary" />
-                                      </div>
+                                      {(() => {
+                                        const prov = dbProviders.get(providerName);
+                                        const logo = prov?.logo_url;
+                                        return logo ? (
+                                          <img src={logo} alt={providerName} className="w-8 h-8 rounded-full object-cover border border-border shrink-0" />
+                                        ) : (
+                                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                            <Store className="w-4 h-4 text-primary" />
+                                          </div>
+                                        );
+                                      })()}
                                       <div>
                                         <div className="flex items-center gap-1.5 flex-wrap">
                                           <h3 className="font-semibold text-sm text-foreground">{providerName}</h3>
@@ -1052,9 +1066,17 @@ const Landing = () => {
                             <button onClick={() => toggleProviderExpanded(providerName)}
                               className="w-full flex items-center justify-between p-3 hover:bg-muted/30 transition-colors text-left">
                               <div className="flex items-center gap-2 min-w-0">
-                                <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-sm">
-                                  <Store className="w-3.5 h-3.5 text-primary" />
-                                </div>
+                                {(() => {
+                                  const prov = dbProviders.get(providerName);
+                                  const logo = prov?.logo_url;
+                                  return logo ? (
+                                    <img src={logo} alt={providerName} className="w-7 h-7 rounded-full object-cover border border-border shrink-0" />
+                                  ) : (
+                                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-sm">
+                                      <Store className="w-3.5 h-3.5 text-primary" />
+                                    </div>
+                                  );
+                                })()}
                                 <div className="min-w-0">
                                   <p className="font-semibold text-xs text-foreground truncate">{providerName}</p>
                                   <p className="text-[10px] text-muted-foreground">
