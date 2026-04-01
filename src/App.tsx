@@ -19,6 +19,7 @@ import DropshippingDemo from "./pages/DropshippingDemo.tsx";
 import Demos from "./pages/Demos.tsx";
 import SupportCenterDemo from "./pages/SupportCenterDemo.tsx";
 import AdminPanel from "./pages/AdminPanel.tsx";
+import ProviderStorefront from "./pages/ProviderStorefront.tsx";
 
 const FloatingAvatarWrapper = () => {
   return <FloatingAiAvatar />;
