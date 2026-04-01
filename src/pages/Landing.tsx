@@ -219,8 +219,8 @@ const Landing = () => {
     if (!showSimulated) {
       rawResult = {
         ...rawResult,
-        services: rawResult.services.filter(s => !isSimulatedProvider(s.provider)),
-        products: rawResult.products.filter(p => !isSimulatedProvider(p.provider)),
+        services: rawResult.services.filter((s: any) => !isSimulatedProvider(s.provider, s)),
+        products: rawResult.products.filter((p: any) => !isSimulatedProvider(p.provider, p)),
       };
     }
     return rawResult;
