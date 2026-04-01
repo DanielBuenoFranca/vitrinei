@@ -105,36 +105,7 @@ const ProviderStorefront = () => {
       })
     : providerProducts;
 
-  // Cart logic
-  const toggleProductInCart = (product: ProductItem) => {
-    if (productCart.some(p => p.id === product.id)) {
-      setProductQuantities(prev => { const n = new Map(prev); n.set(product.id, (n.get(product.id) || 1) + 1); return n; });
-    } else {
-      setProductCart(prev => [...prev, product]);
-      setProductQuantities(prev => { const n = new Map(prev); n.set(product.id, 1); return n; });
-    }
-  };
-  const removeProductFromCart = (id: number) => {
-    setProductCart(prev => prev.filter(p => p.id !== id));
-    setProductQuantities(prev => { const n = new Map(prev); n.delete(id); return n; });
-  };
-  const updateProductQuantity = (id: number, delta: number) => {
-    setProductQuantities(prev => { const n = new Map(prev); n.set(id, Math.max(1, (n.get(id) || 1) + delta)); return n; });
-  };
-  const isInProductCart = (id: number) => productCart.some(p => p.id === id);
-  const toggleServiceInCart = (svc: ServiceCartItem) => {
-    setServiceCart(prev => prev.some(s => s.id === svc.id) ? prev.filter(s => s.id !== svc.id) : [...prev, svc]);
-  };
-  const isInServiceCart = (id: number) => serviceCart.some(s => s.id === id);
-
-  const totalCartItems = productCart.reduce((s, p) => s + (productQuantities.get(p.id) || 1), 0) + serviceCart.length;
-  const totalCartValue = productCart.reduce((s, p) => s + p.price * (productQuantities.get(p.id) || 1), 0) + serviceCart.reduce((s, svc) => s + svc.price, 0);
-  const needsTopUp = totalCartValue > clientCredit;
-  const topUpAmount = needsTopUp ? totalCartValue - clientCredit : 0;
-  const creditUsed = Math.min(clientCredit, totalCartValue);
-  const remainingCredit = clientCredit - creditUsed;
-
-  const clearCart = () => { setProductCart([]); setServiceCart([]); setProductQuantities(new Map()); setShowCartDetails(false); };
+  // Cart logic now comes from global CartContext
 
   const navigateToCheckout = () => {
     if (totalCartItems === 0) return;
