@@ -15,9 +15,10 @@ import { SegmentForm } from '@/components/admin/SegmentForm';
 import { ClearDataDialog } from '@/components/admin/ClearDataDialog';
 
 interface Provider {
-  id: number; name: string; type: string; segment: string;
+  id: number; name: string; type: string; segment: string[];
   phone: string | null; email: string | null; address: string | null; city: string | null;
   distance: string; rating: number; active: boolean; created_at: string;
+  cpf_cnpj: string | null;
 }
 
 interface DynamicService {
