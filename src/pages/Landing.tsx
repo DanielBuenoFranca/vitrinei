@@ -64,6 +64,8 @@ const Landing = () => {
   const [dbSegments, setDbSegments] = useState<{ id: string; label: string; name: string; tags: string[] }[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [mobileRevealedSeg, setMobileRevealedSeg] = useState<string | null>(null);
+  const [showSimulated, setShowSimulated] = useState(true);
+  const [clientCredit] = useState(100); // R$100 available credit
   const searchRef = useRef<HTMLInputElement>(null);
 
   const toggleProviderExpanded = (providerName: string) => {
