@@ -37,6 +37,7 @@ const CartBar = () => {
         rating: p.rating, distance: p.distance, quantity: productQuantities.get(p.id) || 1,
       }))),
     });
+    clearCart();
     navigate(`/jornada-cliente?${params.toString()}`);
   };
   // Auto-minimize on route change
