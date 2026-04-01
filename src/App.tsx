@@ -19,6 +19,7 @@ import DropshippingDemo from "./pages/DropshippingDemo.tsx";
 import Demos from "./pages/Demos.tsx";
 import SupportCenterDemo from "./pages/SupportCenterDemo.tsx";
 import AdminPanel from "./pages/AdminPanel.tsx";
+import ProviderStorefront from "./pages/ProviderStorefront.tsx";
 
 const FloatingAvatarWrapper = () => {
   return <FloatingAiAvatar />;
@@ -48,6 +49,7 @@ const App = () => {
           <Route path="/demos" element={<Demos />} />
           <Route path="/central-atendimento" element={<SupportCenterDemo />} />
           <Route path="/admin" element={<AdminPanel />} />
+          <Route path="/loja/:slug" element={<ProviderStorefront />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
