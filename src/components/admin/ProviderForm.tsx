@@ -5,14 +5,17 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Upload, X, ImageIcon } from 'lucide-react';
 
 interface Provider {
-  id: number; name: string; type: string; segment: string;
+  id: number; name: string; type: string; segment: string[];
   phone: string | null; email: string | null; address: string | null; city: string | null;
   distance: string; rating: number; active: boolean; logo_url?: string | null;
+  cpf_cnpj?: string | null;
 }
 
 interface Segment { id: number; name: string; }
@@ -22,12 +25,71 @@ interface ProviderFormProps {
   provider?: Provider | null; segments: Segment[];
 }
 
+// CPF/CNPJ formatting
+const formatCpfCnpj = (value: string): string => {
+  const digits = value.replace(/\D/g, '').slice(0, 14);
+  if (digits.length <= 11) {
+    return digits.replace(/(\d{3})(\d{3})?(\d{3})?(\d{2})?/, (_, a, b, c, d) =>
+      [a, b, c].filter(Boolean).join('.') + (d ? '-' + d : '')
+    );
+  }
+  return digits.replace(/(\d{2})(\d{3})?(\d{3})?(\d{4})?(\d{2})?/, (_, a, b, c, d, e) =>
+    a + (b ? '.' + b : '') + (c ? '.' + c : '') + (d ? '/' + d : '') + (e ? '-' + e : '')
+  );
+};
+
+// CPF validation
+const validateCpf = (cpf: string): boolean => {
+  const digits = cpf.replace(/\D/g, '');
+  if (digits.length !== 11 || /^(\d)\1+$/.test(digits)) return false;
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += parseInt(digits[i]) * (10 - i);
+  let check = 11 - (sum % 11);
+  if (check >= 10) check = 0;
+  if (parseInt(digits[9]) !== check) return false;
+  sum = 0;
+  for (let i = 0; i < 10; i++) sum += parseInt(digits[i]) * (11 - i);
+  check = 11 - (sum % 11);
+  if (check >= 10) check = 0;
+  return parseInt(digits[10]) === check;
+};
+
+// CNPJ validation
+const validateCnpj = (cnpj: string): boolean => {
+  const digits = cnpj.replace(/\D/g, '');
+  if (digits.length !== 14 || /^(\d)\1+$/.test(digits)) return false;
+  const weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  const weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  let sum = 0;
+  for (let i = 0; i < 12; i++) sum += parseInt(digits[i]) * weights1[i];
+  let check = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+  if (parseInt(digits[12]) !== check) return false;
+  sum = 0;
+  for (let i = 0; i < 13; i++) sum += parseInt(digits[i]) * weights2[i];
+  check = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+  return parseInt(digits[13]) === check;
+};
+
+const validateCpfCnpj = (value: string): { valid: boolean; message: string } => {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length === 0) return { valid: true, message: '' };
+  if (digits.length <= 11) {
+    if (digits.length < 11) return { valid: false, message: 'CPF incompleto' };
+    return validateCpf(digits) ? { valid: true, message: 'CPF válido ✓' } : { valid: false, message: 'CPF inválido' };
+  }
+  if (digits.length < 14) return { valid: false, message: 'CNPJ incompleto' };
+  return validateCnpj(digits) ? { valid: true, message: 'CNPJ válido ✓' } : { valid: false, message: 'CNPJ inválido' };
+};
+
 export function ProviderForm({ open, onClose, onSaved, provider, segments }: ProviderFormProps) {
   const isEdit = !!provider;
   const [form, setForm] = useState({
-    name: '', type: 'mei', segment: '', phone: '', email: '',
+    name: '', type: 'mei', phone: '', email: '',
     address: '', city: '', distance: '2 km', rating: 4.5, active: true,
   });
+  const [selectedSegments, setSelectedSegments] = useState<string[]>([]);
+  const [cpfCnpj, setCpfCnpj] = useState('');
+  const [validateDoc, setValidateDoc] = useState(true);
   const [saving, setSaving] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -36,14 +98,18 @@ export function ProviderForm({ open, onClose, onSaved, provider, segments }: Pro
   useEffect(() => {
     if (provider) {
       setForm({
-        name: provider.name, type: provider.type, segment: provider.segment,
+        name: provider.name, type: provider.type,
         phone: provider.phone || '', email: provider.email || '',
         address: provider.address || '', city: provider.city || '',
         distance: provider.distance, rating: provider.rating, active: provider.active,
       });
+      setSelectedSegments(Array.isArray(provider.segment) ? provider.segment : [provider.segment].filter(Boolean));
+      setCpfCnpj(provider.cpf_cnpj || '');
       setLogoUrl((provider as any).logo_url || null);
     } else {
-      setForm({ name: '', type: 'mei', segment: segments[0]?.name || '', phone: '', email: '', address: '', city: '', distance: '2 km', rating: 4.5, active: true });
+      setForm({ name: '', type: 'mei', phone: '', email: '', address: '', city: '', distance: '2 km', rating: 4.5, active: true });
+      setSelectedSegments(segments[0] ? [segments[0].name] : []);
+      setCpfCnpj('');
       setLogoUrl(null);
     }
   }, [provider, open, segments]);
@@ -69,6 +135,12 @@ export function ProviderForm({ open, onClose, onSaved, provider, segments }: Pro
 
   const removeLogo = () => setLogoUrl(null);
 
+  const toggleSegment = (segName: string) => {
+    setSelectedSegments(prev =>
+      prev.includes(segName) ? prev.filter(s => s !== segName) : [...prev, segName]
+    );
+  };
+
   const generateAiLogo = async (name: string, segment: string): Promise<string | null> => {
     try {
       toast.info('🎨 Gerando arte com IA...');
@@ -88,26 +160,68 @@ export function ProviderForm({ open, onClose, onSaved, provider, segments }: Pro
     }
   };
 
+  const docValidation = validateCpfCnpj(cpfCnpj);
+  const rawDigits = cpfCnpj.replace(/\D/g, '');
+
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Nome é obrigatório'); return; }
-    if (!form.segment) { toast.error('Segmento é obrigatório'); return; }
+    if (selectedSegments.length === 0) { toast.error('Selecione ao menos um segmento'); return; }
+
+    // CPF/CNPJ validation
+    if (validateDoc && rawDigits.length > 0 && !docValidation.valid) {
+      toast.error(docValidation.message);
+      return;
+    }
+
+    // Uniqueness check by CPF/CNPJ
+    if (rawDigits.length >= 11) {
+      const { data: existing } = await supabase
+        .from('providers')
+        .select('id, name')
+        .eq('cpf_cnpj', rawDigits)
+        .neq('id', provider?.id || 0)
+        .limit(1);
+      if (existing && existing.length > 0) {
+        toast.error(`CPF/CNPJ já cadastrado para: ${existing[0].name}`);
+        return;
+      }
+    }
+
     setSaving(true);
 
     // Auto-generate logo if none provided
     let finalLogoUrl = logoUrl;
     if (!finalLogoUrl && form.name.trim()) {
-      finalLogoUrl = await generateAiLogo(form.name.trim(), form.segment);
+      finalLogoUrl = await generateAiLogo(form.name.trim(), selectedSegments[0] || '');
       if (finalLogoUrl) setLogoUrl(finalLogoUrl);
     }
 
-    const data: any = { ...form, phone: form.phone || null, email: form.email || null, address: form.address || null, city: form.city || null, logo_url: finalLogoUrl };
+    const data: any = {
+      ...form,
+      segment: selectedSegments,
+      cpf_cnpj: rawDigits || null,
+      phone: form.phone || null,
+      email: form.email || null,
+      address: form.address || null,
+      city: form.city || null,
+      logo_url: finalLogoUrl,
+    };
+
     if (isEdit) {
       const { error } = await supabase.from('providers').update(data).eq('id', provider!.id);
-      if (error) { toast.error('Erro ao atualizar'); setSaving(false); return; }
+      if (error) { toast.error('Erro ao atualizar: ' + error.message); setSaving(false); return; }
       toast.success('Prestador atualizado');
     } else {
       const { error } = await supabase.from('providers').insert(data);
-      if (error) { toast.error('Erro ao criar'); setSaving(false); return; }
+      if (error) {
+        if (error.message?.includes('unique') || error.code === '23505') {
+          toast.error('CPF/CNPJ já cadastrado na plataforma');
+        } else {
+          toast.error('Erro ao criar: ' + error.message);
+        }
+        setSaving(false);
+        return;
+      }
       toast.success('Prestador criado');
     }
     setSaving(false); onSaved(); onClose();
@@ -150,6 +264,35 @@ export function ProviderForm({ open, onClose, onSaved, provider, segments }: Pro
             <Label>Nome *</Label>
             <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Nome do prestador" />
           </div>
+
+          {/* CPF/CNPJ */}
+          <div className="grid gap-2">
+            <div className="flex items-center justify-between">
+              <Label>CPF / CNPJ</Label>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="validate-doc"
+                  checked={validateDoc}
+                  onCheckedChange={(v) => setValidateDoc(!!v)}
+                />
+                <Label htmlFor="validate-doc" className="text-xs text-muted-foreground cursor-pointer">
+                  Validar documento
+                </Label>
+              </div>
+            </div>
+            <Input
+              value={formatCpfCnpj(cpfCnpj)}
+              onChange={e => setCpfCnpj(e.target.value.replace(/\D/g, '').slice(0, 14))}
+              placeholder="000.000.000-00 ou 00.000.000/0000-00"
+              maxLength={18}
+            />
+            {rawDigits.length > 0 && (
+              <p className={`text-xs ${docValidation.valid ? 'text-green-600' : 'text-destructive'}`}>
+                {docValidation.message}
+              </p>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
               <Label>Tipo</Label>
@@ -162,13 +305,19 @@ export function ProviderForm({ open, onClose, onSaved, provider, segments }: Pro
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label>Segmento *</Label>
-              <Select value={form.segment} onValueChange={v => setForm(f => ({ ...f, segment: v }))}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>
-                  {segments.map(s => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label>Segmentos * <span className="text-xs text-muted-foreground font-normal">(múltiplos)</span></Label>
+              <div className="flex flex-wrap gap-1.5 p-2 border rounded-md min-h-[40px] bg-background">
+                {segments.map(s => (
+                  <Badge
+                    key={s.id}
+                    variant={selectedSegments.includes(s.name) ? 'default' : 'outline'}
+                    className="cursor-pointer text-xs transition-all"
+                    onClick={() => toggleSegment(s.name)}
+                  >
+                    {s.name}
+                  </Badge>
+                ))}
+              </div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
