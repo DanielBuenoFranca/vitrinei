@@ -615,7 +615,7 @@ const ProviderStorefront = () => {
                         {!needsTopUp && (
                           <div className="mt-2">
                             <Button size="sm" className="w-full gap-1.5 font-semibold" onClick={navigateToCheckout}>
-                              <ShoppingCart className="w-3.5 h-3.5" /> Confirmar pedido (via crédito)
+                              <ShoppingCart className="w-3.5 h-3.5" /> Confirmar compra
                             </Button>
                           </div>
                         )}

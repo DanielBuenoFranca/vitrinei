@@ -174,10 +174,11 @@ const ClientJourneyDemo = () => {
   }
 
   const totalServices = cartServices.length;
+  const totalProductUnits = cartProducts.reduce((s, p) => s + (p.quantity || 1), 0);
   const totalProducts = cartProducts.length;
-  const totalItems = totalServices + totalProducts;
+  const totalItems = totalServices + totalProductUnits;
   const totalServiceValue = cartServices.reduce((s, svc) => s + svc.price, 0);
-  const totalProductValue = cartProducts.reduce((s, p) => s + p.price, 0);
+  const totalProductValue = cartProducts.reduce((s, p) => s + p.price * (p.quantity || 1), 0);
   const totalValue = totalServiceValue + totalProductValue;
   const productDiscount = totalProductValue * mockClient.discount / 100;
   const serviceCreditCost = Math.round(totalServiceValue * 0.53);
