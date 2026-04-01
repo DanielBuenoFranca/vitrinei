@@ -28,6 +28,7 @@ export type Database = {
           related_service_ids: number[]
           stock_type: string
           tags: string[]
+          unit: string
         }
         Insert: {
           created_at?: string
@@ -42,6 +43,7 @@ export type Database = {
           related_service_ids?: number[]
           stock_type?: string
           tags?: string[]
+          unit?: string
         }
         Update: {
           created_at?: string
@@ -56,6 +58,7 @@ export type Database = {
           related_service_ids?: number[]
           stock_type?: string
           tags?: string[]
+          unit?: string
         }
         Relationships: [
           {
@@ -83,6 +86,7 @@ export type Database = {
           segment: string
           service_id: number
           time: string
+          unit: string
         }
         Insert: {
           created_at?: string
@@ -99,6 +103,7 @@ export type Database = {
           segment: string
           service_id: number
           time?: string
+          unit?: string
         }
         Update: {
           created_at?: string
@@ -115,6 +120,7 @@ export type Database = {
           segment?: string
           service_id?: number
           time?: string
+          unit?: string
         }
         Relationships: [
           {

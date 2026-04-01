@@ -102,6 +102,18 @@ const BROAD_CONTEXT_MAP: Record<string, {
     productKeywords: ['adubo', 'semente', 'vaso', 'tesoura', 'luva', 'terra'],
     label: 'Jardim — Jardinagem e Insumos',
   },
+  grama: {
+    segments: ['natureza', 'casa'],
+    serviceKeywords: ['jardineiro', 'jardinagem', 'poda', 'corte de grama', 'paisagismo', 'capinar'],
+    productKeywords: ['grama', 'adubo', 'semente', 'tesoura', 'luva', 'jardinagem', 'poda'],
+    label: 'Grama — Jardinagem e Manutenção',
+  },
+  jardinagem: {
+    segments: ['natureza', 'casa'],
+    serviceKeywords: ['jardineiro', 'poda', 'corte de grama', 'paisagismo', 'horta'],
+    productKeywords: ['adubo', 'semente', 'vaso', 'tesoura', 'luva', 'terra', 'grama'],
+    label: 'Jardinagem — Serviços e Insumos',
+  },
 };
 
 // ── NL Map: now with specific service & product IDs for precision ──
@@ -1623,6 +1635,21 @@ const contextualMap: ContextualMapEntry[] = [
       { name: 'Pastilha de Freio Cerâmica', description: 'Pastilha de alta durabilidade para freios' },
     ],
   },
+  // ── Jardinagem / Grama ──
+  {
+    keywords: ['grama', 'gramado', 'jardinagem', 'jardineiro', 'jardim', 'poda', 'paisagismo', 'capinar', 'mato', 'quintal'],
+    segment: 'natureza',
+    services: [
+      { name: 'Corte e Manutenção de Grama', description: 'Corte regular e cuidados com gramado' },
+      { name: 'Poda de Árvores e Arbustos', description: 'Poda técnica para saúde e estética das plantas' },
+      { name: 'Projeto Paisagístico', description: 'Planejamento e execução de jardim completo' },
+    ],
+    products: [
+      { name: 'Tesoura de Poda Profissional', description: 'Ferramenta para poda de galhos e grama' },
+      { name: 'Adubo Orgânico 5kg', description: 'Adubo natural para gramados e jardins' },
+      { name: 'Semente de Grama 1kg', description: 'Sementes para replantio de gramado' },
+    ],
+  },
 ];
 
 /**
@@ -1868,14 +1895,16 @@ export async function addDynamicEntries(entries: DynamicEntry[]): Promise<void> 
   }
 }
 
-/** Get all services — ONLY from database (dynamic entries) */
+/** Get all services — static inventory + database (dynamic entries) */
 export function getAllServices(): typeof mockResults {
-  return [...dynamicServices];
+  const combined = [...mockResults, ...dynamicServices];
+  return [...new Map(combined.map(s => [s.id, s])).values()];
 }
 
-/** Get all products — ONLY from database (dynamic entries) */
+/** Get all products — static inventory + database (dynamic entries) */
 export function getAllProducts(): ProductItem[] {
-  return [...dynamicProducts];
+  const combined = [...productInventory, ...dynamicProducts];
+  return [...new Map(combined.map(p => [p.id, p])).values()];
 }
 
 /**

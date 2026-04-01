@@ -55,11 +55,12 @@ const Landing = () => {
   const [expandedServices, setExpandedServices] = useState<number | null>(null);
   const [showSearchProducts, setShowSearchProducts] = useState(false);
   const [productCart, setProductCart] = useState<ProductItem[]>([]);
+  const [productQuantities, setProductQuantities] = useState<Map<number, number>>(new Map());
   const [serviceCart, setServiceCart] = useState<ServiceCartItem[]>([]);
   const [showCartDetails, setShowCartDetails] = useState(false);
   const [pendingChatSuggestions, setPendingChatSuggestions] = useState<Map<number, Set<string>>>(new Map());
   const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
-  const [dbSegments, setDbSegments] = useState<{ id: string; label: string; name: string }[]>([]);
+  const [dbSegments, setDbSegments] = useState<{ id: string; label: string; name: string; tags: string[] }[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [mobileRevealedSeg, setMobileRevealedSeg] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -114,11 +115,41 @@ const Landing = () => {
   };
 
   const toggleProductInCart = (product: ProductItem) => {
-    setProductCart(prev => 
-      prev.some(p => p.id === product.id)
-        ? prev.filter(p => p.id !== product.id)
-        : [...prev, product]
-    );
+    if (productCart.some(p => p.id === product.id)) {
+      // Already in cart — increment quantity
+      setProductQuantities(prev => {
+        const next = new Map(prev);
+        next.set(product.id, (next.get(product.id) || 1) + 1);
+        return next;
+      });
+    } else {
+      // Add to cart with quantity 1
+      setProductCart(prev => [...prev, product]);
+      setProductQuantities(prev => {
+        const next = new Map(prev);
+        next.set(product.id, 1);
+        return next;
+      });
+    }
+  };
+
+  const removeProductFromCart = (productId: number) => {
+    setProductCart(prev => prev.filter(p => p.id !== productId));
+    setProductQuantities(prev => {
+      const next = new Map(prev);
+      next.delete(productId);
+      return next;
+    });
+  };
+
+  const updateProductQuantity = (productId: number, delta: number) => {
+    setProductQuantities(prev => {
+      const next = new Map(prev);
+      const current = next.get(productId) || 1;
+      const newQty = Math.max(1, current + delta);
+      next.set(productId, newQty);
+      return next;
+    });
   };
 
   const isInProductCart = (productId: number) => productCart.some(p => p.id === productId);
@@ -133,8 +164,8 @@ const Landing = () => {
 
   const isInServiceCart = (serviceId: number) => serviceCart.some(s => s.id === serviceId);
 
-  const totalCartItems = productCart.length + serviceCart.length;
-  const totalCartValue = productCart.reduce((s, p) => s + p.price, 0) + serviceCart.reduce((s, svc) => s + svc.price, 0);
+  const totalCartItems = productCart.reduce((sum, p) => sum + (productQuantities.get(p.id) || 1), 0) + serviceCart.length;
+  const totalCartValue = productCart.reduce((s, p) => s + p.price * (productQuantities.get(p.id) || 1), 0) + serviceCart.reduce((s, svc) => s + svc.price, 0);
 
   const navigateToCheckout = () => {
     if (totalCartItems === 0) return;
@@ -145,7 +176,7 @@ const Landing = () => {
       }))),
       products: JSON.stringify(productCart.map(p => ({
         name: p.name, type: p.stockType, price: p.price, provider: p.provider,
-        rating: p.rating, distance: p.distance,
+        rating: p.rating, distance: p.distance, quantity: productQuantities.get(p.id) || 1,
       }))),
     });
     navigate(`/jornada-cliente?${params.toString()}`);
@@ -154,6 +185,7 @@ const Landing = () => {
   const clearCart = () => {
     setProductCart([]);
     setServiceCart([]);
+    setProductQuantities(new Map());
     setShowCartDetails(false);
   };
 
@@ -184,7 +216,7 @@ const Landing = () => {
       await reloadDynamicEntries();
       const { data: segs } = await supabase.from('segments').select('*').order('name');
       if (segs) {
-        setDbSegments(segs.map((s: any) => ({ id: s.name, label: s.name, name: s.name })));
+        setDbSegments(segs.map((s: any) => ({ id: s.name, label: s.name, name: s.name, tags: s.suggested_tags || [] })));
       }
       setDataLoaded(true);
       setSearchExecuted(true);
@@ -550,12 +582,31 @@ const Landing = () => {
                                         <Store className="w-4 h-4 text-primary" />
                                       </div>
                                       <div>
-                                        <h3 className="font-semibold text-sm text-foreground">{providerName}</h3>
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                          <h3 className="font-semibold text-sm text-foreground">{providerName}</h3>
+                                          {(() => {
+                                            const seg = data.services[0]?.segment;
+                                            return seg ? <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4">{seg}</Badge> : null;
+                                          })()}
+                                        </div>
                                         <p className="text-[11px] text-muted-foreground">
                                           {data.services.length > 0 && `${data.services.length} serviço(s)`}
                                           {data.services.length > 0 && data.products.length > 0 && ' · '}
                                           {data.products.length > 0 && `${data.products.length} produto(s)`}
                                         </p>
+                                        {(() => {
+                                          const seg = data.services[0]?.segment;
+                                          const segData = dbSegments.find(s => s.id === seg || s.name === seg);
+                                          const tags = segData?.tags || [];
+                                          return tags.length > 0 ? (
+                                            <div className="flex flex-wrap gap-1 mt-0.5">
+                                              {tags.slice(0, 4).map(tag => (
+                                                <span key={tag} className="text-[8px] text-muted-foreground/60 bg-muted/30 px-1 rounded">{tag}</span>
+                                              ))}
+                                              {tags.length > 4 && <span className="text-[8px] text-muted-foreground/40">+{tags.length - 4}</span>}
+                                            </div>
+                                          ) : null;
+                                        })()}
                                       </div>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -1266,21 +1317,28 @@ const Landing = () => {
                           <ShoppingBag className="w-3 h-3" /> Produtos
                         </p>
                       )}
-                      {productCart.map(product => (
-                        <div key={`prod-${product.id}`} className="flex items-center justify-between text-xs bg-success/5 rounded-lg px-3 py-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <Badge variant={product.stockType === 'fisico' ? 'default' : 'secondary'} className="text-[8px] px-1.5 py-0 shrink-0">
-                              {product.stockType === 'fisico' ? '📦' : '🌍'}
-                            </Badge>
-                            <span className="font-medium text-foreground truncate">{product.name}</span>
-                            <span className="text-muted-foreground shrink-0">R$ {product.price}</span>
-                            <span className="text-[10px] text-muted-foreground shrink-0">• {product.provider}</span>
+                      {productCart.map(product => {
+                        const qty = productQuantities.get(product.id) || 1;
+                        return (
+                          <div key={`prod-${product.id}`} className="flex items-center justify-between text-xs bg-success/5 rounded-lg px-3 py-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Badge variant={product.stockType === 'fisico' ? 'default' : 'secondary'} className="text-[8px] px-1.5 py-0 shrink-0">
+                                {product.stockType === 'fisico' ? '📦' : '🌍'}
+                              </Badge>
+                              <span className="font-medium text-foreground truncate">{product.name}</span>
+                              <span className="text-muted-foreground shrink-0">R$ {(product.price * qty).toFixed(2)}</span>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0 ml-2">
+                              <button onClick={() => updateProductQuantity(product.id, -1)} className="w-5 h-5 rounded bg-muted flex items-center justify-center text-foreground hover:bg-muted/80 text-xs font-bold">−</button>
+                              <span className="text-xs font-semibold w-5 text-center">{qty}</span>
+                              <button onClick={() => updateProductQuantity(product.id, 1)} className="w-5 h-5 rounded bg-muted flex items-center justify-center text-foreground hover:bg-muted/80 text-xs font-bold">+</button>
+                              <button onClick={() => removeProductFromCart(product.id)} className="text-muted-foreground hover:text-destructive ml-1">
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
-                          <button onClick={() => toggleProductInCart(product)} className="text-muted-foreground hover:text-destructive ml-2 shrink-0">
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </motion.div>
                   )}
                 </AnimatePresence>
