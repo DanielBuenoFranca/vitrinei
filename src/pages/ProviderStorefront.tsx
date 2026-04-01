@@ -60,6 +60,8 @@ const ProviderStorefront = () => {
   const [serviceCart, setServiceCart] = useState<ServiceCartItem[]>([]);
   const [showCartDetails, setShowCartDetails] = useState(false);
   const [clientCredit] = useState(100);
+  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'cartao' | null>(null);
+  const [paymentStep, setPaymentStep] = useState<'choose' | 'processing' | 'confirmed'>('choose');
 
   // Provider inventory
   const [providerServices, setProviderServices] = useState<any[]>([]);
