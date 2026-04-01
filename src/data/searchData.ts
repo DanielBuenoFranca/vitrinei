@@ -1857,6 +1857,7 @@ export async function loadDynamicEntries(): Promise<void> {
         distance: row.distance,
         time: row.time,
         products: row.products || [],
+        _fromDb: true,
       }));
     }
     if (prodRes.data) {
@@ -1870,6 +1871,7 @@ export async function loadDynamicEntries(): Promise<void> {
         distance: row.distance,
         relatedServiceIds: row.related_service_ids || [],
         tags: row.tags || [],
+        _fromDb: true,
       }));
     }
     _loaded = true;

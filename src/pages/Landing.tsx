@@ -189,7 +189,10 @@ const Landing = () => {
     });
   }, []);
 
-  const isSimulatedProvider = (providerName: string) => !dbProviderNames.has(providerName);
+  const isSimulatedProvider = (providerName: string, item?: any) => {
+    if (item && item._fromDb) return false;
+    return !dbProviderNames.has(providerName);
+  };
 
   // ── Motor de busca semântica universal ──
   const searchResult = (() => {
@@ -216,8 +219,8 @@ const Landing = () => {
     if (!showSimulated) {
       rawResult = {
         ...rawResult,
-        services: rawResult.services.filter(s => !isSimulatedProvider(s.provider)),
-        products: rawResult.products.filter(p => !isSimulatedProvider(p.provider)),
+        services: rawResult.services.filter((s: any) => !isSimulatedProvider(s.provider, s)),
+        products: rawResult.products.filter((p: any) => !isSimulatedProvider(p.provider, p)),
       };
     }
     return rawResult;
