@@ -60,7 +60,7 @@ const Landing = () => {
   const [showCartDetails, setShowCartDetails] = useState(false);
   const [pendingChatSuggestions, setPendingChatSuggestions] = useState<Map<number, Set<string>>>(new Map());
   const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
-  const [dbSegments, setDbSegments] = useState<{ id: string; label: string; name: string }[]>([]);
+  const [dbSegments, setDbSegments] = useState<{ id: string; label: string; name: string; tags: string[] }[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [mobileRevealedSeg, setMobileRevealedSeg] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
