@@ -1066,9 +1066,17 @@ const Landing = () => {
                             <button onClick={() => toggleProviderExpanded(providerName)}
                               className="w-full flex items-center justify-between p-3 hover:bg-muted/30 transition-colors text-left">
                               <div className="flex items-center gap-2 min-w-0">
-                                <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-sm">
-                                  <Store className="w-3.5 h-3.5 text-primary" />
-                                </div>
+                                {(() => {
+                                  const prov = dbProviders.get(providerName);
+                                  const logo = prov?.logo_url;
+                                  return logo ? (
+                                    <img src={logo} alt={providerName} className="w-7 h-7 rounded-full object-cover border border-border shrink-0" />
+                                  ) : (
+                                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-sm">
+                                      <Store className="w-3.5 h-3.5 text-primary" />
+                                    </div>
+                                  );
+                                })()}
                                 <div className="min-w-0">
                                   <p className="font-semibold text-xs text-foreground truncate">{providerName}</p>
                                   <p className="text-[10px] text-muted-foreground">
