@@ -28,19 +28,7 @@ const aiSuggestions = [
 ];
 
 
-interface ServiceCartItem {
-  id: number;
-  name: string;
-  segment: string;
-  provider: string;
-  price: number;
-  rating: number;
-  distance: string;
-  time: string;
-  products: string[];
-}
-
-const Landing = () => {
+// ServiceCartItem now comes from CartContext
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [executedQuery, setExecutedQuery] = useState('');
