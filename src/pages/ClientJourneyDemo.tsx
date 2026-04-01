@@ -37,7 +37,7 @@ interface CartService {
 }
 interface CartProduct {
   name: string; type: string; price: number; provider: string;
-  rating: number; distance: string;
+  rating: number; distance: string; quantity?: number;
 }
 
 /* ─── STEPS ─── */
