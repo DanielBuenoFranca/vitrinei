@@ -6,13 +6,19 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag } from 'lucide-react';
+import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import { ProviderForm } from '@/components/admin/ProviderForm';
 import { ProductForm } from '@/components/admin/ProductForm';
 import { ServiceForm } from '@/components/admin/ServiceForm';
 import { SegmentForm } from '@/components/admin/SegmentForm';
 import { ClearDataDialog } from '@/components/admin/ClearDataDialog';
+import { InconsistencyPanel } from '@/components/admin/InconsistencyPanel';
+import { reloadDynamicEntries } from '@/data/searchData';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from '@/components/ui/dialog';
 
 interface Provider {
   id: number; name: string; type: string; segment: string[];
@@ -53,6 +59,9 @@ const AdminPanel = () => {
   const [serviceForm, setServiceForm] = useState<{ open: boolean; item: DynamicService | null }>({ open: false, item: null });
   const [segmentForm, setSegmentForm] = useState<{ open: boolean; item: Segment | null }>({ open: false, item: null });
 
+  // Confirmation dialog for provider delete
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; provider: Provider | null }>({ open: false, provider: null });
+
   const fetchData = async () => {
     setLoading(true);
     const [provRes, svcRes, prodRes, segRes] = await Promise.all([
@@ -71,17 +80,73 @@ const AdminPanel = () => {
   useEffect(() => { fetchData(); }, []);
 
   const deleteProvider = async (id: number) => {
+    const prov = providers.find(p => p.id === id);
+    const relSvc = services.filter(s => s.provider_id === id || s.provider === prov?.name);
+    const relProd = products.filter(p => p.provider_id === id || p.provider === prov?.name);
+
     await supabase.from('dynamic_services').delete().eq('provider_id', id);
     await supabase.from('dynamic_products').delete().eq('provider_id', id);
+    // Also delete by name in case provider_id is null
+    if (prov) {
+      await supabase.from('dynamic_services').delete().eq('provider', prov.name);
+      await supabase.from('dynamic_products').delete().eq('provider', prov.name);
+    }
     await supabase.from('providers').delete().eq('id', id);
+
+    toast.success(`"${prov?.name}" excluído com ${relSvc.length} serviço(s) e ${relProd.length} produto(s)`);
+    await reloadDynamicEntries();
     fetchData();
   };
-  const deleteService = async (id: number) => { await supabase.from('dynamic_services').delete().eq('id', id); fetchData(); };
-  const deleteProduct = async (id: number) => { await supabase.from('dynamic_products').delete().eq('id', id); fetchData(); };
-  const deleteSegment = async (id: number) => { await supabase.from('segments').delete().eq('id', id); fetchData(); };
+
+  const confirmDeleteProvider = (prov: Provider) => {
+    setDeleteConfirm({ open: true, provider: prov });
+  };
+
+  const deleteService = async (id: number) => {
+    await supabase.from('dynamic_services').delete().eq('id', id);
+    toast.success('Serviço excluído');
+    await reloadDynamicEntries();
+    fetchData();
+  };
+
+  const deleteProduct = async (id: number) => {
+    await supabase.from('dynamic_products').delete().eq('id', id);
+    toast.success('Produto excluído');
+    await reloadDynamicEntries();
+    fetchData();
+  };
+
+  const deleteSegment = async (id: number) => {
+    await supabase.from('segments').delete().eq('id', id);
+    toast.success('Segmento excluído');
+    fetchData();
+  };
 
   const providerList = providers.map(p => ({ id: p.id, name: p.name, segment: p.segment }));
   const segmentList = segments.map(s => ({ id: s.id, name: s.name }));
+
+  // Count inconsistencies for tab badge
+  const countIssues = () => {
+    let count = 0;
+    const segmentNames = new Set(segments.map(s => s.name));
+    const providerIds = new Set(providers.map(p => p.id));
+    const providerNames = new Set(providers.map(p => p.name));
+    providers.forEach(p => {
+      if (!p.segment || p.segment.length === 0) count++;
+      if (!p.cpf_cnpj) count++;
+    });
+    services.forEach(s => {
+      if (s.provider_id && !providerIds.has(s.provider_id)) count++;
+      if (!s.segment || !segmentNames.has(s.segment)) count++;
+    });
+    products.forEach(p => {
+      if (p.provider_id && !providerIds.has(p.provider_id)) count++;
+      if (!p.tags || p.tags.length === 0) count++;
+    });
+    return count;
+  };
+
+  const issueCount = countIssues();
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -139,6 +204,13 @@ const AdminPanel = () => {
             <TabsTrigger value="providers">Prestadores ({providers.length})</TabsTrigger>
             <TabsTrigger value="services">Serviços ({services.length})</TabsTrigger>
             <TabsTrigger value="products">Produtos ({products.length})</TabsTrigger>
+            <TabsTrigger value="issues" className="gap-1.5">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              Inconsistências
+              {issueCount > 0 && (
+                <Badge variant="destructive" className="ml-1 text-[10px] px-1.5 py-0 min-w-5 h-5">{issueCount}</Badge>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           {/* ── SEGMENTS TAB ── */}
@@ -173,7 +245,6 @@ const AdminPanel = () => {
                         {segments.map(seg => {
                           const segProviders = providers.filter(p => p.segment?.includes(seg.name)).length;
                           const segServices = services.filter(s => s.segment === seg.name).length;
-                          // Products don't have segment directly but through provider
                           return (
                             <TableRow key={seg.id}>
                               <TableCell className="font-medium">
@@ -268,7 +339,7 @@ const AdminPanel = () => {
                                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setProviderForm({ open: true, item: prov })}>
                                     <Pencil className="h-4 w-4" />
                                   </Button>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteProvider(prov.id)}>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => confirmDeleteProvider(prov)}>
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </div>
@@ -431,15 +502,70 @@ const AdminPanel = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* ── INCONSISTENCIES TAB ── */}
+          <TabsContent value="issues">
+            <InconsistencyPanel
+              providers={providers}
+              services={services}
+              products={products}
+              segments={segments}
+              onEditProvider={(p) => setProviderForm({ open: true, item: p })}
+              onEditService={(s) => setServiceForm({ open: true, item: s })}
+              onEditProduct={(p) => setProductForm({ open: true, item: p })}
+              onDeleteService={deleteService}
+              onDeleteProduct={deleteProduct}
+            />
+          </TabsContent>
         </Tabs>
       </main>
 
       {/* Dialogs */}
-      <ProviderForm open={providerForm.open} onClose={() => setProviderForm({ open: false, item: null })} onSaved={fetchData} provider={providerForm.item} segments={segmentList} />
-      <ProductForm open={productForm.open} onClose={() => setProductForm({ open: false, item: null })} onSaved={fetchData} product={productForm.item} providers={providerList} segments={segmentList} />
-      <ServiceForm open={serviceForm.open} onClose={() => setServiceForm({ open: false, item: null })} onSaved={fetchData} service={serviceForm.item} providers={providerList} segments={segmentList} />
+      <ProviderForm open={providerForm.open} onClose={() => setProviderForm({ open: false, item: null })} onSaved={() => { reloadDynamicEntries(); fetchData(); }} provider={providerForm.item} segments={segmentList} />
+      <ProductForm open={productForm.open} onClose={() => setProductForm({ open: false, item: null })} onSaved={() => { reloadDynamicEntries(); fetchData(); }} product={productForm.item} providers={providerList} segments={segmentList} />
+      <ServiceForm open={serviceForm.open} onClose={() => setServiceForm({ open: false, item: null })} onSaved={() => { reloadDynamicEntries(); fetchData(); }} service={serviceForm.item} providers={providerList} segments={segmentList} />
       <SegmentForm open={segmentForm.open} onClose={() => setSegmentForm({ open: false, item: null })} onSaved={fetchData} segment={segmentForm.item} />
-      <ClearDataDialog open={clearDialog} onClose={() => setClearDialog(false)} onCleared={fetchData} counts={{ providers: providers.length, services: services.length, products: products.length, segments: segments.length }} />
+      <ClearDataDialog open={clearDialog} onClose={() => setClearDialog(false)} onCleared={() => { reloadDynamicEntries(); fetchData(); }} counts={{ providers: providers.length, services: services.length, products: products.length, segments: segments.length }} />
+
+      {/* Delete Provider Confirmation */}
+      <Dialog open={deleteConfirm.open} onOpenChange={(v) => !v && setDeleteConfirm({ open: false, provider: null })}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Excluir Prestador
+            </DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir <strong>{deleteConfirm.provider?.name}</strong>?
+            </DialogDescription>
+          </DialogHeader>
+          {deleteConfirm.provider && (() => {
+            const relSvc = services.filter(s => s.provider_id === deleteConfirm.provider!.id || s.provider === deleteConfirm.provider!.name);
+            const relProd = products.filter(p => p.provider_id === deleteConfirm.provider!.id || p.provider === deleteConfirm.provider!.name);
+            return (
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>Esta ação também excluirá:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li><strong>{relSvc.length}</strong> serviço(s) vinculado(s)</li>
+                  <li><strong>{relProd.length}</strong> produto(s) vinculado(s)</li>
+                </ul>
+                <p className="text-destructive text-xs font-medium">Esta ação não pode ser desfeita.</p>
+              </div>
+            );
+          })()}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirm({ open: false, provider: null })}>Cancelar</Button>
+            <Button variant="destructive" onClick={() => {
+              if (deleteConfirm.provider) {
+                deleteProvider(deleteConfirm.provider.id);
+                setDeleteConfirm({ open: false, provider: null });
+              }
+            }}>
+              Excluir Tudo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

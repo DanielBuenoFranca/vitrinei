@@ -1,0 +1,217 @@
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle, CheckCircle2, Pencil, Trash2, ArrowRight } from 'lucide-react';
+
+interface Provider {
+  id: number; name: string; type: string; segment: string[];
+  phone: string | null; email: string | null; address: string | null; city: string | null;
+  distance: string; rating: number; active: boolean; cpf_cnpj: string | null;
+  created_at: string;
+}
+
+interface DynamicService {
+  id: number; service_id: number; name: string; segment: string;
+  provider: string; provider_id: number | null; price: number; rating: number;
+  distance: string; time: string; products: string[]; created_at: string;
+  labor_cost?: number; linked_product_ids?: number[];
+}
+
+interface DynamicProduct {
+  id: number; product_id: number; name: string; price: number;
+  provider: string; provider_id: number | null; stock_type: string;
+  rating: number; distance: string; tags: string[]; related_service_ids: number[];
+  created_at: string;
+}
+
+interface Segment {
+  id: number; name: string;
+}
+
+interface Issue {
+  type: 'error' | 'warning';
+  entity: string;
+  entityId: number;
+  entityName: string;
+  message: string;
+  action: 'edit' | 'delete';
+  tab: string;
+}
+
+interface InconsistencyPanelProps {
+  providers: Provider[];
+  services: DynamicService[];
+  products: DynamicProduct[];
+  segments: Segment[];
+  onEditProvider: (p: Provider) => void;
+  onEditService: (s: DynamicService) => void;
+  onEditProduct: (p: DynamicProduct) => void;
+  onDeleteService: (id: number) => void;
+  onDeleteProduct: (id: number) => void;
+}
+
+export function InconsistencyPanel({
+  providers, services, products, segments,
+  onEditProvider, onEditService, onEditProduct,
+  onDeleteService, onDeleteProduct,
+}: InconsistencyPanelProps) {
+  const segmentNames = new Set(segments.map(s => s.name));
+  const providerIds = new Set(providers.map(p => p.id));
+  const providerNames = new Set(providers.map(p => p.name));
+
+  const issues: Issue[] = [];
+
+  // Providers without segments
+  providers.forEach(p => {
+    if (!p.segment || p.segment.length === 0) {
+      issues.push({ type: 'error', entity: 'Prestador', entityId: p.id, entityName: p.name, message: 'Sem segmento vinculado', action: 'edit', tab: 'providers' });
+    } else {
+      p.segment.forEach(seg => {
+        if (!segmentNames.has(seg)) {
+          issues.push({ type: 'warning', entity: 'Prestador', entityId: p.id, entityName: p.name, message: `Segmento "${seg}" não existe no cadastro`, action: 'edit', tab: 'providers' });
+        }
+      });
+    }
+    if (!p.cpf_cnpj) {
+      issues.push({ type: 'warning', entity: 'Prestador', entityId: p.id, entityName: p.name, message: 'Sem CPF/CNPJ cadastrado', action: 'edit', tab: 'providers' });
+    }
+    if (!p.phone && !p.email) {
+      issues.push({ type: 'warning', entity: 'Prestador', entityId: p.id, entityName: p.name, message: 'Sem telefone e sem email', action: 'edit', tab: 'providers' });
+    }
+  });
+
+  // Services issues
+  services.forEach(s => {
+    if (!s.provider_id || !providerIds.has(s.provider_id)) {
+      if (!providerNames.has(s.provider)) {
+        issues.push({ type: 'error', entity: 'Serviço', entityId: s.id, entityName: s.name, message: `Prestador "${s.provider}" não encontrado na base`, action: 'edit', tab: 'services' });
+      }
+    }
+    if (!s.segment) {
+      issues.push({ type: 'error', entity: 'Serviço', entityId: s.id, entityName: s.name, message: 'Sem segmento definido', action: 'edit', tab: 'services' });
+    } else if (!segmentNames.has(s.segment)) {
+      issues.push({ type: 'warning', entity: 'Serviço', entityId: s.id, entityName: s.name, message: `Segmento "${s.segment}" não existe no cadastro`, action: 'edit', tab: 'services' });
+    }
+    if (s.price <= 0) {
+      issues.push({ type: 'warning', entity: 'Serviço', entityId: s.id, entityName: s.name, message: 'Preço zerado ou negativo', action: 'edit', tab: 'services' });
+    }
+  });
+
+  // Products issues
+  products.forEach(p => {
+    if (!p.provider_id || !providerIds.has(p.provider_id)) {
+      if (!providerNames.has(p.provider)) {
+        issues.push({ type: 'error', entity: 'Produto', entityId: p.id, entityName: p.name, message: `Prestador "${p.provider}" não encontrado na base`, action: 'edit', tab: 'products' });
+      }
+    }
+    if (!p.tags || p.tags.length === 0) {
+      issues.push({ type: 'warning', entity: 'Produto', entityId: p.id, entityName: p.name, message: 'Sem tags (dificulta busca)', action: 'edit', tab: 'products' });
+    }
+    if (p.price <= 0) {
+      issues.push({ type: 'warning', entity: 'Produto', entityId: p.id, entityName: p.name, message: 'Preço zerado ou negativo', action: 'edit', tab: 'products' });
+    }
+  });
+
+  // Orphan services (provider_id points to non-existent provider)
+  services.forEach(s => {
+    if (s.provider_id && !providerIds.has(s.provider_id)) {
+      issues.push({ type: 'error', entity: 'Serviço', entityId: s.id, entityName: s.name, message: `provider_id=${s.provider_id} não existe (prestador excluído?)`, action: 'delete', tab: 'services' });
+    }
+  });
+
+  // Orphan products
+  products.forEach(p => {
+    if (p.provider_id && !providerIds.has(p.provider_id)) {
+      issues.push({ type: 'error', entity: 'Produto', entityId: p.id, entityName: p.name, message: `provider_id=${p.provider_id} não existe (prestador excluído?)`, action: 'delete', tab: 'products' });
+    }
+  });
+
+  const errors = issues.filter(i => i.type === 'error');
+  const warnings = issues.filter(i => i.type === 'warning');
+
+  const handleAction = (issue: Issue) => {
+    if (issue.entity === 'Prestador') {
+      const p = providers.find(x => x.id === issue.entityId);
+      if (p) onEditProvider(p);
+    } else if (issue.entity === 'Serviço') {
+      if (issue.action === 'delete') {
+        onDeleteService(issue.entityId);
+      } else {
+        const s = services.find(x => x.id === issue.entityId);
+        if (s) onEditService(s);
+      }
+    } else if (issue.entity === 'Produto') {
+      if (issue.action === 'delete') {
+        onDeleteProduct(issue.entityId);
+      } else {
+        const p = products.find(x => x.id === issue.entityId);
+        if (p) onEditProduct(p);
+      }
+    }
+  };
+
+  if (issues.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center">
+          <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto mb-3" />
+          <p className="font-semibold text-foreground">Nenhuma inconsistência encontrada</p>
+          <p className="text-sm text-muted-foreground mt-1">Todos os relacionamentos e dados estão válidos.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <AlertTriangle className="h-5 w-5 text-destructive" />
+          Inconsistências Detectadas
+        </CardTitle>
+        <CardDescription>
+          {errors.length} erro(s) crítico(s) e {warnings.length} aviso(s) encontrados nos cadastros.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-2 max-h-[500px] overflow-y-auto">
+        {/* Errors first, then warnings */}
+        {[...errors, ...warnings].map((issue, idx) => (
+          <div
+            key={`${issue.entity}-${issue.entityId}-${idx}`}
+            className={`flex items-center gap-3 p-3 rounded-lg border ${
+              issue.type === 'error'
+                ? 'border-destructive/30 bg-destructive/5'
+                : 'border-yellow-500/30 bg-yellow-500/5'
+            }`}
+          >
+            <AlertTriangle className={`h-4 w-4 flex-shrink-0 ${
+              issue.type === 'error' ? 'text-destructive' : 'text-yellow-500'
+            }`} />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant={issue.type === 'error' ? 'destructive' : 'secondary'} className="text-[10px]">
+                  {issue.entity}
+                </Badge>
+                <span className="text-sm font-medium text-foreground truncate">{issue.entityName}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">{issue.message}</p>
+            </div>
+            <Button
+              variant={issue.action === 'delete' ? 'destructive' : 'outline'}
+              size="sm"
+              className="flex-shrink-0 gap-1 text-xs h-7"
+              onClick={() => handleAction(issue)}
+            >
+              {issue.action === 'delete' ? (
+                <><Trash2 className="w-3 h-3" /> Excluir</>
+              ) : (
+                <><Pencil className="w-3 h-3" /> Corrigir</>
+              )}
+            </Button>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}

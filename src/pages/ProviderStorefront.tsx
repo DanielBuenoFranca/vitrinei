@@ -15,6 +15,8 @@ import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { segments as staticSegments, getAllServices, getAllProducts, reloadDynamicEntries, loadSegmentTagsCache, type ProductItem } from '@/data/searchData';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart, type ServiceCartItem } from '@/contexts/CartContext';
+import { ProductForm } from '@/components/admin/ProductForm';
+import { ServiceForm } from '@/components/admin/ServiceForm';
 
 interface ProviderData {
   id: number;
@@ -59,11 +61,32 @@ const ProviderStorefront = () => {
   const [providerServices, setProviderServices] = useState<any[]>([]);
   const [providerProducts, setProviderProducts] = useState<ProductItem[]>([]);
   const [segmentTags, setSegmentTags] = useState<string[]>([]);
+  const [dbSegments, setDbSegments] = useState<{ id: number; name: string }[]>([]);
+
+  // Forms for adding products/services
+  const [productFormOpen, setProductFormOpen] = useState(false);
+  const [serviceFormOpen, setServiceFormOpen] = useState(false);
+  const [editProduct, setEditProduct] = useState<any>(null);
+  const [editService, setEditService] = useState<any>(null);
+
+  const loadProviderData = async (providerData?: ProviderData) => {
+    const prov = providerData || provider;
+    if (!prov) return;
+    await reloadDynamicEntries();
+    const allServices = getAllServices();
+    const allProducts = getAllProducts();
+    setProviderServices(allServices.filter((s: any) => s.provider === prov.name));
+    setProviderProducts(allProducts.filter((p: any) => p.provider === prov.name));
+  };
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       await Promise.all([reloadDynamicEntries(), loadSegmentTagsCache()]);
+
+      // Fetch segments for forms
+      const { data: segsData } = await supabase.from('segments').select('id, name').order('name');
+      setDbSegments((segsData || []) as { id: number; name: string }[]);
 
       // Find provider by slug
       const { data: providers } = await supabase.from('providers').select('*').eq('active', true);
@@ -259,8 +282,8 @@ const ProviderStorefront = () => {
                 </div>
               )}
 
-              {/* Stats */}
-              <div className="flex gap-4 mt-4 pt-3 border-t border-border">
+              {/* Stats + Management */}
+              <div className="flex gap-4 mt-4 pt-3 border-t border-border items-center">
                 <div className="text-center">
                   <p className="text-lg font-bold text-foreground">{providerServices.length}</p>
                   <p className="text-[10px] text-muted-foreground">Serviços</p>
@@ -272,6 +295,14 @@ const ProviderStorefront = () => {
                 <div className="text-center">
                   <p className="text-lg font-bold text-foreground">{provider.rating}</p>
                   <p className="text-[10px] text-muted-foreground">Avaliação</p>
+                </div>
+                <div className="ml-auto flex gap-1.5">
+                  <Button variant="outline" size="sm" className="gap-1 text-xs h-7" onClick={() => { setEditService(null); setServiceFormOpen(true); }}>
+                    <Plus className="w-3 h-3" /> Serviço
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1 text-xs h-7" onClick={() => { setEditProduct(null); setProductFormOpen(true); }}>
+                    <Plus className="w-3 h-3" /> Produto
+                  </Button>
                 </div>
               </div>
             </div>
@@ -415,6 +446,28 @@ const ProviderStorefront = () => {
       </section>
 
       {/* Cart is now rendered globally via CartBar */}
+
+      {/* Product & Service Forms */}
+      {provider && (
+        <>
+          <ProductForm
+            open={productFormOpen}
+            onClose={() => { setProductFormOpen(false); setEditProduct(null); }}
+            onSaved={() => loadProviderData()}
+            product={editProduct}
+            providers={[{ id: provider.id, name: provider.name, segment: Array.isArray(provider.segment) ? provider.segment : [provider.segment] }]}
+            segments={dbSegments}
+          />
+          <ServiceForm
+            open={serviceFormOpen}
+            onClose={() => { setServiceFormOpen(false); setEditService(null); }}
+            onSaved={() => loadProviderData()}
+            service={editService}
+            providers={[{ id: provider.id, name: provider.name, segment: Array.isArray(provider.segment) ? provider.segment : [provider.segment] }]}
+            segments={dbSegments}
+          />
+        </>
+      )}
     </div>
   );
 };
