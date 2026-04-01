@@ -1171,6 +1171,13 @@ function scoreService(s: typeof mockResults[0], tokens: string[], intentProfile?
     score += tokenMatchScore(tokens, p) * 2;
   }
 
+  // Also check segment tags for additional matching
+  const segTags = getSegmentTags(s.segment);
+  for (const segTag of segTags) {
+    const tagScore = tokenMatchScore(tokens, segTag);
+    if (tagScore > 0) score += tagScore;
+  }
+
   if (intentProfile?.strict && intentProfile.intentTerms.length > 0) {
     if (intentProfile.segmentId && s.segment !== intentProfile.segmentId) return 0;
 
