@@ -171,7 +171,7 @@ const AdminPanel = () => {
                       </TableHeader>
                       <TableBody>
                         {segments.map(seg => {
-                          const segProviders = providers.filter(p => p.segment === seg.name).length;
+                          const segProviders = providers.filter(p => p.segment?.includes(seg.name)).length;
                           const segServices = services.filter(s => s.segment === seg.name).length;
                           // Products don't have segment directly but through provider
                           return (
