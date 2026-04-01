@@ -610,10 +610,11 @@ const Landing = () => {
                                 <div className="rounded-xl border border-border bg-card/50 overflow-hidden">
                                   {/* Provider Header — clickable to expand/collapse */}
                                   <div
-                                    onClick={() => toggleProviderExpanded(providerName)}
-                                    className="px-4 py-3 bg-muted/30 border-b border-border flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors"
+                                    className="px-3 sm:px-4 py-3 bg-muted/30 border-b border-border cursor-pointer hover:bg-muted/50 transition-colors"
                                   >
-                                    <div className="flex items-center gap-2">
+                                    {/* Top row: logo + name + Loja button */}
+                                    <div className="flex items-center justify-between gap-2" onClick={() => toggleProviderExpanded(providerName)}>
+                                      <div className="flex items-center gap-2 flex-1 min-w-0">
                                       {(() => {
                                         const prov = dbProviders.get(providerName);
                                         const logo = prov?.logo_url;
@@ -625,12 +626,19 @@ const Landing = () => {
                                           </div>
                                         );
                                       })()}
-                                      <div>
+                                      <div className="min-w-0 flex-1">
                                         <div className="flex items-center gap-1.5 flex-wrap">
-                                          <h3 className="font-semibold text-sm text-foreground">{providerName}</h3>
+                                          <h3
+                                            className="font-semibold text-sm text-foreground cursor-pointer hover:text-primary transition-colors truncate"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              const slug = providerName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                                              navigate(`/loja/${slug}`);
+                                            }}
+                                          >{providerName}</h3>
                                           {(() => {
                                             const seg = data.services[0]?.segment;
-                                            return seg ? <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4">{seg}</Badge> : null;
+                                            return seg ? <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 shrink-0">{seg}</Badge> : null;
                                           })()}
                                         </div>
                                         <p className="text-[11px] text-muted-foreground">
@@ -638,49 +646,53 @@ const Landing = () => {
                                           {data.services.length > 0 && data.products.length > 0 && ' · '}
                                           {data.products.length > 0 && `${data.products.length} produto(s)`}
                                         </p>
-                                        {(() => {
-                                          const seg = data.services[0]?.segment;
-                                          const segData = dbSegments.find(s => s.id === seg || s.name === seg);
-                                          const tags = segData?.tags || [];
-                                          return tags.length > 0 ? (
-                                            <div className="flex flex-wrap gap-1 mt-0.5">
-                                              {tags.slice(0, 4).map(tag => (
-                                                <span key={tag} className="text-[8px] text-muted-foreground/60 bg-muted/30 px-1 rounded">{tag}</span>
-                                              ))}
-                                              {tags.length > 4 && <span className="text-[8px] text-muted-foreground/40">+{tags.length - 4}</span>}
-                                            </div>
-                                          ) : null;
-                                        })()}
+                                      </div>
+                                      </div>
+                                      <div className="flex items-center gap-1.5 shrink-0">
+                                        <Button variant="default" size="sm" className="text-[10px] h-7 px-2.5 gap-1 font-semibold"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            const slug = providerName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                                            navigate(`/loja/${slug}`);
+                                          }}>
+                                          <Store className="w-3.5 h-3.5" /> Loja
+                                        </Button>
+                                        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${expandedProviders.has(providerName) ? 'rotate-180' : ''}`} />
                                       </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    {/* Bottom row: distance + rating + tags */}
+                                    <div className="flex items-center gap-2 mt-1.5 ml-10 flex-wrap">
                                       {(data.services.length > 0 || data.products.length > 0) && (
-                                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                        <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
                                           {data.services[0] && (
                                             <>
                                               <MapPin className="w-3 h-3" /> {data.services[0].distance}
-                                              <span className="mx-1">·</span>
+                                              <span className="mx-0.5">·</span>
                                               <Star className="w-3 h-3 fill-accent text-accent" /> {data.services[0].rating}
                                             </>
                                           )}
                                           {!data.services[0] && data.products[0] && (
                                             <>
                                               <MapPin className="w-3 h-3" /> {data.products[0].distance}
-                                              <span className="mx-1">·</span>
+                                              <span className="mx-0.5">·</span>
                                               <Star className="w-3 h-3 fill-accent text-accent" /> {data.products[0].rating}
                                             </>
                                           )}
                                         </div>
                                       )}
-                                      <Button variant="ghost" size="sm" className="text-[10px] h-6 px-2 gap-1 text-primary hover:text-primary"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          const slug = providerName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-                                          navigate(`/loja/${slug}`);
-                                        }}>
-                                        <Store className="w-3 h-3" /> Loja
-                                      </Button>
-                                      <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${expandedProviders.has(providerName) ? 'rotate-180' : ''}`} />
+                                      {(() => {
+                                        const seg = data.services[0]?.segment;
+                                        const segData = dbSegments.find(s => s.id === seg || s.name === seg);
+                                        const tags = segData?.tags || [];
+                                        return tags.length > 0 ? (
+                                          <div className="flex flex-wrap gap-1">
+                                            {tags.slice(0, 3).map(tag => (
+                                              <span key={tag} className="text-[8px] text-muted-foreground/60 bg-muted/30 px-1 rounded">{tag}</span>
+                                            ))}
+                                            {tags.length > 3 && <span className="text-[8px] text-muted-foreground/40">+{tags.length - 3}</span>}
+                                          </div>
+                                        ) : null;
+                                      })()}
                                     </div>
                                   </div>
 
@@ -1064,8 +1076,8 @@ const Landing = () => {
                         {Array.from(providerMap.entries()).map(([providerName, data]) => (
                           <div key={providerName} className="rounded-xl border border-border/50 overflow-hidden bg-card">
                             <button onClick={() => toggleProviderExpanded(providerName)}
-                              className="w-full flex items-center justify-between p-3 hover:bg-muted/30 transition-colors text-left">
-                              <div className="flex items-center gap-2 min-w-0">
+                              className="w-full flex items-center justify-between p-2.5 sm:p-3 hover:bg-muted/30 transition-colors text-left">
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
                                 {(() => {
                                   const prov = dbProviders.get(providerName);
                                   const logo = prov?.logo_url;
@@ -1077,8 +1089,13 @@ const Landing = () => {
                                     </div>
                                   );
                                 })()}
-                                <div className="min-w-0">
-                                  <p className="font-semibold text-xs text-foreground truncate">{providerName}</p>
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-semibold text-xs text-foreground truncate cursor-pointer hover:text-primary transition-colors"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const slug = providerName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                                      navigate(`/loja/${slug}`);
+                                    }}>{providerName}</p>
                                   <p className="text-[10px] text-muted-foreground">
                                     {data.services.length > 0 && `${data.services.length} serviço(s)`}
                                     {data.services.length > 0 && data.products.length > 0 && ' · '}
@@ -1086,7 +1103,17 @@ const Landing = () => {
                                   </p>
                                 </div>
                               </div>
-                              <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${expandedProviders.has(providerName) ? 'rotate-180' : ''}`} />
+                              <div className="flex items-center gap-1 shrink-0">
+                                <Button variant="default" size="sm" className="text-[9px] h-6 px-2 gap-0.5 font-semibold"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const slug = providerName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                                    navigate(`/loja/${slug}`);
+                                  }}>
+                                  <Store className="w-3 h-3" /> Loja
+                                </Button>
+                                <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${expandedProviders.has(providerName) ? 'rotate-180' : ''}`} />
+                              </div>
                             </button>
                             <AnimatePresence>
                               {expandedProviders.has(providerName) && (
@@ -1325,19 +1352,19 @@ const Landing = () => {
             transition={{ type: 'spring', damping: 20 }}
             className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-2xl px-1"
           >
-            <Card className="border-primary shadow-2xl bg-card/95 backdrop-blur-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <ShoppingCart className="w-5 h-5 text-primary" />
+            <Card className="border-primary shadow-2xl bg-card/95 backdrop-blur-sm overflow-hidden">
+              <CardContent className="p-3 sm:p-4">
+                {/* Mobile: stacked layout */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-foreground">
-                        {totalCartItems} ite{totalCartItems > 1 ? 'ns' : 'm'} no carrinho
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs sm:text-sm font-bold text-foreground truncate">
+                        {totalCartItems} ite{totalCartItems > 1 ? 'ns' : 'm'} • R$ {totalCartValue.toFixed(2)}
                       </p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                        <span className="font-semibold text-foreground">R$ {totalCartValue.toFixed(2)}</span>
+                      <div className="flex items-center gap-2 text-[10px] sm:text-xs text-muted-foreground flex-wrap">
                         <span className="flex items-center gap-0.5"><CreditCard className="w-3 h-3 text-primary" /> Crédito: R$ {creditBalance.toFixed(2)}</span>
                         {needsTopUp && (
                           <span className="flex items-center gap-0.5 text-destructive font-semibold">
@@ -1347,15 +1374,15 @@ const Landing = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button variant="ghost" size="sm" className="text-xs text-muted-foreground h-8 px-2" onClick={() => setShowCartDetails(!showCartDetails)}>
+                  <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 justify-end">
+                    <Button variant="ghost" size="sm" className="text-[10px] sm:text-xs text-muted-foreground h-7 sm:h-8 px-2" onClick={() => setShowCartDetails(!showCartDetails)}>
                       {showCartDetails ? 'Fechar' : 'Ver itens'}
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={clearCart}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground" onClick={clearCart}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
-                    <Button size="sm" className="gap-1.5 font-semibold" onClick={() => setShowCartDetails(true)}>
-                      <ShoppingCart className="w-3.5 h-3.5" /> Finalizar
+                    <Button size="sm" className="gap-1 sm:gap-1.5 font-semibold text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3" onClick={() => setShowCartDetails(true)}>
+                      <ShoppingCart className="w-3 sm:w-3.5 h-3 sm:h-3.5" /> Finalizar
                     </Button>
                   </div>
                 </div>
@@ -1371,14 +1398,15 @@ const Landing = () => {
                         </p>
                       )}
                       {serviceCart.map(svc => (
-                        <div key={`svc-${svc.id}`} className="flex items-center justify-between text-xs bg-primary/5 rounded-lg px-3 py-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <Badge className="bg-primary/10 text-primary border-primary/20 text-[8px] px-1.5 py-0 shrink-0">🔧</Badge>
-                            <span className="font-medium text-foreground truncate">{svc.name}</span>
-                            <span className="text-muted-foreground shrink-0">R$ {svc.price} /hr</span>
-                            <span className="text-[10px] text-muted-foreground shrink-0">• {svc.provider}</span>
+                        <div key={`svc-${svc.id}`} className="flex items-center justify-between text-xs bg-primary/5 rounded-lg px-2 sm:px-3 py-2 gap-1">
+                          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                            <Badge className="bg-primary/10 text-primary border-primary/20 text-[8px] px-1 py-0 shrink-0">🔧</Badge>
+                            <div className="min-w-0 flex-1">
+                              <span className="font-medium text-foreground text-[11px] block truncate">{svc.name}</span>
+                              <span className="text-[10px] text-muted-foreground">R$ {svc.price}/hr • {svc.provider}</span>
+                            </div>
                           </div>
-                          <button onClick={() => toggleServiceInCart(svc)} className="text-muted-foreground hover:text-destructive ml-2 shrink-0">
+                          <button onClick={() => toggleServiceInCart(svc)} className="text-muted-foreground hover:text-destructive shrink-0">
                             <X className="w-3.5 h-3.5" />
                           </button>
                         </div>
@@ -1392,19 +1420,21 @@ const Landing = () => {
                         const qty = productQuantities.get(product.id) || 1;
                         const unit = (product as any).unit || 'un';
                         return (
-                          <div key={`prod-${product.id}`} className="flex items-center justify-between text-xs bg-success/5 rounded-lg px-3 py-2">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <Badge variant={product.stockType === 'fisico' ? 'default' : 'secondary'} className="text-[8px] px-1.5 py-0 shrink-0">
+                          <div key={`prod-${product.id}`} className="flex items-center justify-between text-xs bg-success/5 rounded-lg px-2 sm:px-3 py-2 gap-1">
+                            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                              <Badge variant={product.stockType === 'fisico' ? 'default' : 'secondary'} className="text-[8px] px-1 py-0 shrink-0">
                                 {product.stockType === 'fisico' ? '📦' : '🌍'}
                               </Badge>
-                              <span className="font-medium text-foreground truncate">{product.name}</span>
-                              <span className="text-muted-foreground shrink-0">R$ {(product.price * qty).toFixed(2)}</span>
+                              <div className="min-w-0 flex-1">
+                                <span className="font-medium text-foreground text-[11px] block truncate">{product.name}</span>
+                                <span className="text-[10px] text-muted-foreground">R$ {(product.price * qty).toFixed(2)}</span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-1 shrink-0 ml-2">
+                            <div className="flex items-center gap-1 shrink-0">
                               <button onClick={() => updateProductQuantity(product.id, -1)} className="w-5 h-5 rounded bg-muted flex items-center justify-center text-foreground hover:bg-muted/80 text-xs font-bold">−</button>
-                              <span className="text-xs font-semibold w-6 text-center">{qty} {unit}</span>
+                              <span className="text-[10px] font-semibold w-5 text-center">{qty}{unit !== 'un' ? unit : ''}</span>
                               <button onClick={() => updateProductQuantity(product.id, 1)} className="w-5 h-5 rounded bg-muted flex items-center justify-center text-foreground hover:bg-muted/80 text-xs font-bold">+</button>
-                              <button onClick={() => removeProductFromCart(product.id)} className="text-muted-foreground hover:text-destructive ml-1">
+                              <button onClick={() => removeProductFromCart(product.id)} className="text-muted-foreground hover:text-destructive ml-0.5">
                                 <X className="w-3.5 h-3.5" />
                               </button>
                             </div>
