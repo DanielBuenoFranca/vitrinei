@@ -1323,7 +1323,7 @@ const Landing = () => {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 80, opacity: 0 }}
             transition={{ type: 'spring', damping: 20 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-2xl"
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-2xl px-1"
           >
             <Card className="border-primary shadow-2xl bg-card/95 backdrop-blur-sm">
               <CardContent className="p-4">
@@ -1512,7 +1512,7 @@ const Landing = () => {
                         {!needsTopUp && (
                           <div className="mt-2">
                             <Button size="sm" className="w-full gap-1.5 font-semibold" onClick={navigateToCheckout}>
-                              <ShoppingCart className="w-3.5 h-3.5" /> Confirmar pedido (via crédito)
+                              <ShoppingCart className="w-3.5 h-3.5" /> Confirmar compra
                             </Button>
                           </div>
                         )}
