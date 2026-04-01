@@ -185,6 +185,7 @@ const Landing = () => {
   const clearCart = () => {
     setProductCart([]);
     setServiceCart([]);
+    setProductQuantities(new Map());
     setShowCartDetails(false);
   };
 
