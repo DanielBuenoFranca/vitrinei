@@ -1635,6 +1635,21 @@ const contextualMap: ContextualMapEntry[] = [
       { name: 'Pastilha de Freio Cerâmica', description: 'Pastilha de alta durabilidade para freios' },
     ],
   },
+  // ── Jardinagem / Grama ──
+  {
+    keywords: ['grama', 'gramado', 'jardinagem', 'jardineiro', 'jardim', 'poda', 'paisagismo', 'capinar', 'mato', 'quintal'],
+    segment: 'natureza',
+    services: [
+      { name: 'Corte e Manutenção de Grama', description: 'Corte regular e cuidados com gramado' },
+      { name: 'Poda de Árvores e Arbustos', description: 'Poda técnica para saúde e estética das plantas' },
+      { name: 'Projeto Paisagístico', description: 'Planejamento e execução de jardim completo' },
+    ],
+    products: [
+      { name: 'Tesoura de Poda Profissional', description: 'Ferramenta para poda de galhos e grama' },
+      { name: 'Adubo Orgânico 5kg', description: 'Adubo natural para gramados e jardins' },
+      { name: 'Semente de Grama 1kg', description: 'Sementes para replantio de gramado' },
+    ],
+  },
 ];
 
 /**

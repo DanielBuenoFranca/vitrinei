@@ -1317,21 +1317,28 @@ const Landing = () => {
                           <ShoppingBag className="w-3 h-3" /> Produtos
                         </p>
                       )}
-                      {productCart.map(product => (
-                        <div key={`prod-${product.id}`} className="flex items-center justify-between text-xs bg-success/5 rounded-lg px-3 py-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <Badge variant={product.stockType === 'fisico' ? 'default' : 'secondary'} className="text-[8px] px-1.5 py-0 shrink-0">
-                              {product.stockType === 'fisico' ? '📦' : '🌍'}
-                            </Badge>
-                            <span className="font-medium text-foreground truncate">{product.name}</span>
-                            <span className="text-muted-foreground shrink-0">R$ {product.price}</span>
-                            <span className="text-[10px] text-muted-foreground shrink-0">• {product.provider}</span>
+                      {productCart.map(product => {
+                        const qty = productQuantities.get(product.id) || 1;
+                        return (
+                          <div key={`prod-${product.id}`} className="flex items-center justify-between text-xs bg-success/5 rounded-lg px-3 py-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Badge variant={product.stockType === 'fisico' ? 'default' : 'secondary'} className="text-[8px] px-1.5 py-0 shrink-0">
+                                {product.stockType === 'fisico' ? '📦' : '🌍'}
+                              </Badge>
+                              <span className="font-medium text-foreground truncate">{product.name}</span>
+                              <span className="text-muted-foreground shrink-0">R$ {(product.price * qty).toFixed(2)}</span>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0 ml-2">
+                              <button onClick={() => updateProductQuantity(product.id, -1)} className="w-5 h-5 rounded bg-muted flex items-center justify-center text-foreground hover:bg-muted/80 text-xs font-bold">−</button>
+                              <span className="text-xs font-semibold w-5 text-center">{qty}</span>
+                              <button onClick={() => updateProductQuantity(product.id, 1)} className="w-5 h-5 rounded bg-muted flex items-center justify-center text-foreground hover:bg-muted/80 text-xs font-bold">+</button>
+                              <button onClick={() => removeProductFromCart(product.id)} className="text-muted-foreground hover:text-destructive ml-1">
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
-                          <button onClick={() => toggleProductInCart(product)} className="text-muted-foreground hover:text-destructive ml-2 shrink-0">
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </motion.div>
                   )}
                 </AnimatePresence>
