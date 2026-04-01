@@ -47,6 +47,7 @@ const Landing = () => {
   const [pendingChatSuggestions, setPendingChatSuggestions] = useState<Map<number, Set<string>>>(new Map());
   const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
   const [dbSegments, setDbSegments] = useState<{ id: string; label: string; name: string; tags: string[] }[]>([]);
+  const [providerSegmentMap, setProviderSegmentMap] = useState<Map<string, string[]>>(new Map());
   const [dataLoaded, setDataLoaded] = useState(false);
   const [mobileRevealedSeg, setMobileRevealedSeg] = useState<string | null>(null);
   const [showSimulated, setShowSimulated] = useState(false);
@@ -151,9 +152,17 @@ const Landing = () => {
   useEffect(() => {
     const loadData = async () => {
       await Promise.all([reloadDynamicEntries(), loadSegmentTagsCache()]);
-      const { data: segs } = await supabase.from('segments').select('*').order('name');
+      const [{ data: segs }, { data: provs }] = await Promise.all([
+        supabase.from('segments').select('*').order('name'),
+        supabase.from('providers').select('name, segment').eq('active', true),
+      ]);
       if (segs) {
         setDbSegments(segs.map((s: any) => ({ id: s.name, label: s.name, name: s.name, tags: s.suggested_tags || [] })));
+      }
+      if (provs) {
+        const map = new Map<string, string[]>();
+        provs.forEach((p: any) => map.set(p.name, p.segment || []));
+        setProviderSegmentMap(map);
       }
       setDataLoaded(true);
       setSearchExecuted(true);
@@ -203,15 +212,25 @@ const Landing = () => {
     if (!query && activeSegments.length === 0) {
       rawResult = { products: getAllProducts(), services: getAllServices() };
     } else if (!query && activeSegments.length > 0) {
-      const allSvcs = getAllServices().filter((r: any) => activeSegments.includes(r.segment));
-      const provNames = new Set(allSvcs.map((s: any) => s.provider));
-      const allProds = getAllProducts().filter((p: any) => provNames.has(p.provider));
+      const norm = (v: string) => v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+      const activeNorm = activeSegments.map(norm);
+      const allSvcs = getAllServices().filter((r: any) => activeNorm.includes(norm(r.segment)));
+      const provNamesFromSvcs = new Set(allSvcs.map((s: any) => s.provider));
+      // Also include providers that belong to the segment (even without services)
+      const provNamesFromMap = new Set<string>();
+      providerSegmentMap.forEach((segs, provName) => {
+        if (segs.some(s => activeNorm.includes(norm(s)))) provNamesFromMap.add(provName);
+      });
+      const allProvNames = new Set([...provNamesFromSvcs, ...provNamesFromMap]);
+      const allProds = getAllProducts().filter((p: any) => allProvNames.has(p.provider));
       rawResult = { products: allProds, services: allSvcs };
     } else {
       const result = semanticSearch(query);
+      const norm = (v: string) => v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+      const activeNorm = activeSegments.map(norm);
       const filteredServices = activeSegments.length === 0
         ? result.services
-        : result.services.filter(r => activeSegments.includes(r.segment));
+        : result.services.filter(r => activeNorm.includes(norm(r.segment)));
       rawResult = { ...result, services: filteredServices };
     }
 
