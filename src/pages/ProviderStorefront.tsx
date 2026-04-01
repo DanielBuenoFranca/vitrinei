@@ -165,7 +165,9 @@ const ProviderStorefront = () => {
 
   const segIcon = (() => {
     if (!provider) return Sparkles;
-    const s = staticSegments.find(seg => seg.id === provider.segment || seg.label.toLowerCase().includes(provider.segment.toLowerCase()));
+    const segArr = Array.isArray(provider.segment) ? provider.segment : [provider.segment];
+    const firstSeg = segArr[0] || '';
+    const s = staticSegments.find(seg => seg.id === firstSeg || seg.label.toLowerCase().includes(firstSeg.toLowerCase()));
     return s?.icon || Store;
   })();
   const SegIcon = segIcon;
