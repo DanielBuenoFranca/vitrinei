@@ -1097,6 +1097,33 @@ function tokenMatchScore(tokens: string[], target: string): number {
   return score;
 }
 
+// ── Segment tags cache for search enrichment ──
+let _segmentTagsCache: Map<string, string[]> = new Map();
+let _segmentTagsLoaded = false;
+
+export async function loadSegmentTagsCache(): Promise<void> {
+  if (_segmentTagsLoaded) return;
+  try {
+    const { data } = await supabase.from('segments').select('name, suggested_tags');
+    if (data) {
+      _segmentTagsCache = new Map(data.map((s: any) => [s.name, s.suggested_tags || []]));
+    }
+    _segmentTagsLoaded = true;
+  } catch { /* ignore */ }
+}
+
+export function getSegmentTags(segmentName: string): string[] {
+  return _segmentTagsCache.get(segmentName) || [];
+}
+
+export function getAllSegmentTagsForSegments(segIds: string[]): string[] {
+  const tags: string[] = [];
+  for (const id of segIds) {
+    tags.push(...getSegmentTags(id));
+  }
+  return [...new Set(tags)];
+}
+
 /** Score a product against query tokens */
 function scoreProduct(p: ProductItem, tokens: string[], intentProfile?: IntentProfile): number {
   let score = 0;
@@ -1104,6 +1131,21 @@ function scoreProduct(p: ProductItem, tokens: string[], intentProfile?: IntentPr
   score += tokenMatchScore(tokens, p.provider);
   for (const tag of p.tags) {
     score += tokenMatchScore(tokens, tag) * 2;
+  }
+
+  // Also check segment tags for additional matching
+  if (intentProfile?.segmentId) {
+    const segTags = getSegmentTags(intentProfile.segmentId);
+    for (const segTag of segTags) {
+      const tagScore = tokenMatchScore(tokens, segTag);
+      if (tagScore > 0) {
+        // Check if product has related tags
+        const productText = normalize([p.name, ...p.tags].join(' '));
+        if (productText.includes(normalize(segTag))) {
+          score += tagScore;
+        }
+      }
+    }
   }
 
   if (intentProfile?.strict && intentProfile.intentTerms.length > 0) {
@@ -1127,6 +1169,13 @@ function scoreService(s: typeof mockResults[0], tokens: string[], intentProfile?
   score += tokenMatchScore(tokens, s.provider);
   for (const p of s.products) {
     score += tokenMatchScore(tokens, p) * 2;
+  }
+
+  // Also check segment tags for additional matching
+  const segTags = getSegmentTags(s.segment);
+  for (const segTag of segTags) {
+    const tagScore = tokenMatchScore(tokens, segTag);
+    if (tagScore > 0) score += tagScore;
   }
 
   if (intentProfile?.strict && intentProfile.intentTerms.length > 0) {
