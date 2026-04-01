@@ -135,11 +135,10 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
     const prov = providers.find(p => p.id === Number(providerId));
     if (prov) {
       setForm(f => ({ ...f, provider: prov.name, provider_id: prov.id }));
-      if (!selectedSegments.includes(prov.segment)) {
-        const next = [...selectedSegments, prov.segment];
-        setSelectedSegments(next);
-        loadSegmentTags(next);
-      }
+      const provSegs = Array.isArray(prov.segment) ? prov.segment : [prov.segment];
+      const merged = [...new Set([...selectedSegments, ...provSegs])];
+      setSelectedSegments(merged);
+      loadSegmentTags(merged);
     }
   };
 
