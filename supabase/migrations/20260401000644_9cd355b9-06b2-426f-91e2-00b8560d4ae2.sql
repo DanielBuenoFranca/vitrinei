@@ -1,0 +1,2 @@
+ALTER TABLE dynamic_products ADD COLUMN IF NOT EXISTS unit text NOT NULL DEFAULT 'un';
+ALTER TABLE dynamic_services ADD COLUMN IF NOT EXISTS unit text NOT NULL DEFAULT 'hr';
