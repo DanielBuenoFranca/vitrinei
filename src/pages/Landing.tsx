@@ -1398,14 +1398,15 @@ const Landing = () => {
                         </p>
                       )}
                       {serviceCart.map(svc => (
-                        <div key={`svc-${svc.id}`} className="flex items-center justify-between text-xs bg-primary/5 rounded-lg px-3 py-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <Badge className="bg-primary/10 text-primary border-primary/20 text-[8px] px-1.5 py-0 shrink-0">🔧</Badge>
-                            <span className="font-medium text-foreground truncate">{svc.name}</span>
-                            <span className="text-muted-foreground shrink-0">R$ {svc.price} /hr</span>
-                            <span className="text-[10px] text-muted-foreground shrink-0">• {svc.provider}</span>
+                        <div key={`svc-${svc.id}`} className="flex items-center justify-between text-xs bg-primary/5 rounded-lg px-2 sm:px-3 py-2 gap-1">
+                          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                            <Badge className="bg-primary/10 text-primary border-primary/20 text-[8px] px-1 py-0 shrink-0">🔧</Badge>
+                            <div className="min-w-0 flex-1">
+                              <span className="font-medium text-foreground text-[11px] block truncate">{svc.name}</span>
+                              <span className="text-[10px] text-muted-foreground">R$ {svc.price}/hr • {svc.provider}</span>
+                            </div>
                           </div>
-                          <button onClick={() => toggleServiceInCart(svc)} className="text-muted-foreground hover:text-destructive ml-2 shrink-0">
+                          <button onClick={() => toggleServiceInCart(svc)} className="text-muted-foreground hover:text-destructive shrink-0">
                             <X className="w-3.5 h-3.5" />
                           </button>
                         </div>
