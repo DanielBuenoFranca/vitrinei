@@ -55,6 +55,7 @@ const Landing = () => {
   const [expandedServices, setExpandedServices] = useState<number | null>(null);
   const [showSearchProducts, setShowSearchProducts] = useState(false);
   const [productCart, setProductCart] = useState<ProductItem[]>([]);
+  const [productQuantities, setProductQuantities] = useState<Map<number, number>>(new Map());
   const [serviceCart, setServiceCart] = useState<ServiceCartItem[]>([]);
   const [showCartDetails, setShowCartDetails] = useState(false);
   const [pendingChatSuggestions, setPendingChatSuggestions] = useState<Map<number, Set<string>>>(new Map());
