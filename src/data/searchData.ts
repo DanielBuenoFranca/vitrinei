@@ -1880,14 +1880,16 @@ export async function addDynamicEntries(entries: DynamicEntry[]): Promise<void> 
   }
 }
 
-/** Get all services — ONLY from database (dynamic entries) */
+/** Get all services — static inventory + database (dynamic entries) */
 export function getAllServices(): typeof mockResults {
-  return [...dynamicServices];
+  const combined = [...mockResults, ...dynamicServices];
+  return [...new Map(combined.map(s => [s.id, s])).values()];
 }
 
-/** Get all products — ONLY from database (dynamic entries) */
+/** Get all products — static inventory + database (dynamic entries) */
 export function getAllProducts(): ProductItem[] {
-  return [...dynamicProducts];
+  const combined = [...productInventory, ...dynamicProducts];
+  return [...new Map(combined.map(p => [p.id, p])).values()];
 }
 
 /**
