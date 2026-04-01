@@ -15,6 +15,8 @@ import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { segments as staticSegments, getAllServices, getAllProducts, reloadDynamicEntries, loadSegmentTagsCache, type ProductItem } from '@/data/searchData';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart, type ServiceCartItem } from '@/contexts/CartContext';
+import { ProductForm } from '@/components/admin/ProductForm';
+import { ServiceForm } from '@/components/admin/ServiceForm';
 
 interface ProviderData {
   id: number;
