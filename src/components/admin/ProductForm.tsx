@@ -28,7 +28,7 @@ interface DynamicProduct {
 interface Provider {
   id: number;
   name: string;
-  segment: string;
+  segment: string[];
 }
 
 interface Segment {
