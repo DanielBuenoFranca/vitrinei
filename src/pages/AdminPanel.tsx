@@ -246,6 +246,7 @@ const AdminPanel = () => {
                           return (
                             <TableRow key={prov.id}>
                               <TableCell className="font-medium">{prov.name}</TableCell>
+                              <TableCell className="text-xs text-muted-foreground font-mono">{prov.cpf_cnpj || '—'}</TableCell>
                               <TableCell>
                                 <Badge variant={prov.type === 'mei' ? 'default' : 'secondary'}>
                                   {prov.type === 'mei' ? 'MEI' : 'PF'}
