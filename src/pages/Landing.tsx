@@ -164,8 +164,8 @@ const Landing = () => {
 
   const isInServiceCart = (serviceId: number) => serviceCart.some(s => s.id === serviceId);
 
-  const totalCartItems = productCart.length + serviceCart.length;
-  const totalCartValue = productCart.reduce((s, p) => s + p.price, 0) + serviceCart.reduce((s, svc) => s + svc.price, 0);
+  const totalCartItems = productCart.reduce((sum, p) => sum + (productQuantities.get(p.id) || 1), 0) + serviceCart.length;
+  const totalCartValue = productCart.reduce((s, p) => s + p.price * (productQuantities.get(p.id) || 1), 0) + serviceCart.reduce((s, svc) => s + svc.price, 0);
 
   const navigateToCheckout = () => {
     if (totalCartItems === 0) return;
