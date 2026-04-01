@@ -189,7 +189,10 @@ const Landing = () => {
     });
   }, []);
 
-  const isSimulatedProvider = (providerName: string) => !dbProviderNames.has(providerName);
+  const isSimulatedProvider = (providerName: string, item?: any) => {
+    if (item && item._fromDb) return false;
+    return !dbProviderNames.has(providerName);
+  };
 
   // ── Motor de busca semântica universal ──
   const searchResult = (() => {
