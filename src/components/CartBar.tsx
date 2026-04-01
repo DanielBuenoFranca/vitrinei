@@ -37,6 +37,7 @@ const CartBar = () => {
         rating: p.rating, distance: p.distance, quantity: productQuantities.get(p.id) || 1,
       }))),
     });
+    clearCart();
     navigate(`/jornada-cliente?${params.toString()}`);
   };
   // Auto-minimize on route change
@@ -54,34 +55,31 @@ const CartBar = () => {
   if (totalCartItems === 0) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[60]">
+    <>
+      {/* Minimized: floating icon badge like Mercado Livre */}
       <AnimatePresence>
-        {isMinimized ? (
-          <motion.div
-            key="minimized"
-            initial={{ y: -50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -50, opacity: 0 }}
-            className="bg-primary text-primary-foreground cursor-pointer"
+        {isMinimized && (
+          <motion.button
+            key="cart-badge"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ type: 'spring', damping: 15 }}
             onClick={() => setIsMinimized(false)}
+            className="fixed top-3 right-3 z-[60] w-11 h-11 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
           >
-            <div className="container mx-auto flex items-center justify-between h-10 px-4">
-              <div className="flex items-center gap-2 text-xs font-semibold">
-                <ShoppingCart className="w-3.5 h-3.5" />
-                <span>{totalCartItems} ite{totalCartItems > 1 ? 'ns' : 'm'} • R$ {totalCartValue.toFixed(2)}</span>
-                {needsTopUp && (
-                  <span className="flex items-center gap-0.5 text-primary-foreground/80">
-                    <AlertTriangle className="w-3 h-3" /> Falta: R$ {topUpAmount.toFixed(2)}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] opacity-80">Expandir</span>
-                <ChevronDown className="w-3.5 h-3.5" />
-              </div>
-            </div>
-          </motion.div>
-        ) : (
+            <ShoppingCart className="w-5 h-5" />
+            <span className="absolute -top-1 -right-1 min-w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center px-1">
+              {totalCartItems}
+            </span>
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* Expanded: full cart bar at top */}
+      <AnimatePresence>
+        {!isMinimized && (
+    <div className="fixed top-0 left-0 right-0 z-[60]">
           <motion.div
             key="expanded"
             initial={{ y: -100, opacity: 0 }}
@@ -292,9 +290,10 @@ const CartBar = () => {
               </CardContent>
             </Card>
           </motion.div>
+    </div>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 };
 
