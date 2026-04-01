@@ -527,18 +527,20 @@ const ClientJourneyDemo = () => {
                     <div className="bg-card rounded-xl p-3 border border-border">
                       <p className="text-[10px] font-semibold text-muted-foreground mb-2">📦 Produtos</p>
                       {cartProducts.map((prod, i) => {
-                        const discounted = prod.price * (1 - mockClient.discount / 100);
+                        const qty = prod.quantity || 1;
+                        const lineTotal = prod.price * qty;
+                        const discounted = lineTotal * (1 - mockClient.discount / 100);
                         return (
                           <div key={i} className="flex items-center justify-between py-1.5 border-b border-border/50 last:border-0">
                             <div className="flex items-center gap-1.5">
                               <span className="text-sm">{prod.type === 'fisico' ? '📦' : '🌍'}</span>
                               <div>
-                                <p className="text-[10px] text-foreground">{prod.name}</p>
+                                <p className="text-[10px] text-foreground">{prod.name}{qty > 1 ? ` (x${qty})` : ''}</p>
                                 <p className="text-[8px] text-muted-foreground">{prod.provider}</p>
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className="text-[8px] text-muted-foreground line-through">R$ {prod.price.toFixed(2)}</p>
+                              <p className="text-[8px] text-muted-foreground line-through">R$ {lineTotal.toFixed(2)}</p>
                               <p className="text-[10px] font-bold text-foreground">R$ {discounted.toFixed(2)}</p>
                             </div>
                           </div>
