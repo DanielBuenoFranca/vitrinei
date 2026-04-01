@@ -34,13 +34,34 @@ export function SegmentForm({ open, onClose, onSaved, segment }: SegmentFormProp
   const [editValue, setEditValue] = useState('');
 
   useEffect(() => {
+    if (!open) return;
     setName(segment?.name || '');
     setSelectedTags(segment?.suggested_tags || []);
     setSuggestedTags([]);
     setLoadingTags(false);
     setNewTag('');
     setEditingIdx(null);
+
+    // Auto-generate tags for new segments when name is provided via edit
+    if (segment?.name && (!segment.suggested_tags || segment.suggested_tags.length === 0)) {
+      autoFetchTags(segment.name, []);
+    }
   }, [segment, open]);
+
+  const autoFetchTags = async (segName: string, existing: string[]) => {
+    if (segName.trim().length < 2) return;
+    setLoadingTags(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('suggest-tags', {
+        body: { segment: segName.trim(), existingTags: existing },
+      });
+      if (!error && data?.tags) {
+        const newTags = (data.tags as string[]).filter(t => !existing.includes(t));
+        setSuggestedTags(newTags);
+      }
+    } catch { /* ignore */ }
+    setLoadingTags(false);
+  };
 
   const fetchTags = async () => {
     const trimmed = name.trim();
@@ -68,6 +89,11 @@ export function SegmentForm({ open, onClose, onSaved, segment }: SegmentFormProp
     setSuggestedTags(prev => prev.filter(t => t !== tag));
   };
 
+  const addAllSuggested = () => {
+    setSelectedTags(prev => [...prev, ...suggestedTags]);
+    setSuggestedTags([]);
+  };
+
   const removeTag = (idx: number) => {
     setSelectedTags(prev => prev.filter((_, i) => i !== idx));
     setEditingIdx(null);
@@ -93,6 +119,13 @@ export function SegmentForm({ open, onClose, onSaved, segment }: SegmentFormProp
     if (selectedTags.includes(v)) { toast.error('Tag já existe'); return; }
     setSelectedTags(prev => [...prev, v]);
     setNewTag('');
+  };
+
+  const handleNameBlur = () => {
+    const trimmed = name.trim();
+    if (trimmed.length >= 2 && selectedTags.length === 0 && suggestedTags.length === 0) {
+      autoFetchTags(trimmed, []);
+    }
   };
 
   const handleSave = async () => {
@@ -128,6 +161,7 @@ export function SegmentForm({ open, onClose, onSaved, segment }: SegmentFormProp
               <Input
                 value={name}
                 onChange={e => setName(e.target.value)}
+                onBlur={handleNameBlur}
                 placeholder="Ex: beleza, saude, automotivo"
                 className="flex-1"
               />
@@ -143,7 +177,7 @@ export function SegmentForm({ open, onClose, onSaved, segment }: SegmentFormProp
                 {loadingTags ? 'Analisando...' : 'Gerar Tags'}
               </Button>
             </div>
-            <p className="text-[10px] text-muted-foreground">Clique em "Gerar Tags" para a IA sugerir tags de produtos para este segmento</p>
+            <p className="text-[10px] text-muted-foreground">Clique em "Gerar Tags" ou saia do campo para a IA sugerir tags de produtos para este segmento</p>
           </div>
 
           {/* Tags selecionadas */}
@@ -195,9 +229,14 @@ export function SegmentForm({ open, onClose, onSaved, segment }: SegmentFormProp
           {/* Sugestões da IA */}
           {suggestedTags.length > 0 && (
             <div className="grid gap-2">
-              <Label className="text-xs flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-primary" /> Sugestões da IA (clique para adicionar)
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-primary" /> Sugestões da IA (clique para adicionar)
+                </Label>
+                <Button type="button" size="sm" variant="ghost" onClick={addAllSuggested} className="h-6 text-[10px] px-2 text-primary">
+                  Adicionar todas
+                </Button>
+              </div>
               <div className="flex flex-wrap gap-1">
                 {suggestedTags.map(tag => (
                   <button

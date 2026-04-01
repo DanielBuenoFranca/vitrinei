@@ -22,6 +22,7 @@ interface DynamicProduct {
   rating: number;
   distance: string;
   tags: string[];
+  unit?: string;
 }
 
 interface Provider {
@@ -33,6 +34,7 @@ interface Provider {
 interface Segment {
   id: number;
   name: string;
+  suggested_tags?: string[];
 }
 
 interface ProductFormProps {
@@ -44,16 +46,32 @@ interface ProductFormProps {
   segments?: Segment[];
 }
 
+const UNIT_OPTIONS = [
+  { value: 'un', label: 'Unidade (un)' },
+  { value: 'kg', label: 'Quilograma (kg)' },
+  { value: 'g', label: 'Grama (g)' },
+  { value: 'l', label: 'Litro (L)' },
+  { value: 'ml', label: 'Mililitro (ml)' },
+  { value: 'm', label: 'Metro (m)' },
+  { value: 'cm', label: 'Centímetro (cm)' },
+  { value: 'm2', label: 'Metro² (m²)' },
+  { value: 'pct', label: 'Pacote (pct)' },
+  { value: 'cx', label: 'Caixa (cx)' },
+  { value: 'par', label: 'Par' },
+  { value: 'kit', label: 'Kit' },
+];
+
 export function ProductForm({ open, onClose, onSaved, product, providers, segments = [] }: ProductFormProps) {
   const isEdit = !!product;
   const [form, setForm] = useState({
     name: '', price: 0, provider: '', provider_id: null as number | null,
     stock_type: 'fisico', rating: 4.5, distance: '2 km',
     product_id: Math.floor(Math.random() * 9000) + 1000,
+    unit: 'un',
   });
   const [selectedSegments, setSelectedSegments] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
+  const [segmentTags, setSegmentTags] = useState<string[]>([]);
   const [loadingTags, setLoadingTags] = useState(false);
   const [newTag, setNewTag] = useState('');
   const [saving, setSaving] = useState(false);
@@ -75,49 +93,39 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
         provider_id: product.provider_id, stock_type: product.stock_type,
         rating: product.rating, distance: product.distance,
         product_id: product.product_id,
+        unit: (product as any).unit || 'un',
       });
       setSelectedTags(product.tags || []);
-      // Try to infer segments from provider
       if (product.provider_id) {
         const prov = providers.find(p => p.id === product.provider_id);
-        if (prov) setSelectedSegments([prov.segment]);
+        if (prov) {
+          setSelectedSegments([prov.segment]);
+          loadSegmentTags([prov.segment]);
+        }
       }
     } else {
-      setForm({ name: '', price: 0, provider: '', provider_id: null, stock_type: 'fisico', rating: 4.5, distance: '2 km', product_id: Math.floor(Math.random() * 9000) + 1000 });
+      setForm({ name: '', price: 0, provider: '', provider_id: null, stock_type: 'fisico', rating: 4.5, distance: '2 km', product_id: Math.floor(Math.random() * 9000) + 1000, unit: 'un' });
       setSelectedTags([]);
       setSelectedSegments([]);
-      setSuggestedTags([]);
+      setSegmentTags([]);
     }
   }, [product, open, providers]);
 
-  const fetchSuggestedTags = useCallback(async (segmentNames: string[]) => {
-    if (segmentNames.length === 0) { setSuggestedTags([]); return; }
+  const loadSegmentTags = useCallback(async (segNames: string[]) => {
+    if (segNames.length === 0) { setSegmentTags([]); return; }
     setLoadingTags(true);
     try {
-      // First try to load pre-saved tags from segments table
-      const { data: segData } = await supabase.from('segments').select('suggested_tags').in('name', segmentNames);
-      const savedTags = (segData || []).flatMap((s: any) => s.suggested_tags || []);
-      const uniqueSaved = [...new Set(savedTags)].filter((t: string) => !selectedTags.includes(t));
-      if (uniqueSaved.length > 0) {
-        setSuggestedTags(uniqueSaved);
-        setLoadingTags(false);
-        return;
-      }
-      // Fallback to AI generation
-      const { data, error } = await supabase.functions.invoke('suggest-tags', {
-        body: { segment: segmentNames.join(', '), existingTags: selectedTags },
-      });
-      if (!error && data?.tags) {
-        setSuggestedTags(data.tags.filter((t: string) => !selectedTags.includes(t)));
-      }
+      const { data: segData } = await supabase.from('segments').select('suggested_tags').in('name', segNames);
+      const tags = (segData || []).flatMap((s: any) => s.suggested_tags || []);
+      setSegmentTags([...new Set(tags)]);
     } catch { /* ignore */ }
     setLoadingTags(false);
-  }, [selectedTags]);
+  }, []);
 
   const handleSegmentToggle = (segName: string) => {
     setSelectedSegments(prev => {
       const next = prev.includes(segName) ? prev.filter(s => s !== segName) : [...prev, segName];
-      fetchSuggestedTags(next);
+      loadSegmentTags(next);
       return next;
     });
   };
@@ -129,7 +137,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
       if (!selectedSegments.includes(prov.segment)) {
         const next = [...selectedSegments, prov.segment];
         setSelectedSegments(next);
-        fetchSuggestedTags(next);
+        loadSegmentTags(next);
       }
     }
   };
@@ -138,7 +146,6 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
     setSelectedTags(prev =>
       prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
     );
-    setSuggestedTags(prev => prev.filter(t => t !== tag));
   };
 
   const addNewTag = () => {
@@ -154,11 +161,12 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
     if (!form.provider.trim()) { toast.error('Fornecedor é obrigatório'); return; }
     if (selectedSegments.length === 0) { toast.error('Selecione pelo menos um segmento'); return; }
     setSaving(true);
-    const data = {
+    const data: any = {
       name: form.name, price: form.price, provider: form.provider,
       provider_id: form.provider_id, stock_type: form.stock_type,
       rating: form.rating, distance: form.distance, tags: selectedTags,
       product_id: form.product_id, related_service_ids: [] as number[],
+      unit: form.unit,
     };
     if (isEdit) {
       const { error } = await supabase.from('dynamic_products').update(data).eq('id', product!.id);
@@ -174,6 +182,9 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
     onClose();
   };
 
+  // Tags from segments that are NOT yet selected
+  const availableSegmentTags = segmentTags.filter(t => !selectedTags.includes(t));
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
@@ -186,13 +197,24 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
             <Input value={form.name} onChange={e => { setForm(f => ({ ...f, name: e.target.value })); suggest(e.target.value, 'product', allProductNames); }} placeholder="Nome do produto" />
             <NameSuggestions suggestions={suggestions} loading={sugLoading} onSelect={(n) => { setForm(f => ({ ...f, name: n })); clearSuggestions(); }} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div className="grid gap-2">
               <Label>Preço (R$)</Label>
               <Input type="number" step="0.01" value={form.price} onChange={e => setForm(f => ({ ...f, price: parseFloat(e.target.value) || 0 }))} />
             </div>
             <div className="grid gap-2">
-              <Label>Tipo de Estoque</Label>
+              <Label>Unidade</Label>
+              <Select value={form.unit} onValueChange={v => setForm(f => ({ ...f, unit: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {UNIT_OPTIONS.map(u => (
+                    <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label>Tipo Estoque</Label>
               <Select value={form.stock_type} onValueChange={v => setForm(f => ({ ...f, stock_type: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -240,7 +262,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
           {/* Tags section */}
           <div className="grid gap-2">
             <Label className="flex items-center gap-2">
-              Tags
+              Tags do Produto
               {loadingTags && <Loader2 className="w-3 h-3 animate-spin text-primary" />}
             </Label>
             {/* Selected tags */}
@@ -254,14 +276,14 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
                 ))}
               </div>
             )}
-            {/* AI-suggested tags */}
-            {suggestedTags.length > 0 && (
+            {/* Tags from segment — click to select */}
+            {availableSegmentTags.length > 0 && (
               <div className="space-y-1">
                 <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-accent" /> Tags sugeridas pela IA para {selectedSegments.join(', ')}:
+                  <Sparkles className="w-3 h-3 text-primary" /> Tags do segmento (clique para vincular ao produto):
                 </p>
                 <div className="flex flex-wrap gap-1">
-                  {suggestedTags.map(tag => (
+                  {availableSegmentTags.map(tag => (
                     <button
                       key={tag}
                       type="button"
