@@ -243,11 +243,17 @@ const Landing = () => {
     });
   };
 
-  // ── DB provider names (real providers) ──
+  // ── DB providers with logos ──
+  const [dbProviders, setDbProviders] = useState<Map<string, { logo_url: string | null }>>(new Map());
   const [dbProviderNames, setDbProviderNames] = useState<Set<string>>(new Set());
   useEffect(() => {
-    supabase.from('providers').select('name').then(({ data }) => {
-      if (data) setDbProviderNames(new Set(data.map((p: any) => p.name)));
+    supabase.from('providers').select('name, logo_url').then(({ data }) => {
+      if (data) {
+        setDbProviderNames(new Set(data.map((p: any) => p.name)));
+        const map = new Map<string, { logo_url: string | null }>();
+        data.forEach((p: any) => map.set(p.name, { logo_url: p.logo_url }));
+        setDbProviders(map);
+      }
     });
   }, []);
 
