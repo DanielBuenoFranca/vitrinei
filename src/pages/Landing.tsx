@@ -4,16 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, ArrowRight, Zap, Sparkles, Clock, MapPin, DollarSign,
   Headphones, ShoppingCart, BarChart3, Send, Star,
   Package, TrendingDown, Navigation, Users, Shield, MessageCircle,
-  ChevronDown, ShoppingBag, Wrench as WrenchIcon, Store, Plus, CheckCircle2, X, Trash2, Settings
+  ChevronDown, ShoppingBag, Wrench as WrenchIcon, Store, Plus, CheckCircle2, X, Trash2, Settings, CreditCard, AlertTriangle, Minus
 } from 'lucide-react';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
-import { segments as staticSegments, mockResults, semanticSearch, buildSupportSummary, generateContextualSuggestions, getAllServices, getAllProducts, loadDynamicEntries, reloadDynamicEntries, type ProductItem, type SearchResult, type ContextualSuggestion } from '@/data/searchData';
+import { segments as staticSegments, mockResults, semanticSearch, buildSupportSummary, generateContextualSuggestions, getAllServices, getAllProducts, loadDynamicEntries, reloadDynamicEntries, loadSegmentTagsCache, type ProductItem, type SearchResult, type ContextualSuggestion } from '@/data/searchData';
 import { supabase } from '@/integrations/supabase/client';
 
 
