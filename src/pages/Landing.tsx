@@ -111,59 +111,6 @@ const Landing = () => {
     searchRef.current?.focus();
   };
 
-  const toggleProductInCart = (product: ProductItem) => {
-    if (productCart.some(p => p.id === product.id)) {
-      // Already in cart — increment quantity
-      setProductQuantities(prev => {
-        const next = new Map(prev);
-        next.set(product.id, (next.get(product.id) || 1) + 1);
-        return next;
-      });
-    } else {
-      // Add to cart with quantity 1
-      setProductCart(prev => [...prev, product]);
-      setProductQuantities(prev => {
-        const next = new Map(prev);
-        next.set(product.id, 1);
-        return next;
-      });
-    }
-  };
-
-  const removeProductFromCart = (productId: number) => {
-    setProductCart(prev => prev.filter(p => p.id !== productId));
-    setProductQuantities(prev => {
-      const next = new Map(prev);
-      next.delete(productId);
-      return next;
-    });
-  };
-
-  const updateProductQuantity = (productId: number, delta: number) => {
-    setProductQuantities(prev => {
-      const next = new Map(prev);
-      const current = next.get(productId) || 1;
-      const newQty = Math.max(1, current + delta);
-      next.set(productId, newQty);
-      return next;
-    });
-  };
-
-  const isInProductCart = (productId: number) => productCart.some(p => p.id === productId);
-
-  const toggleServiceInCart = (service: ServiceCartItem) => {
-    setServiceCart(prev =>
-      prev.some(s => s.id === service.id)
-        ? prev.filter(s => s.id !== service.id)
-        : [...prev, service]
-    );
-  };
-
-  const isInServiceCart = (serviceId: number) => serviceCart.some(s => s.id === serviceId);
-
-  const totalCartItems = productCart.reduce((sum, p) => sum + (productQuantities.get(p.id) || 1), 0) + serviceCart.length;
-  const totalCartValue = productCart.reduce((s, p) => s + p.price * (productQuantities.get(p.id) || 1), 0) + serviceCart.reduce((s, svc) => s + svc.price, 0);
-
   const navigateToCheckout = () => {
     if (totalCartItems === 0) return;
     const params = new URLSearchParams({
@@ -177,13 +124,6 @@ const Landing = () => {
       }))),
     });
     navigate(`/jornada-cliente?${params.toString()}`);
-  };
-
-  const clearCart = () => {
-    setProductCart([]);
-    setServiceCart([]);
-    setProductQuantities(new Map());
-    setShowCartDetails(false);
   };
 
   useEffect(() => {
