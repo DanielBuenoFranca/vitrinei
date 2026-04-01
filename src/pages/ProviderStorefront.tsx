@@ -446,6 +446,28 @@ const ProviderStorefront = () => {
       </section>
 
       {/* Cart is now rendered globally via CartBar */}
+
+      {/* Product & Service Forms */}
+      {provider && (
+        <>
+          <ProductForm
+            open={productFormOpen}
+            onClose={() => { setProductFormOpen(false); setEditProduct(null); }}
+            onSaved={() => loadProviderData()}
+            product={editProduct}
+            providers={[{ id: provider.id, name: provider.name, segment: Array.isArray(provider.segment) ? provider.segment : [provider.segment] }]}
+            segments={dbSegments}
+          />
+          <ServiceForm
+            open={serviceFormOpen}
+            onClose={() => { setServiceFormOpen(false); setEditService(null); }}
+            onSaved={() => loadProviderData()}
+            service={editService}
+            providers={[{ id: provider.id, name: provider.name, segment: Array.isArray(provider.segment) ? provider.segment : [provider.segment] }]}
+            segments={dbSegments}
+          />
+        </>
+      )}
     </div>
   );
 };
