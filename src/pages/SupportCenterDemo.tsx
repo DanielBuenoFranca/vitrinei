@@ -95,7 +95,7 @@ const SupportCenterDemo = () => {
   const [showProviderForm, setShowProviderForm] = useState(false);
   const [showProviderChoice, setShowProviderChoice] = useState(false);
   const [providerFilter, setProviderFilter] = useState('');
-  const [existingProviders, setExistingProviders] = useState<Array<{id: number; name: string; segment: string; distance: string; rating: number; phone: string | null; email: string | null; city: string | null; address: string | null; type: string}>>([]);
+  const [existingProviders, setExistingProviders] = useState<Array<{id: number; name: string; segment: string[]; distance: string; rating: number; phone: string | null; email: string | null; city: string | null; address: string | null; type: string}>>([]);
   const [showServiceForm, setShowServiceForm] = useState(false);
   const [showProductForm, setShowProductForm] = useState(false);
   const [registeredProviders, setRegisteredProviders] = useState<(ProviderFormData & { rating: number })[]>([]);

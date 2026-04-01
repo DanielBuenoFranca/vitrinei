@@ -250,7 +250,7 @@ const AdminPanel = () => {
                                   {prov.type === 'mei' ? 'MEI' : 'PF'}
                                 </Badge>
                               </TableCell>
-                              <TableCell><Badge variant="outline">{prov.segment}</Badge></TableCell>
+                              <TableCell><div className="flex flex-wrap gap-1">{(prov.segment || []).map(s => <Badge key={s} variant="outline">{s}</Badge>)}</div></TableCell>
                               <TableCell className="text-sm text-muted-foreground">{prov.city || '—'}</TableCell>
                               <TableCell>{prov.distance}</TableCell>
                               <TableCell>⭐ {prov.rating}</TableCell>

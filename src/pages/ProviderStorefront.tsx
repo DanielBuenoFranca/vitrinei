@@ -81,7 +81,8 @@ const ProviderStorefront = () => {
           setProvider(found as ProviderData);
 
           // Load segment tags
-          const { data: segs } = await supabase.from('segments').select('*').eq('name', found.segment);
+          const firstSeg = Array.isArray(found.segment) ? found.segment[0] : found.segment;
+          const { data: segs } = await supabase.from('segments').select('*').eq('name', firstSeg);
           if (segs && segs[0]) setSegmentTags(segs[0].suggested_tags || []);
 
           // Filter inventory to this provider
