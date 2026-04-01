@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,11 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Upload, X, ImageIcon } from 'lucide-react';
 
 interface Provider {
   id: number; name: string; type: string; segment: string;
   phone: string | null; email: string | null; address: string | null; city: string | null;
-  distance: string; rating: number; active: boolean;
+  distance: string; rating: number; active: boolean; logo_url?: string | null;
 }
 
 interface Segment { id: number; name: string; }
@@ -28,6 +29,9 @@ export function ProviderForm({ open, onClose, onSaved, provider, segments }: Pro
     address: '', city: '', distance: '2 km', rating: 4.5, active: true,
   });
   const [saving, setSaving] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (provider) {
@@ -37,16 +41,39 @@ export function ProviderForm({ open, onClose, onSaved, provider, segments }: Pro
         address: provider.address || '', city: provider.city || '',
         distance: provider.distance, rating: provider.rating, active: provider.active,
       });
+      setLogoUrl((provider as any).logo_url || null);
     } else {
       setForm({ name: '', type: 'mei', segment: segments[0]?.name || '', phone: '', email: '', address: '', city: '', distance: '2 km', rating: 4.5, active: true });
+      setLogoUrl(null);
     }
   }, [provider, open, segments]);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast.error('Selecione uma imagem'); return; }
+    if (file.size > 2 * 1024 * 1024) { toast.error('Imagem deve ter no máximo 2MB'); return; }
+
+    setUploading(true);
+    const ext = file.name.split('.').pop() || 'png';
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+    const { error } = await supabase.storage.from('provider-logos').upload(fileName, file, { upsert: true });
+    if (error) { toast.error('Erro no upload: ' + error.message); setUploading(false); return; }
+
+    const { data: urlData } = supabase.storage.from('provider-logos').getPublicUrl(fileName);
+    setLogoUrl(urlData.publicUrl);
+    setUploading(false);
+    toast.success('Logo enviado!');
+  };
+
+  const removeLogo = () => setLogoUrl(null);
 
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Nome é obrigatório'); return; }
     if (!form.segment) { toast.error('Segmento é obrigatório'); return; }
     setSaving(true);
-    const data = { ...form, phone: form.phone || null, email: form.email || null, address: form.address || null, city: form.city || null };
+    const data: any = { ...form, phone: form.phone || null, email: form.email || null, address: form.address || null, city: form.city || null, logo_url: logoUrl };
     if (isEdit) {
       const { error } = await supabase.from('providers').update(data).eq('id', provider!.id);
       if (error) { toast.error('Erro ao atualizar'); setSaving(false); return; }
@@ -66,6 +93,32 @@ export function ProviderForm({ open, onClose, onSaved, provider, segments }: Pro
           <DialogTitle>{isEdit ? 'Editar Prestador' : 'Novo Prestador'}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-2">
+          {/* Logo upload */}
+          <div className="grid gap-2">
+            <Label>Logo / Foto</Label>
+            <div className="flex items-center gap-3">
+              {logoUrl ? (
+                <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-border">
+                  <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                  <button onClick={removeLogo} className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-16 h-16 rounded-xl border-2 border-dashed border-border flex items-center justify-center bg-muted/30">
+                  <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                </div>
+              )}
+              <div>
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                  <Upload className="w-3.5 h-3.5" /> {uploading ? 'Enviando...' : 'Enviar imagem'}
+                </Button>
+                <p className="text-[10px] text-muted-foreground mt-1">JPG, PNG até 2MB</p>
+              </div>
+            </div>
+          </div>
+
           <div className="grid gap-2">
             <Label>Nome *</Label>
             <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Nome do prestador" />
