@@ -30,7 +30,7 @@ interface ServiceCartItem {
 interface ProviderData {
   id: number;
   name: string;
-  segment: string;
+  segment: string[];
   type: string;
   rating: number;
   distance: string;
