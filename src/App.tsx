@@ -6,6 +6,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { FloatingAiAvatar } from "@/components/AiAvatarGlobal";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { CartProvider } from "@/contexts/CartContext";
+import CartBar from "@/components/CartBar";
 import { loadDynamicEntries } from "@/data/searchData";
 import Landing from "./pages/Landing.tsx";
 import MeiPanel from "./pages/MeiPanel.tsx";
@@ -31,11 +33,13 @@ const App = () => {
   useEffect(() => { loadDynamicEntries(); }, []);
   return (
   <ThemeProvider>
+  <CartProvider>
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <CartBar />
         <FloatingAvatarWrapper />
         <Routes>
           <Route path="/" element={<Landing />} />
@@ -55,6 +59,7 @@ const App = () => {
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
+  </CartProvider>
   </ThemeProvider>
   );
 };

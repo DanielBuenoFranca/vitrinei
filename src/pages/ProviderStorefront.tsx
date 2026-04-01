@@ -14,18 +14,7 @@ import {
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { segments as staticSegments, getAllServices, getAllProducts, reloadDynamicEntries, loadSegmentTagsCache, type ProductItem } from '@/data/searchData';
 import { supabase } from '@/integrations/supabase/client';
-
-interface ServiceCartItem {
-  id: number;
-  name: string;
-  segment: string;
-  provider: string;
-  price: number;
-  rating: number;
-  distance: string;
-  time: string;
-  products: string[];
-}
+import { useCart, type ServiceCartItem } from '@/contexts/CartContext';
 
 interface ProviderData {
   id: number;
@@ -54,14 +43,17 @@ const ProviderStorefront = () => {
   const [showShare, setShowShare] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Cart state
-  const [productCart, setProductCart] = useState<ProductItem[]>([]);
-  const [productQuantities, setProductQuantities] = useState<Map<number, number>>(new Map());
-  const [serviceCart, setServiceCart] = useState<ServiceCartItem[]>([]);
-  const [showCartDetails, setShowCartDetails] = useState(false);
-  const [clientCredit] = useState(100);
-  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'cartao' | null>(null);
-  const [paymentStep, setPaymentStep] = useState<'choose' | 'processing' | 'confirmed'>('choose');
+  // Cart from global context
+  const {
+    productCart, productQuantities, serviceCart,
+    showCartDetails, setShowCartDetails,
+    clientCredit, paymentMethod, setPaymentMethod,
+    paymentStep, setPaymentStep,
+    toggleProductInCart, removeProductFromCart, updateProductQuantity, isInProductCart,
+    toggleServiceInCart, isInServiceCart,
+    totalCartItems, totalCartValue, needsTopUp, topUpAmount, creditUsed, remainingCredit,
+    clearCart,
+  } = useCart();
 
   // Provider inventory
   const [providerServices, setProviderServices] = useState<any[]>([]);
@@ -113,36 +105,7 @@ const ProviderStorefront = () => {
       })
     : providerProducts;
 
-  // Cart logic
-  const toggleProductInCart = (product: ProductItem) => {
-    if (productCart.some(p => p.id === product.id)) {
-      setProductQuantities(prev => { const n = new Map(prev); n.set(product.id, (n.get(product.id) || 1) + 1); return n; });
-    } else {
-      setProductCart(prev => [...prev, product]);
-      setProductQuantities(prev => { const n = new Map(prev); n.set(product.id, 1); return n; });
-    }
-  };
-  const removeProductFromCart = (id: number) => {
-    setProductCart(prev => prev.filter(p => p.id !== id));
-    setProductQuantities(prev => { const n = new Map(prev); n.delete(id); return n; });
-  };
-  const updateProductQuantity = (id: number, delta: number) => {
-    setProductQuantities(prev => { const n = new Map(prev); n.set(id, Math.max(1, (n.get(id) || 1) + delta)); return n; });
-  };
-  const isInProductCart = (id: number) => productCart.some(p => p.id === id);
-  const toggleServiceInCart = (svc: ServiceCartItem) => {
-    setServiceCart(prev => prev.some(s => s.id === svc.id) ? prev.filter(s => s.id !== svc.id) : [...prev, svc]);
-  };
-  const isInServiceCart = (id: number) => serviceCart.some(s => s.id === id);
-
-  const totalCartItems = productCart.reduce((s, p) => s + (productQuantities.get(p.id) || 1), 0) + serviceCart.length;
-  const totalCartValue = productCart.reduce((s, p) => s + p.price * (productQuantities.get(p.id) || 1), 0) + serviceCart.reduce((s, svc) => s + svc.price, 0);
-  const needsTopUp = totalCartValue > clientCredit;
-  const topUpAmount = needsTopUp ? totalCartValue - clientCredit : 0;
-  const creditUsed = Math.min(clientCredit, totalCartValue);
-  const remainingCredit = clientCredit - creditUsed;
-
-  const clearCart = () => { setProductCart([]); setServiceCart([]); setProductQuantities(new Map()); setShowCartDetails(false); };
+  // Cart logic now comes from global CartContext
 
   const navigateToCheckout = () => {
     if (totalCartItems === 0) return;
@@ -451,183 +414,7 @@ const ProviderStorefront = () => {
         </div>
       </section>
 
-      {/* Cart bar */}
-      <AnimatePresence>
-        {totalCartItems > 0 && (
-          <motion.div initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
-            transition={{ type: 'spring', damping: 20 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-2xl">
-            <Card className="border-primary shadow-2xl bg-card/95 backdrop-blur-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <ShoppingCart className="w-5 h-5 text-primary" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-foreground">{totalCartItems} ite{totalCartItems > 1 ? 'ns' : 'm'}</p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                        <span className="font-semibold text-foreground">R$ {totalCartValue.toFixed(2)}</span>
-                        <span className="flex items-center gap-0.5"><CreditCard className="w-3 h-3 text-primary" /> R$ {clientCredit.toFixed(2)}</span>
-                        {needsTopUp && (
-                          <span className="flex items-center gap-0.5 text-destructive font-semibold">
-                            <AlertTriangle className="w-3 h-3" /> Falta: R$ {topUpAmount.toFixed(2)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button variant="ghost" size="sm" className="text-xs h-8 px-2" onClick={() => setShowCartDetails(!showCartDetails)}>
-                      {showCartDetails ? 'Fechar' : 'Ver'}
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={clearCart}><Trash2 className="w-3.5 h-3.5" /></Button>
-                    <Button size="sm" className="gap-1.5 font-semibold" onClick={navigateToCheckout}>
-                      <ShoppingCart className="w-3.5 h-3.5" /> Finalizar
-                    </Button>
-                  </div>
-                </div>
-
-                <AnimatePresence>
-                  {showCartDetails && (
-                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                      className="mt-3 pt-3 border-t border-border space-y-2 overflow-hidden max-h-[50vh] overflow-y-auto">
-                      {serviceCart.map(svc => (
-                        <div key={`svc-${svc.id}`} className="flex items-center justify-between text-xs bg-primary/5 rounded-lg px-3 py-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <Badge className="bg-primary/10 text-primary border-primary/20 text-[8px] px-1.5 py-0 shrink-0">🔧</Badge>
-                            <span className="font-medium text-foreground truncate">{svc.name}</span>
-                            <span className="text-muted-foreground shrink-0">R$ {svc.price} /hr</span>
-                          </div>
-                          <button onClick={() => toggleServiceInCart(svc)} className="text-muted-foreground hover:text-destructive ml-2 shrink-0"><X className="w-3.5 h-3.5" /></button>
-                        </div>
-                      ))}
-                      {productCart.map(product => {
-                        const qty = productQuantities.get(product.id) || 1;
-                        const unit = (product as any).unit || 'un';
-                        return (
-                          <div key={`prod-${product.id}`} className="flex items-center justify-between text-xs bg-success/5 rounded-lg px-3 py-2">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <Badge variant={product.stockType === 'fisico' ? 'default' : 'secondary'} className="text-[8px] px-1.5 py-0 shrink-0">
-                                {product.stockType === 'fisico' ? '📦' : '🌍'}
-                              </Badge>
-                              <span className="font-medium text-foreground truncate">{product.name}</span>
-                              <span className="text-muted-foreground shrink-0">R$ {(product.price * qty).toFixed(2)}</span>
-                            </div>
-                            <div className="flex items-center gap-1 shrink-0 ml-2">
-                              <button onClick={() => updateProductQuantity(product.id, -1)} className="w-5 h-5 rounded bg-muted flex items-center justify-center text-foreground hover:bg-muted/80 text-xs font-bold">−</button>
-                              <span className="text-xs font-semibold w-6 text-center">{qty} {unit}</span>
-                              <button onClick={() => updateProductQuantity(product.id, 1)} className="w-5 h-5 rounded bg-muted flex items-center justify-center text-foreground hover:bg-muted/80 text-xs font-bold">+</button>
-                              <button onClick={() => removeProductFromCart(product.id)} className="text-muted-foreground hover:text-destructive ml-1"><X className="w-3.5 h-3.5" /></button>
-                            </div>
-                          </div>
-                        );
-                      })}
-
-                      {/* Credit summary */}
-                      <div className="mt-3 pt-3 border-t border-border space-y-1.5">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">Total:</span>
-                          <span className="font-bold text-foreground">R$ {totalCartValue.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground flex items-center gap-1"><CreditCard className="w-3 h-3" /> Crédito:</span>
-                          <span className="font-semibold text-primary">R$ {clientCredit.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">Saldo restante:</span>
-                          <span className={`font-semibold ${remainingCredit > 0 ? 'text-primary' : 'text-muted-foreground'}`}>R$ {remainingCredit.toFixed(2)}</span>
-                        </div>
-                        {needsTopUp && (
-                          <div className="mt-2 p-2.5 rounded-lg bg-destructive/10 border border-destructive/20">
-                            <p className="text-xs font-semibold text-destructive flex items-center gap-1 mb-1.5">
-                              <AlertTriangle className="w-3.5 h-3.5" /> Aporte necessário: R$ {topUpAmount.toFixed(2)}
-                            </p>
-                            <div className="flex gap-2">
-                              <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 flex-1" onClick={() => setPaymentMethod('pix')}><CreditCard className="w-3 h-3" /> Pix</Button>
-                              <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 flex-1" onClick={() => setPaymentMethod('cartao')}><CreditCard className="w-3 h-3" /> Cartão</Button>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Payment flow */}
-                        {paymentMethod && needsTopUp && (
-                          <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="mt-3 p-3 rounded-lg border border-primary/30 bg-primary/5">
-                            {paymentStep === 'choose' && (
-                              <div className="space-y-2">
-                                <p className="text-xs font-semibold text-foreground">
-                                  💳 Pagamento via {paymentMethod === 'pix' ? 'Pix' : 'Cartão'} — R$ {topUpAmount.toFixed(2)}
-                                </p>
-                                {paymentMethod === 'pix' ? (
-                                  <div className="text-center space-y-2">
-                                    <div className="w-28 h-28 mx-auto bg-muted rounded-lg flex items-center justify-center border-2 border-dashed border-border">
-                                      <div className="text-center">
-                                        <div className="text-3xl mb-1">📱</div>
-                                        <p className="text-[9px] text-muted-foreground">QR Code Pix</p>
-                                      </div>
-                                    </div>
-                                    <Button size="sm" className="w-full h-7 text-[10px]" onClick={() => { setPaymentStep('processing'); setTimeout(() => setPaymentStep('confirmed'), 2000); }}>
-                                      Simular pagamento realizado
-                                    </Button>
-                                  </div>
-                                ) : (
-                                  <div className="space-y-2">
-                                    <Input placeholder="0000 0000 0000 0000" className="h-8 text-xs" />
-                                    <div className="flex gap-2">
-                                      <Input placeholder="MM/AA" className="h-8 text-xs flex-1" />
-                                      <Input placeholder="CVV" className="h-8 text-xs w-20" />
-                                    </div>
-                                    <Button size="sm" className="w-full h-7 text-[10px]" onClick={() => { setPaymentStep('processing'); setTimeout(() => setPaymentStep('confirmed'), 2000); }}>
-                                      Pagar R$ {topUpAmount.toFixed(2)}
-                                    </Button>
-                                  </div>
-                                )}
-                                <button onClick={() => { setPaymentMethod(null); setPaymentStep('choose'); }} className="text-[10px] text-muted-foreground hover:text-foreground w-full text-center mt-1">
-                                  Alterar forma de pagamento
-                                </button>
-                              </div>
-                            )}
-                            {paymentStep === 'processing' && (
-                              <div className="text-center py-4 space-y-2">
-                                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }}>
-                                  <Zap className="w-6 h-6 text-primary mx-auto" />
-                                </motion.div>
-                                <p className="text-xs font-semibold text-foreground">Processando pagamento...</p>
-                              </div>
-                            )}
-                            {paymentStep === 'confirmed' && (
-                              <div className="text-center py-3 space-y-2">
-                                <CheckCircle2 className="w-8 h-8 text-success mx-auto" />
-                                <p className="text-xs font-bold text-success">Pagamento confirmado!</p>
-                                <p className="text-[10px] text-muted-foreground">R$ {topUpAmount.toFixed(2)} via {paymentMethod === 'pix' ? 'Pix' : 'Cartão'}</p>
-                                <Button size="sm" className="w-full gap-1.5 font-semibold mt-2" onClick={() => {
-                                  setPaymentStep('choose'); setPaymentMethod(null);
-                                  navigateToCheckout();
-                                }}>
-                                  <ShoppingCart className="w-3.5 h-3.5" /> Confirmar pedido
-                                </Button>
-                              </div>
-                            )}
-                          </motion.div>
-                        )}
-
-                        {/* Finalizar when credit is sufficient */}
-                        {!needsTopUp && (
-                          <div className="mt-2">
-                            <Button size="sm" className="w-full gap-1.5 font-semibold" onClick={navigateToCheckout}>
-                              <ShoppingCart className="w-3.5 h-3.5" /> Confirmar compra
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Cart is now rendered globally via CartBar */}
     </div>
   );
 };
