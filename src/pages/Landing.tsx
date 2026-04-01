@@ -1330,7 +1330,7 @@ const Landing = () => {
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={clearCart}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
-                    <Button size="sm" className="gap-1.5 font-semibold" onClick={navigateToCheckout}>
+                    <Button size="sm" className="gap-1.5 font-semibold" onClick={() => setShowCartDetails(true)}>
                       <ShoppingCart className="w-3.5 h-3.5" /> Finalizar
                     </Button>
                   </div>
@@ -1412,13 +1412,84 @@ const Landing = () => {
                               <AlertTriangle className="w-3.5 h-3.5" /> Crédito insuficiente — Aporte necessário: R$ {topUpAmount.toFixed(2)}
                             </p>
                             <div className="flex gap-2">
-                              <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 flex-1">
+                              <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 flex-1" onClick={() => setPaymentMethod('pix')}>
                                 <CreditCard className="w-3 h-3" /> Pix
                               </Button>
-                              <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 flex-1">
+                              <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 flex-1" onClick={() => setPaymentMethod('cartao')}>
                                 <CreditCard className="w-3 h-3" /> Cartão
                               </Button>
                             </div>
+                          </div>
+                        )}
+
+                        {/* Payment flow */}
+                        {paymentMethod && needsTopUp && (
+                          <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="mt-3 p-3 rounded-lg border border-primary/30 bg-primary/5">
+                            {paymentStep === 'choose' && (
+                              <div className="space-y-2">
+                                <p className="text-xs font-semibold text-foreground">
+                                  💳 Pagamento via {paymentMethod === 'pix' ? 'Pix' : 'Cartão'} — R$ {topUpAmount.toFixed(2)}
+                                </p>
+                                {paymentMethod === 'pix' ? (
+                                  <div className="text-center space-y-2">
+                                    <div className="w-28 h-28 mx-auto bg-muted rounded-lg flex items-center justify-center border-2 border-dashed border-border">
+                                      <div className="text-center">
+                                        <div className="text-3xl mb-1">📱</div>
+                                        <p className="text-[9px] text-muted-foreground">QR Code Pix</p>
+                                      </div>
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground">Escaneie o QR Code ou copie o código</p>
+                                    <Button size="sm" className="w-full h-7 text-[10px] gap-1" onClick={() => { setPaymentStep('processing'); setTimeout(() => setPaymentStep('confirmed'), 2000); }}>
+                                      Simular pagamento realizado
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <div className="space-y-2">
+                                    <Input placeholder="0000 0000 0000 0000" className="h-8 text-xs" />
+                                    <div className="flex gap-2">
+                                      <Input placeholder="MM/AA" className="h-8 text-xs flex-1" />
+                                      <Input placeholder="CVV" className="h-8 text-xs w-20" />
+                                    </div>
+                                    <Button size="sm" className="w-full h-7 text-[10px] gap-1" onClick={() => { setPaymentStep('processing'); setTimeout(() => setPaymentStep('confirmed'), 2000); }}>
+                                      Pagar R$ {topUpAmount.toFixed(2)}
+                                    </Button>
+                                  </div>
+                                )}
+                                <button onClick={() => { setPaymentMethod(null); setPaymentStep('choose'); }} className="text-[10px] text-muted-foreground hover:text-foreground w-full text-center mt-1">
+                                  Alterar forma de pagamento
+                                </button>
+                              </div>
+                            )}
+                            {paymentStep === 'processing' && (
+                              <div className="text-center py-4 space-y-2">
+                                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }}>
+                                  <Zap className="w-6 h-6 text-primary mx-auto" />
+                                </motion.div>
+                                <p className="text-xs font-semibold text-foreground">Processando pagamento...</p>
+                              </div>
+                            )}
+                            {paymentStep === 'confirmed' && (
+                              <div className="text-center py-3 space-y-2">
+                                <CheckCircle2 className="w-8 h-8 text-success mx-auto" />
+                                <p className="text-xs font-bold text-success">Pagamento confirmado!</p>
+                                <p className="text-[10px] text-muted-foreground">R$ {topUpAmount.toFixed(2)} via {paymentMethod === 'pix' ? 'Pix' : 'Cartão'}</p>
+                                <Button size="sm" className="w-full gap-1.5 font-semibold mt-2" onClick={() => {
+                                  setPaymentStep('choose'); setPaymentMethod(null);
+                                  navigateToCheckout();
+                                }}>
+                                  <ShoppingCart className="w-3.5 h-3.5" /> Confirmar pedido
+                                </Button>
+                              </div>
+                            )}
+                          </motion.div>
+                        )}
+
+                        {/* Finalizar when credit is sufficient */}
+                        {!needsTopUp && (
+                          <div className="mt-2">
+                            <Button size="sm" className="w-full gap-1.5 font-semibold" onClick={navigateToCheckout}>
+                              <ShoppingCart className="w-3.5 h-3.5" /> Confirmar pedido (via crédito)
+                            </Button>
                           </div>
                         )}
                       </div>
