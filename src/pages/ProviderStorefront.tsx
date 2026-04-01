@@ -69,10 +69,24 @@ const ProviderStorefront = () => {
   const [editProduct, setEditProduct] = useState<any>(null);
   const [editService, setEditService] = useState<any>(null);
 
+  const loadProviderData = async (providerData?: ProviderData) => {
+    const prov = providerData || provider;
+    if (!prov) return;
+    await reloadDynamicEntries();
+    const allServices = getAllServices();
+    const allProducts = getAllProducts();
+    setProviderServices(allServices.filter((s: any) => s.provider === prov.name));
+    setProviderProducts(allProducts.filter((p: any) => p.provider === prov.name));
+  };
+
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       await Promise.all([reloadDynamicEntries(), loadSegmentTagsCache()]);
+
+      // Fetch segments for forms
+      const { data: segsData } = await supabase.from('segments').select('id, name').order('name');
+      setDbSegments((segsData || []) as { id: number; name: string }[]);
 
       // Find provider by slug
       const { data: providers } = await supabase.from('providers').select('*').eq('active', true);
