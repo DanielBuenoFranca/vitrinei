@@ -33,11 +33,13 @@ const App = () => {
   useEffect(() => { loadDynamicEntries(); }, []);
   return (
   <ThemeProvider>
+  <CartProvider>
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <CartBar />
         <FloatingAvatarWrapper />
         <Routes>
           <Route path="/" element={<Landing />} />
@@ -57,6 +59,7 @@ const App = () => {
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
+  </CartProvider>
   </ThemeProvider>
   );
 };
