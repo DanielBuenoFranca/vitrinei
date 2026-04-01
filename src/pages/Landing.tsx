@@ -452,20 +452,26 @@ const Landing = () => {
                 </div>
               </div>
 
-              {/* AI Suggestion banner */}
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentSuggestion}
-                  initial={{ opacity: 0, y: -5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 5 }}
-                  transition={{ duration: 0.3 }}
-                  className="mt-2 flex items-center gap-2 text-sm text-muted-foreground px-2"
-                >
-                  <Sparkles className="w-4 h-4 text-accent shrink-0" />
-                  <span>{aiSuggestions[currentSuggestion]}</span>
-                </motion.div>
-              </AnimatePresence>
+              {/* AI Suggestion banner + Show simulated checkbox */}
+              <div className="mt-2 flex items-center justify-between px-2">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={currentSuggestion}
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 5 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex items-center gap-2 text-sm text-muted-foreground"
+                  >
+                    <Sparkles className="w-4 h-4 text-accent shrink-0" />
+                    <span>{aiSuggestions[currentSuggestion]}</span>
+                  </motion.div>
+                </AnimatePresence>
+                <label className="flex items-center gap-1.5 shrink-0 cursor-pointer select-none">
+                  <Checkbox checked={showSimulated} onCheckedChange={(v) => setShowSimulated(!!v)} className="h-3.5 w-3.5" />
+                  <span className="text-[10px] text-muted-foreground whitespace-nowrap">Incluir simulados</span>
+                </label>
+              </div>
             </div>
 
             {/* Layout: Sidebar filters + Results */}
