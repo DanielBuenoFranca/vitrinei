@@ -141,6 +141,7 @@ export type Database = {
           distance: string
           email: string | null
           id: number
+          logo_url: string | null
           name: string
           phone: string | null
           rating: number
@@ -155,6 +156,7 @@ export type Database = {
           distance?: string
           email?: string | null
           id?: number
+          logo_url?: string | null
           name: string
           phone?: string | null
           rating?: number
@@ -169,6 +171,7 @@ export type Database = {
           distance?: string
           email?: string | null
           id?: number
+          logo_url?: string | null
           name?: string
           phone?: string | null
           rating?: number
