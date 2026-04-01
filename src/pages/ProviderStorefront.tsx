@@ -39,6 +39,7 @@ interface ProviderData {
   address: string | null;
   city: string | null;
   active: boolean;
+  logo_url?: string | null;
 }
 
 const slugify = (str: string) =>
