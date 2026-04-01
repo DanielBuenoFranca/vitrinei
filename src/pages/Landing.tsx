@@ -115,11 +115,41 @@ const Landing = () => {
   };
 
   const toggleProductInCart = (product: ProductItem) => {
-    setProductCart(prev => 
-      prev.some(p => p.id === product.id)
-        ? prev.filter(p => p.id !== product.id)
-        : [...prev, product]
-    );
+    if (productCart.some(p => p.id === product.id)) {
+      // Already in cart — increment quantity
+      setProductQuantities(prev => {
+        const next = new Map(prev);
+        next.set(product.id, (next.get(product.id) || 1) + 1);
+        return next;
+      });
+    } else {
+      // Add to cart with quantity 1
+      setProductCart(prev => [...prev, product]);
+      setProductQuantities(prev => {
+        const next = new Map(prev);
+        next.set(product.id, 1);
+        return next;
+      });
+    }
+  };
+
+  const removeProductFromCart = (productId: number) => {
+    setProductCart(prev => prev.filter(p => p.id !== productId));
+    setProductQuantities(prev => {
+      const next = new Map(prev);
+      next.delete(productId);
+      return next;
+    });
+  };
+
+  const updateProductQuantity = (productId: number, delta: number) => {
+    setProductQuantities(prev => {
+      const next = new Map(prev);
+      const current = next.get(productId) || 1;
+      const newQty = Math.max(1, current + delta);
+      next.set(productId, newQty);
+      return next;
+    });
   };
 
   const isInProductCart = (productId: number) => productCart.some(p => p.id === productId);
