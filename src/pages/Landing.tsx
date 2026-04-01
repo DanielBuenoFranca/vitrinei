@@ -216,7 +216,7 @@ const Landing = () => {
       await reloadDynamicEntries();
       const { data: segs } = await supabase.from('segments').select('*').order('name');
       if (segs) {
-        setDbSegments(segs.map((s: any) => ({ id: s.name, label: s.name, name: s.name })));
+        setDbSegments(segs.map((s: any) => ({ id: s.name, label: s.name, name: s.name, tags: s.suggested_tags || [] })));
       }
       setDataLoaded(true);
       setSearchExecuted(true);
