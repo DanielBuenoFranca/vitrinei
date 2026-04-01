@@ -238,9 +238,15 @@ const ProviderStorefront = () => {
             {/* Banner gradient */}
             <div className="h-24 bg-gradient-to-r from-primary/20 via-primary/10 to-accent/10 relative">
               <div className="absolute -bottom-8 left-6">
-                <div className="w-16 h-16 rounded-2xl bg-card border-4 border-card shadow-lg flex items-center justify-center">
-                  <SegIcon className="w-8 h-8 text-primary" />
-                </div>
+                {provider.logo_url ? (
+                  <div className="w-16 h-16 rounded-2xl border-4 border-card shadow-lg overflow-hidden">
+                    <img src={provider.logo_url} alt={provider.name} className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 rounded-2xl bg-card border-4 border-card shadow-lg flex items-center justify-center">
+                    <SegIcon className="w-8 h-8 text-primary" />
+                  </div>
+                )}
               </div>
             </div>
 
