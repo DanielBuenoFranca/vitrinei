@@ -61,6 +61,13 @@ const ProviderStorefront = () => {
   const [providerServices, setProviderServices] = useState<any[]>([]);
   const [providerProducts, setProviderProducts] = useState<ProductItem[]>([]);
   const [segmentTags, setSegmentTags] = useState<string[]>([]);
+  const [dbSegments, setDbSegments] = useState<{ id: number; name: string }[]>([]);
+
+  // Forms for adding products/services
+  const [productFormOpen, setProductFormOpen] = useState(false);
+  const [serviceFormOpen, setServiceFormOpen] = useState(false);
+  const [editProduct, setEditProduct] = useState<any>(null);
+  const [editService, setEditService] = useState<any>(null);
 
   useEffect(() => {
     const load = async () => {
