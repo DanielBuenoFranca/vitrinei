@@ -8,19 +8,21 @@ interface Provider {
   id: number; name: string; type: string; segment: string[];
   phone: string | null; email: string | null; address: string | null; city: string | null;
   distance: string; rating: number; active: boolean; cpf_cnpj: string | null;
+  created_at: string;
 }
 
 interface DynamicService {
   id: number; service_id: number; name: string; segment: string;
   provider: string; provider_id: number | null; price: number; rating: number;
-  distance: string; time: string; products: string[];
+  distance: string; time: string; products: string[]; created_at: string;
   labor_cost?: number; linked_product_ids?: number[];
 }
 
 interface DynamicProduct {
   id: number; product_id: number; name: string; price: number;
   provider: string; provider_id: number | null; stock_type: string;
-  rating: number; distance: string; tags: string[];
+  rating: number; distance: string; tags: string[]; related_service_ids: number[];
+  created_at: string;
 }
 
 interface Segment {
