@@ -1278,7 +1278,14 @@ const Landing = () => {
 
       {/* Floating Unified Cart Bar */}
       <AnimatePresence>
-        {totalCartItems > 0 && (
+        {totalCartItems > 0 && (() => {
+          const creditBalance = clientCredit;
+          const needsTopUp = totalCartValue > creditBalance;
+          const topUpAmount = needsTopUp ? totalCartValue - creditBalance : 0;
+          const creditUsed = Math.min(creditBalance, totalCartValue);
+          const remainingCredit = creditBalance - creditUsed;
+
+          return (
           <motion.div
             initial={{ y: 80, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -1299,8 +1306,12 @@ const Landing = () => {
                       </p>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                         <span className="font-semibold text-foreground">R$ {totalCartValue.toFixed(2)}</span>
-                        {serviceCart.length > 0 && <span className="flex items-center gap-0.5"><WrenchIcon className="w-3 h-3" /> {serviceCart.length} serviço(s)</span>}
-                        {productCart.length > 0 && <span className="flex items-center gap-0.5"><ShoppingBag className="w-3 h-3" /> {productCart.length} produto(s)</span>}
+                        <span className="flex items-center gap-0.5"><CreditCard className="w-3 h-3 text-primary" /> Crédito: R$ {creditBalance.toFixed(2)}</span>
+                        {needsTopUp && (
+                          <span className="flex items-center gap-0.5 text-destructive font-semibold">
+                            <AlertTriangle className="w-3 h-3" /> Falta: R$ {topUpAmount.toFixed(2)}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1312,7 +1323,7 @@ const Landing = () => {
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
                     <Button size="sm" className="gap-1.5 font-semibold" onClick={navigateToCheckout}>
-                      <ShoppingCart className="w-3.5 h-3.5" /> Finalizar Carrinho
+                      <ShoppingCart className="w-3.5 h-3.5" /> Finalizar
                     </Button>
                   </div>
                 </div>
@@ -1321,10 +1332,10 @@ const Landing = () => {
                 <AnimatePresence>
                   {showCartDetails && (
                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                      className="mt-3 pt-3 border-t border-border space-y-2 overflow-hidden">
+                      className="mt-3 pt-3 border-t border-border space-y-2 overflow-hidden max-h-[50vh] overflow-y-auto">
                       {serviceCart.length > 0 && (
                         <p className="text-[10px] font-semibold text-primary flex items-center gap-1 mb-1">
-                          <WrenchIcon className="w-3 h-3" /> Serviços
+                          <WrenchIcon className="w-3 h-3" /> Serviços (hr)
                         </p>
                       )}
                       {serviceCart.map(svc => (
@@ -1332,7 +1343,7 @@ const Landing = () => {
                           <div className="flex items-center gap-2 min-w-0">
                             <Badge className="bg-primary/10 text-primary border-primary/20 text-[8px] px-1.5 py-0 shrink-0">🔧</Badge>
                             <span className="font-medium text-foreground truncate">{svc.name}</span>
-                            <span className="text-muted-foreground shrink-0">R$ {svc.price}</span>
+                            <span className="text-muted-foreground shrink-0">R$ {svc.price} /hr</span>
                             <span className="text-[10px] text-muted-foreground shrink-0">• {svc.provider}</span>
                           </div>
                           <button onClick={() => toggleServiceInCart(svc)} className="text-muted-foreground hover:text-destructive ml-2 shrink-0">
@@ -1347,6 +1358,7 @@ const Landing = () => {
                       )}
                       {productCart.map(product => {
                         const qty = productQuantities.get(product.id) || 1;
+                        const unit = (product as any).unit || 'un';
                         return (
                           <div key={`prod-${product.id}`} className="flex items-center justify-between text-xs bg-success/5 rounded-lg px-3 py-2">
                             <div className="flex items-center gap-2 min-w-0">
@@ -1358,7 +1370,7 @@ const Landing = () => {
                             </div>
                             <div className="flex items-center gap-1 shrink-0 ml-2">
                               <button onClick={() => updateProductQuantity(product.id, -1)} className="w-5 h-5 rounded bg-muted flex items-center justify-center text-foreground hover:bg-muted/80 text-xs font-bold">−</button>
-                              <span className="text-xs font-semibold w-5 text-center">{qty}</span>
+                              <span className="text-xs font-semibold w-6 text-center">{qty} {unit}</span>
                               <button onClick={() => updateProductQuantity(product.id, 1)} className="w-5 h-5 rounded bg-muted flex items-center justify-center text-foreground hover:bg-muted/80 text-xs font-bold">+</button>
                               <button onClick={() => removeProductFromCart(product.id)} className="text-muted-foreground hover:text-destructive ml-1">
                                 <X className="w-3.5 h-3.5" />
@@ -1367,7 +1379,49 @@ const Landing = () => {
                           </div>
                         );
                       })}
+
+                      {/* Credit summary */}
+                      <div className="mt-3 pt-3 border-t border-border space-y-1.5">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Total do pedido:</span>
+                          <span className="font-bold text-foreground">R$ {totalCartValue.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground flex items-center gap-1"><CreditCard className="w-3 h-3" /> Crédito disponível:</span>
+                          <span className="font-semibold text-primary">R$ {creditBalance.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Utilizado do crédito:</span>
+                          <span className="font-semibold text-foreground">- R$ {creditUsed.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Saldo restante:</span>
+                          <span className={`font-semibold ${remainingCredit > 0 ? 'text-primary' : 'text-muted-foreground'}`}>R$ {remainingCredit.toFixed(2)}</span>
+                        </div>
+                        {needsTopUp && (
+                          <div className="mt-2 p-2.5 rounded-lg bg-destructive/10 border border-destructive/20">
+                            <p className="text-xs font-semibold text-destructive flex items-center gap-1 mb-1.5">
+                              <AlertTriangle className="w-3.5 h-3.5" /> Crédito insuficiente — Aporte necessário: R$ {topUpAmount.toFixed(2)}
+                            </p>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 flex-1">
+                                <CreditCard className="w-3 h-3" /> Pix
+                              </Button>
+                              <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 flex-1">
+                                <CreditCard className="w-3 h-3" /> Cartão
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </motion.div>
+                  )}
+                </AnimatePresence>
+              </CardContent>
+            </Card>
+          </motion.div>
+          );
+        })()}
                   )}
                 </AnimatePresence>
               </CardContent>
