@@ -28,7 +28,7 @@ const aiSuggestions = [
 ];
 
 
-// ServiceCartItem now comes from CartContext
+const Landing = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [executedQuery, setExecutedQuery] = useState('');
@@ -44,6 +44,12 @@ const aiSuggestions = [
   const [expandedProducts, setExpandedProducts] = useState<number | null>(null);
   const [expandedServices, setExpandedServices] = useState<number | null>(null);
   const [showSearchProducts, setShowSearchProducts] = useState(false);
+  const [pendingChatSuggestions, setPendingChatSuggestions] = useState<Map<number, Set<string>>>(new Map());
+  const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
+  const [dbSegments, setDbSegments] = useState<{ id: string; label: string; name: string; tags: string[] }[]>([]);
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [mobileRevealedSeg, setMobileRevealedSeg] = useState<string | null>(null);
+  const [showSimulated, setShowSimulated] = useState(false);
   const {
     productCart, productQuantities, serviceCart,
     showCartDetails, setShowCartDetails,
