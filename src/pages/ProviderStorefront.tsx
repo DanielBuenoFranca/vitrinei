@@ -282,8 +282,8 @@ const ProviderStorefront = () => {
                 </div>
               )}
 
-              {/* Stats */}
-              <div className="flex gap-4 mt-4 pt-3 border-t border-border">
+              {/* Stats + Management */}
+              <div className="flex gap-4 mt-4 pt-3 border-t border-border items-center">
                 <div className="text-center">
                   <p className="text-lg font-bold text-foreground">{providerServices.length}</p>
                   <p className="text-[10px] text-muted-foreground">Serviços</p>
@@ -295,6 +295,14 @@ const ProviderStorefront = () => {
                 <div className="text-center">
                   <p className="text-lg font-bold text-foreground">{provider.rating}</p>
                   <p className="text-[10px] text-muted-foreground">Avaliação</p>
+                </div>
+                <div className="ml-auto flex gap-1.5">
+                  <Button variant="outline" size="sm" className="gap-1 text-xs h-7" onClick={() => { setEditService(null); setServiceFormOpen(true); }}>
+                    <Plus className="w-3 h-3" /> Serviço
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1 text-xs h-7" onClick={() => { setEditProduct(null); setProductFormOpen(true); }}>
+                    <Plus className="w-3 h-3" /> Produto
+                  </Button>
                 </div>
               </div>
             </div>
