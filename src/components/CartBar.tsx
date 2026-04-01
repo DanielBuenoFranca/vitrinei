@@ -39,8 +39,16 @@ const CartBar = () => {
     });
     navigate(`/jornada-cliente?${params.toString()}`);
   };
+  // Auto-minimize on route change
+  const prevPath = useRef(location.pathname);
+  useEffect(() => {
+    if (location.pathname !== prevPath.current && totalCartItems > 0) {
+      setIsMinimized(true);
+      setShowCartDetails(false);
+    }
+    prevPath.current = location.pathname;
+  }, [location.pathname]);
 
-  if (totalCartItems === 0 && !isMinimized) return null;
 
   // When empty, show nothing
   if (totalCartItems === 0) return null;
