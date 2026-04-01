@@ -102,6 +102,18 @@ const BROAD_CONTEXT_MAP: Record<string, {
     productKeywords: ['adubo', 'semente', 'vaso', 'tesoura', 'luva', 'terra'],
     label: 'Jardim — Jardinagem e Insumos',
   },
+  grama: {
+    segments: ['natureza', 'casa'],
+    serviceKeywords: ['jardineiro', 'jardinagem', 'poda', 'corte de grama', 'paisagismo', 'capinar'],
+    productKeywords: ['grama', 'adubo', 'semente', 'tesoura', 'luva', 'jardinagem', 'poda'],
+    label: 'Grama — Jardinagem e Manutenção',
+  },
+  jardinagem: {
+    segments: ['natureza', 'casa'],
+    serviceKeywords: ['jardineiro', 'poda', 'corte de grama', 'paisagismo', 'horta'],
+    productKeywords: ['adubo', 'semente', 'vaso', 'tesoura', 'luva', 'terra', 'grama'],
+    label: 'Jardinagem — Serviços e Insumos',
+  },
 };
 
 // ── NL Map: now with specific service & product IDs for precision ──
