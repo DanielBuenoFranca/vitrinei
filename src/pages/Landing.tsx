@@ -226,9 +226,11 @@ const Landing = () => {
       rawResult = { products: allProds, services: allSvcs };
     } else {
       const result = semanticSearch(query);
+      const norm = (v: string) => v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+      const activeNorm = activeSegments.map(norm);
       const filteredServices = activeSegments.length === 0
         ? result.services
-        : result.services.filter(r => activeSegments.includes(r.segment));
+        : result.services.filter(r => activeNorm.includes(norm(r.segment)));
       rawResult = { ...result, services: filteredServices };
     }
 
