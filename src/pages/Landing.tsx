@@ -582,12 +582,31 @@ const Landing = () => {
                                         <Store className="w-4 h-4 text-primary" />
                                       </div>
                                       <div>
-                                        <h3 className="font-semibold text-sm text-foreground">{providerName}</h3>
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                          <h3 className="font-semibold text-sm text-foreground">{providerName}</h3>
+                                          {(() => {
+                                            const seg = data.services[0]?.segment;
+                                            return seg ? <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4">{seg}</Badge> : null;
+                                          })()}
+                                        </div>
                                         <p className="text-[11px] text-muted-foreground">
                                           {data.services.length > 0 && `${data.services.length} serviço(s)`}
                                           {data.services.length > 0 && data.products.length > 0 && ' · '}
                                           {data.products.length > 0 && `${data.products.length} produto(s)`}
                                         </p>
+                                        {(() => {
+                                          const seg = data.services[0]?.segment;
+                                          const segData = dbSegments.find(s => s.id === seg || s.name === seg);
+                                          const tags = segData?.tags || [];
+                                          return tags.length > 0 ? (
+                                            <div className="flex flex-wrap gap-1 mt-0.5">
+                                              {tags.slice(0, 4).map(tag => (
+                                                <span key={tag} className="text-[8px] text-muted-foreground/60 bg-muted/30 px-1 rounded">{tag}</span>
+                                              ))}
+                                              {tags.length > 4 && <span className="text-[8px] text-muted-foreground/40">+{tags.length - 4}</span>}
+                                            </div>
+                                          ) : null;
+                                        })()}
                                       </div>
                                     </div>
                                     <div className="flex items-center gap-2">
