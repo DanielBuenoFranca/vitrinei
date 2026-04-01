@@ -31,7 +31,7 @@ interface DynamicService {
 interface Provider {
   id: number;
   name: string;
-  segment: string;
+  segment: string[];
 }
 
 interface AvailableProduct {

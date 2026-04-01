@@ -230,7 +230,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
               <Select value={form.provider_id ? String(form.provider_id) : ''} onValueChange={handleProviderSelect}>
                 <SelectTrigger><SelectValue placeholder="Selecione um prestador" /></SelectTrigger>
                 <SelectContent>
-                  {providers.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.name} ({p.segment})</SelectItem>)}
+                  {providers.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.name} ({(p.segment || []).join(', ')})</SelectItem>)}
                 </SelectContent>
               </Select>
             ) : (
