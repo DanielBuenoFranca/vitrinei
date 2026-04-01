@@ -1352,19 +1352,19 @@ const Landing = () => {
             transition={{ type: 'spring', damping: 20 }}
             className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-2xl px-1"
           >
-            <Card className="border-primary shadow-2xl bg-card/95 backdrop-blur-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <ShoppingCart className="w-5 h-5 text-primary" />
+            <Card className="border-primary shadow-2xl bg-card/95 backdrop-blur-sm overflow-hidden">
+              <CardContent className="p-3 sm:p-4">
+                {/* Mobile: stacked layout */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-foreground">
-                        {totalCartItems} ite{totalCartItems > 1 ? 'ns' : 'm'} no carrinho
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs sm:text-sm font-bold text-foreground truncate">
+                        {totalCartItems} ite{totalCartItems > 1 ? 'ns' : 'm'} • R$ {totalCartValue.toFixed(2)}
                       </p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                        <span className="font-semibold text-foreground">R$ {totalCartValue.toFixed(2)}</span>
+                      <div className="flex items-center gap-2 text-[10px] sm:text-xs text-muted-foreground flex-wrap">
                         <span className="flex items-center gap-0.5"><CreditCard className="w-3 h-3 text-primary" /> Crédito: R$ {creditBalance.toFixed(2)}</span>
                         {needsTopUp && (
                           <span className="flex items-center gap-0.5 text-destructive font-semibold">
@@ -1374,15 +1374,15 @@ const Landing = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button variant="ghost" size="sm" className="text-xs text-muted-foreground h-8 px-2" onClick={() => setShowCartDetails(!showCartDetails)}>
+                  <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 justify-end">
+                    <Button variant="ghost" size="sm" className="text-[10px] sm:text-xs text-muted-foreground h-7 sm:h-8 px-2" onClick={() => setShowCartDetails(!showCartDetails)}>
                       {showCartDetails ? 'Fechar' : 'Ver itens'}
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={clearCart}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground" onClick={clearCart}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
-                    <Button size="sm" className="gap-1.5 font-semibold" onClick={() => setShowCartDetails(true)}>
-                      <ShoppingCart className="w-3.5 h-3.5" /> Finalizar
+                    <Button size="sm" className="gap-1 sm:gap-1.5 font-semibold text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3" onClick={() => setShowCartDetails(true)}>
+                      <ShoppingCart className="w-3 sm:w-3.5 h-3 sm:h-3.5" /> Finalizar
                     </Button>
                   </div>
                 </div>
