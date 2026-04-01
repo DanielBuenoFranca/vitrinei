@@ -176,7 +176,7 @@ const Landing = () => {
       }))),
       products: JSON.stringify(productCart.map(p => ({
         name: p.name, type: p.stockType, price: p.price, provider: p.provider,
-        rating: p.rating, distance: p.distance,
+        rating: p.rating, distance: p.distance, quantity: productQuantities.get(p.id) || 1,
       }))),
     });
     navigate(`/jornada-cliente?${params.toString()}`);
