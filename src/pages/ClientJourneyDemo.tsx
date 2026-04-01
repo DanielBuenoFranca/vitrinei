@@ -364,11 +364,11 @@ const ClientJourneyDemo = () => {
                             {prod.type === 'fisico' ? '📦' : '🌍'}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-[10px] font-semibold text-foreground truncate">{prod.name}</p>
+                            <p className="text-[10px] font-semibold text-foreground truncate">{prod.name}{(prod.quantity || 1) > 1 ? ` (x${prod.quantity})` : ''}</p>
                             <p className="text-[9px] text-muted-foreground">{prod.provider}</p>
                           </div>
                           <div className="text-right shrink-0">
-                            <p className="text-[10px] font-bold text-foreground">R$ {prod.price.toFixed(2)}</p>
+                            <p className="text-[10px] font-bold text-foreground">R$ {(prod.price * (prod.quantity || 1)).toFixed(2)}</p>
                             <Badge variant={prod.type === 'fisico' ? 'default' : 'secondary'} className="text-[8px] px-1.5 py-0">
                               {prod.type === 'fisico' ? 'Estoque' : 'Drop'}
                             </Badge>
