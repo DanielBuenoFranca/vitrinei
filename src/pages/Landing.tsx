@@ -614,9 +614,17 @@ const Landing = () => {
                                     className="px-4 py-3 bg-muted/30 border-b border-border flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors"
                                   >
                                     <div className="flex items-center gap-2">
-                                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                                        <Store className="w-4 h-4 text-primary" />
-                                      </div>
+                                      {(() => {
+                                        const prov = dbProviders.get(providerName);
+                                        const logo = prov?.logo_url;
+                                        return logo ? (
+                                          <img src={logo} alt={providerName} className="w-8 h-8 rounded-full object-cover border border-border shrink-0" />
+                                        ) : (
+                                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                            <Store className="w-4 h-4 text-primary" />
+                                          </div>
+                                        );
+                                      })()}
                                       <div>
                                         <div className="flex items-center gap-1.5 flex-wrap">
                                           <h3 className="font-semibold text-sm text-foreground">{providerName}</h3>
