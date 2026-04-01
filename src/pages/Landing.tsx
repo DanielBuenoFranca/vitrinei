@@ -1076,8 +1076,8 @@ const Landing = () => {
                         {Array.from(providerMap.entries()).map(([providerName, data]) => (
                           <div key={providerName} className="rounded-xl border border-border/50 overflow-hidden bg-card">
                             <button onClick={() => toggleProviderExpanded(providerName)}
-                              className="w-full flex items-center justify-between p-3 hover:bg-muted/30 transition-colors text-left">
-                              <div className="flex items-center gap-2 min-w-0">
+                              className="w-full flex items-center justify-between p-2.5 sm:p-3 hover:bg-muted/30 transition-colors text-left">
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
                                 {(() => {
                                   const prov = dbProviders.get(providerName);
                                   const logo = prov?.logo_url;
@@ -1089,8 +1089,13 @@ const Landing = () => {
                                     </div>
                                   );
                                 })()}
-                                <div className="min-w-0">
-                                  <p className="font-semibold text-xs text-foreground truncate">{providerName}</p>
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-semibold text-xs text-foreground truncate cursor-pointer hover:text-primary transition-colors"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const slug = providerName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                                      navigate(`/loja/${slug}`);
+                                    }}>{providerName}</p>
                                   <p className="text-[10px] text-muted-foreground">
                                     {data.services.length > 0 && `${data.services.length} serviço(s)`}
                                     {data.services.length > 0 && data.products.length > 0 && ' · '}
@@ -1098,7 +1103,17 @@ const Landing = () => {
                                   </p>
                                 </div>
                               </div>
-                              <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${expandedProviders.has(providerName) ? 'rotate-180' : ''}`} />
+                              <div className="flex items-center gap-1 shrink-0">
+                                <Button variant="default" size="sm" className="text-[9px] h-6 px-2 gap-0.5 font-semibold"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const slug = providerName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                                    navigate(`/loja/${slug}`);
+                                  }}>
+                                  <Store className="w-3 h-3" /> Loja
+                                </Button>
+                                <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${expandedProviders.has(providerName) ? 'rotate-180' : ''}`} />
+                              </div>
                             </button>
                             <AnimatePresence>
                               {expandedProviders.has(providerName) && (
