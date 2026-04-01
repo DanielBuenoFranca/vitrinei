@@ -227,6 +227,7 @@ const AdminPanel = () => {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Nome</TableHead>
+                          <TableHead>CPF/CNPJ</TableHead>
                           <TableHead>Tipo</TableHead>
                           <TableHead>Segmento</TableHead>
                           <TableHead>Cidade</TableHead>
