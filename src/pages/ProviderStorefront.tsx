@@ -43,14 +43,17 @@ const ProviderStorefront = () => {
   const [showShare, setShowShare] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Cart state
-  const [productCart, setProductCart] = useState<ProductItem[]>([]);
-  const [productQuantities, setProductQuantities] = useState<Map<number, number>>(new Map());
-  const [serviceCart, setServiceCart] = useState<ServiceCartItem[]>([]);
-  const [showCartDetails, setShowCartDetails] = useState(false);
-  const [clientCredit] = useState(100);
-  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'cartao' | null>(null);
-  const [paymentStep, setPaymentStep] = useState<'choose' | 'processing' | 'confirmed'>('choose');
+  // Cart from global context
+  const {
+    productCart, productQuantities, serviceCart,
+    showCartDetails, setShowCartDetails,
+    clientCredit, paymentMethod, setPaymentMethod,
+    paymentStep, setPaymentStep,
+    toggleProductInCart, removeProductFromCart, updateProductQuantity, isInProductCart,
+    toggleServiceInCart, isInServiceCart,
+    totalCartItems, totalCartValue, needsTopUp, topUpAmount, creditUsed, remainingCredit,
+    clearCart,
+  } = useCart();
 
   // Provider inventory
   const [providerServices, setProviderServices] = useState<any[]>([]);
