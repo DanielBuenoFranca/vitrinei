@@ -258,7 +258,9 @@ const ProviderStorefront = () => {
                 <div>
                   <h1 className="font-display text-xl font-bold text-foreground">{provider.name}</h1>
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
-                    <Badge className="bg-primary/10 text-primary border-primary/20 text-xs">{provider.segment}</Badge>
+                    {(Array.isArray(provider.segment) ? provider.segment : [provider.segment]).map(seg => (
+                      <Badge key={seg} className="bg-primary/10 text-primary border-primary/20 text-xs">{seg}</Badge>
+                    ))}
                     <Badge variant="outline" className="text-[10px]">{provider.type === 'mei' ? 'MEI' : 'Pessoa Física'}</Badge>
                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Star className="w-3 h-3 fill-accent text-accent" /> {provider.rating}
