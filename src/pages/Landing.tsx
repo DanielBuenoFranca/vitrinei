@@ -1422,12 +1422,6 @@ const Landing = () => {
           </motion.div>
           );
         })()}
-                  )}
-                </AnimatePresence>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
       </AnimatePresence>
 
       {/* Footer */}
