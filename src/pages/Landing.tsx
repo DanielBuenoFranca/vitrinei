@@ -212,9 +212,17 @@ const Landing = () => {
     if (!query && activeSegments.length === 0) {
       rawResult = { products: getAllProducts(), services: getAllServices() };
     } else if (!query && activeSegments.length > 0) {
-      const allSvcs = getAllServices().filter((r: any) => activeSegments.includes(r.segment));
-      const provNames = new Set(allSvcs.map((s: any) => s.provider));
-      const allProds = getAllProducts().filter((p: any) => provNames.has(p.provider));
+      const norm = (v: string) => v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+      const activeNorm = activeSegments.map(norm);
+      const allSvcs = getAllServices().filter((r: any) => activeNorm.includes(norm(r.segment)));
+      const provNamesFromSvcs = new Set(allSvcs.map((s: any) => s.provider));
+      // Also include providers that belong to the segment (even without services)
+      const provNamesFromMap = new Set<string>();
+      providerSegmentMap.forEach((segs, provName) => {
+        if (segs.some(s => activeNorm.includes(norm(s)))) provNamesFromMap.add(provName);
+      });
+      const allProvNames = new Set([...provNamesFromSvcs, ...provNamesFromMap]);
+      const allProds = getAllProducts().filter((p: any) => allProvNames.has(p.provider));
       rawResult = { products: allProds, services: allSvcs };
     } else {
       const result = semanticSearch(query);
