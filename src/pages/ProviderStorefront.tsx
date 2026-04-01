@@ -30,7 +30,7 @@ interface ServiceCartItem {
 interface ProviderData {
   id: number;
   name: string;
-  segment: string;
+  segment: string[];
   type: string;
   rating: number;
   distance: string;
@@ -81,7 +81,8 @@ const ProviderStorefront = () => {
           setProvider(found as ProviderData);
 
           // Load segment tags
-          const { data: segs } = await supabase.from('segments').select('*').eq('name', found.segment);
+          const firstSeg = Array.isArray(found.segment) ? found.segment[0] : found.segment;
+          const { data: segs } = await supabase.from('segments').select('*').eq('name', firstSeg);
           if (segs && segs[0]) setSegmentTags(segs[0].suggested_tags || []);
 
           // Filter inventory to this provider
@@ -164,7 +165,9 @@ const ProviderStorefront = () => {
 
   const segIcon = (() => {
     if (!provider) return Sparkles;
-    const s = staticSegments.find(seg => seg.id === provider.segment || seg.label.toLowerCase().includes(provider.segment.toLowerCase()));
+    const segArr = Array.isArray(provider.segment) ? provider.segment : [provider.segment];
+    const firstSeg = segArr[0] || '';
+    const s = staticSegments.find(seg => seg.id === firstSeg || seg.label.toLowerCase().includes(firstSeg.toLowerCase()));
     return s?.icon || Store;
   })();
   const SegIcon = segIcon;
@@ -255,7 +258,9 @@ const ProviderStorefront = () => {
                 <div>
                   <h1 className="font-display text-xl font-bold text-foreground">{provider.name}</h1>
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
-                    <Badge className="bg-primary/10 text-primary border-primary/20 text-xs">{provider.segment}</Badge>
+                    {(Array.isArray(provider.segment) ? provider.segment : [provider.segment]).map(seg => (
+                      <Badge key={seg} className="bg-primary/10 text-primary border-primary/20 text-xs">{seg}</Badge>
+                    ))}
                     <Badge variant="outline" className="text-[10px]">{provider.type === 'mei' ? 'MEI' : 'Pessoa Física'}</Badge>
                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Star className="w-3 h-3 fill-accent text-accent" /> {provider.rating}

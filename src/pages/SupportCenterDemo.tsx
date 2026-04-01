@@ -95,7 +95,7 @@ const SupportCenterDemo = () => {
   const [showProviderForm, setShowProviderForm] = useState(false);
   const [showProviderChoice, setShowProviderChoice] = useState(false);
   const [providerFilter, setProviderFilter] = useState('');
-  const [existingProviders, setExistingProviders] = useState<Array<{id: number; name: string; segment: string; distance: string; rating: number; phone: string | null; email: string | null; city: string | null; address: string | null; type: string}>>([]);
+  const [existingProviders, setExistingProviders] = useState<Array<{id: number; name: string; segment: string[]; distance: string; rating: number; phone: string | null; email: string | null; city: string | null; address: string | null; type: string}>>([]);
   const [showServiceForm, setShowServiceForm] = useState(false);
   const [showProductForm, setShowProductForm] = useState(false);
   const [registeredProviders, setRegisteredProviders] = useState<(ProviderFormData & { rating: number })[]>([]);
@@ -508,21 +508,22 @@ const SupportCenterDemo = () => {
   };
 
   const handleSelectExistingProvider = (provider: typeof existingProviders[0]) => {
+    const segStr = Array.isArray(provider.segment) ? provider.segment.join(', ') : provider.segment;
     const providerData: ProviderFormData & { rating: number } = {
       name: provider.name,
-      specialty: provider.segment,
+      specialty: segStr,
       phone: provider.phone || '',
       email: provider.email || '',
       address: provider.address || '',
       city: provider.city || '',
       distance: provider.distance,
-      segment: provider.segment,
+      segment: segStr,
       rating: provider.rating,
     };
     setRegisteredProviders(prev => [...prev, providerData]);
     addLog({
       title: `Prestador selecionado: ${provider.name}`,
-      description: `${provider.segment} • ${provider.distance} • ${provider.city || 'Região local'}`,
+      description: `${segStr} • ${provider.distance} • ${provider.city || 'Região local'}`,
       status: 'done',
       icon: <Users className="w-4 h-4" />,
       details: (

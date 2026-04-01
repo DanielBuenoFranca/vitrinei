@@ -15,9 +15,10 @@ import { SegmentForm } from '@/components/admin/SegmentForm';
 import { ClearDataDialog } from '@/components/admin/ClearDataDialog';
 
 interface Provider {
-  id: number; name: string; type: string; segment: string;
+  id: number; name: string; type: string; segment: string[];
   phone: string | null; email: string | null; address: string | null; city: string | null;
   distance: string; rating: number; active: boolean; created_at: string;
+  cpf_cnpj: string | null;
 }
 
 interface DynamicService {
@@ -170,7 +171,7 @@ const AdminPanel = () => {
                       </TableHeader>
                       <TableBody>
                         {segments.map(seg => {
-                          const segProviders = providers.filter(p => p.segment === seg.name).length;
+                          const segProviders = providers.filter(p => p.segment?.includes(seg.name)).length;
                           const segServices = services.filter(s => s.segment === seg.name).length;
                           // Products don't have segment directly but through provider
                           return (
@@ -226,6 +227,7 @@ const AdminPanel = () => {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Nome</TableHead>
+                          <TableHead>CPF/CNPJ</TableHead>
                           <TableHead>Tipo</TableHead>
                           <TableHead>Segmento</TableHead>
                           <TableHead>Cidade</TableHead>
@@ -244,12 +246,13 @@ const AdminPanel = () => {
                           return (
                             <TableRow key={prov.id}>
                               <TableCell className="font-medium">{prov.name}</TableCell>
+                              <TableCell className="text-xs text-muted-foreground font-mono">{prov.cpf_cnpj || '—'}</TableCell>
                               <TableCell>
                                 <Badge variant={prov.type === 'mei' ? 'default' : 'secondary'}>
                                   {prov.type === 'mei' ? 'MEI' : 'PF'}
                                 </Badge>
                               </TableCell>
-                              <TableCell><Badge variant="outline">{prov.segment}</Badge></TableCell>
+                              <TableCell><div className="flex flex-wrap gap-1">{(prov.segment || []).map(s => <Badge key={s} variant="outline">{s}</Badge>)}</div></TableCell>
                               <TableCell className="text-sm text-muted-foreground">{prov.city || '—'}</TableCell>
                               <TableCell>{prov.distance}</TableCell>
                               <TableCell>⭐ {prov.rating}</TableCell>

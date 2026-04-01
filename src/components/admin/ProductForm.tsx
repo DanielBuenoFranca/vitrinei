@@ -28,7 +28,7 @@ interface DynamicProduct {
 interface Provider {
   id: number;
   name: string;
-  segment: string;
+  segment: string[];
 }
 
 interface Segment {
@@ -99,8 +99,9 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
       if (product.provider_id) {
         const prov = providers.find(p => p.id === product.provider_id);
         if (prov) {
-          setSelectedSegments([prov.segment]);
-          loadSegmentTags([prov.segment]);
+          const provSegs = Array.isArray(prov.segment) ? prov.segment : [prov.segment];
+          setSelectedSegments(provSegs);
+          loadSegmentTags(provSegs);
         }
       }
     } else {
@@ -134,11 +135,10 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
     const prov = providers.find(p => p.id === Number(providerId));
     if (prov) {
       setForm(f => ({ ...f, provider: prov.name, provider_id: prov.id }));
-      if (!selectedSegments.includes(prov.segment)) {
-        const next = [...selectedSegments, prov.segment];
-        setSelectedSegments(next);
-        loadSegmentTags(next);
-      }
+      const provSegs = Array.isArray(prov.segment) ? prov.segment : [prov.segment];
+      const merged = [...new Set([...selectedSegments, ...provSegs])];
+      setSelectedSegments(merged);
+      loadSegmentTags(merged);
     }
   };
 
@@ -230,7 +230,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
               <Select value={form.provider_id ? String(form.provider_id) : ''} onValueChange={handleProviderSelect}>
                 <SelectTrigger><SelectValue placeholder="Selecione um prestador" /></SelectTrigger>
                 <SelectContent>
-                  {providers.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.name} ({p.segment})</SelectItem>)}
+                  {providers.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.name} ({(p.segment || []).join(', ')})</SelectItem>)}
                 </SelectContent>
               </Select>
             ) : (

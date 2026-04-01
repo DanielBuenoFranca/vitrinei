@@ -31,7 +31,7 @@ interface DynamicService {
 interface Provider {
   id: number;
   name: string;
-  segment: string;
+  segment: string[];
 }
 
 interface AvailableProduct {
@@ -103,7 +103,8 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
   const handleProviderSelect = (providerId: string) => {
     const prov = providers.find(p => p.id === Number(providerId));
     if (prov) {
-      setForm(f => ({ ...f, provider: prov.name, provider_id: prov.id, segment: prov.segment }));
+      const firstSeg = Array.isArray(prov.segment) ? prov.segment[0] || '' : prov.segment;
+      setForm(f => ({ ...f, provider: prov.name, provider_id: prov.id, segment: firstSeg }));
     }
   };
 
