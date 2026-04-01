@@ -49,6 +49,7 @@ const App = () => {
           <Route path="/demos" element={<Demos />} />
           <Route path="/central-atendimento" element={<SupportCenterDemo />} />
           <Route path="/admin" element={<AdminPanel />} />
+          <Route path="/loja/:slug" element={<ProviderStorefront />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

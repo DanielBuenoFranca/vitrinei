@@ -656,6 +656,14 @@ const Landing = () => {
                                           )}
                                         </div>
                                       )}
+                                      <Button variant="ghost" size="sm" className="text-[10px] h-6 px-2 gap-1 text-primary hover:text-primary"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const slug = providerName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                                          navigate(`/loja/${slug}`);
+                                        }}>
+                                        <Store className="w-3 h-3" /> Loja
+                                      </Button>
                                       <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${expandedProviders.has(providerName) ? 'rotate-180' : ''}`} />
                                     </div>
                                   </div>
