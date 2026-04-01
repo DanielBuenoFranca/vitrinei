@@ -216,7 +216,7 @@ const Landing = () => {
   // Load data from database on mount
   useEffect(() => {
     const loadData = async () => {
-      await reloadDynamicEntries();
+      await Promise.all([reloadDynamicEntries(), loadSegmentTagsCache()]);
       const { data: segs } = await supabase.from('segments').select('*').order('name');
       if (segs) {
         setDbSegments(segs.map((s: any) => ({ id: s.name, label: s.name, name: s.name, tags: s.suggested_tags || [] })));
