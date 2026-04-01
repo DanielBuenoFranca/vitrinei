@@ -60,6 +60,8 @@ const Landing = () => {
   const [serviceCart, setServiceCart] = useState<ServiceCartItem[]>([]);
   const [showCartDetails, setShowCartDetails] = useState(false);
   const [pendingChatSuggestions, setPendingChatSuggestions] = useState<Map<number, Set<string>>>(new Map());
+  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'cartao' | null>(null);
+  const [paymentStep, setPaymentStep] = useState<'choose' | 'processing' | 'confirmed'>('choose');
   const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
   const [dbSegments, setDbSegments] = useState<{ id: string; label: string; name: string; tags: string[] }[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
