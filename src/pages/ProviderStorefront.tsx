@@ -14,18 +14,7 @@ import {
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { segments as staticSegments, getAllServices, getAllProducts, reloadDynamicEntries, loadSegmentTagsCache, type ProductItem } from '@/data/searchData';
 import { supabase } from '@/integrations/supabase/client';
-
-interface ServiceCartItem {
-  id: number;
-  name: string;
-  segment: string;
-  provider: string;
-  price: number;
-  rating: number;
-  distance: string;
-  time: string;
-  products: string[];
-}
+import { useCart } from '@/contexts/CartContext';
 
 interface ProviderData {
   id: number;
