@@ -290,9 +290,10 @@ const CartBar = () => {
               </CardContent>
             </Card>
           </motion.div>
+    </div>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 };
 
