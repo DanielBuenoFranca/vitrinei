@@ -152,9 +152,17 @@ const Landing = () => {
   useEffect(() => {
     const loadData = async () => {
       await Promise.all([reloadDynamicEntries(), loadSegmentTagsCache()]);
-      const { data: segs } = await supabase.from('segments').select('*').order('name');
+      const [{ data: segs }, { data: provs }] = await Promise.all([
+        supabase.from('segments').select('*').order('name'),
+        supabase.from('providers').select('name, segment').eq('active', true),
+      ]);
       if (segs) {
         setDbSegments(segs.map((s: any) => ({ id: s.name, label: s.name, name: s.name, tags: s.suggested_tags || [] })));
+      }
+      if (provs) {
+        const map = new Map<string, string[]>();
+        provs.forEach((p: any) => map.set(p.name, p.segment || []));
+        setProviderSegmentMap(map);
       }
       setDataLoaded(true);
       setSearchExecuted(true);
