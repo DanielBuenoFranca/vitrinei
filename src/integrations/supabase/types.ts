@@ -137,6 +137,7 @@ export type Database = {
           active: boolean
           address: string | null
           city: string | null
+          cpf_cnpj: string | null
           created_at: string
           distance: string
           email: string | null
@@ -145,13 +146,14 @@ export type Database = {
           name: string
           phone: string | null
           rating: number
-          segment: string
+          segment: string[]
           type: string
         }
         Insert: {
           active?: boolean
           address?: string | null
           city?: string | null
+          cpf_cnpj?: string | null
           created_at?: string
           distance?: string
           email?: string | null
@@ -160,13 +162,14 @@ export type Database = {
           name: string
           phone?: string | null
           rating?: number
-          segment: string
+          segment: string[]
           type?: string
         }
         Update: {
           active?: boolean
           address?: string | null
           city?: string | null
+          cpf_cnpj?: string | null
           created_at?: string
           distance?: string
           email?: string | null
@@ -175,7 +178,7 @@ export type Database = {
           name?: string
           phone?: string | null
           rating?: number
-          segment?: string
+          segment?: string[]
           type?: string
         }
         Relationships: []
