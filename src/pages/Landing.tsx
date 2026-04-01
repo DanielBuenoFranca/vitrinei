@@ -241,27 +241,46 @@ const Landing = () => {
     });
   };
 
+  // ── DB provider names (real providers) ──
+  const [dbProviderNames, setDbProviderNames] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    supabase.from('providers').select('name').then(({ data }) => {
+      if (data) setDbProviderNames(new Set(data.map((p: any) => p.name)));
+    });
+  }, []);
+
+  const isSimulatedProvider = (providerName: string) => !dbProviderNames.has(providerName);
+
   // ── Motor de busca semântica universal ──
-  // Executa APENAS após o usuário clicar em Buscar ou pressionar Enter
-  // searchVersion forces re-evaluation on each click
   const searchResult = (() => {
     void searchVersion;
     if (!searchExecuted) return { products: [] as ProductItem[], services: [] as typeof mockResults, followUp: undefined, needLabel: undefined, suggestedServices: undefined };
     const query = executedQuery.toLowerCase().trim();
+    let rawResult: SearchResult;
     if (!query && activeSegments.length === 0) {
-      return { products: getAllProducts(), services: getAllServices(), followUp: undefined, needLabel: undefined, suggestedServices: undefined };
-    }
-    if (!query && activeSegments.length > 0) {
+      rawResult = { products: getAllProducts(), services: getAllServices() };
+    } else if (!query && activeSegments.length > 0) {
       const allSvcs = getAllServices().filter((r: any) => activeSegments.includes(r.segment));
       const provNames = new Set(allSvcs.map((s: any) => s.provider));
       const allProds = getAllProducts().filter((p: any) => provNames.has(p.provider));
-      return { products: allProds, services: allSvcs, followUp: undefined, needLabel: undefined, suggestedServices: undefined };
+      rawResult = { products: allProds, services: allSvcs };
+    } else {
+      const result = semanticSearch(query);
+      const filteredServices = activeSegments.length === 0
+        ? result.services
+        : result.services.filter(r => activeSegments.includes(r.segment));
+      rawResult = { ...result, services: filteredServices };
     }
-    const result = semanticSearch(query);
-    const filteredServices = activeSegments.length === 0
-      ? result.services
-      : result.services.filter(r => activeSegments.includes(r.segment));
-    return { ...result, services: filteredServices };
+
+    // Filter simulated providers if checkbox is unchecked
+    if (!showSimulated) {
+      rawResult = {
+        ...rawResult,
+        services: rawResult.services.filter(s => !isSimulatedProvider(s.provider)),
+        products: rawResult.products.filter(p => !isSimulatedProvider(p.provider)),
+      };
+    }
+    return rawResult;
   })();
 
   const filteredResults = searchResult.services;
