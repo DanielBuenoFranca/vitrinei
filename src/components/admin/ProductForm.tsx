@@ -99,8 +99,9 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
       if (product.provider_id) {
         const prov = providers.find(p => p.id === product.provider_id);
         if (prov) {
-          setSelectedSegments([prov.segment]);
-          loadSegmentTags([prov.segment]);
+          const provSegs = Array.isArray(prov.segment) ? prov.segment : [prov.segment];
+          setSelectedSegments(provSegs);
+          loadSegmentTags(provSegs);
         }
       }
     } else {
