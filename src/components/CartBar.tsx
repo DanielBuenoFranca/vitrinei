@@ -12,6 +12,7 @@ import { useCart } from '@/contexts/CartContext';
 
 const CartBar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const {
     productCart, productQuantities, serviceCart,
     showCartDetails, setShowCartDetails,
