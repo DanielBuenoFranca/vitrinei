@@ -473,7 +473,7 @@ const ProviderStorefront = () => {
               const { data: freshProv } = await supabase.from('providers').select('*').eq('id', provider.id).single();
               if (freshProv) {
                 setProvider(freshProv as ProviderData);
-                setConfig({ ...defaultConfig, ...(freshProv.storefront_config || {}) });
+                setConfig({ ...defaultConfig, ...((freshProv.storefront_config as StorefrontConfig) || {}) });
               }
               await loadProviderData(freshProv as ProviderData);
             }}
