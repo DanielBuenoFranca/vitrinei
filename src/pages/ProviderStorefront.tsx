@@ -137,7 +137,7 @@ const ProviderStorefront = () => {
         if (found) {
           const provData = found as ProviderData;
           setProvider(provData);
-          setConfig({ ...defaultConfig, ...(provData.storefront_config || {}) });
+          setConfig({ ...defaultConfig, ...((provData.storefront_config as StorefrontConfig) || {}) });
 
           const firstSeg = Array.isArray(found.segment) ? found.segment[0] : found.segment;
           const { data: segs } = await supabase.from('segments').select('*').eq('name', firstSeg);
