@@ -147,6 +147,7 @@ export type Database = {
           phone: string | null
           rating: number
           segment: string[]
+          storefront_config: Json
           type: string
         }
         Insert: {
@@ -163,6 +164,7 @@ export type Database = {
           phone?: string | null
           rating?: number
           segment: string[]
+          storefront_config?: Json
           type?: string
         }
         Update: {
@@ -179,6 +181,7 @@ export type Database = {
           phone?: string | null
           rating?: number
           segment?: string[]
+          storefront_config?: Json
           type?: string
         }
         Relationships: []

@@ -583,8 +583,9 @@ const Landing = () => {
                                       <div className="min-w-0 flex-1">
                                         <div className="flex items-center gap-1.5 flex-wrap">
                                           <h3
-                                            className="font-semibold text-sm text-foreground cursor-pointer hover:text-primary transition-colors truncate"
+                                            className={`font-semibold text-sm text-foreground truncate ${dbProviderNames.has(providerName) ? 'cursor-pointer hover:text-primary transition-colors' : ''}`}
                                             onClick={(e) => {
+                                              if (!dbProviderNames.has(providerName)) return;
                                               e.stopPropagation();
                                               const slug = providerName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
                                               navigate(`/loja/${slug}`);
@@ -603,6 +604,7 @@ const Landing = () => {
                                       </div>
                                       </div>
                                       <div className="flex items-center gap-1.5 shrink-0">
+                                        {dbProviderNames.has(providerName) && (
                                         <Button variant="default" size="sm" className="text-[10px] h-7 px-2.5 gap-1 font-semibold"
                                           onClick={(e) => {
                                             e.stopPropagation();
@@ -611,6 +613,7 @@ const Landing = () => {
                                           }}>
                                           <Store className="w-3.5 h-3.5" /> Loja
                                         </Button>
+                                        )}
                                         <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${expandedProviders.has(providerName) ? 'rotate-180' : ''}`} />
                                       </div>
                                     </div>
