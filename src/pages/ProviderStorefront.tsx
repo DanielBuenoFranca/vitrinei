@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -13,7 +14,8 @@ import {
   CreditCard, AlertTriangle, Minus, Share2, ArrowLeft, ShoppingBag,
   Wrench as WrenchIcon, Phone, Mail, MapPinned, Copy, ExternalLink,
   Pencil, Palette, Settings, Eye, Facebook, Twitter, Instagram, Link2,
-  Image as ImageIcon
+  Image as ImageIcon, Send, Undo2, RotateCcw, ChevronLeft, ChevronRight,
+  MessageCircle
 } from 'lucide-react';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { segments as staticSegments, getAllServices, getAllProducts, reloadDynamicEntries, loadSegmentTagsCache, type ProductItem } from '@/data/searchData';
@@ -48,24 +50,43 @@ interface StorefrontConfig {
   bannerColor1?: string;
   bannerColor2?: string;
   accentColor?: string;
+  backgroundColor?: string;
   bannerText?: string;
   showPhone?: boolean;
   showEmail?: boolean;
   showAddress?: boolean;
+  banners?: BannerSlide[];
 }
 
+interface BannerSlide {
+  id: string;
+  color1: string;
+  color2: string;
+  text: string;
+  imageUrl?: string;
+}
+
+const BANNER_TEXT_MAX = 40;
+
 const defaultConfig: StorefrontConfig = {
-  bannerColor1: 'hsl(var(--primary))',
-  bannerColor2: 'hsl(var(--accent))',
+  bannerColor1: '#6366f1',
+  bannerColor2: '#a855f7',
   accentColor: '',
+  backgroundColor: '',
   bannerText: '',
   showPhone: true,
   showEmail: true,
   showAddress: true,
+  banners: [],
 };
 
 const slugify = (str: string) =>
   str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
 
 const ProviderStorefront = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -80,7 +101,19 @@ const ProviderStorefront = () => {
 
   // Customization
   const [config, setConfig] = useState<StorefrontConfig>(defaultConfig);
+  const [configHistory, setConfigHistory] = useState<StorefrontConfig[]>([]);
+  const [originalConfig, setOriginalConfig] = useState<StorefrontConfig>(defaultConfig);
   const [savingConfig, setSavingConfig] = useState(false);
+
+  // Banner carousel
+  const [currentBannerIdx, setCurrentBannerIdx] = useState(0);
+  const bannerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // AI Chat
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   const {
     productCart, productQuantities, serviceCart,
@@ -137,7 +170,9 @@ const ProviderStorefront = () => {
         if (found) {
           const provData = found as ProviderData;
           setProvider(provData);
-          setConfig({ ...defaultConfig, ...((provData.storefront_config as StorefrontConfig) || {}) });
+          const cfg = { ...defaultConfig, ...((provData.storefront_config as StorefrontConfig) || {}) };
+          setConfig(cfg);
+          setOriginalConfig(JSON.parse(JSON.stringify(cfg)));
 
           const firstSeg = Array.isArray(found.segment) ? found.segment[0] : found.segment;
           const { data: segs } = await supabase.from('segments').select('*').eq('name', firstSeg);
@@ -153,6 +188,38 @@ const ProviderStorefront = () => {
     };
     load();
   }, [slug]);
+
+  // Banner auto-rotation
+  const banners = config.banners && config.banners.length > 0 ? config.banners : null;
+  const totalBanners = banners ? banners.length : 1;
+
+  useEffect(() => {
+    if (!banners || banners.length <= 1 || editMode) return;
+    bannerIntervalRef.current = setInterval(() => {
+      setCurrentBannerIdx(prev => (prev + 1) % banners.length);
+    }, 5000);
+    return () => { if (bannerIntervalRef.current) clearInterval(bannerIntervalRef.current); };
+  }, [banners, editMode]);
+
+  // Chat scroll
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
+
+  // When edit mode turns off, close chat
+  useEffect(() => {
+    if (!editMode) {
+      setChatMessages([]);
+      setChatInput('');
+      setActiveTab('catalog');
+    } else {
+      // Welcome message
+      setChatMessages([{
+        role: 'assistant',
+        content: `👋 Olá! Sou seu assistente de design. Estou aqui para te ajudar a deixar sua loja com a sua cara!\n\nPosso alterar cores, banners, textos, fundos e muito mais. O que você gostaria de mudar? 🎨`
+      }]);
+    }
+  }, [editMode]);
 
   const filteredServices = searchQuery.trim()
     ? providerServices.filter((s: any) => {
@@ -181,13 +248,142 @@ const ProviderStorefront = () => {
     await loadProviderData();
   };
 
+  const pushConfigHistory = useCallback(() => {
+    setConfigHistory(prev => [...prev, JSON.parse(JSON.stringify(config))]);
+  }, [config]);
+
+  const undoConfig = useCallback(() => {
+    setConfigHistory(prev => {
+      if (prev.length === 0) return prev;
+      const last = prev[prev.length - 1];
+      setConfig(last);
+      return prev.slice(0, -1);
+    });
+    toast.info('Alteração desfeita');
+  }, []);
+
+  const resetConfig = useCallback(() => {
+    pushConfigHistory();
+    setConfig(JSON.parse(JSON.stringify(originalConfig)));
+    toast.info('Loja restaurada ao padrão original');
+  }, [originalConfig, pushConfigHistory]);
+
+  const applyAiChanges = useCallback((changes: Record<string, any>) => {
+    pushConfigHistory();
+    setConfig(prev => {
+      const next = { ...prev };
+      Object.entries(changes).forEach(([key, value]) => {
+        (next as any)[key] = value;
+      });
+      return next;
+    });
+    toast.success('Alteração visual aplicada!');
+  }, [pushConfigHistory]);
+
   const saveConfig = async () => {
     if (!provider) return;
     setSavingConfig(true);
     const { error } = await supabase.from('providers').update({ storefront_config: config as any }).eq('id', provider.id);
     if (error) { toast.error('Erro ao salvar: ' + error.message); }
-    else { toast.success('Visual da loja salvo!'); }
+    else {
+      toast.success('Visual da loja salvo!');
+      setOriginalConfig(JSON.parse(JSON.stringify(config)));
+      setConfigHistory([]);
+    }
     setSavingConfig(false);
+  };
+
+  // AI Chat
+  const sendChatMessage = async () => {
+    const text = chatInput.trim();
+    if (!text || chatLoading || !provider) return;
+
+    const userMsg: ChatMessage = { role: 'user', content: text };
+    setChatMessages(prev => [...prev, userMsg]);
+    setChatInput('');
+    setChatLoading(true);
+
+    const allMessages = [...chatMessages, userMsg];
+
+    try {
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/storefront-ai-designer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          messages: allMessages.map(m => ({ role: m.role, content: m.content })),
+          providerName: provider.name,
+          currentConfig: config,
+        }),
+      });
+
+      if (!resp.ok || !resp.body) {
+        const errData = await resp.json().catch(() => ({ error: 'Erro desconhecido' }));
+        setChatMessages(prev => [...prev, { role: 'assistant', content: `❌ ${errData.error || 'Erro ao processar'}` }]);
+        setChatLoading(false);
+        return;
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let assistantText = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        let newlineIdx: number;
+        while ((newlineIdx = buffer.indexOf('\n')) !== -1) {
+          let line = buffer.slice(0, newlineIdx);
+          buffer = buffer.slice(newlineIdx + 1);
+          if (line.endsWith('\r')) line = line.slice(0, -1);
+          if (line.startsWith(':') || line.trim() === '') continue;
+          if (!line.startsWith('data: ')) continue;
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === '[DONE]') break;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) {
+              assistantText += content;
+              setChatMessages(prev => {
+                const last = prev[prev.length - 1];
+                if (last?.role === 'assistant' && prev.length > allMessages.length) {
+                  return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantText } : m);
+                }
+                return [...prev, { role: 'assistant', content: assistantText }];
+              });
+            }
+          } catch { /* partial JSON */ }
+        }
+      }
+
+      // Parse AI actions from response
+      if (assistantText) {
+        const actionMatch = assistantText.match(/\{"action"\s*:\s*"([^"]+)"(?:\s*,\s*"changes"\s*:\s*(\{[^}]+\}))?/);
+        if (actionMatch) {
+          const action = actionMatch[1];
+          if (action === 'undo') {
+            undoConfig();
+          } else if (action === 'reset') {
+            resetConfig();
+          } else if (action === 'apply_change' && actionMatch[2]) {
+            try {
+              const changes = JSON.parse(actionMatch[2]);
+              applyAiChanges(changes);
+            } catch { /* ignore parse errors */ }
+          }
+        }
+      }
+    } catch (err) {
+      setChatMessages(prev => [...prev, { role: 'assistant', content: '❌ Erro de conexão. Tente novamente.' }]);
+    }
+
+    setChatLoading(false);
   };
 
   const navigateToCheckout = () => {
@@ -200,11 +396,7 @@ const ProviderStorefront = () => {
   };
 
   const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/loja/${slug}` : '';
-  const copyLink = () => {
-    navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const copyLink = () => { navigator.clipboard.writeText(shareUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); };
   const shareWhatsApp = () => window.open(`https://wa.me/?text=${encodeURIComponent(`Confira a loja de ${provider?.name}: ${shareUrl}`)}`, '_blank');
   const shareFacebook = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
   const shareTwitter = () => window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(`Confira a loja de ${provider?.name}!`)}`, '_blank');
@@ -218,7 +410,50 @@ const ProviderStorefront = () => {
   })();
   const SegIcon = segIcon;
 
-  const bannerGradient = `linear-gradient(135deg, ${config.bannerColor1 || 'hsl(var(--primary))'} 0%, ${config.bannerColor2 || 'hsl(var(--accent))'} 100%)`;
+  // Current banner
+  const getCurrentBanner = (): { gradient: string; text: string; imageUrl?: string } => {
+    if (banners && banners.length > 0) {
+      const b = banners[currentBannerIdx % banners.length];
+      return {
+        gradient: `linear-gradient(135deg, ${b.color1 || '#6366f1'} 0%, ${b.color2 || '#a855f7'} 100%)`,
+        text: b.text || '',
+        imageUrl: b.imageUrl,
+      };
+    }
+    return {
+      gradient: `linear-gradient(135deg, ${config.bannerColor1 || '#6366f1'} 0%, ${config.bannerColor2 || '#a855f7'} 100%)`,
+      text: config.bannerText || '',
+    };
+  };
+  const currentBanner = getCurrentBanner();
+
+  // Add/edit/remove banner slides
+  const addBannerSlide = () => {
+    if ((config.banners || []).length >= 3) { toast.error('Máximo de 3 banners'); return; }
+    const id = Date.now().toString();
+    pushConfigHistory();
+    setConfig(prev => ({
+      ...prev,
+      banners: [...(prev.banners || []), { id, color1: '#6366f1', color2: '#a855f7', text: '' }],
+    }));
+  };
+
+  const updateBannerSlide = (idx: number, updates: Partial<BannerSlide>) => {
+    pushConfigHistory();
+    setConfig(prev => ({
+      ...prev,
+      banners: (prev.banners || []).map((b, i) => i === idx ? { ...b, ...updates } : b),
+    }));
+  };
+
+  const removeBannerSlide = (idx: number) => {
+    pushConfigHistory();
+    setConfig(prev => ({
+      ...prev,
+      banners: (prev.banners || []).filter((_, i) => i !== idx),
+    }));
+    toast.success('Banner removido');
+  };
 
   if (loading) {
     return (
@@ -242,7 +477,7 @@ const ProviderStorefront = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen pb-24" style={{ backgroundColor: config.backgroundColor || undefined }}>
       {/* Top bar */}
       <nav className="fixed top-0 w-full z-50 bg-card/80 backdrop-blur-lg border-b border-border">
         <div className="container mx-auto flex items-center justify-between h-14 px-4">
@@ -256,18 +491,21 @@ const ProviderStorefront = () => {
             <span className="font-display text-sm font-bold text-foreground">EcoMEI</span>
             <ThemeSwitcher />
           </div>
-          <div className="flex items-center gap-1.5">
-            <Button
-              variant={editMode ? 'default' : 'outline'}
-              size="sm"
-              className="gap-1.5 text-xs h-8"
-              onClick={() => setEditMode(!editMode)}
-            >
-              {editMode ? <Eye className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
-              {editMode ? 'Visualizar' : 'Gerenciar'}
-            </Button>
+          <div className="flex items-center gap-2">
+            {/* Toggle switch for edit mode */}
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="edit-toggle" className="text-[10px] text-muted-foreground cursor-pointer">
+                {editMode ? '🎨 Editando' : '👁️ Vitrine'}
+              </Label>
+              <Switch
+                id="edit-toggle"
+                checked={editMode}
+                onCheckedChange={setEditMode}
+                className="data-[state=checked]:bg-primary"
+              />
+            </div>
             <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => setShowShare(!showShare)}>
-              <Share2 className="w-3.5 h-3.5" /> Compartilhar
+              <Share2 className="w-3.5 h-3.5" />
             </Button>
           </div>
         </div>
@@ -278,8 +516,7 @@ const ProviderStorefront = () => {
         {showShare && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
             className="fixed top-14 right-4 z-50 bg-card border border-border rounded-xl shadow-xl p-4 w-72">
-            <p className="text-xs font-semibold text-foreground mb-1">Compartilhar loja nas redes</p>
-            <p className="text-[10px] text-muted-foreground mb-3">Divulgue sua loja para atrair mais clientes</p>
+            <p className="text-xs font-semibold text-foreground mb-1">Compartilhar loja</p>
             <div className="bg-muted/50 rounded-lg p-2 mb-3 flex items-center gap-2">
               <Link2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
               <span className="text-[10px] text-foreground truncate flex-1">{shareUrl}</span>
@@ -310,13 +547,55 @@ const ProviderStorefront = () => {
         <div className="container mx-auto max-w-3xl">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
             className="rounded-2xl border border-border bg-card overflow-hidden">
-            {/* Banner gradient - customizable */}
-            <div className="h-28 relative" style={{ background: bannerGradient }}>
-              {config.bannerText && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-white/90 font-bold text-lg drop-shadow-lg">{config.bannerText}</span>
+            {/* Banner with carousel */}
+            <div className="h-32 relative overflow-hidden">
+              {/* Background image or gradient */}
+              {currentBanner.imageUrl ? (
+                <div className="absolute inset-0">
+                  <img src={currentBanner.imageUrl} alt="Banner" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/30" />
+                </div>
+              ) : (
+                <div className="absolute inset-0" style={{ background: currentBanner.gradient }} />
+              )}
+
+              {/* Banner text */}
+              {currentBanner.text && (
+                <div className="absolute inset-0 flex items-center justify-center px-6">
+                  <span className="text-white font-bold text-lg drop-shadow-lg text-center leading-snug max-w-[80%] truncate">
+                    {currentBanner.text}
+                  </span>
                 </div>
               )}
+
+              {/* Carousel indicators */}
+              {totalBanners > 1 && (
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                  {Array.from({ length: totalBanners }).map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentBannerIdx(i)}
+                      className={`w-2 h-2 rounded-full transition-all ${i === currentBannerIdx % totalBanners ? 'bg-white w-4' : 'bg-white/50'}`}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Carousel arrows */}
+              {totalBanners > 1 && (
+                <>
+                  <button onClick={() => setCurrentBannerIdx(prev => (prev - 1 + totalBanners) % totalBanners)}
+                    className="absolute left-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-black/30 flex items-center justify-center text-white hover:bg-black/50">
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => setCurrentBannerIdx(prev => (prev + 1) % totalBanners)}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-black/30 flex items-center justify-center text-white hover:bg-black/50">
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </>
+              )}
+
+              {/* Logo */}
               <div className="absolute -bottom-8 left-6">
                 {provider.logo_url ? (
                   <div className="w-16 h-16 rounded-2xl border-4 border-card shadow-lg overflow-hidden">
@@ -328,6 +607,7 @@ const ProviderStorefront = () => {
                   </div>
                 )}
               </div>
+
               {editMode && (
                 <Button
                   variant="secondary"
@@ -413,28 +693,23 @@ const ProviderStorefront = () => {
         </div>
       </section>
 
-      {/* Tabs: Catalog / Customization */}
+      {/* Main Content */}
       <section className="px-4 mt-4">
         <div className="container mx-auto max-w-3xl">
           {editMode ? (
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="w-full">
-                <TabsTrigger value="catalog" className="flex-1 gap-1"><Store className="w-3.5 h-3.5" /> Catálogo</TabsTrigger>
-                <TabsTrigger value="customize" className="flex-1 gap-1"><Palette className="w-3.5 h-3.5" /> Visual da Loja</TabsTrigger>
+                <TabsTrigger value="catalog" className="flex-1 gap-1 text-xs"><Store className="w-3.5 h-3.5" /> Catálogo</TabsTrigger>
+                <TabsTrigger value="design" className="flex-1 gap-1 text-xs"><Palette className="w-3.5 h-3.5" /> Design</TabsTrigger>
+                <TabsTrigger value="ai" className="flex-1 gap-1 text-xs"><MessageCircle className="w-3.5 h-3.5" /> IA Designer</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="catalog" className="mt-4">
-                {renderCatalog()}
-              </TabsContent>
-
-              <TabsContent value="customize" className="mt-4">
-                {renderCustomizationPanel()}
-              </TabsContent>
+              <TabsContent value="catalog" className="mt-4">{renderCatalog()}</TabsContent>
+              <TabsContent value="design" className="mt-4">{renderDesignPanel()}</TabsContent>
+              <TabsContent value="ai" className="mt-4">{renderAiChat()}</TabsContent>
             </Tabs>
           ) : (
-            <div className="mt-4">
-              {renderCatalog()}
-            </div>
+            <div className="mt-4">{renderCatalog()}</div>
           )}
         </div>
       </section>
@@ -446,7 +721,6 @@ const ProviderStorefront = () => {
             open={productFormOpen}
             onClose={() => { setProductFormOpen(false); setEditProduct(null); }}
             onSaved={async () => {
-              // Reload provider data from DB in case name changed
               const { data: freshProv } = await supabase.from('providers').select('*').eq('id', provider.id).single();
               if (freshProv) setProvider(freshProv as ProviderData);
               await loadProviderData();
@@ -458,9 +732,7 @@ const ProviderStorefront = () => {
           <ServiceForm
             open={serviceFormOpen}
             onClose={() => { setServiceFormOpen(false); setEditService(null); }}
-            onSaved={async () => {
-              await loadProviderData();
-            }}
+            onSaved={async () => { await loadProviderData(); }}
             service={editService}
             providers={[{ id: provider.id, name: provider.name, segment: Array.isArray(provider.segment) ? provider.segment : [provider.segment] }]}
             segments={dbSegments}
@@ -469,7 +741,6 @@ const ProviderStorefront = () => {
             open={providerFormOpen}
             onClose={() => setProviderFormOpen(false)}
             onSaved={async () => {
-              // Reload provider
               const { data: freshProv } = await supabase.from('providers').select('*').eq('id', provider.id).single();
               if (freshProv) {
                 setProvider(freshProv as ProviderData);
@@ -511,7 +782,6 @@ const ProviderStorefront = () => {
   function renderCatalog() {
     return (
       <div className="space-y-6">
-        {/* Search */}
         <div className="relative flex items-center bg-card border border-border rounded-xl overflow-hidden">
           <Search className="w-4 h-4 text-muted-foreground absolute left-3" />
           <Input
@@ -522,7 +792,6 @@ const ProviderStorefront = () => {
           />
         </div>
 
-        {/* Services */}
         {filteredServices.length > 0 && (
           <div>
             <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5 mb-3">
@@ -586,7 +855,6 @@ const ProviderStorefront = () => {
           </div>
         )}
 
-        {/* Products */}
         {filteredProducts.length > 0 && (
           <div>
             <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5 mb-3">
@@ -672,81 +940,170 @@ const ProviderStorefront = () => {
     );
   }
 
-  function renderCustomizationPanel() {
+  function renderDesignPanel() {
     return (
       <div className="space-y-4">
+        {/* Undo / Reset bar */}
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="gap-1 text-xs h-8" onClick={undoConfig} disabled={configHistory.length === 0}>
+            <Undo2 className="w-3.5 h-3.5" /> Desfazer
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1 text-xs h-8" onClick={resetConfig}>
+            <RotateCcw className="w-3.5 h-3.5" /> Restaurar Original
+          </Button>
+          <div className="flex-1" />
+          <Button onClick={saveConfig} disabled={savingConfig} size="sm" className="gap-1 text-xs h-8">
+            {savingConfig ? 'Salvando...' : '💾 Salvar'}
+          </Button>
+        </div>
+
+        {/* Background color */}
         <Card>
-          <CardContent className="p-5 space-y-5">
-            <div>
-              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <Palette className="w-4 h-4 text-primary" /> Cores do Banner
+          <CardContent className="p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Palette className="w-4 h-4 text-primary" /> Fundo Geral da Loja
+            </h3>
+            <div className="flex items-center gap-3">
+              <input type="color" value={config.backgroundColor || '#ffffff'}
+                onChange={e => { pushConfigHistory(); setConfig(c => ({ ...c, backgroundColor: e.target.value })); }}
+                className="w-10 h-10 rounded-lg cursor-pointer border border-border" />
+              <Input value={config.backgroundColor || ''} onChange={e => { pushConfigHistory(); setConfig(c => ({ ...c, backgroundColor: e.target.value })); }}
+                placeholder="Ex: #f5f5f5" className="text-xs h-8 flex-1" />
+              <Button variant="ghost" size="sm" className="text-xs h-8" onClick={() => { pushConfigHistory(); setConfig(c => ({ ...c, backgroundColor: '' })); }}>
+                Limpar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Banner Management */}
+        <Card>
+          <CardContent className="p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-primary" /> Banners ({(config.banners || []).length}/3)
               </h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Cor Inicial</Label>
-                  <div className="flex items-center gap-2">
-                    <input type="color" value={config.bannerColor1?.startsWith('#') ? config.bannerColor1 : '#6366f1'}
-                      onChange={e => setConfig(c => ({ ...c, bannerColor1: e.target.value }))}
-                      className="w-8 h-8 rounded cursor-pointer border border-border" />
-                    <Input value={config.bannerColor1 || ''} onChange={e => setConfig(c => ({ ...c, bannerColor1: e.target.value }))}
-                      className="text-xs h-8" placeholder="hsl(...) ou #hex" />
+              <Button variant="outline" size="sm" className="gap-1 text-xs h-7" onClick={addBannerSlide}
+                disabled={(config.banners || []).length >= 3}>
+                <Plus className="w-3 h-3" /> Novo Banner
+              </Button>
+            </div>
+
+            {(!config.banners || config.banners.length === 0) && (
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground">Usando banner padrão. Adicione até 3 banners personalizados com rotação automática.</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Cor Inicial</Label>
+                    <div className="flex items-center gap-2">
+                      <input type="color" value={config.bannerColor1?.startsWith('#') ? config.bannerColor1 : '#6366f1'}
+                        onChange={e => { pushConfigHistory(); setConfig(c => ({ ...c, bannerColor1: e.target.value })); }}
+                        className="w-8 h-8 rounded cursor-pointer border border-border" />
+                      <Input value={config.bannerColor1 || ''} onChange={e => setConfig(c => ({ ...c, bannerColor1: e.target.value }))}
+                        className="text-xs h-8" />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Cor Final</Label>
+                    <div className="flex items-center gap-2">
+                      <input type="color" value={config.bannerColor2?.startsWith('#') ? config.bannerColor2 : '#a855f7'}
+                        onChange={e => { pushConfigHistory(); setConfig(c => ({ ...c, bannerColor2: e.target.value })); }}
+                        className="w-8 h-8 rounded cursor-pointer border border-border" />
+                      <Input value={config.bannerColor2 || ''} onChange={e => setConfig(c => ({ ...c, bannerColor2: e.target.value }))}
+                        className="text-xs h-8" />
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Cor Final</Label>
-                  <div className="flex items-center gap-2">
-                    <input type="color" value={config.bannerColor2?.startsWith('#') ? config.bannerColor2 : '#a855f7'}
-                      onChange={e => setConfig(c => ({ ...c, bannerColor2: e.target.value }))}
-                      className="w-8 h-8 rounded cursor-pointer border border-border" />
-                    <Input value={config.bannerColor2 || ''} onChange={e => setConfig(c => ({ ...c, bannerColor2: e.target.value }))}
-                      className="text-xs h-8" placeholder="hsl(...) ou #hex" />
-                  </div>
+                  <Label className="text-xs">Texto ({(config.bannerText || '').length}/{BANNER_TEXT_MAX})</Label>
+                  <Input value={config.bannerText || ''}
+                    maxLength={BANNER_TEXT_MAX}
+                    onChange={e => setConfig(c => ({ ...c, bannerText: e.target.value }))}
+                    placeholder="Ex: Bem-vindo à minha loja!" className="text-sm" />
+                </div>
+                <div className="h-16 rounded-lg flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${config.bannerColor1 || '#6366f1'} 0%, ${config.bannerColor2 || '#a855f7'} 100%)` }}>
+                  {config.bannerText && <span className="text-white font-bold text-sm drop-shadow-lg truncate px-4">{config.bannerText}</span>}
                 </div>
               </div>
-              {/* Preview */}
-              <div className="mt-3 h-12 rounded-lg" style={{ background: bannerGradient }} />
-            </div>
+            )}
 
-            <div className="space-y-1.5">
-              <Label className="text-xs">Texto no Banner</Label>
-              <Input value={config.bannerText || ''} onChange={e => setConfig(c => ({ ...c, bannerText: e.target.value }))}
-                placeholder="Ex: Bem-vindo à minha loja!" className="text-sm" />
-            </div>
-
-            <div>
-              <h3 className="text-sm font-semibold text-foreground mb-2">Visibilidade de Informações</h3>
-              <div className="space-y-2">
-                {[
-                  { key: 'showPhone' as const, label: 'Mostrar Telefone', icon: Phone },
-                  { key: 'showEmail' as const, label: 'Mostrar Email', icon: Mail },
-                  { key: 'showAddress' as const, label: 'Mostrar Endereço', icon: MapPinned },
-                ].map(item => (
-                  <label key={item.key} className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={config[item.key] !== false}
-                      onChange={e => setConfig(c => ({ ...c, [item.key]: e.target.checked }))}
-                      className="rounded border-border" />
-                    <item.icon className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span className="text-xs text-foreground">{item.label}</span>
-                  </label>
-                ))}
+            {(config.banners || []).map((banner, idx) => (
+              <div key={banner.id} className="border border-border rounded-lg p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-foreground">Banner {idx + 1}</span>
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => removeBannerSlide(idx)}>
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <input type="color" value={banner.color1 || '#6366f1'}
+                      onChange={e => updateBannerSlide(idx, { color1: e.target.value })}
+                      className="w-7 h-7 rounded cursor-pointer border border-border" />
+                    <span className="text-[10px] text-muted-foreground">Cor 1</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <input type="color" value={banner.color2 || '#a855f7'}
+                      onChange={e => updateBannerSlide(idx, { color2: e.target.value })}
+                      className="w-7 h-7 rounded cursor-pointer border border-border" />
+                    <span className="text-[10px] text-muted-foreground">Cor 2</span>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px]">Texto ({(banner.text || '').length}/{BANNER_TEXT_MAX})</Label>
+                  <Input value={banner.text || ''} maxLength={BANNER_TEXT_MAX}
+                    onChange={e => updateBannerSlide(idx, { text: e.target.value })}
+                    placeholder="Texto do banner" className="text-xs h-7" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px]">URL da Imagem de Fundo (opcional)</Label>
+                  <Input value={banner.imageUrl || ''}
+                    onChange={e => updateBannerSlide(idx, { imageUrl: e.target.value })}
+                    placeholder="https://..." className="text-xs h-7" />
+                </div>
+                {/* Preview */}
+                <div className="h-14 rounded-lg overflow-hidden relative flex items-center justify-center">
+                  {banner.imageUrl ? (
+                    <>
+                      <img src={banner.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/30" />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${banner.color1} 0%, ${banner.color2} 100%)` }} />
+                  )}
+                  {banner.text && <span className="relative text-white font-bold text-xs drop-shadow-lg truncate px-4">{banner.text}</span>}
+                </div>
               </div>
-            </div>
+            ))}
+          </CardContent>
+        </Card>
 
-            <Button onClick={saveConfig} disabled={savingConfig} className="w-full gap-2">
-              {savingConfig ? 'Salvando...' : 'Salvar Visual da Loja'}
-            </Button>
+        {/* Visibility */}
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-foreground mb-2">Visibilidade de Informações</h3>
+            {[
+              { key: 'showPhone' as const, label: 'Mostrar Telefone', icon: Phone },
+              { key: 'showEmail' as const, label: 'Mostrar Email', icon: Mail },
+              { key: 'showAddress' as const, label: 'Mostrar Endereço', icon: MapPinned },
+            ].map(item => (
+              <label key={item.key} className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={config[item.key] !== false}
+                  onChange={e => { pushConfigHistory(); setConfig(c => ({ ...c, [item.key]: e.target.checked })); }}
+                  className="rounded border-border" />
+                <item.icon className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-xs text-foreground">{item.label}</span>
+              </label>
+            ))}
           </CardContent>
         </Card>
 
         {/* Share section */}
         <Card>
-          <CardContent className="p-5">
+          <CardContent className="p-4">
             <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
               <Share2 className="w-4 h-4 text-primary" /> Link da sua Loja
             </h3>
-            <p className="text-xs text-muted-foreground mb-3">
-              Compartilhe este link nas redes sociais para atrair clientes diretamente para a sua loja.
-            </p>
             <div className="bg-muted/50 rounded-lg p-3 flex items-center gap-2 mb-3">
               <Link2 className="w-4 h-4 text-muted-foreground shrink-0" />
               <span className="text-xs text-foreground truncate flex-1 font-mono">{shareUrl}</span>
@@ -768,6 +1125,99 @@ const ProviderStorefront = () => {
           </CardContent>
         </Card>
       </div>
+    );
+  }
+
+  function renderAiChat() {
+    return (
+      <Card className="overflow-hidden">
+        <CardContent className="p-0 flex flex-col" style={{ height: '60vh' }}>
+          {/* Chat header */}
+          <div className="px-4 py-3 border-b border-border bg-primary/5 flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">Designer IA</p>
+              <p className="text-[10px] text-muted-foreground">Personalize sua loja conversando comigo</p>
+            </div>
+            <div className="ml-auto flex gap-1">
+              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={undoConfig} disabled={configHistory.length === 0}>
+                <Undo2 className="w-3 h-3" /> Desfazer
+              </Button>
+              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={resetConfig}>
+                <RotateCcw className="w-3 h-3" /> Reset
+              </Button>
+            </div>
+          </div>
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {chatMessages.map((msg, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
+                  msg.role === 'user'
+                    ? 'bg-primary text-primary-foreground rounded-br-md'
+                    : 'bg-muted text-foreground rounded-bl-md'
+                }`}>
+                  {msg.content.split('\n').map((line, li) => (
+                    <p key={li} className={li > 0 ? 'mt-1' : ''}>{line}</p>
+                  ))}
+                </div>
+              </motion.div>
+            ))}
+            {chatLoading && (
+              <div className="flex justify-start">
+                <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3">
+                  <motion.div className="flex gap-1"
+                    animate={{ opacity: [0.4, 1, 0.4] }}
+                    transition={{ duration: 1.2, repeat: Infinity }}>
+                    <div className="w-2 h-2 rounded-full bg-primary/50" />
+                    <div className="w-2 h-2 rounded-full bg-primary/50" />
+                    <div className="w-2 h-2 rounded-full bg-primary/50" />
+                  </motion.div>
+                </div>
+              </div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
+
+          {/* Quick actions */}
+          <div className="px-3 py-1.5 border-t border-border/50 flex gap-1.5 overflow-x-auto">
+            {[
+              '🎨 Mudar cor de fundo',
+              '🖼️ Mudar banner',
+              '✨ Sugerir cores',
+              '↩️ Não gostei, voltar',
+            ].map(action => (
+              <Button key={action} variant="outline" size="sm" className="text-[10px] h-6 px-2 whitespace-nowrap shrink-0"
+                onClick={() => { setChatInput(action.replace(/^[^\s]+\s/, '')); }}>
+                {action}
+              </Button>
+            ))}
+          </div>
+
+          {/* Input */}
+          <div className="p-3 border-t border-border flex gap-2">
+            <Input
+              value={chatInput}
+              onChange={e => setChatInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendChatMessage()}
+              placeholder="Diga o que deseja mudar na sua loja..."
+              className="text-sm h-9"
+              disabled={chatLoading}
+            />
+            <Button size="sm" className="h-9 px-3" onClick={sendChatMessage} disabled={chatLoading || !chatInput.trim()}>
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 };
