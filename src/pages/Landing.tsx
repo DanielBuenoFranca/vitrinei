@@ -165,9 +165,10 @@ const Landing = () => {
         setProviderSegmentMap(map);
       }
       setDataLoaded(true);
-      setSearchExecuted(true);
+      // Don't auto-show results — wait for user to search
+      setSearchExecuted(false);
       setExecutedQuery('');
-      setSearchVersion(1);
+      setSearchVersion(0);
     };
     loadData();
   }, []);
@@ -436,7 +437,8 @@ const Landing = () => {
               </div>
             </div>
 
-            {/* Layout: Sidebar filters + Results */}
+            {/* Layout: Only show sidebar + results after search */}
+            {searchExecuted && (
             <div className="flex gap-3">
               {/* Segment sidebar */}
               <div className="hidden sm:flex flex-col gap-1 w-[140px] shrink-0 max-h-[calc(100vh-220px)] overflow-y-auto pr-1">
@@ -959,6 +961,7 @@ const Landing = () => {
             </AnimatePresence>
             </div>
             </div>
+            )}
           </motion.div>
         </div>
       </section>

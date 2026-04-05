@@ -15,7 +15,7 @@ import {
   Wrench as WrenchIcon, Phone, Mail, MapPinned, Copy, ExternalLink,
   Pencil, Palette, Settings, Eye, Facebook, Twitter, Instagram, Link2,
   Image as ImageIcon, Send, Undo2, RotateCcw, ChevronLeft, ChevronRight,
-  MessageCircle
+  MessageCircle, Download, RefreshCw, Upload
 } from 'lucide-react';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { segments as staticSegments, getAllServices, getAllProducts, reloadDynamicEntries, loadSegmentTagsCache, type ProductItem } from '@/data/searchData';
@@ -141,6 +141,9 @@ const ProviderStorefront = () => {
 
   // Delete confirmation
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; type: 'service' | 'product'; id: number; name: string }>({ open: false, type: 'service', id: 0, name: '' });
+  const [generatingLogo, setGeneratingLogo] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const bannerFileRef = useRef<HTMLInputElement>(null);
 
   const loadProviderData = async (providerData?: ProviderData) => {
     const prov = providerData || provider;
@@ -283,14 +286,67 @@ const ProviderStorefront = () => {
   const saveConfig = async () => {
     if (!provider) return;
     setSavingConfig(true);
-    const { error } = await supabase.from('providers').update({ storefront_config: config as any }).eq('id', provider.id);
+    const { data: updated, error } = await supabase.from('providers').update({ storefront_config: config as any }).eq('id', provider.id).select().single();
     if (error) { toast.error('Erro ao salvar: ' + error.message); }
     else {
       toast.success('Visual da loja salvo!');
       setOriginalConfig(JSON.parse(JSON.stringify(config)));
       setConfigHistory([]);
+      if (updated) setProvider(updated as ProviderData);
     }
     setSavingConfig(false);
+  };
+
+  // Generate logo via AI
+  const generateLogo = async () => {
+    if (!provider) return;
+    setGeneratingLogo(true);
+    try {
+      const resp = await supabase.functions.invoke('generate-provider-logo', {
+        body: { providerName: provider.name, segment: (Array.isArray(provider.segment) ? provider.segment[0] : provider.segment) },
+      });
+      if (resp.error) throw new Error(resp.error.message);
+      const logoUrl = resp.data?.logoUrl;
+      if (logoUrl) {
+        const { data: updated } = await supabase.from('providers').update({ logo_url: logoUrl }).eq('id', provider.id).select().single();
+        if (updated) setProvider(updated as ProviderData);
+        toast.success('Logo gerado com sucesso!');
+      }
+    } catch (e: any) {
+      toast.error('Erro ao gerar logo: ' + (e.message || 'Desconhecido'));
+    }
+    setGeneratingLogo(false);
+  };
+
+  // Download logo
+  const downloadLogo = () => {
+    if (!provider?.logo_url) return;
+    const a = document.createElement('a');
+    a.href = provider.logo_url;
+    a.download = `logo-${provider.name.toLowerCase().replace(/\s+/g, '-')}.png`;
+    a.target = '_blank';
+    a.click();
+  };
+
+  // Upload banner image file
+  const handleBannerFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, bannerIdx?: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingBanner(true);
+    const fileName = `banner-${provider?.id}-${Date.now()}.${file.name.split('.').pop()}`;
+    const { error: uploadError } = await supabase.storage.from('provider-logos').upload(fileName, file, { contentType: file.type, upsert: true });
+    if (uploadError) { toast.error('Erro no upload: ' + uploadError.message); setUploadingBanner(false); return; }
+    const { data: urlData } = supabase.storage.from('provider-logos').getPublicUrl(fileName);
+    const imageUrl = urlData.publicUrl;
+    if (bannerIdx !== undefined) {
+      updateBannerSlide(bannerIdx, { imageUrl });
+    } else {
+      pushConfigHistory();
+      setConfig(c => ({ ...c, bannerColor1: '', bannerColor2: '', bannerText: c.bannerText }));
+    }
+    toast.success('Imagem enviada!');
+    setUploadingBanner(false);
+    if (bannerFileRef.current) bannerFileRef.current.value = '';
   };
 
   // AI Chat
@@ -595,11 +651,11 @@ const ProviderStorefront = () => {
                 </>
               )}
 
-              {/* Logo */}
-              <div className="absolute -bottom-8 left-6">
+              {/* Logo — always in foreground, never cropped */}
+              <div className="absolute -bottom-8 left-6 z-10">
                 {provider.logo_url ? (
-                  <div className="w-16 h-16 rounded-2xl border-4 border-card shadow-lg overflow-hidden">
-                    <img src={provider.logo_url} alt={provider.name} className="w-full h-full object-cover" />
+                  <div className="w-16 h-16 rounded-2xl border-4 border-card shadow-lg overflow-hidden bg-card">
+                    <img src={provider.logo_url} alt={provider.name} className="w-full h-full object-contain" />
                   </div>
                 ) : (
                   <div className="w-16 h-16 rounded-2xl bg-card border-4 border-card shadow-lg flex items-center justify-center">
@@ -609,14 +665,19 @@ const ProviderStorefront = () => {
               </div>
 
               {editMode && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="absolute top-2 right-2 gap-1 text-[10px] h-7 opacity-80 hover:opacity-100"
-                  onClick={() => setProviderFormOpen(true)}
-                >
-                  <Pencil className="w-3 h-3" /> Editar Perfil
-                </Button>
+                <div className="absolute top-2 right-2 flex gap-1 z-10">
+                  {provider.logo_url && (
+                    <Button variant="secondary" size="sm" className="gap-1 text-[10px] h-7 opacity-80 hover:opacity-100" onClick={downloadLogo}>
+                      <Download className="w-3 h-3" /> Logo
+                    </Button>
+                  )}
+                  <Button variant="secondary" size="sm" className="gap-1 text-[10px] h-7 opacity-80 hover:opacity-100" onClick={generateLogo} disabled={generatingLogo}>
+                    <RefreshCw className={`w-3 h-3 ${generatingLogo ? 'animate-spin' : ''}`} /> {generatingLogo ? 'Gerando...' : 'Gerar Logo IA'}
+                  </Button>
+                  <Button variant="secondary" size="sm" className="gap-1 text-[10px] h-7 opacity-80 hover:opacity-100" onClick={() => setProviderFormOpen(true)}>
+                    <Pencil className="w-3 h-3" /> Perfil
+                  </Button>
+                </div>
               )}
             </div>
 
@@ -1056,10 +1117,22 @@ const ProviderStorefront = () => {
                     placeholder="Texto do banner" className="text-xs h-7" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-[10px]">URL da Imagem de Fundo (opcional)</Label>
-                  <Input value={banner.imageUrl || ''}
-                    onChange={e => updateBannerSlide(idx, { imageUrl: e.target.value })}
-                    placeholder="https://..." className="text-xs h-7" />
+                  <Label className="text-[10px]">Imagem de Fundo (URL ou Upload)</Label>
+                  <div className="flex gap-1">
+                    <Input value={banner.imageUrl || ''}
+                      onChange={e => updateBannerSlide(idx, { imageUrl: e.target.value })}
+                      placeholder="https://..." className="text-xs h-7 flex-1" />
+                    <Button variant="outline" size="sm" className="h-7 px-2 text-[10px] gap-1" disabled={uploadingBanner}
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.onchange = (ev: any) => handleBannerFileUpload(ev, idx);
+                        input.click();
+                      }}>
+                      <Upload className="w-3 h-3" /> {uploadingBanner ? '...' : 'Upload'}
+                    </Button>
+                  </div>
                 </div>
                 {/* Preview */}
                 <div className="h-14 rounded-lg overflow-hidden relative flex items-center justify-center">
