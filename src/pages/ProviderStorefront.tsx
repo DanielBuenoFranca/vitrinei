@@ -595,11 +595,11 @@ const ProviderStorefront = () => {
                 </>
               )}
 
-              {/* Logo */}
-              <div className="absolute -bottom-8 left-6">
+              {/* Logo — always in foreground, never cropped */}
+              <div className="absolute -bottom-8 left-6 z-10">
                 {provider.logo_url ? (
-                  <div className="w-16 h-16 rounded-2xl border-4 border-card shadow-lg overflow-hidden">
-                    <img src={provider.logo_url} alt={provider.name} className="w-full h-full object-cover" />
+                  <div className="w-16 h-16 rounded-2xl border-4 border-card shadow-lg overflow-hidden bg-card">
+                    <img src={provider.logo_url} alt={provider.name} className="w-full h-full object-contain" />
                   </div>
                 ) : (
                   <div className="w-16 h-16 rounded-2xl bg-card border-4 border-card shadow-lg flex items-center justify-center">
@@ -609,15 +609,17 @@ const ProviderStorefront = () => {
               </div>
 
               {editMode && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="absolute top-2 right-2 gap-1 text-[10px] h-7 opacity-80 hover:opacity-100"
-                  onClick={() => setProviderFormOpen(true)}
-                >
-                  <Pencil className="w-3 h-3" /> Editar Perfil
-                </Button>
-              )}
+                <div className="absolute top-2 right-2 flex gap-1 z-10">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="gap-1 text-[10px] h-7 opacity-80 hover:opacity-100"
+                    onClick={() => setProviderFormOpen(true)}
+                  >
+                    <Pencil className="w-3 h-3" /> Editar Perfil
+                  </Button>
+                </div>
+              )
             </div>
 
             <div className="pt-12 pb-5 px-6">
