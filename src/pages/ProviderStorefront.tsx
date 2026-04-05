@@ -1117,10 +1117,22 @@ const ProviderStorefront = () => {
                     placeholder="Texto do banner" className="text-xs h-7" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-[10px]">URL da Imagem de Fundo (opcional)</Label>
-                  <Input value={banner.imageUrl || ''}
-                    onChange={e => updateBannerSlide(idx, { imageUrl: e.target.value })}
-                    placeholder="https://..." className="text-xs h-7" />
+                  <Label className="text-[10px]">Imagem de Fundo (URL ou Upload)</Label>
+                  <div className="flex gap-1">
+                    <Input value={banner.imageUrl || ''}
+                      onChange={e => updateBannerSlide(idx, { imageUrl: e.target.value })}
+                      placeholder="https://..." className="text-xs h-7 flex-1" />
+                    <Button variant="outline" size="sm" className="h-7 px-2 text-[10px] gap-1" disabled={uploadingBanner}
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.onchange = (ev: any) => handleBannerFileUpload(ev, idx);
+                        input.click();
+                      }}>
+                      <Upload className="w-3 h-3" /> {uploadingBanner ? '...' : 'Upload'}
+                    </Button>
+                  </div>
                 </div>
                 {/* Preview */}
                 <div className="h-14 rounded-lg overflow-hidden relative flex items-center justify-center">
