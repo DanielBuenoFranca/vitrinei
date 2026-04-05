@@ -15,7 +15,7 @@ import {
   Wrench as WrenchIcon, Phone, Mail, MapPinned, Copy, ExternalLink,
   Pencil, Palette, Settings, Eye, Facebook, Twitter, Instagram, Link2,
   Image as ImageIcon, Send, Undo2, RotateCcw, ChevronLeft, ChevronRight,
-  MessageCircle
+  MessageCircle, Download, RefreshCw, Upload
 } from 'lucide-react';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { segments as staticSegments, getAllServices, getAllProducts, reloadDynamicEntries, loadSegmentTagsCache, type ProductItem } from '@/data/searchData';
