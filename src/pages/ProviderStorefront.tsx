@@ -619,7 +619,7 @@ const ProviderStorefront = () => {
                     <Pencil className="w-3 h-3" /> Editar Perfil
                   </Button>
                 </div>
-              )
+              )}
             </div>
 
             <div className="pt-12 pb-5 px-6">
