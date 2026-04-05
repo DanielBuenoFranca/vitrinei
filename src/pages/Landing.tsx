@@ -437,7 +437,8 @@ const Landing = () => {
               </div>
             </div>
 
-            {/* Layout: Sidebar filters + Results */}
+            {/* Layout: Only show sidebar + results after search */}
+            {searchExecuted && (
             <div className="flex gap-3">
               {/* Segment sidebar */}
               <div className="hidden sm:flex flex-col gap-1 w-[140px] shrink-0 max-h-[calc(100vh-220px)] overflow-y-auto pr-1">
