@@ -286,14 +286,67 @@ const ProviderStorefront = () => {
   const saveConfig = async () => {
     if (!provider) return;
     setSavingConfig(true);
-    const { error } = await supabase.from('providers').update({ storefront_config: config as any }).eq('id', provider.id);
+    const { data: updated, error } = await supabase.from('providers').update({ storefront_config: config as any }).eq('id', provider.id).select().single();
     if (error) { toast.error('Erro ao salvar: ' + error.message); }
     else {
       toast.success('Visual da loja salvo!');
       setOriginalConfig(JSON.parse(JSON.stringify(config)));
       setConfigHistory([]);
+      if (updated) setProvider(updated as ProviderData);
     }
     setSavingConfig(false);
+  };
+
+  // Generate logo via AI
+  const generateLogo = async () => {
+    if (!provider) return;
+    setGeneratingLogo(true);
+    try {
+      const resp = await supabase.functions.invoke('generate-provider-logo', {
+        body: { providerName: provider.name, segment: (Array.isArray(provider.segment) ? provider.segment[0] : provider.segment) },
+      });
+      if (resp.error) throw new Error(resp.error.message);
+      const logoUrl = resp.data?.logoUrl;
+      if (logoUrl) {
+        const { data: updated } = await supabase.from('providers').update({ logo_url: logoUrl }).eq('id', provider.id).select().single();
+        if (updated) setProvider(updated as ProviderData);
+        toast.success('Logo gerado com sucesso!');
+      }
+    } catch (e: any) {
+      toast.error('Erro ao gerar logo: ' + (e.message || 'Desconhecido'));
+    }
+    setGeneratingLogo(false);
+  };
+
+  // Download logo
+  const downloadLogo = () => {
+    if (!provider?.logo_url) return;
+    const a = document.createElement('a');
+    a.href = provider.logo_url;
+    a.download = `logo-${provider.name.toLowerCase().replace(/\s+/g, '-')}.png`;
+    a.target = '_blank';
+    a.click();
+  };
+
+  // Upload banner image file
+  const handleBannerFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, bannerIdx?: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingBanner(true);
+    const fileName = `banner-${provider?.id}-${Date.now()}.${file.name.split('.').pop()}`;
+    const { error: uploadError } = await supabase.storage.from('provider-logos').upload(fileName, file, { contentType: file.type, upsert: true });
+    if (uploadError) { toast.error('Erro no upload: ' + uploadError.message); setUploadingBanner(false); return; }
+    const { data: urlData } = supabase.storage.from('provider-logos').getPublicUrl(fileName);
+    const imageUrl = urlData.publicUrl;
+    if (bannerIdx !== undefined) {
+      updateBannerSlide(bannerIdx, { imageUrl });
+    } else {
+      pushConfigHistory();
+      setConfig(c => ({ ...c, bannerColor1: '', bannerColor2: '', bannerText: c.bannerText }));
+    }
+    toast.success('Imagem enviada!');
+    setUploadingBanner(false);
+    if (bannerFileRef.current) bannerFileRef.current.value = '';
   };
 
   // AI Chat
