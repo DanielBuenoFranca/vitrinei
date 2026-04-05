@@ -141,6 +141,9 @@ const ProviderStorefront = () => {
 
   // Delete confirmation
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; type: 'service' | 'product'; id: number; name: string }>({ open: false, type: 'service', id: 0, name: '' });
+  const [generatingLogo, setGeneratingLogo] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const bannerFileRef = useRef<HTMLInputElement>(null);
 
   const loadProviderData = async (providerData?: ProviderData) => {
     const prov = providerData || provider;
