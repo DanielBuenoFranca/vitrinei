@@ -961,6 +961,7 @@ const Landing = () => {
             </AnimatePresence>
             </div>
             </div>
+            )}
           </motion.div>
         </div>
       </section>
