@@ -666,13 +666,16 @@ const ProviderStorefront = () => {
 
               {editMode && (
                 <div className="absolute top-2 right-2 flex gap-1 z-10">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="gap-1 text-[10px] h-7 opacity-80 hover:opacity-100"
-                    onClick={() => setProviderFormOpen(true)}
-                  >
-                    <Pencil className="w-3 h-3" /> Editar Perfil
+                  {provider.logo_url && (
+                    <Button variant="secondary" size="sm" className="gap-1 text-[10px] h-7 opacity-80 hover:opacity-100" onClick={downloadLogo}>
+                      <Download className="w-3 h-3" /> Logo
+                    </Button>
+                  )}
+                  <Button variant="secondary" size="sm" className="gap-1 text-[10px] h-7 opacity-80 hover:opacity-100" onClick={generateLogo} disabled={generatingLogo}>
+                    <RefreshCw className={`w-3 h-3 ${generatingLogo ? 'animate-spin' : ''}`} /> {generatingLogo ? 'Gerando...' : 'Gerar Logo IA'}
+                  </Button>
+                  <Button variant="secondary" size="sm" className="gap-1 text-[10px] h-7 opacity-80 hover:opacity-100" onClick={() => setProviderFormOpen(true)}>
+                    <Pencil className="w-3 h-3" /> Perfil
                   </Button>
                 </div>
               )}
