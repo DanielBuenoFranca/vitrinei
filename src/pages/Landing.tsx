@@ -165,9 +165,10 @@ const Landing = () => {
         setProviderSegmentMap(map);
       }
       setDataLoaded(true);
-      setSearchExecuted(true);
+      // Don't auto-show results — wait for user to search
+      setSearchExecuted(false);
       setExecutedQuery('');
-      setSearchVersion(1);
+      setSearchVersion(0);
     };
     loadData();
   }, []);
