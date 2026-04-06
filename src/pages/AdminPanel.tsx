@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { ProviderForm } from '@/components/admin/ProviderForm';
@@ -59,6 +60,11 @@ const AdminPanel = () => {
   const [serviceForm, setServiceForm] = useState<{ open: boolean; item: DynamicService | null }>({ open: false, item: null });
   const [segmentForm, setSegmentForm] = useState<{ open: boolean; item: Segment | null }>({ open: false, item: null });
 
+  // Users management
+  const [authUsers, setAuthUsers] = useState<any[]>([]);
+  const [userProfiles, setUserProfiles] = useState<any[]>([]);
+  const [userRoles, setUserRoles] = useState<any[]>([]);
+
   // Confirmation dialog for provider delete
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; provider: Provider | null }>({ open: false, provider: null });
 
@@ -77,7 +83,35 @@ const AdminPanel = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); fetchUsers(); }, []);
+
+  const fetchUsers = async () => {
+    const [profilesRes, rolesRes] = await Promise.all([
+      supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+      supabase.from('user_roles').select('*'),
+    ]);
+    setUserProfiles(profilesRes.data || []);
+    setUserRoles(rolesRes.data || []);
+  };
+
+  const toggleUserRole = async (userId: string, role: 'admin' | 'moderator' | 'user') => {
+    const existing = userRoles.find((r: any) => r.user_id === userId && r.role === role);
+    if (existing) {
+      await supabase.from('user_roles').delete().eq('id', existing.id);
+      toast.success('Papel removido');
+    } else {
+      await supabase.from('user_roles').insert({ user_id: userId, role });
+      toast.success('Papel atribuído');
+    }
+    fetchUsers();
+  };
+
+  const deleteUserProfile = async (userId: string) => {
+    await supabase.from('user_roles').delete().eq('user_id', userId);
+    await supabase.from('profiles').delete().eq('user_id', userId);
+    toast.success('Perfil removido');
+    fetchUsers();
+  };
 
   const deleteProvider = async (id: number) => {
     const prov = providers.find(p => p.id === id);
