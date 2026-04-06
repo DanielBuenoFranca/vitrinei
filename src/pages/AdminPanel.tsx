@@ -163,6 +163,31 @@ const AdminPanel = () => {
     fetchUsers();
   };
 
+  const openEditUser = (profile: any) => {
+    setEditUserName(profile.display_name || '');
+    setEditUserPhone(profile.phone || '');
+    setEditUserAvatar(profile.avatar_url || '');
+    setEditUserDialog({ open: true, profile });
+  };
+
+  const saveUserProfile = async () => {
+    if (!editUserDialog.profile) return;
+    setSavingUser(true);
+    const { error } = await supabase.from('profiles').update({
+      display_name: editUserName.trim() || null,
+      phone: editUserPhone.trim() || null,
+      avatar_url: editUserAvatar.trim() || null,
+    }).eq('user_id', editUserDialog.profile.user_id);
+    if (error) {
+      toast.error('Erro ao salvar perfil');
+    } else {
+      toast.success('Perfil atualizado');
+      setEditUserDialog({ open: false, profile: null });
+      fetchUsers();
+    }
+    setSavingUser(false);
+  };
+
   const deleteUserProfile = async (userId: string) => {
     await supabase.from('user_roles').delete().eq('user_id', userId);
     await supabase.from('profiles').delete().eq('user_id', userId);
