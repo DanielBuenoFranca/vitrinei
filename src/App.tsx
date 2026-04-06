@@ -26,6 +26,7 @@ import ProviderStorefront from "./pages/ProviderStorefront.tsx";
 import AuthPage from "./pages/AuthPage.tsx";
 import ResetPasswordPage from "./pages/ResetPasswordPage.tsx";
 import WalletPage from "./pages/WalletPage.tsx";
+import SubscriptionPage from "./pages/SubscriptionPage.tsx";
 import ImportPage from "./pages/ImportPage.tsx";
 
 const queryClient = new QueryClient();
