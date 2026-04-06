@@ -166,6 +166,45 @@ const AdminPanel = () => {
     fetchData();
   };
 
+  const deleteUnit = async (id: number) => {
+    await supabase.from('units').delete().eq('id', id);
+    toast.success('Unidade excluída');
+    fetchData();
+  };
+
+  const generateUnitsAI = async () => {
+    setGeneratingUnits(true);
+    try {
+      const existingNames = new Set(units.map(u => u.name));
+      const { data, error } = await supabase.functions.invoke('suggest-name', {
+        body: {
+          prompt: `Sugira 10 unidades de medida comuns para prestadores de serviço e comércio que NÃO estejam nesta lista: ${[...existingNames].join(', ')}. Retorne APENAS um JSON array com objetos {"name": "sigla", "label": "descrição"}. Exemplo: [{"name":"dz","label":"Dúzia"}]`,
+        },
+      });
+      if (error) throw error;
+      const text = typeof data === 'string' ? data : data?.suggestion || data?.name || JSON.stringify(data);
+      const match = text.match(/\[[\s\S]*\]/);
+      if (match) {
+        const suggestions: { name: string; label: string }[] = JSON.parse(match[0]);
+        const newUnits = suggestions.filter(s => s.name && s.label && !existingNames.has(s.name.toLowerCase()));
+        if (newUnits.length === 0) {
+          toast.info('IA não encontrou novas unidades para sugerir');
+        } else {
+          for (const u of newUnits) {
+            await supabase.from('units').insert({ name: u.name.toLowerCase(), label: u.label });
+          }
+          toast.success(`${newUnits.length} unidade(s) criada(s) pela IA`);
+          fetchData();
+        }
+      } else {
+        toast.error('Não foi possível interpretar a resposta da IA');
+      }
+    } catch (e: any) {
+      toast.error('Erro ao gerar: ' + (e.message || 'desconhecido'));
+    }
+    setGeneratingUnits(false);
+  };
+
   const providerList = providers.map(p => ({ id: p.id, name: p.name, segment: p.segment }));
   const segmentList = segments.map(s => ({ id: s.id, name: s.name }));
 
