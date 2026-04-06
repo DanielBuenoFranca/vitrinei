@@ -1,27 +1,40 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { ArrowLeft, Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import {
+  ArrowLeft, Upload, FileSpreadsheet, CheckCircle2, AlertTriangle,
+  Loader2, Download, Pencil, Trash2, X, Save
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { reloadDynamicEntries } from '@/data/searchData';
 
+/* ─── Types ─── */
 interface ParsedRow {
+  _id: number;
   providerName: string;
   segment: string;
-  serviceName?: string;
-  servicePrice?: number;
-  productName?: string;
-  productPrice?: number;
-  productStockType?: string;
-  phone?: string;
-  email?: string;
-  city?: string;
-  [key: string]: any;
+  serviceName: string;
+  servicePrice: string;
+  productName: string;
+  productPrice: string;
+  productStockType: string;
+  phone: string;
+  email: string;
+  city: string;
+}
+
+interface RowError {
+  rowId: number;
+  field: string;
+  message: string;
 }
 
 interface ImportResult {
@@ -32,20 +45,90 @@ interface ImportResult {
   errors: string[];
 }
 
+const STOCK_TYPES = ['fisico', 'drop'];
+
+const FIELD_LABELS: Record<string, string> = {
+  providerName: 'Prestador',
+  segment: 'Segmento',
+  serviceName: 'Serviço',
+  servicePrice: 'Preço Serviço',
+  productName: 'Produto',
+  productPrice: 'Preço Produto',
+  productStockType: 'Tipo Estoque',
+  phone: 'Telefone',
+  email: 'E-mail',
+  city: 'Cidade',
+};
+
+const COLUMNS: (keyof Omit<ParsedRow, '_id'>)[] = [
+  'providerName', 'segment', 'serviceName', 'servicePrice',
+  'productName', 'productPrice', 'productStockType',
+  'phone', 'email', 'city',
+];
+
+/* ─── Template generator ─── */
+const generateTemplate = async () => {
+  const XLSX = await import('xlsx');
+  const headers = ['Prestador', 'Segmento', 'Serviço', 'Preço Serviço', 'Produto', 'Preço Produto', 'Tipo Estoque', 'Telefone', 'E-mail', 'Cidade'];
+  const example = ['João Silva', 'Manutenção', 'Instalação Elétrica', '150', 'Tomada 3 pinos', '12.50', 'fisico', '(11) 99999-0000', 'joao@email.com', 'São Paulo'];
+  const ws = XLSX.utils.aoa_to_sheet([headers, example]);
+  ws['!cols'] = headers.map(() => ({ wch: 20 }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Importação');
+  XLSX.writeFile(wb, 'modelo_importacao.xlsx');
+  toast.success('Modelo baixado!');
+};
+
+/* ─── Validation ─── */
+const validateRows = (rows: ParsedRow[]): RowError[] => {
+  const errors: RowError[] = [];
+  rows.forEach(row => {
+    if (!row.providerName.trim()) {
+      errors.push({ rowId: row._id, field: 'providerName', message: 'Prestador é obrigatório' });
+    }
+    if (!row.segment.trim()) {
+      errors.push({ rowId: row._id, field: 'segment', message: 'Segmento é obrigatório' });
+    }
+    if (!row.serviceName.trim() && !row.productName.trim()) {
+      errors.push({ rowId: row._id, field: 'serviceName', message: 'Informe ao menos um Serviço ou Produto' });
+    }
+    if (row.serviceName.trim() && row.servicePrice.trim()) {
+      const p = parseFloat(row.servicePrice);
+      if (isNaN(p) || p < 0) errors.push({ rowId: row._id, field: 'servicePrice', message: 'Preço inválido' });
+    }
+    if (row.productName.trim() && row.productPrice.trim()) {
+      const p = parseFloat(row.productPrice);
+      if (isNaN(p) || p < 0) errors.push({ rowId: row._id, field: 'productPrice', message: 'Preço inválido' });
+    }
+    if (row.productStockType.trim() && !STOCK_TYPES.includes(row.productStockType.toLowerCase())) {
+      errors.push({ rowId: row._id, field: 'productStockType', message: 'Use "fisico" ou "drop"' });
+    }
+    if (row.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)) {
+      errors.push({ rowId: row._id, field: 'email', message: 'E-mail inválido' });
+    }
+  });
+  return errors;
+};
+
+/* ─── Component ─── */
 const ImportPage = () => {
   const navigate = useNavigate();
+  const { user, isAdmin } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [parsedData, setParsedData] = useState<ParsedRow[]>([]);
-  const [headers, setHeaders] = useState<string[]>([]);
+  const [rows, setRows] = useState<ParsedRow[]>([]);
+  const [errors, setErrors] = useState<RowError[]>([]);
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [fileName, setFileName] = useState('');
+  const [editingCell, setEditingCell] = useState<{ rowId: number; field: string } | null>(null);
 
+  /* ─── Parse file ─── */
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setFileName(file.name);
     setResult(null);
+    setEditingCell(null);
 
     try {
       const XLSX = await import('xlsx');
@@ -57,67 +140,92 @@ const ImportPage = () => {
       if (json.length === 0) { toast.error('Planilha vazia'); return; }
 
       const rawHeaders = Object.keys(json[0]);
-      setHeaders(rawHeaders);
-
       const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-
       const findCol = (patterns: string[]) => rawHeaders.find(h => patterns.some(p => normalize(h).includes(p)));
-      const providerCol = findCol(['prestador', 'provider', 'nome', 'name', 'profissional']);
-      const segmentCol = findCol(['segmento', 'segment', 'categoria', 'area']);
-      const serviceCol = findCol(['servico', 'service', 'serviço']);
-      const servicePriceCol = findCol(['preco_servico', 'preço_serviço', 'service_price', 'valor_servico']);
-      const productCol = findCol(['produto', 'product']);
-      const productPriceCol = findCol(['preco_produto', 'preço_produto', 'product_price', 'valor_produto']);
-      const stockCol = findCol(['estoque', 'stock', 'tipo_estoque']);
-      const phoneCol = findCol(['telefone', 'phone', 'cel']);
-      const emailCol = findCol(['email', 'e-mail']);
-      const cityCol = findCol(['cidade', 'city']);
 
-      const rows: ParsedRow[] = json.map((row: any) => ({
-        providerName: row[providerCol || ''] || '',
-        segment: row[segmentCol || ''] || 'Geral',
-        serviceName: row[serviceCol || ''] || undefined,
-        servicePrice: servicePriceCol ? parseFloat(row[servicePriceCol]) || 0 : undefined,
-        productName: row[productCol || ''] || undefined,
-        productPrice: productPriceCol ? parseFloat(row[productPriceCol]) || 0 : undefined,
-        productStockType: row[stockCol || ''] || 'fisico',
-        phone: row[phoneCol || ''] || undefined,
-        email: row[emailCol || ''] || undefined,
-        city: row[cityCol || ''] || undefined,
-      })).filter((r: ParsedRow) => r.providerName);
+      const colMap = {
+        provider: findCol(['prestador', 'provider', 'nome do prestador', 'profissional']),
+        segment: findCol(['segmento', 'segment', 'categoria', 'area']),
+        service: findCol(['servico', 'service', 'serviço']),
+        servicePrice: findCol(['preco_servico', 'preço serviço', 'preco servico', 'service_price', 'valor_servico', 'valor servico', 'preço_serviço']),
+        product: findCol(['produto', 'product']),
+        productPrice: findCol(['preco_produto', 'preço produto', 'preco produto', 'product_price', 'valor_produto', 'valor produto', 'preço_produto']),
+        stock: findCol(['estoque', 'stock', 'tipo_estoque', 'tipo estoque']),
+        phone: findCol(['telefone', 'phone', 'cel']),
+        email: findCol(['email', 'e-mail']),
+        city: findCol(['cidade', 'city']),
+      };
 
-      setParsedData(rows);
-      toast.success(`${rows.length} linhas encontradas`);
+      const parsed: ParsedRow[] = json.map((r: any, i: number) => ({
+        _id: i + 1,
+        providerName: String(r[colMap.provider || ''] ?? '').trim(),
+        segment: String(r[colMap.segment || ''] ?? 'Geral').trim(),
+        serviceName: String(r[colMap.service || ''] ?? '').trim(),
+        servicePrice: String(r[colMap.servicePrice || ''] ?? '').trim(),
+        productName: String(r[colMap.product || ''] ?? '').trim(),
+        productPrice: String(r[colMap.productPrice || ''] ?? '').trim(),
+        productStockType: String(r[colMap.stock || ''] ?? 'fisico').trim().toLowerCase(),
+        phone: String(r[colMap.phone || ''] ?? '').trim(),
+        email: String(r[colMap.email || ''] ?? '').trim(),
+        city: String(r[colMap.city || ''] ?? '').trim(),
+      })).filter((r: ParsedRow) => r.providerName || r.serviceName || r.productName);
+
+      setRows(parsed);
+      const errs = validateRows(parsed);
+      setErrors(errs);
+      toast.success(`${parsed.length} linhas carregadas${errs.length > 0 ? ` — ${errs.length} inconsistência(s)` : ''}`);
     } catch (err: any) {
       toast.error('Erro ao ler planilha: ' + err.message);
     }
   };
 
+  /* ─── Cell editing ─── */
+  const updateCell = useCallback((rowId: number, field: string, value: string) => {
+    setRows(prev => {
+      const updated = prev.map(r => r._id === rowId ? { ...r, [field]: value } : r);
+      setErrors(validateRows(updated));
+      return updated;
+    });
+  }, []);
+
+  const removeRow = useCallback((rowId: number) => {
+    setRows(prev => {
+      const updated = prev.filter(r => r._id !== rowId);
+      setErrors(validateRows(updated));
+      return updated;
+    });
+  }, []);
+
+  /* ─── Get error for cell ─── */
+  const getCellError = (rowId: number, field: string) =>
+    errors.find(e => e.rowId === rowId && e.field === field);
+
+  const hasErrors = errors.length > 0;
+  const errorRowIds = new Set(errors.map(e => e.rowId));
+
+  /* ─── Import ─── */
   const executeImport = async () => {
-    if (parsedData.length === 0) return;
+    if (rows.length === 0 || hasErrors) return;
     setImporting(true);
     const res: ImportResult = { providersCreated: 0, providersLinked: 0, servicesCreated: 0, productsCreated: 0, errors: [] };
 
-    // Get existing providers
     const { data: existingProviders } = await supabase.from('providers').select('id, name');
     const provMap = new Map<string, number>();
     (existingProviders || []).forEach((p: any) => provMap.set(p.name.toLowerCase().split(' ')[0], p.id));
 
-    // Get max IDs for service_id and product_id
     const { data: maxSvc } = await supabase.from('dynamic_services').select('service_id').order('service_id', { ascending: false }).limit(1);
     const { data: maxProd } = await supabase.from('dynamic_products').select('product_id').order('product_id', { ascending: false }).limit(1);
     let nextServiceId = ((maxSvc?.[0]?.service_id) || 2000) + 1;
     let nextProductId = ((maxProd?.[0]?.product_id) || 2000) + 1;
 
-    // Group by provider
     const byProvider = new Map<string, ParsedRow[]>();
-    parsedData.forEach(row => {
+    rows.forEach(row => {
       const key = row.providerName;
       if (!byProvider.has(key)) byProvider.set(key, []);
       byProvider.get(key)!.push(row);
     });
 
-    for (const [provName, rows] of byProvider) {
+    for (const [provName, provRows] of byProvider) {
       let providerId: number;
       const firstName = provName.toLowerCase().split(' ')[0];
       const existingId = provMap.get(firstName);
@@ -126,7 +234,7 @@ const ImportPage = () => {
         providerId = existingId;
         res.providersLinked++;
       } else {
-        const firstRow = rows[0];
+        const firstRow = provRows[0];
         const { data: newProv, error } = await supabase.from('providers').insert({
           name: provName,
           segment: [firstRow.segment || 'Geral'],
@@ -141,28 +249,27 @@ const ImportPage = () => {
         res.providersCreated++;
       }
 
-      // Create services and products
-      for (const row of rows) {
-        if (row.serviceName) {
+      for (const row of provRows) {
+        if (row.serviceName.trim()) {
           const { error } = await supabase.from('dynamic_services').insert({
             service_id: nextServiceId++,
             name: row.serviceName,
             segment: row.segment || 'Geral',
             provider: provName,
             provider_id: providerId,
-            price: row.servicePrice || 0,
+            price: parseFloat(row.servicePrice) || 0,
           });
           if (error) res.errors.push(`Serviço ${row.serviceName}: ${error.message}`);
           else res.servicesCreated++;
         }
-        if (row.productName) {
+        if (row.productName.trim()) {
           const { error } = await supabase.from('dynamic_products').insert({
             product_id: nextProductId++,
             name: row.productName,
             provider: provName,
             provider_id: providerId,
-            price: row.productPrice || 0,
-            stock_type: (row.productStockType || 'fisico').toLowerCase().includes('drop') ? 'drop' : 'fisico',
+            price: parseFloat(row.productPrice) || 0,
+            stock_type: row.productStockType === 'drop' ? 'drop' : 'fisico',
           });
           if (error) res.errors.push(`Produto ${row.productName}: ${error.message}`);
           else res.productsCreated++;
@@ -176,6 +283,63 @@ const ImportPage = () => {
     toast.success('Importação concluída!');
   };
 
+  const resetAll = () => {
+    setRows([]);
+    setErrors([]);
+    setResult(null);
+    setFileName('');
+    setEditingCell(null);
+    if (fileRef.current) fileRef.current.value = '';
+  };
+
+  /* ─── Render cell ─── */
+  const renderCell = (row: ParsedRow, field: keyof Omit<ParsedRow, '_id'>) => {
+    const isEditing = editingCell?.rowId === row._id && editingCell?.field === field;
+    const cellError = getCellError(row._id, field);
+    const value = row[field] as string;
+
+    if (isEditing) {
+      if (field === 'productStockType') {
+        return (
+          <Select value={value} onValueChange={(v) => { updateCell(row._id, field, v); setEditingCell(null); }}>
+            <SelectTrigger className="h-7 text-xs w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="fisico">Físico</SelectItem>
+              <SelectItem value="drop">Drop</SelectItem>
+            </SelectContent>
+          </Select>
+        );
+      }
+      return (
+        <Input
+          autoFocus
+          className="h-7 text-xs w-full min-w-[80px]"
+          defaultValue={value}
+          onBlur={(e) => { updateCell(row._id, field, e.target.value); setEditingCell(null); }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') { updateCell(row._id, field, (e.target as HTMLInputElement).value); setEditingCell(null); }
+            if (e.key === 'Escape') setEditingCell(null);
+          }}
+        />
+      );
+    }
+
+    return (
+      <div
+        className={`cursor-pointer px-1 py-0.5 rounded text-xs min-h-[24px] flex items-center ${
+          cellError ? 'bg-destructive/15 text-destructive ring-1 ring-destructive/30' : 'hover:bg-muted/50'
+        }`}
+        onClick={() => setEditingCell({ rowId: row._id, field })}
+        title={cellError?.message}
+      >
+        {value || <span className="text-muted-foreground italic">—</span>}
+        {cellError && <AlertTriangle className="w-3 h-3 ml-1 shrink-0" />}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <nav className="fixed top-0 w-full z-50 bg-card/80 backdrop-blur-lg border-b border-border">
@@ -184,66 +348,129 @@ const ImportPage = () => {
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <FileSpreadsheet className="w-5 h-5 text-primary" />
-          <span className="font-bold text-foreground">Importação de Planilha</span>
+          <span className="font-bold text-foreground">Importação Inteligente</span>
         </div>
       </nav>
 
-      <div className="pt-20 px-4 container mx-auto max-w-3xl space-y-4">
-        {/* Upload */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm flex items-center gap-2"><Upload className="w-4 h-4" /> Selecionar Planilha</CardTitle>
-            <CardDescription className="text-xs">
-              Faça upload de um arquivo Excel (.xlsx). O sistema identifica automaticamente as colunas por nome (Prestador, Segmento, Serviço, Produto, Preço, etc.).
-              O primeiro nome do prestador é usado como chave de vinculação.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleFileSelect} className="hidden" />
-            <Button variant="outline" className="w-full gap-2 h-20 border-dashed" onClick={() => fileRef.current?.click()}>
-              <Upload className="w-5 h-5" />
-              <div className="text-left">
-                <p className="text-sm font-medium">{fileName || 'Clique para selecionar'}</p>
-                <p className="text-xs text-muted-foreground">Excel (.xlsx, .xls) ou CSV</p>
-              </div>
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="pt-20 px-4 container mx-auto max-w-5xl space-y-4">
+        {/* Actions row */}
+        <div className="flex flex-wrap gap-3">
+          <Card className="flex-1 min-w-[200px]">
+            <CardContent className="p-4 flex flex-col gap-2">
+              <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Download className="w-3.5 h-3.5 text-primary" /> 1. Baixe o Modelo
+              </p>
+              <p className="text-[10px] text-muted-foreground">Planilha com cabeçalhos e linha de exemplo.</p>
+              <Button variant="outline" size="sm" className="gap-1.5 mt-auto" onClick={generateTemplate}>
+                <Download className="w-3 h-3" /> Modelo para Importação
+              </Button>
+            </CardContent>
+          </Card>
 
-        {/* Preview */}
-        {parsedData.length > 0 && !result && (
+          <Card className="flex-1 min-w-[200px]">
+            <CardContent className="p-4 flex flex-col gap-2">
+              <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Upload className="w-3.5 h-3.5 text-primary" /> 2. Faça Upload
+              </p>
+              <p className="text-[10px] text-muted-foreground">Excel (.xlsx) ou CSV. Colunas identificadas automaticamente.</p>
+              <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleFileSelect} className="hidden" />
+              <Button variant="outline" size="sm" className="gap-1.5 mt-auto" onClick={() => fileRef.current?.click()}>
+                <Upload className="w-3 h-3" /> {fileName || 'Selecionar Arquivo'}
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="flex-1 min-w-[200px]">
+            <CardContent className="p-4 flex flex-col gap-2">
+              <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Pencil className="w-3.5 h-3.5 text-primary" /> 3. Corrija e Salve
+              </p>
+              <p className="text-[10px] text-muted-foreground">Edite células com erro direto na tabela. Só importa sem erros.</p>
+              <Button
+                size="sm"
+                className="gap-1.5 mt-auto"
+                disabled={rows.length === 0 || hasErrors || importing}
+                onClick={executeImport}
+              >
+                {importing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                {importing ? 'Importando...' : 'Importar Dados'}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Error summary */}
+        <AnimatePresence>
+          {rows.length > 0 && hasErrors && !result && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+              <Card className="border-destructive/40 bg-destructive/5">
+                <CardContent className="p-3 flex items-center gap-2 flex-wrap">
+                  <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+                  <span className="text-xs font-medium text-destructive">
+                    {errors.length} inconsistência(s) em {errorRowIds.size} linha(s)
+                  </span>
+                  <span className="text-[10px] text-destructive/70">— clique nas células vermelhas para corrigir</span>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Validation passed */}
+        <AnimatePresence>
+          {rows.length > 0 && !hasErrors && !result && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+              <Card className="border-green-500/40 bg-green-500/5">
+                <CardContent className="p-3 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+                  <span className="text-xs font-medium text-green-700 dark:text-green-400">
+                    ✓ Todas as {rows.length} linhas validadas — pronto para importar
+                  </span>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Data table */}
+        {rows.length > 0 && !result && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Preview ({parsedData.length} linhas)</CardTitle>
+              <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                <CardTitle className="text-sm">{rows.length} linhas · {errorRowIds.size} com erro</CardTitle>
+                <Button variant="ghost" size="sm" className="text-xs gap-1 text-muted-foreground" onClick={resetAll}>
+                  <X className="w-3 h-3" /> Limpar
+                </Button>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto max-h-64">
+                <div className="overflow-x-auto max-h-[50vh] border rounded-md">
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="sticky top-0 bg-card z-10">
                       <TableRow>
-                        <TableHead className="text-xs">Prestador</TableHead>
-                        <TableHead className="text-xs">Segmento</TableHead>
-                        <TableHead className="text-xs">Serviço</TableHead>
-                        <TableHead className="text-xs">Produto</TableHead>
+                        <TableHead className="text-[10px] w-8">#</TableHead>
+                        {COLUMNS.map(col => (
+                          <TableHead key={col} className="text-[10px] whitespace-nowrap">{FIELD_LABELS[col]}</TableHead>
+                        ))}
+                        <TableHead className="text-[10px] w-8"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {parsedData.slice(0, 10).map((row, i) => (
-                        <TableRow key={i}>
-                          <TableCell className="text-xs">{row.providerName}</TableCell>
-                          <TableCell className="text-xs">{row.segment}</TableCell>
-                          <TableCell className="text-xs">{row.serviceName || '-'}</TableCell>
-                          <TableCell className="text-xs">{row.productName || '-'}</TableCell>
+                      {rows.map(row => (
+                        <TableRow key={row._id} className={errorRowIds.has(row._id) ? 'bg-destructive/5' : ''}>
+                          <TableCell className="text-[10px] text-muted-foreground font-mono">{row._id}</TableCell>
+                          {COLUMNS.map(col => (
+                            <TableCell key={col} className="py-1 px-1">{renderCell(row, col)}</TableCell>
+                          ))}
+                          <TableCell className="py-1 px-0">
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeRow(row._id)}>
+                              <Trash2 className="w-3 h-3 text-muted-foreground hover:text-destructive" />
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
-                  {parsedData.length > 10 && <p className="text-xs text-muted-foreground text-center py-2">... e mais {parsedData.length - 10} linhas</p>}
                 </div>
-                <Button className="w-full mt-4 gap-2" onClick={executeImport} disabled={importing}>
-                  {importing ? <><Loader2 className="w-4 h-4 animate-spin" /> Importando...</> : <><Upload className="w-4 h-4" /> Importar {parsedData.length} linhas</>}
-                </Button>
               </CardContent>
             </Card>
           </motion.div>
@@ -254,35 +481,34 @@ const ImportPage = () => {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-500" /> Resultado</CardTitle>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-green-500" /> Importação Concluída
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-muted/50 rounded-lg p-3 text-center">
-                    <p className="text-2xl font-bold text-foreground">{result.providersCreated}</p>
-                    <p className="text-xs text-muted-foreground">Prestadores criados</p>
-                  </div>
-                  <div className="bg-muted/50 rounded-lg p-3 text-center">
-                    <p className="text-2xl font-bold text-foreground">{result.providersLinked}</p>
-                    <p className="text-xs text-muted-foreground">Prestadores vinculados</p>
-                  </div>
-                  <div className="bg-muted/50 rounded-lg p-3 text-center">
-                    <p className="text-2xl font-bold text-foreground">{result.servicesCreated}</p>
-                    <p className="text-xs text-muted-foreground">Serviços criados</p>
-                  </div>
-                  <div className="bg-muted/50 rounded-lg p-3 text-center">
-                    <p className="text-2xl font-bold text-foreground">{result.productsCreated}</p>
-                    <p className="text-xs text-muted-foreground">Produtos criados</p>
-                  </div>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { n: result.providersCreated, l: 'Prestadores criados' },
+                    { n: result.providersLinked, l: 'Prestadores vinculados' },
+                    { n: result.servicesCreated, l: 'Serviços criados' },
+                    { n: result.productsCreated, l: 'Produtos criados' },
+                  ].map(({ n, l }) => (
+                    <div key={l} className="bg-muted/50 rounded-lg p-3 text-center">
+                      <p className="text-2xl font-bold text-foreground">{n}</p>
+                      <p className="text-[10px] text-muted-foreground">{l}</p>
+                    </div>
+                  ))}
                 </div>
                 {result.errors.length > 0 && (
                   <div className="bg-destructive/10 rounded-lg p-3">
-                    <p className="text-xs font-semibold text-destructive flex items-center gap-1 mb-1"><AlertTriangle className="w-3 h-3" /> {result.errors.length} erro(s)</p>
+                    <p className="text-xs font-semibold text-destructive flex items-center gap-1 mb-1">
+                      <AlertTriangle className="w-3 h-3" /> {result.errors.length} erro(s)
+                    </p>
                     {result.errors.slice(0, 5).map((err, i) => <p key={i} className="text-[10px] text-destructive/80">{err}</p>)}
                   </div>
                 )}
-                <Button variant="outline" className="w-full" onClick={() => { setParsedData([]); setResult(null); setFileName(''); }}>
-                  Nova Importação
+                <Button variant="outline" className="w-full gap-2" onClick={resetAll}>
+                  <Upload className="w-3 h-3" /> Nova Importação
                 </Button>
               </CardContent>
             </Card>
