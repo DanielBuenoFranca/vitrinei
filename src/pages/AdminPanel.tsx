@@ -348,6 +348,10 @@ const AdminPanel = () => {
               <UserCog className="h-3.5 w-3.5" />
               Usuários ({userProfiles.length})
             </TabsTrigger>
+            <TabsTrigger value="marquee" className="gap-1.5">
+              <Megaphone className="h-3.5 w-3.5" />
+              Avisos
+            </TabsTrigger>
           </TabsList>
 
           {/* ── SEGMENTS TAB ── */}
