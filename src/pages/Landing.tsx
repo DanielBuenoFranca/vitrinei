@@ -342,6 +342,8 @@ const Landing = () => {
           <div className="flex items-center gap-2">
             {user ? (
               <div className="flex items-center gap-1.5">
+                <span className="text-xs text-foreground font-medium hidden sm:inline truncate max-w-[120px]">{user.email?.split('@')[0]}</span>
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 hidden sm:inline-flex">{profileLabel}</Badge>
                 <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => navigate('/carteira')}>
                   💰 Carteira
                 </Button>
