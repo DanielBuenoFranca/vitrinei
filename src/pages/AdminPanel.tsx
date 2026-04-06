@@ -678,8 +678,8 @@ const AdminPanel = () => {
             />
           </TabsContent>
 
-          {/* ── USERS TAB ── */}
           <TabsContent value="users">
+            <PermissionGate permission="admin.users" featureName="Gestão de Usuários" readOnly>
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2"><UserCog className="w-4 h-4" /> Gestão de Usuários</CardTitle>
@@ -754,6 +754,7 @@ const AdminPanel = () => {
                 )}
               </CardContent>
             </Card>
+            </PermissionGate>
           </TabsContent>
         </Tabs>
       </main>
