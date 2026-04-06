@@ -40,7 +40,7 @@ interface RowError {
 }
 
 interface AutoFix {
-  icon: 'segment' | 'provider' | 'price' | 'contact' | 'tags';
+  icon: 'segment' | 'provider' | 'price' | 'contact' | 'tags' | 'document' | 'logo';
   message: string;
 }
 
@@ -67,10 +67,11 @@ const FIELD_LABELS: Record<string, string> = {
   phone: 'Telefone',
   email: 'E-mail',
   city: 'Cidade',
+  cpfCnpj: 'CPF/CNPJ',
 };
 
 const COLUMNS: (keyof Omit<ParsedRow, '_id'>)[] = [
-  'providerName', 'segment', 'serviceName', 'servicePrice',
+  'providerName', 'cpfCnpj', 'segment', 'serviceName', 'servicePrice',
   'productName', 'productPrice', 'productStockType',
   'phone', 'email', 'city',
 ];
@@ -78,8 +79,8 @@ const COLUMNS: (keyof Omit<ParsedRow, '_id'>)[] = [
 /* ─── Template generator ─── */
 const generateTemplate = async () => {
   const XLSX = await import('xlsx');
-  const headers = ['Prestador', 'Segmento', 'Serviço', 'Preço Serviço', 'Produto', 'Preço Produto', 'Tipo Estoque', 'Telefone', 'E-mail', 'Cidade'];
-  const example = ['João Silva', 'Manutenção', 'Instalação Elétrica', '150', 'Tomada 3 pinos', '12.50', 'fisico', '(11) 99999-0000', 'joao@email.com', 'São Paulo'];
+  const headers = ['Prestador', 'CPF/CNPJ', 'Segmento', 'Serviço', 'Preço Serviço', 'Produto', 'Preço Produto', 'Tipo Estoque', 'Telefone', 'E-mail', 'Cidade'];
+  const example = ['João Silva', '123.456.789-09', 'Manutenção', 'Instalação Elétrica', '150', 'Tomada 3 pinos', '12.50', 'fisico', '(11) 99999-0000', 'joao@email.com', 'São Paulo'];
   const ws = XLSX.utils.aoa_to_sheet([headers, example]);
   ws['!cols'] = headers.map(() => ({ wch: 20 }));
   const wb = XLSX.utils.book_new();
