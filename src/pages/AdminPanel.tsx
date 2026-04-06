@@ -80,6 +80,42 @@ const AdminPanel = () => {
   // Confirmation dialog for provider delete
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; provider: Provider | null }>({ open: false, provider: null });
 
+  // Marquee / Header announcements
+  const [marqueeMessages, setMarqueeMessages] = useState<string[]>([]);
+  const [newMarqueeMsg, setNewMarqueeMsg] = useState('');
+  const [savingMarquee, setSavingMarquee] = useState(false);
+
+  const fetchMarquee = async () => {
+    const { data } = await supabase.from('site_settings').select('value').eq('key', 'header_marquee').maybeSingle();
+    if (data?.value && typeof data.value === 'object' && 'messages' in (data.value as any)) {
+      setMarqueeMessages((data.value as any).messages || []);
+    }
+  };
+
+  const saveMarquee = async (msgs: string[]) => {
+    setSavingMarquee(true);
+    const { error } = await supabase.from('site_settings').update({ value: { messages: msgs } as any }).eq('key', 'header_marquee');
+    if (error) {
+      toast.error('Erro ao salvar avisos');
+    } else {
+      setMarqueeMessages(msgs);
+      toast.success('Avisos atualizados em tempo real');
+    }
+    setSavingMarquee(false);
+  };
+
+  const addMarqueeMsg = () => {
+    const msg = newMarqueeMsg.trim();
+    if (!msg) return;
+    if (msg.length > 500) { toast.error('Máximo de 500 caracteres por aviso'); return; }
+    saveMarquee([...marqueeMessages, msg]);
+    setNewMarqueeMsg('');
+  };
+
+  const removeMarqueeMsg = (idx: number) => {
+    saveMarquee(marqueeMessages.filter((_, i) => i !== idx));
+  };
+
   const fetchData = async () => {
     setLoading(true);
     const [provRes, svcRes, prodRes, segRes, unitRes] = await Promise.all([
