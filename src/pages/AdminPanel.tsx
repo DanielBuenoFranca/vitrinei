@@ -724,7 +724,7 @@ const AdminPanel = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2"><UserCog className="w-4 h-4" /> Gestão de Usuários</CardTitle>
-                <CardDescription>Usuários cadastrados no sistema e seus papéis</CardDescription>
+                <CardDescription>Usuários cadastrados no sistema — dados completos e edição de perfil</CardDescription>
               </CardHeader>
               <CardContent>
                 {userProfiles.length === 0 ? (
@@ -734,11 +734,14 @@ const AdminPanel = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead>Avatar</TableHead>
                           <TableHead>Nome</TableHead>
                           <TableHead>Telefone</TableHead>
+                          <TableHead>User ID</TableHead>
                           <TableHead>Papéis</TableHead>
                           <TableHead>Criado em</TableHead>
-                          <TableHead></TableHead>
+                          <TableHead>Atualizado em</TableHead>
+                          <TableHead>Ações</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -747,12 +750,23 @@ const AdminPanel = () => {
                           return (
                             <TableRow key={profile.id}>
                               <TableCell>
-                                <div className="flex items-center gap-2">
-                                  {profile.avatar_url && <img src={profile.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover" />}
-                                  <span className="font-medium text-sm">{profile.display_name || 'Sem nome'}</span>
-                                </div>
+                                {profile.avatar_url ? (
+                                  <img src={profile.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover border" />
+                                ) : (
+                                  <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-xs font-bold">
+                                    {(profile.display_name || '?')[0]?.toUpperCase()}
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <span className="font-medium text-sm">{profile.display_name || 'Sem nome'}</span>
                               </TableCell>
                               <TableCell className="text-xs text-muted-foreground">{profile.phone || '—'}</TableCell>
+                              <TableCell>
+                                <code className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-mono">
+                                  {profile.user_id?.slice(0, 8)}…
+                                </code>
+                              </TableCell>
                               <TableCell>
                                 <div className="flex gap-1 flex-wrap">
                                   {([
@@ -781,10 +795,18 @@ const AdminPanel = () => {
                               <TableCell className="text-xs text-muted-foreground">
                                 {new Date(profile.created_at).toLocaleDateString('pt-BR')}
                               </TableCell>
+                              <TableCell className="text-xs text-muted-foreground">
+                                {new Date(profile.updated_at).toLocaleDateString('pt-BR')}
+                              </TableCell>
                               <TableCell>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteUserProfile(profile.user_id)}>
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                <div className="flex gap-1">
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditUserDialog({ open: true, profile })}>
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteUserProfile(profile.user_id)}>
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </TableCell>
                             </TableRow>
                           );
