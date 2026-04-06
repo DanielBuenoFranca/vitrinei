@@ -247,6 +247,7 @@ const ImportPage = () => {
 
       const colMap = {
         provider: findCol(['prestador', 'provider', 'nome do prestador', 'profissional']),
+        cpfCnpj: findCol(['cpf', 'cnpj', 'cpf/cnpj', 'cpf_cnpj', 'documento']),
         segment: findCol(['segmento', 'segment', 'categoria', 'area']),
         service: findCol(['servico', 'service', 'serviço']),
         servicePrice: findCol(['preco_servico', 'preço serviço', 'preco servico', 'service_price', 'valor_servico', 'valor servico', 'preço_serviço']),
@@ -261,6 +262,7 @@ const ImportPage = () => {
       const parsed: ParsedRow[] = json.map((r: any, i: number) => ({
         _id: i + 1,
         providerName: String(r[colMap.provider || ''] ?? '').trim(),
+        cpfCnpj: String(r[colMap.cpfCnpj || ''] ?? '').trim().replace(/\D/g, ''),
         segment: String(r[colMap.segment || ''] ?? 'Geral').trim(),
         serviceName: String(r[colMap.service || ''] ?? '').trim(),
         servicePrice: String(r[colMap.servicePrice || ''] ?? '').trim(),
