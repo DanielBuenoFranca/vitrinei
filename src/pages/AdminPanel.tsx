@@ -133,7 +133,7 @@ const AdminPanel = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); fetchUsers(); }, []);
+  useEffect(() => { fetchData(); fetchUsers(); fetchMarquee(); }, []);
 
   const fetchUsers = async () => {
     const [profilesRes, rolesRes] = await Promise.all([
