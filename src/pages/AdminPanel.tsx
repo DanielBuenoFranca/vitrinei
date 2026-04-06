@@ -85,7 +85,11 @@ const AdminPanel = () => {
   const [editUserName, setEditUserName] = useState('');
   const [editUserPhone, setEditUserPhone] = useState('');
   const [editUserAvatar, setEditUserAvatar] = useState('');
+  const [editUserEmail, setEditUserEmail] = useState('');
   const [savingUser, setSavingUser] = useState(false);
+
+  // Auth user emails (fetched from backend function)
+  const [authUserEmails, setAuthUserEmails] = useState<Record<string, string>>({});
 
   // Marquee / Header announcements
   const [marqueeMessages, setMarqueeMessages] = useState<string[]>([]);
@@ -149,6 +153,16 @@ const AdminPanel = () => {
     ]);
     setUserProfiles(profilesRes.data || []);
     setUserRoles(rolesRes.data || []);
+
+    // Fetch auth emails via edge function (master only)
+    try {
+      const { data: authData, error: authErr } = await supabase.functions.invoke('list-auth-users');
+      if (!authErr && Array.isArray(authData)) {
+        const emailMap: Record<string, string> = {};
+        authData.forEach((u: any) => { if (u.id && u.email) emailMap[u.id] = u.email; });
+        setAuthUserEmails(emailMap);
+      }
+    } catch { /* non-master users won't have access */ }
   };
 
   const toggleUserRole = async (userId: string, role: string) => {
@@ -167,24 +181,44 @@ const AdminPanel = () => {
     setEditUserName(profile.display_name || '');
     setEditUserPhone(profile.phone || '');
     setEditUserAvatar(profile.avatar_url || '');
+    setEditUserEmail(authUserEmails[profile.user_id] || '');
     setEditUserDialog({ open: true, profile });
   };
 
   const saveUserProfile = async () => {
     if (!editUserDialog.profile) return;
     setSavingUser(true);
+    const userId = editUserDialog.profile.user_id;
+
     const { error } = await supabase.from('profiles').update({
       display_name: editUserName.trim() || null,
       phone: editUserPhone.trim() || null,
       avatar_url: editUserAvatar.trim() || null,
-    }).eq('user_id', editUserDialog.profile.user_id);
+    }).eq('user_id', userId);
+
     if (error) {
       toast.error('Erro ao salvar perfil');
-    } else {
-      toast.success('Perfil atualizado');
-      setEditUserDialog({ open: false, profile: null });
-      fetchUsers();
+      setSavingUser(false);
+      return;
     }
+
+    // Update email if changed
+    const originalEmail = authUserEmails[userId] || '';
+    const newEmail = editUserEmail.trim();
+    if (newEmail && newEmail !== originalEmail) {
+      const { data: emailRes, error: emailErr } = await supabase.functions.invoke('update-user-email', {
+        body: { user_id: userId, new_email: newEmail },
+      });
+      if (emailErr || emailRes?.error) {
+        toast.error('Erro ao alterar e-mail: ' + (emailRes?.error || emailErr?.message || 'desconhecido'));
+        setSavingUser(false);
+        return;
+      }
+    }
+
+    toast.success('Perfil atualizado');
+    setEditUserDialog({ open: false, profile: null });
+    fetchUsers();
     setSavingUser(false);
   };
 
@@ -768,6 +802,7 @@ const AdminPanel = () => {
                         <TableRow>
                           <TableHead>Avatar</TableHead>
                           <TableHead>Nome</TableHead>
+                          <TableHead>E-mail</TableHead>
                           <TableHead>Telefone</TableHead>
                           <TableHead>User ID</TableHead>
                           <TableHead>Papéis</TableHead>
@@ -793,6 +828,7 @@ const AdminPanel = () => {
                               <TableCell>
                                 <span className="font-medium text-sm">{profile.display_name || 'Sem nome'}</span>
                               </TableCell>
+                              <TableCell className="text-xs text-muted-foreground">{authUserEmails[profile.user_id] || '—'}</TableCell>
                               <TableCell className="text-xs text-muted-foreground">{profile.phone || '—'}</TableCell>
                               <TableCell>
                                 <code className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-mono">
@@ -968,6 +1004,13 @@ const AdminPanel = () => {
             <div>
               <label className="text-sm font-medium mb-1.5 block">Nome de exibição</label>
               <Input value={editUserName} onChange={e => setEditUserName(e.target.value)} placeholder="Nome do usuário" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">E-mail (autenticação)</label>
+              <Input type="email" value={editUserEmail} onChange={e => setEditUserEmail(e.target.value)} placeholder="email@exemplo.com" />
+              {editUserEmail !== (authUserEmails[editUserDialog.profile?.user_id] || '') && editUserEmail.trim() && (
+                <p className="text-xs text-amber-600 mt-1">⚠ O e-mail de login do usuário será alterado</p>
+              )}
             </div>
             <div>
               <label className="text-sm font-medium mb-1.5 block">Telefone</label>
