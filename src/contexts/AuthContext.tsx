@@ -29,6 +29,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState<AppRole[]>([]);
+  const [displayName, setDisplayName] = useState<string | null>(null);
 
   const isAdmin = roles.includes('admin') || roles.includes('master');
   const isMaster = roles.includes('master');
