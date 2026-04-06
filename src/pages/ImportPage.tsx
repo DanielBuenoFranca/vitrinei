@@ -23,8 +23,10 @@ interface ParsedRow {
   segment: string;
   serviceName: string;
   servicePrice: string;
+  serviceUnit: string;
   productName: string;
   productPrice: string;
+  productUnit: string;
   productStockType: string;
   phone: string;
   email: string;
