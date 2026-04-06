@@ -80,6 +80,13 @@ const AdminPanel = () => {
   // Confirmation dialog for provider delete
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; provider: Provider | null }>({ open: false, provider: null });
 
+  // Edit user dialog
+  const [editUserDialog, setEditUserDialog] = useState<{ open: boolean; profile: any | null }>({ open: false, profile: null });
+  const [editUserName, setEditUserName] = useState('');
+  const [editUserPhone, setEditUserPhone] = useState('');
+  const [editUserAvatar, setEditUserAvatar] = useState('');
+  const [savingUser, setSavingUser] = useState(false);
+
   // Marquee / Header announcements
   const [marqueeMessages, setMarqueeMessages] = useState<string[]>([]);
   const [newMarqueeMsg, setNewMarqueeMsg] = useState('');
@@ -154,6 +161,31 @@ const AdminPanel = () => {
       toast.success('Papel atribuído');
     }
     fetchUsers();
+  };
+
+  const openEditUser = (profile: any) => {
+    setEditUserName(profile.display_name || '');
+    setEditUserPhone(profile.phone || '');
+    setEditUserAvatar(profile.avatar_url || '');
+    setEditUserDialog({ open: true, profile });
+  };
+
+  const saveUserProfile = async () => {
+    if (!editUserDialog.profile) return;
+    setSavingUser(true);
+    const { error } = await supabase.from('profiles').update({
+      display_name: editUserName.trim() || null,
+      phone: editUserPhone.trim() || null,
+      avatar_url: editUserAvatar.trim() || null,
+    }).eq('user_id', editUserDialog.profile.user_id);
+    if (error) {
+      toast.error('Erro ao salvar perfil');
+    } else {
+      toast.success('Perfil atualizado');
+      setEditUserDialog({ open: false, profile: null });
+      fetchUsers();
+    }
+    setSavingUser(false);
   };
 
   const deleteUserProfile = async (userId: string) => {
@@ -724,7 +756,7 @@ const AdminPanel = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2"><UserCog className="w-4 h-4" /> Gestão de Usuários</CardTitle>
-                <CardDescription>Usuários cadastrados no sistema e seus papéis</CardDescription>
+                <CardDescription>Usuários cadastrados no sistema — dados completos e edição de perfil</CardDescription>
               </CardHeader>
               <CardContent>
                 {userProfiles.length === 0 ? (
@@ -734,11 +766,14 @@ const AdminPanel = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead>Avatar</TableHead>
                           <TableHead>Nome</TableHead>
                           <TableHead>Telefone</TableHead>
+                          <TableHead>User ID</TableHead>
                           <TableHead>Papéis</TableHead>
                           <TableHead>Criado em</TableHead>
-                          <TableHead></TableHead>
+                          <TableHead>Atualizado em</TableHead>
+                          <TableHead>Ações</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -747,12 +782,23 @@ const AdminPanel = () => {
                           return (
                             <TableRow key={profile.id}>
                               <TableCell>
-                                <div className="flex items-center gap-2">
-                                  {profile.avatar_url && <img src={profile.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover" />}
-                                  <span className="font-medium text-sm">{profile.display_name || 'Sem nome'}</span>
-                                </div>
+                                {profile.avatar_url ? (
+                                  <img src={profile.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover border" />
+                                ) : (
+                                  <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-xs font-bold">
+                                    {(profile.display_name || '?')[0]?.toUpperCase()}
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <span className="font-medium text-sm">{profile.display_name || 'Sem nome'}</span>
                               </TableCell>
                               <TableCell className="text-xs text-muted-foreground">{profile.phone || '—'}</TableCell>
+                              <TableCell>
+                                <code className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-mono">
+                                  {profile.user_id?.slice(0, 8)}…
+                                </code>
+                              </TableCell>
                               <TableCell>
                                 <div className="flex gap-1 flex-wrap">
                                   {([
@@ -781,10 +827,18 @@ const AdminPanel = () => {
                               <TableCell className="text-xs text-muted-foreground">
                                 {new Date(profile.created_at).toLocaleDateString('pt-BR')}
                               </TableCell>
+                              <TableCell className="text-xs text-muted-foreground">
+                                {new Date(profile.updated_at).toLocaleDateString('pt-BR')}
+                              </TableCell>
                               <TableCell>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteUserProfile(profile.user_id)}>
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                <div className="flex gap-1">
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditUser(profile)}>
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteUserProfile(profile.user_id)}>
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </TableCell>
                             </TableRow>
                           );
@@ -893,6 +947,52 @@ const AdminPanel = () => {
               }
             }}>
               Excluir Tudo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={editUserDialog.open} onOpenChange={(v) => !v && setEditUserDialog({ open: false, profile: null })}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5 text-primary" />
+              Editar Usuário
+            </DialogTitle>
+            <DialogDescription>
+              Altere os dados do perfil de <strong>{editUserDialog.profile?.display_name || 'usuário'}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Nome de exibição</label>
+              <Input value={editUserName} onChange={e => setEditUserName(e.target.value)} placeholder="Nome do usuário" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Telefone</label>
+              <Input value={editUserPhone} onChange={e => setEditUserPhone(e.target.value)} placeholder="(00) 00000-0000" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">URL do Avatar</label>
+              <Input value={editUserAvatar} onChange={e => setEditUserAvatar(e.target.value)} placeholder="https://..." />
+              {editUserAvatar && (
+                <img src={editUserAvatar} alt="preview" className="mt-2 w-16 h-16 rounded-full object-cover border" />
+              )}
+            </div>
+            {editUserDialog.profile && (
+              <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
+                <p><strong>User ID:</strong> <code className="bg-muted px-1 py-0.5 rounded font-mono">{editUserDialog.profile.user_id}</code></p>
+                <p><strong>Criado em:</strong> {new Date(editUserDialog.profile.created_at).toLocaleString('pt-BR')}</p>
+                <p><strong>Atualizado em:</strong> {new Date(editUserDialog.profile.updated_at).toLocaleString('pt-BR')}</p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditUserDialog({ open: false, profile: null })}>Cancelar</Button>
+            <Button onClick={saveUserProfile} disabled={savingUser}>
+              {savingUser && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              Salvar
             </Button>
           </DialogFooter>
         </DialogContent>
