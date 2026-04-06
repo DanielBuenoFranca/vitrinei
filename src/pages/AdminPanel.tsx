@@ -153,6 +153,16 @@ const AdminPanel = () => {
     ]);
     setUserProfiles(profilesRes.data || []);
     setUserRoles(rolesRes.data || []);
+
+    // Fetch auth emails via edge function (master only)
+    try {
+      const { data: authData, error: authErr } = await supabase.functions.invoke('list-auth-users');
+      if (!authErr && Array.isArray(authData)) {
+        const emailMap: Record<string, string> = {};
+        authData.forEach((u: any) => { if (u.id && u.email) emailMap[u.id] = u.email; });
+        setAuthUserEmails(emailMap);
+      }
+    } catch { /* non-master users won't have access */ }
   };
 
   const toggleUserRole = async (userId: string, role: string) => {
@@ -171,24 +181,44 @@ const AdminPanel = () => {
     setEditUserName(profile.display_name || '');
     setEditUserPhone(profile.phone || '');
     setEditUserAvatar(profile.avatar_url || '');
+    setEditUserEmail(authUserEmails[profile.user_id] || '');
     setEditUserDialog({ open: true, profile });
   };
 
   const saveUserProfile = async () => {
     if (!editUserDialog.profile) return;
     setSavingUser(true);
+    const userId = editUserDialog.profile.user_id;
+
     const { error } = await supabase.from('profiles').update({
       display_name: editUserName.trim() || null,
       phone: editUserPhone.trim() || null,
       avatar_url: editUserAvatar.trim() || null,
-    }).eq('user_id', editUserDialog.profile.user_id);
+    }).eq('user_id', userId);
+
     if (error) {
       toast.error('Erro ao salvar perfil');
-    } else {
-      toast.success('Perfil atualizado');
-      setEditUserDialog({ open: false, profile: null });
-      fetchUsers();
+      setSavingUser(false);
+      return;
     }
+
+    // Update email if changed
+    const originalEmail = authUserEmails[userId] || '';
+    const newEmail = editUserEmail.trim();
+    if (newEmail && newEmail !== originalEmail) {
+      const { data: emailRes, error: emailErr } = await supabase.functions.invoke('update-user-email', {
+        body: { user_id: userId, new_email: newEmail },
+      });
+      if (emailErr || emailRes?.error) {
+        toast.error('Erro ao alterar e-mail: ' + (emailRes?.error || emailErr?.message || 'desconhecido'));
+        setSavingUser(false);
+        return;
+      }
+    }
+
+    toast.success('Perfil atualizado');
+    setEditUserDialog({ open: false, profile: null });
+    fetchUsers();
     setSavingUser(false);
   };
 
