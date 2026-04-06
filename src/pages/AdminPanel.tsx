@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle } from 'lucide-react';
+import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle, Megaphone } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { ProviderForm } from '@/components/admin/ProviderForm';
@@ -20,6 +20,7 @@ import { UnitForm } from '@/components/admin/UnitForm';
 import { PermissionGate } from '@/components/PermissionGate';
 import { usePermissions } from '@/hooks/usePermissions';
 import { reloadDynamicEntries } from '@/data/searchData';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
@@ -79,6 +80,42 @@ const AdminPanel = () => {
   // Confirmation dialog for provider delete
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; provider: Provider | null }>({ open: false, provider: null });
 
+  // Marquee / Header announcements
+  const [marqueeMessages, setMarqueeMessages] = useState<string[]>([]);
+  const [newMarqueeMsg, setNewMarqueeMsg] = useState('');
+  const [savingMarquee, setSavingMarquee] = useState(false);
+
+  const fetchMarquee = async () => {
+    const { data } = await supabase.from('site_settings').select('value').eq('key', 'header_marquee').maybeSingle();
+    if (data?.value && typeof data.value === 'object' && 'messages' in (data.value as any)) {
+      setMarqueeMessages((data.value as any).messages || []);
+    }
+  };
+
+  const saveMarquee = async (msgs: string[]) => {
+    setSavingMarquee(true);
+    const { error } = await supabase.from('site_settings').update({ value: { messages: msgs } as any }).eq('key', 'header_marquee');
+    if (error) {
+      toast.error('Erro ao salvar avisos');
+    } else {
+      setMarqueeMessages(msgs);
+      toast.success('Avisos atualizados em tempo real');
+    }
+    setSavingMarquee(false);
+  };
+
+  const addMarqueeMsg = () => {
+    const msg = newMarqueeMsg.trim();
+    if (!msg) return;
+    if (msg.length > 500) { toast.error('Máximo de 500 caracteres por aviso'); return; }
+    saveMarquee([...marqueeMessages, msg]);
+    setNewMarqueeMsg('');
+  };
+
+  const removeMarqueeMsg = (idx: number) => {
+    saveMarquee(marqueeMessages.filter((_, i) => i !== idx));
+  };
+
   const fetchData = async () => {
     setLoading(true);
     const [provRes, svcRes, prodRes, segRes, unitRes] = await Promise.all([
@@ -96,7 +133,7 @@ const AdminPanel = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); fetchUsers(); }, []);
+  useEffect(() => { fetchData(); fetchUsers(); fetchMarquee(); }, []);
 
   const fetchUsers = async () => {
     const [profilesRes, rolesRes] = await Promise.all([
@@ -310,6 +347,10 @@ const AdminPanel = () => {
             <TabsTrigger value="users" className="gap-1.5">
               <UserCog className="h-3.5 w-3.5" />
               Usuários ({userProfiles.length})
+            </TabsTrigger>
+            <TabsTrigger value="marquee" className="gap-1.5">
+              <Megaphone className="h-3.5 w-3.5" />
+              Avisos
             </TabsTrigger>
           </TabsList>
 
@@ -754,6 +795,56 @@ const AdminPanel = () => {
                 )}
               </CardContent>
             </Card>
+            </PermissionGate>
+          </TabsContent>
+
+          {/* ── MARQUEE / AVISOS TAB ── */}
+          <TabsContent value="marquee">
+            <PermissionGate permission="admin.panel" featureName="Gestão de Avisos">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Megaphone className="h-5 w-5 text-primary" />
+                    Gestão de Avisos do Cabeçalho
+                  </CardTitle>
+                  <CardDescription>
+                    Os avisos aparecem como letreiro rolante no cabeçalho para todos os usuários. Atualizações são exibidas em tempo real.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Current messages */}
+                  {marqueeMessages.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">Nenhum aviso cadastrado.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {marqueeMessages.map((msg, idx) => (
+                        <div key={idx} className="flex items-start gap-2 p-3 border rounded-lg bg-muted/30">
+                          <Badge variant="outline" className="mt-0.5 shrink-0">{idx + 1}</Badge>
+                          <p className="text-sm flex-1 break-words">{msg}</p>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-destructive hover:text-destructive" onClick={() => removeMarqueeMsg(idx)} disabled={savingMarquee}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add new */}
+                  <div className="flex gap-2">
+                    <Textarea
+                      placeholder="Digite o texto do aviso (máx. 500 caracteres)..."
+                      value={newMarqueeMsg}
+                      onChange={e => setNewMarqueeMsg(e.target.value.slice(0, 500))}
+                      className="min-h-[60px]"
+                      maxLength={500}
+                    />
+                    <Button onClick={addMarqueeMsg} disabled={!newMarqueeMsg.trim() || savingMarquee} className="shrink-0 self-end">
+                      <Plus className="h-4 w-4 mr-1" /> Adicionar
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{newMarqueeMsg.length}/500 caracteres</p>
+                </CardContent>
+              </Card>
             </PermissionGate>
           </TabsContent>
         </Tabs>

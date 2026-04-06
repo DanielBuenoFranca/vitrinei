@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
+import HeaderMarquee from '@/components/HeaderMarquee';
 import { segments as staticSegments, mockResults, semanticSearch, buildSupportSummary, generateContextualSuggestions, getAllServices, getAllProducts, loadDynamicEntries, reloadDynamicEntries, loadSegmentTagsCache, type ProductItem, type SearchResult, type ContextualSuggestion } from '@/data/searchData';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
@@ -339,6 +340,7 @@ const Landing = () => {
             <span className="font-display text-xl font-bold text-foreground">EcoMEI</span>
             <ThemeSwitcher />
           </div>
+          <HeaderMarquee />
           <div className="flex items-center gap-2">
             {user ? (
               <div className="flex items-center gap-1.5">

@@ -677,3 +677,14 @@
 [data-theme="fastfood"] .animate-bounce-playful {
   animation: playful-bounce 0.6s ease-in-out;
 }
+
+/* ── Marquee / News Ticker ── */
+@keyframes marquee-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  display: inline-block;
+  animation: marquee-scroll 30s linear infinite;
+}
