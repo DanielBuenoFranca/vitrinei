@@ -38,12 +38,19 @@ interface RowError {
   severity: 'error' | 'warning';
 }
 
+interface AutoFix {
+  icon: 'segment' | 'provider' | 'price' | 'contact' | 'tags';
+  message: string;
+}
+
 interface ImportResult {
   providersCreated: number;
   providersLinked: number;
   servicesCreated: number;
   productsCreated: number;
+  segmentsCreated: number;
   errors: string[];
+  fixes: AutoFix[];
 }
 
 const STOCK_TYPES = ['fisico', 'drop'];
@@ -306,11 +313,38 @@ const ImportPage = () => {
   const executeImport = async () => {
     if (rows.length === 0 || hasCriticalErrors) return;
     setImporting(true);
-    const res: ImportResult = { providersCreated: 0, providersLinked: 0, servicesCreated: 0, productsCreated: 0, errors: [] };
+    const res: ImportResult = {
+      providersCreated: 0, providersLinked: 0, servicesCreated: 0,
+      productsCreated: 0, segmentsCreated: 0, errors: [], fixes: [],
+    };
 
-    const { data: existingProviders } = await supabase.from('providers').select('id, name');
-    const provMap = new Map<string, number>();
-    (existingProviders || []).forEach((p: any) => provMap.set(p.name.toLowerCase().split(' ')[0], p.id));
+    // --- Step 1: Auto-create missing segments ---
+    const { data: dbSegments } = await supabase.from('segments').select('id, name, suggested_tags');
+    const segMap = new Map<string, number>();
+    (dbSegments || []).forEach((s: any) => segMap.set(s.name, s.id));
+
+    const uniqueSegments = new Set(rows.map(r => r.segment.trim()).filter(Boolean));
+    for (const segName of uniqueSegments) {
+      if (!segMap.has(segName)) {
+        const tags = [segName.toLowerCase()];
+        const { data: newSeg, error } = await supabase.from('segments').insert({
+          name: segName,
+          suggested_tags: tags,
+        }).select().single();
+        if (error) {
+          res.errors.push(`Erro ao criar segmento "${segName}": ${error.message}`);
+        } else if (newSeg) {
+          segMap.set(segName, (newSeg as any).id);
+          res.segmentsCreated++;
+          res.fixes.push({ icon: 'segment', message: `Segmento "${segName}" criado automaticamente com tag "${segName.toLowerCase()}"` });
+        }
+      }
+    }
+
+    // --- Step 2: Load providers ---
+    const { data: existingProviders } = await supabase.from('providers').select('id, name, segment, phone, email');
+    const provMap = new Map<string, { id: number; name: string; segment: string[]; phone: string | null; email: string | null }>();
+    (existingProviders || []).forEach((p: any) => provMap.set(p.name.toLowerCase().split(' ')[0], p));
 
     const { data: maxSvc } = await supabase.from('dynamic_services').select('service_id').order('service_id', { ascending: false }).limit(1);
     const { data: maxProd } = await supabase.from('dynamic_products').select('product_id').order('product_id', { ascending: false }).limit(1);
@@ -327,16 +361,42 @@ const ImportPage = () => {
     for (const [provName, provRows] of byProvider) {
       let providerId: number;
       const firstName = provName.toLowerCase().split(' ')[0];
-      const existingId = provMap.get(firstName);
+      const existing = provMap.get(firstName);
 
-      if (existingId) {
-        providerId = existingId;
+      if (existing) {
+        providerId = existing.id;
         res.providersLinked++;
-      } else {
+
+        // --- Auto-fix: add missing segments to existing provider ---
+        const rowSegments = new Set(provRows.map(r => r.segment.trim()).filter(Boolean));
+        const currentSegments = new Set(existing.segment || []);
+        const newSegments = [...rowSegments].filter(s => !currentSegments.has(s));
+        if (newSegments.length > 0) {
+          const merged = [...currentSegments, ...newSegments];
+          await supabase.from('providers').update({ segment: merged }).eq('id', providerId);
+          res.fixes.push({ icon: 'provider', message: `Prestador "${provName}": segmento(s) "${newSegments.join(', ')}" vinculado(s)` });
+        }
+
+        // --- Auto-fix: fill missing contact on existing provider ---
         const firstRow = provRows[0];
+        const updates: Record<string, string> = {};
+        if (!existing.phone && firstRow.phone.trim()) {
+          updates.phone = firstRow.phone;
+        }
+        if (!existing.email && firstRow.email.trim()) {
+          updates.email = firstRow.email;
+        }
+        if (Object.keys(updates).length > 0) {
+          await supabase.from('providers').update(updates).eq('id', providerId);
+          res.fixes.push({ icon: 'contact', message: `Prestador "${provName}": contato atualizado (${Object.keys(updates).join(', ')})` });
+        }
+      } else {
+        // --- Create new provider with all segments from rows ---
+        const firstRow = provRows[0];
+        const allSegments = [...new Set(provRows.map(r => r.segment.trim()).filter(Boolean))];
         const { data: newProv, error } = await supabase.from('providers').insert({
           name: provName,
-          segment: [firstRow.segment || 'Geral'],
+          segment: allSegments.length > 0 ? allSegments : ['Geral'],
           type: 'mei',
           phone: firstRow.phone || '',
           email: firstRow.email || '',
@@ -344,34 +404,57 @@ const ImportPage = () => {
         }).select().single();
         if (error || !newProv) { res.errors.push(`Erro ao criar ${provName}: ${error?.message}`); continue; }
         providerId = (newProv as any).id;
-        provMap.set(firstName, providerId);
+        provMap.set(firstName, { id: providerId, name: provName, segment: allSegments, phone: firstRow.phone, email: firstRow.email });
         res.providersCreated++;
+
+        if (!firstRow.phone.trim() && !firstRow.email.trim()) {
+          res.fixes.push({ icon: 'contact', message: `Prestador "${provName}" criado sem contato — corrija no painel Admin` });
+        }
       }
 
       for (const row of provRows) {
         if (row.serviceName.trim()) {
+          const price = parseFloat(row.servicePrice) || 0;
           const { error } = await supabase.from('dynamic_services').insert({
             service_id: nextServiceId++,
             name: row.serviceName,
             segment: row.segment || 'Geral',
             provider: provName,
             provider_id: providerId,
-            price: parseFloat(row.servicePrice) || 0,
+            price,
           });
-          if (error) res.errors.push(`Serviço ${row.serviceName}: ${error.message}`);
-          else res.servicesCreated++;
+          if (error) {
+            res.errors.push(`Serviço ${row.serviceName}: ${error.message}`);
+          } else {
+            res.servicesCreated++;
+            if (price === 0) {
+              res.fixes.push({ icon: 'price', message: `Serviço "${row.serviceName}" importado com preço R$ 0 — ajuste no Admin` });
+            }
+          }
         }
         if (row.productName.trim()) {
+          const price = parseFloat(row.productPrice) || 0;
+          const tags = row.segment ? [row.segment.toLowerCase()] : [];
           const { error } = await supabase.from('dynamic_products').insert({
             product_id: nextProductId++,
             name: row.productName,
             provider: provName,
             provider_id: providerId,
-            price: parseFloat(row.productPrice) || 0,
+            price,
             stock_type: row.productStockType === 'drop' ? 'drop' : 'fisico',
+            tags,
           });
-          if (error) res.errors.push(`Produto ${row.productName}: ${error.message}`);
-          else res.productsCreated++;
+          if (error) {
+            res.errors.push(`Produto ${row.productName}: ${error.message}`);
+          } else {
+            res.productsCreated++;
+            if (tags.length > 0) {
+              res.fixes.push({ icon: 'tags', message: `Produto "${row.productName}": tag "${tags[0]}" adicionada automaticamente` });
+            }
+            if (price === 0) {
+              res.fixes.push({ icon: 'price', message: `Produto "${row.productName}" importado com preço R$ 0 — ajuste no Admin` });
+            }
+          }
         }
       }
     }
@@ -656,7 +739,7 @@ const ImportPage = () => {
 
         {/* Result */}
         {result && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm flex items-center gap-2">
@@ -664,8 +747,9 @@ const ImportPage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                   {[
+                    { n: result.segmentsCreated, l: 'Segmentos criados' },
                     { n: result.providersCreated, l: 'Prestadores criados' },
                     { n: result.providersLinked, l: 'Prestadores vinculados' },
                     { n: result.servicesCreated, l: 'Serviços criados' },
@@ -685,11 +769,44 @@ const ImportPage = () => {
                     {result.errors.slice(0, 5).map((err, i) => <p key={i} className="text-[10px] text-destructive/80">{err}</p>)}
                   </div>
                 )}
-                <Button variant="outline" className="w-full gap-2" onClick={resetAll}>
-                  <Upload className="w-3 h-3" /> Nova Importação
-                </Button>
               </CardContent>
             </Card>
+
+            {/* Auto-fixes applied */}
+            {result.fixes.length > 0 && (
+              <Card className="border-primary/30">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-primary" />
+                    {result.fixes.length} Correção(ões) Automática(s) Aplicada(s)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-1.5 max-h-60 overflow-y-auto">
+                    {result.fixes.map((fix, i) => {
+                      const iconMap: Record<string, React.ReactNode> = {
+                        segment: <Badge variant="secondary" className="text-[9px] h-4 bg-primary/10 text-primary">Segmento</Badge>,
+                        provider: <Badge variant="secondary" className="text-[9px] h-4 bg-blue-500/10 text-blue-600 dark:text-blue-400">Prestador</Badge>,
+                        contact: <Badge variant="secondary" className="text-[9px] h-4 bg-green-500/10 text-green-600 dark:text-green-400">Contato</Badge>,
+                        price: <Badge variant="secondary" className="text-[9px] h-4 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400">Preço</Badge>,
+                        tags: <Badge variant="secondary" className="text-[9px] h-4 bg-purple-500/10 text-purple-600 dark:text-purple-400">Tags</Badge>,
+                      };
+                      return (
+                        <div key={i} className="flex items-start gap-2 text-[11px] text-foreground py-1 border-b border-border/50 last:border-0">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+                          {iconMap[fix.icon]}
+                          <span>{fix.message}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <Button variant="outline" className="w-full gap-2" onClick={resetAll}>
+              <Upload className="w-3 h-3" /> Nova Importação
+            </Button>
           </motion.div>
         )}
       </div>
