@@ -1037,7 +1037,12 @@ const AdminPanel = () => {
                           onClick={async () => {
                             setResendingConfirmation(true);
                             try {
-                              const email = authUserEmails[editUserDialog.profile.user_id];
+                              const email = authUserEmails[editUserDialog.profile.user_id] || editUserEmail.trim();
+                              if (!email) {
+                                toast.error('E-mail não encontrado para este usuário');
+                                setResendingConfirmation(false);
+                                return;
+                              }
                               const { data, error } = await supabase.functions.invoke('resend-confirmation', {
                                 body: { user_id: editUserDialog.profile.user_id, email },
                               });
