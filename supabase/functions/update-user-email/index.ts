@@ -1,6 +1,15 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -8,10 +17,9 @@ Deno.serve(async (req) => {
 
   const authHeader = req.headers.get('Authorization')
   if (!authHeader) {
-    return new Response(JSON.stringify({ error: 'Não autorizado' }), { status: 401 })
+    return new Response(JSON.stringify({ error: 'Não autorizado' }), { status: 401, headers: corsHeaders })
   }
 
-  // Verify caller is master
   const callerClient = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_ANON_KEY')!,
@@ -19,7 +27,7 @@ Deno.serve(async (req) => {
   )
   const { data: { user: caller } } = await callerClient.auth.getUser()
   if (!caller) {
-    return new Response(JSON.stringify({ error: 'Não autorizado' }), { status: 401 })
+    return new Response(JSON.stringify({ error: 'Não autorizado' }), { status: 401, headers: corsHeaders })
   }
 
   const { data: callerRoles } = await supabase
@@ -28,12 +36,12 @@ Deno.serve(async (req) => {
     .eq('user_id', caller.id)
   const isMaster = callerRoles?.some(r => r.role === 'master')
   if (!isMaster) {
-    return new Response(JSON.stringify({ error: 'Apenas perfil Master pode alterar e-mails' }), { status: 403 })
+    return new Response(JSON.stringify({ error: 'Apenas perfil Master pode alterar e-mails' }), { status: 403, headers: corsHeaders })
   }
 
   const { user_id, new_email } = await req.json()
   if (!user_id || !new_email) {
-    return new Response(JSON.stringify({ error: 'user_id e new_email são obrigatórios' }), { status: 400 })
+    return new Response(JSON.stringify({ error: 'user_id e new_email são obrigatórios' }), { status: 400, headers: corsHeaders })
   }
 
   const { error } = await supabase.auth.admin.updateUserById(user_id, {
@@ -41,6 +49,6 @@ Deno.serve(async (req) => {
     email_confirm: true,
   })
 
-  if (error) return new Response(JSON.stringify({ error: error.message }), { status: 400 })
-  return new Response(JSON.stringify({ success: true }))
+  if (error) return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: corsHeaders })
+  return new Response(JSON.stringify({ success: true }), { headers: corsHeaders })
 })

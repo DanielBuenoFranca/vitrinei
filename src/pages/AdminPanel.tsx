@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle, Megaphone } from 'lucide-react';
+import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle, Megaphone, Mail } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { ProviderForm } from '@/components/admin/ProviderForm';
@@ -88,8 +88,10 @@ const AdminPanel = () => {
   const [editUserEmail, setEditUserEmail] = useState('');
   const [savingUser, setSavingUser] = useState(false);
 
-  // Auth user emails (fetched from backend function)
+  // Auth user emails and confirmation status (fetched from backend function)
   const [authUserEmails, setAuthUserEmails] = useState<Record<string, string>>({});
+  const [authUserConfirmed, setAuthUserConfirmed] = useState<Record<string, string | null>>({});
+  const [resendingConfirmation, setResendingConfirmation] = useState(false);
 
   // Marquee / Header announcements
   const [marqueeMessages, setMarqueeMessages] = useState<string[]>([]);
@@ -159,8 +161,13 @@ const AdminPanel = () => {
       const { data: authData, error: authErr } = await supabase.functions.invoke('list-auth-users');
       if (!authErr && Array.isArray(authData)) {
         const emailMap: Record<string, string> = {};
-        authData.forEach((u: any) => { if (u.id && u.email) emailMap[u.id] = u.email; });
+        const confirmedMap: Record<string, string | null> = {};
+        authData.forEach((u: any) => {
+          if (u.id && u.email) emailMap[u.id] = u.email;
+          confirmedMap[u.id] = u.email_confirmed_at || null;
+        });
         setAuthUserEmails(emailMap);
+        setAuthUserConfirmed(confirmedMap);
       }
     } catch { /* non-master users won't have access */ }
   };
@@ -803,6 +810,7 @@ const AdminPanel = () => {
                           <TableHead>Avatar</TableHead>
                           <TableHead>Nome</TableHead>
                           <TableHead>E-mail</TableHead>
+                          <TableHead>Status E-mail</TableHead>
                           <TableHead>Telefone</TableHead>
                           <TableHead>User ID</TableHead>
                           <TableHead>Papéis</TableHead>
@@ -829,6 +837,12 @@ const AdminPanel = () => {
                                 <span className="font-medium text-sm">{profile.display_name || 'Sem nome'}</span>
                               </TableCell>
                               <TableCell className="text-xs text-muted-foreground">{authUserEmails[profile.user_id] || '—'}</TableCell>
+                              <TableCell className="text-xs">
+                                {authUserConfirmed[profile.user_id]
+                                  ? <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Verificado</Badge>
+                                  : <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Pendente</Badge>
+                                }
+                              </TableCell>
                               <TableCell className="text-xs text-muted-foreground">{profile.phone || '—'}</TableCell>
                               <TableCell>
                                 <code className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-mono">
@@ -1008,8 +1022,46 @@ const AdminPanel = () => {
             <div>
               <label className="text-sm font-medium mb-1.5 block">E-mail (autenticação)</label>
               <Input type="email" value={editUserEmail} onChange={e => setEditUserEmail(e.target.value)} placeholder="email@exemplo.com" />
+              {editUserDialog.profile && (
+                <div className="mt-2 flex items-center gap-2">
+                  {authUserConfirmed[editUserDialog.profile.user_id]
+                    ? <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">✓ E-mail verificado</Badge>
+                    : (
+                      <>
+                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">⏳ Pendente de verificação</Badge>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={resendingConfirmation}
+                          onClick={async () => {
+                            setResendingConfirmation(true);
+                            try {
+                              const email = authUserEmails[editUserDialog.profile.user_id];
+                              const { data, error } = await supabase.functions.invoke('resend-confirmation', {
+                                body: { user_id: editUserDialog.profile.user_id, email },
+                              });
+                              if (error || data?.error) {
+                                toast.error('Erro ao reenviar: ' + (data?.error || error?.message || 'desconhecido'));
+                              } else {
+                                toast.success('Link de confirmação reenviado!');
+                              }
+                            } catch {
+                              toast.error('Erro ao reenviar confirmação');
+                            }
+                            setResendingConfirmation(false);
+                          }}
+                        >
+                          {resendingConfirmation ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Mail className="h-3 w-3 mr-1" />}
+                          Reenviar confirmação
+                        </Button>
+                      </>
+                    )
+                  }
+                </div>
+              )}
               {editUserEmail !== (authUserEmails[editUserDialog.profile?.user_id] || '') && editUserEmail.trim() && (
-                <p className="text-xs text-amber-600 mt-1">⚠ O e-mail de login do usuário será alterado</p>
+                <p className="text-xs text-amber-600 mt-1">⚠ O e-mail de login do usuário será alterado. Uma confirmação será enviada.</p>
               )}
             </div>
             <div>
