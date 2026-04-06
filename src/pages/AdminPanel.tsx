@@ -85,7 +85,11 @@ const AdminPanel = () => {
   const [editUserName, setEditUserName] = useState('');
   const [editUserPhone, setEditUserPhone] = useState('');
   const [editUserAvatar, setEditUserAvatar] = useState('');
+  const [editUserEmail, setEditUserEmail] = useState('');
   const [savingUser, setSavingUser] = useState(false);
+
+  // Auth user emails (fetched from backend function)
+  const [authUserEmails, setAuthUserEmails] = useState<Record<string, string>>({});
 
   // Marquee / Header announcements
   const [marqueeMessages, setMarqueeMessages] = useState<string[]>([]);
