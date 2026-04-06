@@ -332,7 +332,7 @@ const Landing = () => {
     <div className="h-screen flex flex-col overflow-hidden bg-background">
       {/* Navbar */}
       <nav className="fixed top-0 w-full z-50 bg-card/80 backdrop-blur-lg border-b border-border">
-        <div className="container mx-auto flex items-center justify-between h-14 px-4">
+        <div className="container mx-auto flex flex-wrap items-center justify-between h-auto min-h-[3.5rem] px-4">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <Zap className="w-5 h-5 text-primary-foreground" />
@@ -388,15 +388,6 @@ const Landing = () => {
             <h1 className="font-display text-2xl md:text-3xl font-extrabold text-foreground mb-1 leading-tight">
               Seu problema, <span className="text-primary">nossa solução.</span>
             </h1>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3, duration: 0.5 }}
-              className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto mb-2 leading-relaxed"
-            >
-              Serviços, produtos, profissionais — <strong className="text-foreground">tudo em um só lugar.</strong>{' '}
-              <span className="hidden sm:inline">Se não existir aqui, nossa IA vasculha o ecossistema inteiro e entrega a melhor opção.</span>
-            </motion.p>
             <div className="flex justify-center gap-3 text-[11px] text-muted-foreground">
               <span className="flex items-center gap-1"><Users className="w-3 h-3 text-primary" /> <strong className="text-foreground">2.450+</strong> MEIs</span>
               <span className="flex items-center gap-1"><Star className="w-3 h-3 fill-accent text-accent" /> <strong className="text-foreground">4.8</strong></span>
