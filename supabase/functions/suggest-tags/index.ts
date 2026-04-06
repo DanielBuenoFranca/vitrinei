@@ -29,7 +29,7 @@ Regras:
 Responda APENAS em JSON: {"tags": ["tag1", "tag2", ...]}`;
 
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
-    const res = await fetch("https://api.lovable.dev/v1/chat/completions", {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({

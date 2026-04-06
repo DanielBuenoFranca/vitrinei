@@ -29,7 +29,7 @@ const WalletPage = () => {
     if (!user) return;
     setLoading(true);
     const [walletRes, txRes, refRes] = await Promise.all([
-      supabase.from('wallets').select('*').eq('user_id', user.id).single(),
+      supabase.from('wallets').select('*').eq('user_id', user.id).maybeSingle(),
       supabase.from('wallet_transactions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
       supabase.from('referrals').select('*').eq('referrer_id', user.id).order('created_at', { ascending: false }),
     ]);
