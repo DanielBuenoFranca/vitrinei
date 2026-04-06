@@ -72,7 +72,7 @@ const perspectiveColors: Record<string, { bg: string; text: string; label: strin
   mei: { bg: 'bg-primary/10 border-primary/30', text: 'text-primary', label: 'Visão MEI Gestor', icon: '💼' },
   client: { bg: 'bg-accent/10 border-accent/30', text: 'text-accent-foreground', label: 'Visão Cliente', icon: '👤' },
   technician: { bg: 'bg-success/10 border-success/30', text: 'text-foreground', label: 'Visão Técnico', icon: '👨‍🔧' },
-  platform: { bg: 'bg-secondary border-border', text: 'text-foreground', label: 'Central EcoMEI', icon: '🏢' },
+  platform: { bg: 'bg-secondary border-border', text: 'text-foreground', label: 'Central Vitrinei', icon: '🏢' },
 };
 
 /* ─── PHONE MOCKUP WRAPPER ─── */
@@ -275,7 +275,7 @@ const ServiceManagementDemo = () => {
                         <Zap className="w-5 h-5 text-primary-foreground" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-xs font-bold text-foreground">EcoMEI — Nova Solicitação!</p>
+                        <p className="text-xs font-bold text-foreground">Vitrinei — Nova Solicitação!</p>
                         <p className="text-[11px] text-muted-foreground mt-0.5">
                           {o.client.avatar} {o.client.name} solicitou <strong>{o.service}</strong>
                         </p>
@@ -811,7 +811,7 @@ const ServiceManagementDemo = () => {
                 <div className="px-4 space-y-3">
                   <div className="text-center py-2">
                     <Shield className="w-8 h-8 text-primary mx-auto mb-1" />
-                    <p className="text-xs font-bold text-foreground">Central de Qualidade EcoMEI</p>
+                    <p className="text-xs font-bold text-foreground">Central de Qualidade Vitrinei</p>
                     <p className="text-[10px] text-muted-foreground">{o.id}</p>
                   </div>
 

@@ -188,7 +188,7 @@ const AuthPage = () => {
           <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center mx-auto mb-3">
             <Zap className="w-7 h-7 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">EcoMEI</h1>
+          <h1 className="text-2xl font-bold text-foreground">Vitrinei</h1>
           <p className="text-sm text-muted-foreground mt-1">Acesse sua conta ou cadastre-se</p>
         </div>
 

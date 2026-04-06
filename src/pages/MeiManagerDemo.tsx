@@ -36,7 +36,7 @@ const steps = [
   { id: 'monitor', label: 'Monitoramento', icon: Navigation, emoji: '📍', desc: 'Acompanhando em tempo real' },
   { id: 'execution', label: 'Execução', icon: Wrench, emoji: '🔧', desc: 'Técnico realizando serviço' },
   { id: 'validation', label: 'Validação', icon: CheckCircle2, emoji: '✅', desc: 'Serviço finalizado pelo técnico' },
-  { id: 'quality', label: 'Central de Qualidade', icon: Shield, emoji: '🏢', desc: 'Análise EcoMEI' },
+  { id: 'quality', label: 'Central de Qualidade', icon: Shield, emoji: '🏢', desc: 'Análise Vitrinei' },
   { id: 'profit', label: 'Lucro Liberado', icon: Wallet, emoji: '💰', desc: 'Crédito no caixa' },
 ];
 
@@ -48,7 +48,7 @@ const PhoneFrame = ({ children, title }: { children: React.ReactNode; title: str
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <Zap className="w-4 h-4 text-primary" />
-            <span className="text-xs font-bold text-foreground">EcoMEI Gestor</span>
+            <span className="text-xs font-bold text-foreground">Vitrinei Gestor</span>
           </div>
           <Badge variant="outline" className="text-[9px] h-5">{title}</Badge>
         </div>
@@ -287,7 +287,7 @@ const MeiManagerDemo = () => {
       case 'quality':
         return (
           <div className="p-4 space-y-3">
-            <div className="text-center"><Badge variant="outline" className="text-[10px]">🏢 Central de Qualidade EcoMEI</Badge></div>
+            <div className="text-center"><Badge variant="outline" className="text-[10px]">🏢 Central de Qualidade Vitrinei</Badge></div>
             <div className="bg-card border border-border rounded-xl p-3 space-y-3">
               <p className="text-[10px] font-bold text-primary uppercase">Análise Automática</p>
               {['Fotos analisadas por IA', 'Código de verificação validado', 'Avaliação do cliente: ⭐ 5.0', 'Checklist 100% concluído'].map((item, i) => (

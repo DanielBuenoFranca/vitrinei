@@ -221,7 +221,7 @@ const ClientApp = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate('/')}><ArrowLeft className="w-5 h-5" /></Button>
           <div className="flex items-center gap-2">
             <Zap className="w-5 h-5 text-primary" />
-            <span className="font-display font-bold text-foreground">EcoMEI</span>
+            <span className="font-display font-bold text-foreground">Vitrinei</span>
           </div>
           <div className="flex items-center gap-2">
             {currentPlan && <Badge variant="secondary" className="text-[10px]">{currentPlan.id === 'bronze' ? '🥉' : currentPlan.id === 'prata' ? '🥈' : '🥇'} {currentPlan.name}</Badge>}
@@ -417,7 +417,7 @@ const ClientApp = () => {
           <CardContent className="p-3">
             <div className="flex items-center gap-1.5 mb-2">
               <Brain className="w-4 h-4 text-primary" />
-              <span className="text-[11px] font-bold text-foreground">IA EcoMEI — Sugestões personalizadas</span>
+              <span className="text-[11px] font-bold text-foreground">IA Vitrinei — Sugestões personalizadas</span>
             </div>
             <div className="space-y-1.5">
               {aiSuggestions.map((s, i) => (

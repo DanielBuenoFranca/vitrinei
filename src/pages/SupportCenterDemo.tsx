@@ -633,7 +633,7 @@ const SupportCenterDemo = () => {
                     <Zap className="w-3 h-3 text-primary-foreground" />
                   </div>
                   <div>
-                    <p className="text-[11px] font-bold text-primary-foreground">EcoMEI</p>
+                    <p className="text-[11px] font-bold text-primary-foreground">Vitrinei</p>
                     <p className="text-[9px] text-primary-foreground/70">Central de Atendimento</p>
                   </div>
                 </div>

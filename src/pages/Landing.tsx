@@ -995,7 +995,7 @@ const Landing = () => {
               <div className="flex items-center gap-3">
                 <AiAvatar size={40} speaking={aiSpeaking} />
                 <div>
-                  <h3 className="font-display font-bold text-sm text-foreground">Assistente EcoMEI</h3>
+                  <h3 className="font-display font-bold text-sm text-foreground">Assistente Vitrinei</h3>
                   <div className="flex items-center gap-1.5">
                     <motion.div
                       className="w-2 h-2 rounded-full bg-success"

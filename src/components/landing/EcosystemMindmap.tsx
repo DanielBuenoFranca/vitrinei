@@ -15,7 +15,7 @@ const EcosystemMindmap = () => (
     <motion.div className="text-center" initial={{ opacity: 0, y: -15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
       <Badge variant="secondary" className="mb-2">Visão Geral</Badge>
       <h3 className="font-display text-2xl font-bold text-foreground">Mapa do Ecossistema</h3>
-      <p className="text-muted-foreground text-sm mt-1">Os 4 pilares que sustentam a plataforma EcoMEI</p>
+      <p className="text-muted-foreground text-sm mt-1">Os 4 pilares que sustentam a plataforma Vitrinei</p>
     </motion.div>
 
     <div className="flex flex-col items-center gap-6">
@@ -26,7 +26,7 @@ const EcosystemMindmap = () => (
         transition={{ duration: 0.6, type: 'spring', stiffness: 120 }}
         className="w-20 h-20 rounded-full bg-primary/15 border-2 border-primary flex items-center justify-center"
       >
-        <span className="font-display font-extrabold text-primary text-sm">EcoMEI</span>
+        <span className="font-display font-extrabold text-primary text-sm">Vitrinei</span>
       </motion.div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
