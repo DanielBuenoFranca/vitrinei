@@ -832,7 +832,7 @@ const AdminPanel = () => {
                               </TableCell>
                               <TableCell>
                                 <div className="flex gap-1">
-                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditUserDialog({ open: true, profile })}>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditUser(profile)}>
                                     <Pencil className="h-4 w-4" />
                                   </Button>
                                   <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteUserProfile(profile.user_id)}>
