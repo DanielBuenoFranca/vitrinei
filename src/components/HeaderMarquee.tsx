@@ -1,10 +1,12 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const HeaderMarquee = () => {
   const [messages, setMessages] = useState<string[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPaused, setIsPaused] = useState(false);
+  const isMobile = useIsMobile();
 
   const fetchMessages = async () => {
     const { data } = await supabase
@@ -39,10 +41,16 @@ const HeaderMarquee = () => {
 
   const fullText = messages.join('   •   ');
 
+  // On mobile: full-width row below logo/actions
+  // On desktop: inline between logo and actions
   return (
     <div
       ref={containerRef}
-      className="flex-1 mx-3 overflow-hidden relative h-full flex items-center"
+      className={
+        isMobile
+          ? 'w-full order-last basis-full overflow-hidden relative h-7 flex items-center'
+          : 'flex-1 mx-3 overflow-hidden relative h-full flex items-center'
+      }
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
