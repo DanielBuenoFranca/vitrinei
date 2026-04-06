@@ -194,7 +194,10 @@ const AdminPanel = () => {
             <h1 className="text-lg font-bold">Painel Administrativo</h1>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
+            <Button variant="outline" size="sm" onClick={() => navigate('/importar')} className="gap-1">
+              <FileSpreadsheet className="h-4 w-4" /> Importar
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => { fetchData(); fetchUsers(); }} disabled={loading}>
               <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
               Atualizar
             </Button>
