@@ -47,6 +47,10 @@ interface Segment {
   id: number; name: string; created_at: string;
 }
 
+interface Unit {
+  id: number; name: string; label: string; created_at: string;
+}
+
 const AdminPanel = () => {
   const navigate = useNavigate();
   const [providers, setProviders] = useState<Provider[]>([]);
