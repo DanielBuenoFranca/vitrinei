@@ -83,12 +83,27 @@ const COLUMNS: (keyof Omit<ParsedRow, '_id'>)[] = [
 /* ─── Template generator ─── */
 const generateTemplate = async () => {
   const XLSX = await import('xlsx');
-  const headers = ['Prestador', 'CPF/CNPJ', 'Segmento', 'Serviço', 'Preço Serviço', 'Produto', 'Preço Produto', 'Tipo Estoque', 'Telefone', 'E-mail', 'Cidade'];
-  const example = ['João Silva', '123.456.789-09', 'Manutenção', 'Instalação Elétrica', '150', 'Tomada 3 pinos', '12.50', 'fisico', '(11) 99999-0000', 'joao@email.com', 'São Paulo'];
-  const ws = XLSX.utils.aoa_to_sheet([headers, example]);
+  // Fetch existing units for the template note
+  const { data: unitsData } = await supabase.from('units').select('name, label').order('name');
+  const unitsList = (unitsData || []).map((u: any) => u.name).join(', ');
+
+  const headers = ['Prestador', 'CPF/CNPJ', 'Segmento', 'Serviço', 'Preço Serviço', 'Un. Serviço', 'Produto', 'Preço Produto', 'Un. Produto', 'Tipo Estoque', 'Telefone', 'E-mail', 'Cidade'];
+  const example = ['João Silva', '123.456.789-09', 'Manutenção', 'Instalação Elétrica', '150', 'hr', 'Tomada 3 pinos', '12.50', 'un', 'fisico', '(11) 99999-0000', 'joao@email.com', 'São Paulo'];
+  const noteRow = ['', '', '', '', '', `Unidades: ${unitsList}`, '', '', `Unidades: ${unitsList}`, 'fisico ou drop', '', '', ''];
+  const ws = XLSX.utils.aoa_to_sheet([headers, example, noteRow]);
   ws['!cols'] = headers.map(() => ({ wch: 20 }));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Importação');
+
+  // Add a reference sheet with all units
+  if (unitsData && unitsData.length > 0) {
+    const unitsHeaders = ['Sigla', 'Descrição'];
+    const unitsRows = unitsData.map((u: any) => [u.name, u.label]);
+    const wsUnits = XLSX.utils.aoa_to_sheet([unitsHeaders, ...unitsRows]);
+    wsUnits['!cols'] = [{ wch: 12 }, { wch: 25 }];
+    XLSX.utils.book_append_sheet(wb, wsUnits, 'Unidades de Medida');
+  }
+
   XLSX.writeFile(wb, 'modelo_importacao.xlsx');
   toast.success('Modelo baixado!');
 };
