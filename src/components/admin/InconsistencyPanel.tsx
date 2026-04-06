@@ -73,8 +73,11 @@ export function InconsistencyPanel({
         }
       });
     }
-    if (!p.cpf_cnpj) {
-      issues.push({ type: 'warning', entity: 'Prestador', entityId: p.id, entityName: p.name, message: 'Sem CPF/CNPJ cadastrado', action: 'edit', tab: 'providers' });
+    if (!p.cpf_cnpj || p.cpf_cnpj === 'ISENTO') {
+      if (!p.cpf_cnpj) {
+        issues.push({ type: 'warning', entity: 'Prestador', entityId: p.id, entityName: p.name, message: 'Sem CPF/CNPJ cadastrado', action: 'edit', tab: 'providers' });
+      }
+      // 'ISENTO' = imported without doc, not flagged as inconsistency
     }
     if (!p.phone && !p.email) {
       issues.push({ type: 'warning', entity: 'Prestador', entityId: p.id, entityName: p.name, message: 'Sem telefone e sem email', action: 'edit', tab: 'providers' });
