@@ -60,21 +60,23 @@ const STOCK_TYPES = ['fisico', 'drop'];
 
 const FIELD_LABELS: Record<string, string> = {
   providerName: 'Prestador',
+  cpfCnpj: 'CPF/CNPJ',
   segment: 'Segmento',
   serviceName: 'Serviço',
   servicePrice: 'Preço Serviço',
+  serviceUnit: 'Un. Serviço',
   productName: 'Produto',
   productPrice: 'Preço Produto',
+  productUnit: 'Un. Produto',
   productStockType: 'Tipo Estoque',
   phone: 'Telefone',
   email: 'E-mail',
   city: 'Cidade',
-  cpfCnpj: 'CPF/CNPJ',
 };
 
 const COLUMNS: (keyof Omit<ParsedRow, '_id'>)[] = [
-  'providerName', 'cpfCnpj', 'segment', 'serviceName', 'servicePrice',
-  'productName', 'productPrice', 'productStockType',
+  'providerName', 'cpfCnpj', 'segment', 'serviceName', 'servicePrice', 'serviceUnit',
+  'productName', 'productPrice', 'productUnit', 'productStockType',
   'phone', 'email', 'city',
 ];
 
