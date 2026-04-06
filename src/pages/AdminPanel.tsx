@@ -20,6 +20,7 @@ import { UnitForm } from '@/components/admin/UnitForm';
 import { PermissionGate } from '@/components/PermissionGate';
 import { usePermissions } from '@/hooks/usePermissions';
 import { reloadDynamicEntries } from '@/data/searchData';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
