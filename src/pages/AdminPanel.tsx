@@ -17,6 +17,8 @@ import { SegmentForm } from '@/components/admin/SegmentForm';
 import { ClearDataDialog } from '@/components/admin/ClearDataDialog';
 import { InconsistencyPanel } from '@/components/admin/InconsistencyPanel';
 import { UnitForm } from '@/components/admin/UnitForm';
+import { PermissionGate } from '@/components/PermissionGate';
+import { usePermissions } from '@/hooks/usePermissions';
 import { reloadDynamicEntries } from '@/data/searchData';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
