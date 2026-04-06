@@ -951,6 +951,52 @@ const AdminPanel = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={editUserDialog.open} onOpenChange={(v) => !v && setEditUserDialog({ open: false, profile: null })}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5 text-primary" />
+              Editar Usuário
+            </DialogTitle>
+            <DialogDescription>
+              Altere os dados do perfil de <strong>{editUserDialog.profile?.display_name || 'usuário'}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Nome de exibição</label>
+              <Input value={editUserName} onChange={e => setEditUserName(e.target.value)} placeholder="Nome do usuário" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Telefone</label>
+              <Input value={editUserPhone} onChange={e => setEditUserPhone(e.target.value)} placeholder="(00) 00000-0000" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">URL do Avatar</label>
+              <Input value={editUserAvatar} onChange={e => setEditUserAvatar(e.target.value)} placeholder="https://..." />
+              {editUserAvatar && (
+                <img src={editUserAvatar} alt="preview" className="mt-2 w-16 h-16 rounded-full object-cover border" />
+              )}
+            </div>
+            {editUserDialog.profile && (
+              <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
+                <p><strong>User ID:</strong> <code className="bg-muted px-1 py-0.5 rounded font-mono">{editUserDialog.profile.user_id}</code></p>
+                <p><strong>Criado em:</strong> {new Date(editUserDialog.profile.created_at).toLocaleString('pt-BR')}</p>
+                <p><strong>Atualizado em:</strong> {new Date(editUserDialog.profile.updated_at).toLocaleString('pt-BR')}</p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditUserDialog({ open: false, profile: null })}>Cancelar</Button>
+            <Button onClick={saveUserProfile} disabled={savingUser}>
+              {savingUser && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
