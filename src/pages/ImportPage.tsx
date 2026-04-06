@@ -29,6 +29,7 @@ interface ParsedRow {
   phone: string;
   email: string;
   city: string;
+  cpfCnpj: string;
 }
 
 interface RowError {
