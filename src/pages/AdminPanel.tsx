@@ -1006,6 +1006,13 @@ const AdminPanel = () => {
               <Input value={editUserName} onChange={e => setEditUserName(e.target.value)} placeholder="Nome do usuário" />
             </div>
             <div>
+              <label className="text-sm font-medium mb-1.5 block">E-mail (autenticação)</label>
+              <Input type="email" value={editUserEmail} onChange={e => setEditUserEmail(e.target.value)} placeholder="email@exemplo.com" />
+              {editUserEmail !== (authUserEmails[editUserDialog.profile?.user_id] || '') && editUserEmail.trim() && (
+                <p className="text-xs text-amber-600 mt-1">⚠ O e-mail de login do usuário será alterado</p>
+              )}
+            </div>
+            <div>
               <label className="text-sm font-medium mb-1.5 block">Telefone</label>
               <Input value={editUserPhone} onChange={e => setEditUserPhone(e.target.value)} placeholder="(00) 00000-0000" />
             </div>
