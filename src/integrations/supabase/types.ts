@@ -222,8 +222,13 @@ export type Database = {
           commission_amount: number
           created_at: string
           id: string
+          joined_at: string | null
           referral_code: string
+          referred_email: string | null
           referred_id: string | null
+          referred_name: string | null
+          referred_phone: string | null
+          referred_role: string | null
           referrer_id: string
           status: string
         }
@@ -232,8 +237,13 @@ export type Database = {
           commission_amount?: number
           created_at?: string
           id?: string
+          joined_at?: string | null
           referral_code: string
+          referred_email?: string | null
           referred_id?: string | null
+          referred_name?: string | null
+          referred_phone?: string | null
+          referred_role?: string | null
           referrer_id: string
           status?: string
         }
@@ -242,8 +252,13 @@ export type Database = {
           commission_amount?: number
           created_at?: string
           id?: string
+          joined_at?: string | null
           referral_code?: string
+          referred_email?: string | null
           referred_id?: string | null
+          referred_name?: string | null
+          referred_phone?: string | null
+          referred_role?: string | null
           referrer_id?: string
           status?: string
         }
@@ -267,6 +282,42 @@ export type Database = {
           id?: number
           name?: string
           suggested_tags?: string[]
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          plan: string
+          price: number
+          started_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          plan?: string
+          price?: number
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          plan?: string
+          price?: number
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -354,6 +405,7 @@ export type Database = {
         Row: {
           balance: number
           id: string
+          pending_balance: number
           total_earned: number
           total_spent: number
           updated_at: string
@@ -362,6 +414,7 @@ export type Database = {
         Insert: {
           balance?: number
           id?: string
+          pending_balance?: number
           total_earned?: number
           total_spent?: number
           updated_at?: string
@@ -370,6 +423,7 @@ export type Database = {
         Update: {
           balance?: number
           id?: string
+          pending_balance?: number
           total_earned?: number
           total_spent?: number
           updated_at?: string
@@ -392,6 +446,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      release_referral_cashback: {
+        Args: { _referred_user_id: string }
+        Returns: undefined
       }
     }
     Enums: {

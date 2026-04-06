@@ -26,6 +26,7 @@ import ProviderStorefront from "./pages/ProviderStorefront.tsx";
 import AuthPage from "./pages/AuthPage.tsx";
 import ResetPasswordPage from "./pages/ResetPasswordPage.tsx";
 import WalletPage from "./pages/WalletPage.tsx";
+import SubscriptionPage from "./pages/SubscriptionPage.tsx";
 import ImportPage from "./pages/ImportPage.tsx";
 
 const queryClient = new QueryClient();
@@ -48,6 +49,7 @@ const App = () => {
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/carteira" element={<WalletPage />} />
+          <Route path="/assinatura" element={<SubscriptionPage />} />
           <Route path="/importar" element={<ImportPage />} />
           <Route path="/mei" element={<MeiPanel />} />
           <Route path="/client" element={<ClientApp />} />
