@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2 } from 'lucide-react';
+import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { ProviderForm } from '@/components/admin/ProviderForm';
@@ -104,13 +104,13 @@ const AdminPanel = () => {
     setUserRoles(rolesRes.data || []);
   };
 
-  const toggleUserRole = async (userId: string, role: 'admin' | 'moderator' | 'user') => {
+  const toggleUserRole = async (userId: string, role: string) => {
     const existing = userRoles.find((r: any) => r.user_id === userId && r.role === role);
     if (existing) {
       await supabase.from('user_roles').delete().eq('id', existing.id);
       toast.success('Papel removido');
     } else {
-      await supabase.from('user_roles').insert({ user_id: userId, role });
+      await supabase.from('user_roles').insert({ user_id: userId, role: role as any });
       toast.success('Papel atribuído');
     }
     fetchUsers();
