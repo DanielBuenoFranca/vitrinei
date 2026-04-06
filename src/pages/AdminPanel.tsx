@@ -80,6 +80,13 @@ const AdminPanel = () => {
   // Confirmation dialog for provider delete
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; provider: Provider | null }>({ open: false, provider: null });
 
+  // Edit user dialog
+  const [editUserDialog, setEditUserDialog] = useState<{ open: boolean; profile: any | null }>({ open: false, profile: null });
+  const [editUserName, setEditUserName] = useState('');
+  const [editUserPhone, setEditUserPhone] = useState('');
+  const [editUserAvatar, setEditUserAvatar] = useState('');
+  const [savingUser, setSavingUser] = useState(false);
+
   // Marquee / Header announcements
   const [marqueeMessages, setMarqueeMessages] = useState<string[]>([]);
   const [newMarqueeMsg, setNewMarqueeMsg] = useState('');
