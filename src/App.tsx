@@ -49,6 +49,7 @@ const App = () => {
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/carteira" element={<WalletPage />} />
+          <Route path="/assinatura" element={<SubscriptionPage />} />
           <Route path="/importar" element={<ImportPage />} />
           <Route path="/mei" element={<MeiPanel />} />
           <Route path="/client" element={<ClientApp />} />
