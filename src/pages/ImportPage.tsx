@@ -739,7 +739,7 @@ const ImportPage = () => {
 
         {/* Result */}
         {result && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm flex items-center gap-2">
@@ -747,8 +747,9 @@ const ImportPage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                   {[
+                    { n: result.segmentsCreated, l: 'Segmentos criados' },
                     { n: result.providersCreated, l: 'Prestadores criados' },
                     { n: result.providersLinked, l: 'Prestadores vinculados' },
                     { n: result.servicesCreated, l: 'Serviços criados' },
@@ -768,11 +769,44 @@ const ImportPage = () => {
                     {result.errors.slice(0, 5).map((err, i) => <p key={i} className="text-[10px] text-destructive/80">{err}</p>)}
                   </div>
                 )}
-                <Button variant="outline" className="w-full gap-2" onClick={resetAll}>
-                  <Upload className="w-3 h-3" /> Nova Importação
-                </Button>
               </CardContent>
             </Card>
+
+            {/* Auto-fixes applied */}
+            {result.fixes.length > 0 && (
+              <Card className="border-primary/30">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-primary" />
+                    {result.fixes.length} Correção(ões) Automática(s) Aplicada(s)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-1.5 max-h-60 overflow-y-auto">
+                    {result.fixes.map((fix, i) => {
+                      const iconMap: Record<string, React.ReactNode> = {
+                        segment: <Badge variant="secondary" className="text-[9px] h-4 bg-primary/10 text-primary">Segmento</Badge>,
+                        provider: <Badge variant="secondary" className="text-[9px] h-4 bg-blue-500/10 text-blue-600 dark:text-blue-400">Prestador</Badge>,
+                        contact: <Badge variant="secondary" className="text-[9px] h-4 bg-green-500/10 text-green-600 dark:text-green-400">Contato</Badge>,
+                        price: <Badge variant="secondary" className="text-[9px] h-4 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400">Preço</Badge>,
+                        tags: <Badge variant="secondary" className="text-[9px] h-4 bg-purple-500/10 text-purple-600 dark:text-purple-400">Tags</Badge>,
+                      };
+                      return (
+                        <div key={i} className="flex items-start gap-2 text-[11px] text-foreground py-1 border-b border-border/50 last:border-0">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+                          {iconMap[fix.icon]}
+                          <span>{fix.message}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <Button variant="outline" className="w-full gap-2" onClick={resetAll}>
+              <Upload className="w-3 h-3" /> Nova Importação
+            </Button>
           </motion.div>
         )}
       </div>
