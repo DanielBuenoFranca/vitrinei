@@ -503,6 +503,7 @@ const ImportPage = () => {
             price,
             stock_type: row.productStockType === 'drop' ? 'drop' : 'fisico',
             tags,
+            unit: row.productUnit || 'un',
           });
           if (error) {
             res.errors.push(`Produto ${row.productName}: ${error.message}`);
