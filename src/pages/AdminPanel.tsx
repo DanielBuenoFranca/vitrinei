@@ -161,8 +161,13 @@ const AdminPanel = () => {
       const { data: authData, error: authErr } = await supabase.functions.invoke('list-auth-users');
       if (!authErr && Array.isArray(authData)) {
         const emailMap: Record<string, string> = {};
-        authData.forEach((u: any) => { if (u.id && u.email) emailMap[u.id] = u.email; });
+        const confirmedMap: Record<string, string | null> = {};
+        authData.forEach((u: any) => {
+          if (u.id && u.email) emailMap[u.id] = u.email;
+          confirmedMap[u.id] = u.email_confirmed_at || null;
+        });
         setAuthUserEmails(emailMap);
+        setAuthUserConfirmed(confirmedMap);
       }
     } catch { /* non-master users won't have access */ }
   };
