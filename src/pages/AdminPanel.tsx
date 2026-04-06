@@ -259,12 +259,13 @@ const AdminPanel = () => {
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-6 gap-4">
           {[
             { icon: Store, label: 'Prestadores', count: providers.length, color: 'bg-primary/10 text-primary' },
             { icon: Users, label: 'Serviços', count: services.length, color: 'bg-primary/10 text-primary' },
             { icon: Package, label: 'Produtos', count: products.length, color: 'bg-accent/20 text-accent-foreground' },
             { icon: Tag, label: 'Segmentos', count: segments.length, color: 'bg-secondary/50 text-secondary-foreground' },
+            { icon: Ruler, label: 'Unidades', count: units.length, color: 'bg-secondary/50 text-secondary-foreground' },
             { icon: Database, label: 'Total', count: providers.length + services.length + products.length, color: 'bg-secondary/50 text-secondary-foreground' },
           ].map((stat, i) => (
             <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
@@ -290,6 +291,10 @@ const AdminPanel = () => {
             <TabsTrigger value="providers">Prestadores ({providers.length})</TabsTrigger>
             <TabsTrigger value="services">Serviços ({services.length})</TabsTrigger>
             <TabsTrigger value="products">Produtos ({products.length})</TabsTrigger>
+            <TabsTrigger value="units" className="gap-1.5">
+              <Ruler className="h-3.5 w-3.5" />
+              Unidades ({units.length})
+            </TabsTrigger>
             <TabsTrigger value="issues" className="gap-1.5">
               <AlertTriangle className="h-3.5 w-3.5" />
               Inconsistências
