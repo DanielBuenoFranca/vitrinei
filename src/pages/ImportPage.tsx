@@ -410,6 +410,7 @@ const ImportPage = () => {
         // --- Create new provider with all segments from rows ---
         const firstRow = provRows[0];
         const allSegments = [...new Set(provRows.map(r => r.segment.trim()).filter(Boolean))];
+        const cpfCnpjValue = firstRow.cpfCnpj.trim() || null;
         const { data: newProv, error } = await supabase.from('providers').insert({
           name: provName,
           segment: allSegments.length > 0 ? allSegments : ['Geral'],
@@ -417,14 +418,33 @@ const ImportPage = () => {
           phone: firstRow.phone || '',
           email: firstRow.email || '',
           city: firstRow.city || '',
+          cpf_cnpj: cpfCnpjValue || 'ISENTO',
         }).select().single();
         if (error || !newProv) { res.errors.push(`Erro ao criar ${provName}: ${error?.message}`); continue; }
         providerId = (newProv as any).id;
         provMap.set(firstName, { id: providerId, name: provName, segment: allSegments, phone: firstRow.phone, email: firstRow.email });
         res.providersCreated++;
 
+        if (!cpfCnpjValue) {
+          res.fixes.push({ icon: 'document', message: `Prestador "${provName}": CPF/CNPJ ausente — marcado como ISENTO (não gerará inconsistência)` });
+        }
+
         if (!firstRow.phone.trim() && !firstRow.email.trim()) {
           res.fixes.push({ icon: 'contact', message: `Prestador "${provName}" criado sem contato — corrija no painel Admin` });
+        }
+
+        // --- Auto-generate AI logo ---
+        try {
+          toast.info(`🎨 Gerando logo para "${provName}"...`);
+          const { data: logoData, error: logoErr } = await supabase.functions.invoke('generate-provider-logo', {
+            body: { providerName: provName, segment: allSegments[0] || 'Geral' },
+          });
+          if (!logoErr && logoData?.logoUrl) {
+            await supabase.from('providers').update({ logo_url: logoData.logoUrl }).eq('id', providerId);
+            res.fixes.push({ icon: 'logo', message: `Prestador "${provName}": logo gerado automaticamente por IA` });
+          }
+        } catch (e) {
+          console.error('Logo generation error:', e);
         }
       }
 
