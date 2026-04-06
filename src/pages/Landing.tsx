@@ -33,6 +33,7 @@ const aiSuggestions = [
 const Landing = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { profileLabel } = usePermissions();
   const [searchQuery, setSearchQuery] = useState('');
   const [executedQuery, setExecutedQuery] = useState('');
   const [searchExecuted, setSearchExecuted] = useState(false);
