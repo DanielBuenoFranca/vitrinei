@@ -978,17 +978,12 @@ const Landing = () => {
             </AnimatePresence>
             </div>
             </div>
-            )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-            </div>
-            </div>
             </div>
             )}
 
       {/* AI Chat Panel */}
       <AnimatePresence>
+        {showAiPanel && (
           <motion.div
             initial={{ opacity: 0, x: 300 }}
             animate={{ opacity: 1, x: 0 }}
