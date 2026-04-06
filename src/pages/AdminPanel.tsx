@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2 } from 'lucide-react';
+import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { ProviderForm } from '@/components/admin/ProviderForm';
@@ -17,6 +17,8 @@ import { SegmentForm } from '@/components/admin/SegmentForm';
 import { ClearDataDialog } from '@/components/admin/ClearDataDialog';
 import { InconsistencyPanel } from '@/components/admin/InconsistencyPanel';
 import { UnitForm } from '@/components/admin/UnitForm';
+import { PermissionGate } from '@/components/PermissionGate';
+import { usePermissions } from '@/hooks/usePermissions';
 import { reloadDynamicEntries } from '@/data/searchData';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -53,6 +55,7 @@ interface Unit {
 
 const AdminPanel = () => {
   const navigate = useNavigate();
+  const { can, requirePermission } = usePermissions();
   const [providers, setProviders] = useState<Provider[]>([]);
   const [services, setServices] = useState<DynamicService[]>([]);
   const [products, setProducts] = useState<DynamicProduct[]>([]);
@@ -104,13 +107,13 @@ const AdminPanel = () => {
     setUserRoles(rolesRes.data || []);
   };
 
-  const toggleUserRole = async (userId: string, role: 'admin' | 'moderator' | 'user') => {
+  const toggleUserRole = async (userId: string, role: string) => {
     const existing = userRoles.find((r: any) => r.user_id === userId && r.role === role);
     if (existing) {
       await supabase.from('user_roles').delete().eq('id', existing.id);
       toast.success('Papel removido');
     } else {
-      await supabase.from('user_roles').insert({ user_id: userId, role });
+      await supabase.from('user_roles').insert({ user_id: userId, role: role as any });
       toast.success('Papel atribuído');
     }
     fetchUsers();
@@ -250,9 +253,11 @@ const AdminPanel = () => {
               <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
               Atualizar
             </Button>
-            <Button variant="destructive" size="sm" onClick={() => setClearDialog(true)}>
-              <Trash2 className="h-4 w-4 mr-1" /> Limpar Dados
-            </Button>
+            {can('admin.clear_data') && (
+              <Button variant="destructive" size="sm" onClick={() => setClearDialog(true)}>
+                <Trash2 className="h-4 w-4 mr-1" /> Limpar Dados
+              </Button>
+            )}
           </div>
         </div>
       </header>
@@ -673,8 +678,8 @@ const AdminPanel = () => {
             />
           </TabsContent>
 
-          {/* ── USERS TAB ── */}
           <TabsContent value="users">
+            <PermissionGate permission="admin.users" featureName="Gestão de Usuários" readOnly>
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2"><UserCog className="w-4 h-4" /> Gestão de Usuários</CardTitle>
@@ -709,16 +714,23 @@ const AdminPanel = () => {
                               <TableCell className="text-xs text-muted-foreground">{profile.phone || '—'}</TableCell>
                               <TableCell>
                                 <div className="flex gap-1 flex-wrap">
-                                  {(['admin', 'moderator', 'user'] as const).map(role => {
+                                  {([
+                                    { role: 'master', icon: Crown, color: 'bg-yellow-500/20 text-yellow-700 border-yellow-300' },
+                                    { role: 'admin', icon: Shield, color: '' },
+                                    { role: 'moderator', icon: Shield, color: '' },
+                                    { role: 'provider', icon: Wrench, color: 'bg-blue-500/20 text-blue-700 border-blue-300' },
+                                    { role: 'client', icon: ShoppingCart, color: 'bg-green-500/20 text-green-700 border-green-300' },
+                                    { role: 'mixed', icon: Shuffle, color: 'bg-purple-500/20 text-purple-700 border-purple-300' },
+                                  ] as const).map(({ role, icon: Icon, color }) => {
                                     const hasRole = roles.some((r: any) => r.role === role);
                                     return (
                                       <Badge
                                         key={role}
                                         variant={hasRole ? 'default' : 'outline'}
-                                        className="text-[10px] cursor-pointer"
+                                        className={`text-[10px] cursor-pointer ${hasRole && color ? color : ''}`}
                                         onClick={() => toggleUserRole(profile.user_id, role)}
                                       >
-                                        {role === 'admin' && <Shield className="w-2.5 h-2.5 mr-0.5" />}
+                                        <Icon className="w-2.5 h-2.5 mr-0.5" />
                                         {role}
                                       </Badge>
                                     );
@@ -742,6 +754,7 @@ const AdminPanel = () => {
                 )}
               </CardContent>
             </Card>
+            </PermissionGate>
           </TabsContent>
         </Tabs>
       </main>

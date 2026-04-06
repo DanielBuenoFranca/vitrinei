@@ -3,17 +3,21 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { User, Session } from '@supabase/supabase-js';
 
+type AppRole = 'master' | 'admin' | 'moderator' | 'user' | 'client' | 'provider' | 'mixed';
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
   isAdmin: boolean;
+  isMaster: boolean;
+  roles: AppRole[];
   signOut: () => Promise<void>;
   requireAuth: (action?: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
-  user: null, session: null, loading: true, isAdmin: false,
+  user: null, session: null, loading: true, isAdmin: false, isMaster: false, roles: [],
   signOut: async () => {}, requireAuth: () => false,
 });
 
@@ -23,7 +27,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [roles, setRoles] = useState<AppRole[]>([]);
+
+  const isAdmin = roles.includes('admin') || roles.includes('master');
+  const isMaster = roles.includes('master');
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -31,9 +38,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       setLoading(false);
       if (session?.user) {
-        setTimeout(() => checkAdmin(session.user.id), 0);
+        setTimeout(() => fetchRoles(session.user.id), 0);
       } else {
-        setIsAdmin(false);
+        setRoles([]);
       }
     });
 
@@ -41,22 +48,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      if (session?.user) checkAdmin(session.user.id);
+      if (session?.user) fetchRoles(session.user.id);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const checkAdmin = async (userId: string) => {
-    const { data } = await supabase.from('user_roles').select('role').eq('user_id', userId).eq('role', 'admin');
-    setIsAdmin(!!(data && data.length > 0));
+  const fetchRoles = async (userId: string) => {
+    const { data } = await supabase.from('user_roles').select('role').eq('user_id', userId);
+    if (data) {
+      setRoles(data.map(r => r.role as AppRole));
+    }
   };
 
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
-    setIsAdmin(false);
+    setRoles([]);
   };
 
   const requireAuth = (action?: string): boolean => {
@@ -68,7 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, signOut, requireAuth }}>
+    <AuthContext.Provider value={{ user, session, loading, isAdmin, isMaster, roles, signOut, requireAuth }}>
       {children}
     </AuthContext.Provider>
   );
