@@ -150,6 +150,18 @@ const validateBusinessRules = (
       }
     }
 
+    // CPF/CNPJ missing
+    if (row.providerName.trim() && !row.cpfCnpj.trim()) {
+      const firstName = row.providerName.toLowerCase().split(' ')[0];
+      if (!existingProviderNames.has(firstName)) {
+        errors.push({
+          rowId: row._id, field: 'cpfCnpj',
+          message: 'Sem CPF/CNPJ — será marcado como ISENTO na importação',
+          severity: 'warning',
+        });
+      }
+    }
+
     // Service with zero price
     if (row.serviceName.trim()) {
       const p = parseFloat(row.servicePrice);
