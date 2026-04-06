@@ -54,7 +54,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      if (session?.user) fetchRoles(session.user.id);
+      if (session?.user) {
+        fetchRoles(session.user.id);
+        fetchDisplayName(session.user.id);
+      }
     });
 
     return () => subscription.unsubscribe();
