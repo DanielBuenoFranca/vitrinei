@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { ArrowLeft, Wallet, TrendingUp, TrendingDown, Gift, Copy, Share2, Users } from 'lucide-react';
+import { ArrowLeft, Wallet, TrendingUp, TrendingDown, Gift, Copy, Share2, Users, Clock, CheckCircle2, Lock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { motion } from 'framer-motion';
 
@@ -71,6 +71,9 @@ const WalletPage = () => {
     );
   }
 
+  const pendingReferrals = referrals.filter((r: any) => r.status === 'pending' && r.referred_id);
+  const activatedReferrals = referrals.filter((r: any) => r.status === 'activated');
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <nav className="fixed top-0 w-full z-50 bg-card/80 backdrop-blur-lg border-b border-border">
@@ -87,8 +90,16 @@ const WalletPage = () => {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
             <CardContent className="p-6">
-              <p className="text-sm opacity-80">Saldo disponível</p>
-              <p className="text-3xl font-bold mt-1">R$ {(wallet?.balance || 0).toFixed(2)}</p>
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm opacity-80">Saldo Disponível</p>
+                  <p className="text-3xl font-bold mt-1">R$ {(wallet?.balance || 0).toFixed(2)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm opacity-80 flex items-center gap-1 justify-end"><Lock className="w-3 h-3" /> A Liberar</p>
+                  <p className="text-xl font-semibold mt-1">R$ {(wallet?.pending_balance || 0).toFixed(2)}</p>
+                </div>
+              </div>
               <div className="flex gap-4 mt-4 text-xs opacity-80">
                 <span className="flex items-center gap-1"><TrendingUp className="w-3 h-3" /> Ganhos: R$ {(wallet?.total_earned || 0).toFixed(2)}</span>
                 <span className="flex items-center gap-1"><TrendingDown className="w-3 h-3" /> Gastos: R$ {(wallet?.total_spent || 0).toFixed(2)}</span>
@@ -104,7 +115,7 @@ const WalletPage = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              Você ganhará recompensa quando o indicado realizar sua primeira transação (compra ou venda).
+              Indique clientes (R$ 5,00) ou fornecedores (R$ 15,00). O cashback fica pendente até a primeira transação do indicado.
             </p>
             <div className="flex gap-2">
               <Input value={`${window.location.origin}?ref=${referralCode}`} readOnly className="text-xs" />
@@ -116,13 +127,77 @@ const WalletPage = () => {
               onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`Conheça o EcoMEI! Use meu código: ${referralCode}\n${window.location.origin}?ref=${referralCode}`)}`, '_blank')}>
               <Share2 className="w-3 h-3" /> Compartilhar no WhatsApp
             </Button>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Users className="w-3 h-3" />
-              <span>{referrals.filter((r: any) => r.status === 'activated').length} indicações ativas</span>
-              <Badge variant="outline" className="text-[10px]">R$ {referrals[0]?.commission_amount || '5.00'} por indicação</Badge>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-green-500" /> {activatedReferrals.length} liberadas</span>
+              <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-yellow-500" /> {pendingReferrals.length} pendentes</span>
             </div>
           </CardContent>
         </Card>
+
+        {/* Pending referrals details */}
+        {pendingReferrals.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Clock className="w-4 h-4 text-yellow-500" /> Indicações Pendentes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {pendingReferrals.map((ref: any) => (
+                  <div key={ref.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                    <div>
+                      <p className="text-xs font-medium text-foreground">{ref.referred_name || 'Usuário'}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {ref.referred_email && <span>{ref.referred_email} · </span>}
+                        {ref.referred_phone && <span>{ref.referred_phone} · </span>}
+                        {ref.joined_at && new Date(ref.joined_at).toLocaleString('pt-BR')}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <Badge variant="outline" className="text-[10px] text-yellow-600 border-yellow-300">
+                        Pendente
+                      </Badge>
+                      <p className="text-xs font-semibold text-muted-foreground mt-0.5">R$ {Number(ref.commission_amount).toFixed(2)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Activated referrals */}
+        {activatedReferrals.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-500" /> Indicações Ativas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {activatedReferrals.map((ref: any) => (
+                  <div key={ref.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                    <div>
+                      <p className="text-xs font-medium text-foreground">{ref.referred_name || 'Usuário'}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {ref.referred_email && <span>{ref.referred_email} · </span>}
+                        Ativado em {ref.activated_at && new Date(ref.activated_at).toLocaleString('pt-BR')}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <Badge variant="outline" className="text-[10px] text-green-600 border-green-300">
+                        Liberado
+                      </Badge>
+                      <p className="text-xs font-semibold text-green-600 mt-0.5">+R$ {Number(ref.commission_amount).toFixed(2)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Transactions */}
         <Card>
