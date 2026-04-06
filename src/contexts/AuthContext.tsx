@@ -40,9 +40,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       setLoading(false);
       if (session?.user) {
-        setTimeout(() => fetchRoles(session.user.id), 0);
+        setTimeout(() => {
+          fetchRoles(session.user.id);
+          fetchDisplayName(session.user.id);
+        }, 0);
       } else {
         setRoles([]);
+        setDisplayName(null);
       }
     });
 
