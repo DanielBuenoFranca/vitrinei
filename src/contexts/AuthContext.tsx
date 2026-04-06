@@ -18,7 +18,7 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType>({
-  user: null, session: null, loading: true, isAdmin: false, isMaster: false, roles: [],
+  user: null, session: null, loading: true, isAdmin: false, isMaster: false, roles: [], displayName: null,
   signOut: async () => {}, requireAuth: () => false,
 });
 
