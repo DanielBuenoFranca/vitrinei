@@ -88,8 +88,10 @@ const AdminPanel = () => {
   const [editUserEmail, setEditUserEmail] = useState('');
   const [savingUser, setSavingUser] = useState(false);
 
-  // Auth user emails (fetched from backend function)
+  // Auth user emails and confirmation status (fetched from backend function)
   const [authUserEmails, setAuthUserEmails] = useState<Record<string, string>>({});
+  const [authUserConfirmed, setAuthUserConfirmed] = useState<Record<string, string | null>>({});
+  const [resendingConfirmation, setResendingConfirmation] = useState(false);
 
   // Marquee / Header announcements
   const [marqueeMessages, setMarqueeMessages] = useState<string[]>([]);
