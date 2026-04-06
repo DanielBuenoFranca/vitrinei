@@ -598,6 +598,66 @@ const AdminPanel = () => {
             </Card>
           </TabsContent>
 
+          {/* ── UNITS TAB ── */}
+          <TabsContent value="units">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-base flex items-center gap-2"><Ruler className="w-4 h-4" /> Unidades de Medida</CardTitle>
+                  <CardDescription>Unidades utilizadas em serviços e produtos (ex: un, kg, hr, m²)</CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={generateUnitsAI} disabled={generatingUnits} className="gap-1.5">
+                    {generatingUnits ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    {generatingUnits ? 'Gerando...' : 'Gerar com IA'}
+                  </Button>
+                  <Button size="sm" onClick={() => setUnitForm({ open: true, item: null })}>
+                    <Plus className="h-4 w-4 mr-1" /> Nova Unidade
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {units.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">Nenhuma unidade cadastrada.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Sigla</TableHead>
+                          <TableHead>Descrição</TableHead>
+                          <TableHead>Criado em</TableHead>
+                          <TableHead></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {units.map(u => (
+                          <TableRow key={u.id}>
+                            <TableCell className="font-mono font-semibold">{u.name}</TableCell>
+                            <TableCell>{u.label}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {new Date(u.created_at).toLocaleDateString('pt-BR')}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setUnitForm({ open: true, item: u })}>
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteUnit(u.id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* ── INCONSISTENCIES TAB ── */}
           <TabsContent value="issues">
             <InconsistencyPanel
