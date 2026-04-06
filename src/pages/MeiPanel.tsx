@@ -56,7 +56,7 @@ const MeiPanel = () => {
           <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
             <Zap className="w-5 h-5 text-sidebar-primary-foreground" />
           </div>
-          <span className="font-display text-lg font-bold text-sidebar-foreground">EcoMEI</span>
+          <span className="font-display text-lg font-bold text-sidebar-foreground">Vitrinei</span>
         </div>
         <nav className="flex-1 p-3 space-y-1">
           {tabs.map(({ id, label, icon: Icon }) => (

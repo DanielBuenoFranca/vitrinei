@@ -117,7 +117,7 @@ const SubscriptionPage = () => {
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-foreground">Escolha seu plano</h1>
           <p className="text-sm text-muted-foreground mt-2">
-            Desbloqueie ferramentas exclusivas e cresça seu negócio no ecossistema EcoMEI
+            Desbloqueie ferramentas exclusivas e cresça seu negócio no ecossistema Vitrinei
           </p>
         </div>
 

@@ -85,7 +85,7 @@ const PhoneFrame = ({ children }: { children: React.ReactNode }) => (
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-foreground/20 rounded-b-2xl z-10" />
       <div className="pt-8 bg-primary/5 border-b border-border px-4 pb-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5"><Zap className="w-4 h-4 text-primary" /><span className="text-xs font-bold text-foreground">EcoMEI Shop</span></div>
+          <div className="flex items-center gap-1.5"><Zap className="w-4 h-4 text-primary" /><span className="text-xs font-bold text-foreground">Vitrinei Shop</span></div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1"><Coins className="w-3 h-3 text-primary" /><span className="text-[10px] font-bold">95 cr</span></div>
             <div className="relative"><ShoppingCart className="w-4 h-4 text-foreground" /><div className="absolute -top-1 -right-1 w-3 h-3 bg-destructive rounded-full text-[7px] text-white flex items-center justify-center">1</div></div>
@@ -440,7 +440,7 @@ const DropshippingDemo = () => {
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
               className="bg-primary/5 border border-primary/20 rounded-xl p-2.5">
               <p className="text-[10px] font-bold text-foreground">📅 Precisa de instalação?</p>
-              <p className="text-[9px] text-muted-foreground mt-1">Agendamos um técnico EcoMEI para instalar seu produto. O serviço de instalação segue SLA próprio.</p>
+              <p className="text-[9px] text-muted-foreground mt-1">Agendamos um técnico Vitrinei para instalar seu produto. O serviço de instalação segue SLA próprio.</p>
               <Button size="sm" className="w-full text-[10px] mt-2 h-7" onClick={() => navigate('/jornada-cliente')}>
                 Agendar Instalação
               </Button>
@@ -821,7 +821,7 @@ const DropshippingDemo = () => {
               </motion.div>
             ))}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} className="bg-accent/10 border border-accent/30 rounded-xl p-2.5">
-              <p className="text-[10px] font-bold text-accent-foreground">💡 Dica EcoMEI</p>
+              <p className="text-[10px] font-bold text-accent-foreground">💡 Dica Vitrinei</p>
               <p className="text-[9px] text-muted-foreground">Produto <strong>Local</strong> = entrega com o técnico (mesmo dia). <strong>Drop</strong> = mais barato mas prazo próprio do fornecedor.</p>
             </motion.div>
           </div>
@@ -878,7 +878,7 @@ const DropshippingDemo = () => {
             </motion.div>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="space-y-2">
               <p className="text-[10px] font-bold text-muted-foreground uppercase">Forma de pagamento</p>
-              {['Créditos EcoMEI (95 disponíveis)', 'Cartão •••• 4532', 'PIX'].map((m, i) => (
+              {['Créditos Vitrinei (95 disponíveis)', 'Cartão •••• 4532', 'PIX'].map((m, i) => (
                 <div key={i} className={`border rounded-lg p-2.5 text-xs flex items-center gap-2 cursor-pointer ${i === 1 ? 'border-primary bg-primary/5' : 'border-border'}`}>
                   {i === 1 && <CheckCircle2 className="w-3.5 h-3.5 text-primary" />}
                   <span>{m}</span>

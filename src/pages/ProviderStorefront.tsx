@@ -544,7 +544,7 @@ const ProviderStorefront = () => {
             <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
               <Zap className="w-4 h-4 text-primary-foreground" />
             </div>
-            <span className="font-display text-sm font-bold text-foreground">EcoMEI</span>
+            <span className="font-display text-sm font-bold text-foreground">Vitrinei</span>
             <ThemeSwitcher />
           </div>
           <div className="flex items-center gap-2">

@@ -45,7 +45,7 @@ export const AiAvatar = ({ size = 64, speaking = false, thinking = false, onClic
         } : { y: [0, -2, 0] }}
         transition={thinking ? { duration: 1.2, repeat: Infinity } : speaking ? { duration: 0.8, repeat: Infinity } : { duration: 3, repeat: Infinity, ease: 'easeInOut' }}
       >
-        <img src={avatarImg} alt="Assistente IA EcoMEI" className="w-full h-full object-cover" />
+        <img src={avatarImg} alt="Assistente IA Vitrinei Connect" className="w-full h-full object-cover" />
       </motion.div>
       <AnimatePresence>
         {thinking && (
@@ -327,7 +327,7 @@ export const FloatingAiAvatar = () => {
               <div className="flex items-center gap-2">
                 <AiAvatar size={36} speaking={speaking} thinking={thinking} />
                 <div>
-                  <h3 className="font-display font-bold text-sm text-foreground">Assistente EcoMEI</h3>
+                  <h3 className="font-display font-bold text-sm text-foreground">Assistente Vitrinei</h3>
                   <div className="flex items-center gap-1">
                     <motion.div className="w-1.5 h-1.5 rounded-full bg-success" animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
                     <p className="text-[10px] text-muted-foreground">IA • Online</p>

@@ -88,7 +88,7 @@ const PhoneFrame = ({ children, credits }: { children: React.ReactNode; credits?
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <Zap className="w-4 h-4 text-primary" />
-            <span className="text-xs font-bold text-foreground">EcoMEI</span>
+            <span className="text-xs font-bold text-foreground">Vitrinei</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Coins className="w-3 h-3 text-primary" />
@@ -416,7 +416,7 @@ const ClientJourneyDemo = () => {
                   </div>
 
                   <PushNotification
-                    title="EcoMEI IA"
+                    title="Vitrinei IA"
                     message={`Ótima escolha! ${totalItems} ite${totalItems > 1 ? 'ns' : 'm'} selecionado${totalItems > 1 ? 's' : ''}. Vamos agendar? 📅`}
                     delay={0.8}
                   />
@@ -480,7 +480,7 @@ const ClientJourneyDemo = () => {
 
                   {selectedSlot && (
                     <PushNotification
-                      title="EcoMEI IA"
+                      title="Vitrinei IA"
                       message={`Perfeito! Agendado para ${selectedDate} às ${selectedSlot}. Os prestadores serão notificados agora! 🔔`}
                       delay={0.3}
                     />
@@ -617,16 +617,16 @@ const ClientJourneyDemo = () => {
 
                   {/* Push notifications sequence */}
                   <PushNotification delay={0.5}
-                    title="EcoMEI"
+                    title="Vitrinei"
                     message="📤 Sua solicitação foi enviada aos prestadores selecionados."
                   />
                   <PushNotification delay={1.2}
-                    title="EcoMEI"
+                    title="Vitrinei"
                     message={`👨‍🔧 ${cartServices[0]?.provider || cartProducts[0]?.provider || 'Prestador'} aceitou o chamado! Acompanhe ao vivo.`}
                   />
                   {cartServices.length > 1 && (
                     <PushNotification delay={1.8}
-                      title="EcoMEI"
+                      title="Vitrinei"
                       message={`👨‍🔧 ${cartServices[1].provider} também confirmou presença!`}
                     />
                   )}
@@ -694,7 +694,7 @@ const ClientJourneyDemo = () => {
               <PhoneFrame>
                 <div className="px-4 py-3 space-y-3">
                   <PushNotification delay={0}
-                    title="EcoMEI IA"
+                    title="Vitrinei IA"
                     message="📸 O profissional finalizou o serviço! Confira as fotos e confirme a realização."
                   />
 
@@ -745,7 +745,7 @@ const ClientJourneyDemo = () => {
                   ) : (
                     <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="space-y-3">
                       <PushNotification delay={0.2}
-                        title="EcoMEI IA"
+                        title="Vitrinei IA"
                         message="✅ Ótimo! Sua confirmação foi registrada. Agora a Central vai validar o serviço."
                       />
 
@@ -842,7 +842,7 @@ const ClientJourneyDemo = () => {
                       />
 
                       <PushNotification delay={1.2}
-                        title="EcoMEI IA"
+                        title="Vitrinei IA"
                         message="🎉 Tudo certo! Veja quanto você economizou nessa experiência!"
                       />
                     </motion.div>
@@ -882,7 +882,7 @@ const ClientJourneyDemo = () => {
                     className="bg-green-50 rounded-2xl p-4 border border-green-200 text-center">
                     <p className="text-[10px] text-green-600 font-semibold mb-1">ECONOMIA TOTAL NESTE PEDIDO</p>
                     <p className="text-3xl font-extrabold text-green-700">R$ {(totalServiceValue + productDiscount).toFixed(2)}</p>
-                    <p className="text-[9px] text-green-600 mt-1">comparado a contratar sem o plano EcoMEI</p>
+                    <p className="text-[9px] text-green-600 mt-1">comparado a contratar sem o plano Vitrinei</p>
                   </motion.div>
 
                   {/* Breakdown per item */}
@@ -919,11 +919,11 @@ const ClientJourneyDemo = () => {
                     </p>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="text-center p-2 bg-card rounded-lg border border-border">
-                        <p className="text-[9px] text-muted-foreground">Sem EcoMEI</p>
+                        <p className="text-[9px] text-muted-foreground">Sem Vitrinei</p>
                         <p className="text-xs font-bold text-destructive">3-5 dias</p>
                       </div>
                       <div className="text-center p-2 bg-primary/10 rounded-lg border border-primary/20">
-                        <p className="text-[9px] text-muted-foreground">Com EcoMEI</p>
+                        <p className="text-[9px] text-muted-foreground">Com Vitrinei</p>
                         <p className="text-xs font-bold text-primary">2 minutos</p>
                       </div>
                     </div>
@@ -953,7 +953,7 @@ const ClientJourneyDemo = () => {
                   </motion.div>
 
                   <PushNotification delay={1.5}
-                    title="EcoMEI IA"
+                    title="Vitrinei IA"
                     message="🌟 Parabéns pela experiência! Seu plano já economizou R$ 864 em 4 meses. Continue aproveitando!"
                   />
                 </div>
