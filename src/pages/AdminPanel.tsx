@@ -253,9 +253,11 @@ const AdminPanel = () => {
               <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
               Atualizar
             </Button>
-            <Button variant="destructive" size="sm" onClick={() => setClearDialog(true)}>
-              <Trash2 className="h-4 w-4 mr-1" /> Limpar Dados
-            </Button>
+            {can('admin.clear_data') && (
+              <Button variant="destructive" size="sm" onClick={() => setClearDialog(true)}>
+                <Trash2 className="h-4 w-4 mr-1" /> Limpar Dados
+              </Button>
+            )}
           </div>
         </div>
       </header>
