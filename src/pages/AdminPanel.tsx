@@ -558,6 +558,77 @@ const AdminPanel = () => {
               onDeleteProduct={deleteProduct}
             />
           </TabsContent>
+
+          {/* ── USERS TAB ── */}
+          <TabsContent value="users">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2"><UserCog className="w-4 h-4" /> Gestão de Usuários</CardTitle>
+                <CardDescription>Usuários cadastrados no sistema e seus papéis</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {userProfiles.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">Nenhum usuário cadastrado ainda.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nome</TableHead>
+                          <TableHead>Telefone</TableHead>
+                          <TableHead>Papéis</TableHead>
+                          <TableHead>Criado em</TableHead>
+                          <TableHead></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {userProfiles.map((profile: any) => {
+                          const roles = userRoles.filter((r: any) => r.user_id === profile.user_id);
+                          return (
+                            <TableRow key={profile.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  {profile.avatar_url && <img src={profile.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover" />}
+                                  <span className="font-medium text-sm">{profile.display_name || 'Sem nome'}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-xs text-muted-foreground">{profile.phone || '—'}</TableCell>
+                              <TableCell>
+                                <div className="flex gap-1 flex-wrap">
+                                  {(['admin', 'moderator', 'user'] as const).map(role => {
+                                    const hasRole = roles.some((r: any) => r.role === role);
+                                    return (
+                                      <Badge
+                                        key={role}
+                                        variant={hasRole ? 'default' : 'outline'}
+                                        className="text-[10px] cursor-pointer"
+                                        onClick={() => toggleUserRole(profile.user_id, role)}
+                                      >
+                                        {role === 'admin' && <Shield className="w-2.5 h-2.5 mr-0.5" />}
+                                        {role}
+                                      </Badge>
+                                    );
+                                  })}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-xs text-muted-foreground">
+                                {new Date(profile.created_at).toLocaleDateString('pt-BR')}
+                              </TableCell>
+                              <TableCell>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteUserProfile(profile.user_id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </main>
 
