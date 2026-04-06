@@ -709,16 +709,23 @@ const AdminPanel = () => {
                               <TableCell className="text-xs text-muted-foreground">{profile.phone || '—'}</TableCell>
                               <TableCell>
                                 <div className="flex gap-1 flex-wrap">
-                                  {(['admin', 'moderator', 'user'] as const).map(role => {
+                                  {([
+                                    { role: 'master', icon: Crown, color: 'bg-yellow-500/20 text-yellow-700 border-yellow-300' },
+                                    { role: 'admin', icon: Shield, color: '' },
+                                    { role: 'moderator', icon: Shield, color: '' },
+                                    { role: 'provider', icon: Wrench, color: 'bg-blue-500/20 text-blue-700 border-blue-300' },
+                                    { role: 'client', icon: ShoppingCart, color: 'bg-green-500/20 text-green-700 border-green-300' },
+                                    { role: 'mixed', icon: Shuffle, color: 'bg-purple-500/20 text-purple-700 border-purple-300' },
+                                  ] as const).map(({ role, icon: Icon, color }) => {
                                     const hasRole = roles.some((r: any) => r.role === role);
                                     return (
                                       <Badge
                                         key={role}
                                         variant={hasRole ? 'default' : 'outline'}
-                                        className="text-[10px] cursor-pointer"
+                                        className={`text-[10px] cursor-pointer ${hasRole && color ? color : ''}`}
                                         onClick={() => toggleUserRole(profile.user_id, role)}
                                       >
-                                        {role === 'admin' && <Shield className="w-2.5 h-2.5 mr-0.5" />}
+                                        <Icon className="w-2.5 h-2.5 mr-0.5" />
                                         {role}
                                       </Badge>
                                     );
