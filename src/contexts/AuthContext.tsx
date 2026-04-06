@@ -80,6 +80,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     setSession(null);
     setRoles([]);
+    setDisplayName(null);
   };
 
   const requireAuth = (action?: string): boolean => {
