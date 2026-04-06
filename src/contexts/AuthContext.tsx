@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import type { User, Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
@@ -60,9 +61,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const requireAuth = (action?: string): boolean => {
     if (user) return true;
-    const { toast } = require('sonner');
     toast.info(action || 'Faça login para continuar', {
-      action: { label: 'Entrar', onClick: () => window.location.href = '/auth' },
+      action: { label: 'Entrar', onClick: () => { window.location.href = '/auth'; } },
     });
     return false;
   };
