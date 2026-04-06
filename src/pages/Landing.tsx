@@ -425,10 +425,10 @@ const Landing = () => {
                   className="border-0 pl-12 pr-4 py-6 text-base md:text-lg bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
                 />
                 <div className="flex items-center gap-2 pr-3">
-                  <Button size="sm" variant="ghost" className="gap-1 text-muted-foreground hover:text-primary" onClick={() => setShowAiPanel(!showAiPanel)}>
-                    <MessageCircle className="w-4 h-4" />
-                    <span className="hidden sm:inline text-xs">Falar com IA</span>
+                  <Button size="sm" className="gap-1 rounded-xl" onClick={executeSearch}>
+                    <Search className="w-4 h-4" /> Buscar
                   </Button>
+                </div>
                   <Button size="sm" className="gap-1 rounded-xl" onClick={executeSearch}>
                     <Search className="w-4 h-4" /> Buscar
                   </Button>
@@ -457,9 +457,14 @@ const Landing = () => {
               </div>
             </div>
 
+          </motion.div>
+        </div>
+      </section>
+
             {/* Layout: Only show sidebar + results after search */}
             {searchExecuted && (
-            <div className="flex gap-3">
+            <div className="flex-1 overflow-hidden px-4">
+            <div className="container mx-auto max-w-5xl h-full flex gap-3">
               {/* Segment sidebar */}
               <div className="hidden sm:flex flex-col gap-1 w-[140px] shrink-0 max-h-[calc(100vh-220px)] overflow-y-auto pr-1">
                 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 px-1">Segmentos</p>
@@ -523,7 +528,7 @@ const Landing = () => {
               </div>
 
               {/* Results */}
-              <div className="flex-1 min-w-0 max-h-[calc(100vh-220px)] overflow-y-auto rounded-xl pr-1">
+              <div className="flex-1 min-w-0 overflow-y-auto rounded-xl pr-1">
             <AnimatePresence>
               {searchExecuted && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
@@ -982,13 +987,16 @@ const Landing = () => {
             </div>
             </div>
             )}
-          </motion.div>
-        </div>
-      </section>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            </div>
+            </div>
+            </div>
+            )}
 
       {/* AI Chat Panel */}
       <AnimatePresence>
-        {showAiPanel && (
           <motion.div
             initial={{ opacity: 0, x: 300 }}
             animate={{ opacity: 1, x: 0 }}
@@ -1317,32 +1325,17 @@ const Landing = () => {
 
       {/* Cart is now rendered globally via CartBar */}
 
-      {/* Footer */}
-      <footer className="border-t border-border py-4 px-4 bg-card/50">
-        <div className="container mx-auto">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 rounded bg-primary flex items-center justify-center">
-                <Zap className="w-3 h-3 text-primary-foreground" />
-              </div>
-              <span className="font-display text-sm font-bold text-foreground">EcoMEI</span>
-              <span className="text-[10px] text-muted-foreground ml-1">© 2026</span>
-            </div>
-            <p className="text-xs text-muted-foreground text-center max-w-md">
-              <Sparkles className="w-3 h-3 text-accent inline mr-1" />
-              <strong className="text-foreground">É prestador de serviço?</strong> Cadastre-se e conquiste novos clientes todos os dias. Planos a partir de R$ 29,90/mês.
-            </p>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" className="text-xs gap-1 h-8" onClick={() => navigate('/mei')}>
-                <Users className="w-3 h-3" /> Sou Prestador
-              </Button>
-              <Button size="sm" className="text-xs gap-1 h-8" onClick={() => navigate('/client')}>
-                <ShoppingCart className="w-3 h-3" /> Sou Cliente
-              </Button>
-            </div>
-          </div>
+      {/* Footer - minimal */}
+      <footer className="shrink-0 border-t border-border py-1.5 px-4 bg-card/50">
+        <div className="container mx-auto flex items-center justify-center gap-2 text-[10px] text-muted-foreground">
+          <span className="font-medium text-foreground">Vitrinei Connect</span>
+          <span>•</span>
+          <span>Bueno & Ribeiro Tecnologia Ltda</span>
+          <span>•</span>
+          <span>© 2026</span>
         </div>
       </footer>
+      </main>
     </div>
   );
 };
