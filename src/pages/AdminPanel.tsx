@@ -802,6 +802,7 @@ const AdminPanel = () => {
                         <TableRow>
                           <TableHead>Avatar</TableHead>
                           <TableHead>Nome</TableHead>
+                          <TableHead>E-mail</TableHead>
                           <TableHead>Telefone</TableHead>
                           <TableHead>User ID</TableHead>
                           <TableHead>Papéis</TableHead>
