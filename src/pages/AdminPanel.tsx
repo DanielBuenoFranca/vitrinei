@@ -836,6 +836,12 @@ const AdminPanel = () => {
                                 <span className="font-medium text-sm">{profile.display_name || 'Sem nome'}</span>
                               </TableCell>
                               <TableCell className="text-xs text-muted-foreground">{authUserEmails[profile.user_id] || '—'}</TableCell>
+                              <TableCell className="text-xs">
+                                {authUserConfirmed[profile.user_id]
+                                  ? <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Verificado</Badge>
+                                  : <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Pendente</Badge>
+                                }
+                              </TableCell>
                               <TableCell className="text-xs text-muted-foreground">{profile.phone || '—'}</TableCell>
                               <TableCell>
                                 <code className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-mono">
