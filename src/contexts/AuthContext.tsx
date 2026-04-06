@@ -12,12 +12,13 @@ interface AuthContextType {
   isAdmin: boolean;
   isMaster: boolean;
   roles: AppRole[];
+  displayName: string | null;
   signOut: () => Promise<void>;
   requireAuth: (action?: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
-  user: null, session: null, loading: true, isAdmin: false, isMaster: false, roles: [],
+  user: null, session: null, loading: true, isAdmin: false, isMaster: false, roles: [], displayName: null,
   signOut: async () => {}, requireAuth: () => false,
 });
 
@@ -28,6 +29,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState<AppRole[]>([]);
+  const [displayName, setDisplayName] = useState<string | null>(null);
 
   const isAdmin = roles.includes('admin') || roles.includes('master');
   const isMaster = roles.includes('master');
@@ -38,9 +40,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       setLoading(false);
       if (session?.user) {
-        setTimeout(() => fetchRoles(session.user.id), 0);
+        setTimeout(() => {
+          fetchRoles(session.user.id);
+          fetchDisplayName(session.user.id);
+        }, 0);
       } else {
         setRoles([]);
+        setDisplayName(null);
       }
     });
 
@@ -48,7 +54,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      if (session?.user) fetchRoles(session.user.id);
+      if (session?.user) {
+        fetchRoles(session.user.id);
+        fetchDisplayName(session.user.id);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -61,11 +70,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const fetchDisplayName = async (userId: string) => {
+    const { data } = await supabase.from('profiles').select('display_name').eq('user_id', userId).maybeSingle();
+    if (data) setDisplayName(data.display_name);
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
     setRoles([]);
+    setDisplayName(null);
   };
 
   const requireAuth = (action?: string): boolean => {
@@ -77,7 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, isMaster, roles, signOut, requireAuth }}>
+    <AuthContext.Provider value={{ user, session, loading, isAdmin, isMaster, roles, displayName, signOut, requireAuth }}>
       {children}
     </AuthContext.Provider>
   );

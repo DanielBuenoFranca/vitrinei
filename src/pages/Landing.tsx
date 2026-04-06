@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -31,7 +32,8 @@ const aiSuggestions = [
 
 const Landing = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut, displayName } = useAuth();
+  const { profileLabel } = usePermissions();
   const [searchQuery, setSearchQuery] = useState('');
   const [executedQuery, setExecutedQuery] = useState('');
   const [searchExecuted, setSearchExecuted] = useState(false);
@@ -340,6 +342,8 @@ const Landing = () => {
           <div className="flex items-center gap-2">
             {user ? (
               <div className="flex items-center gap-1.5">
+                <span className="text-xs text-foreground font-medium hidden sm:inline truncate max-w-[120px]">{displayName || user.email?.split('@')[0]}</span>
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 hidden sm:inline-flex">{profileLabel}</Badge>
                 <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => navigate('/carteira')}>
                   💰 Carteira
                 </Button>
