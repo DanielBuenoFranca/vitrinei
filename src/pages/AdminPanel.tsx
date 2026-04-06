@@ -64,6 +64,9 @@ const AdminPanel = () => {
   const [productForm, setProductForm] = useState<{ open: boolean; item: DynamicProduct | null }>({ open: false, item: null });
   const [serviceForm, setServiceForm] = useState<{ open: boolean; item: DynamicService | null }>({ open: false, item: null });
   const [segmentForm, setSegmentForm] = useState<{ open: boolean; item: Segment | null }>({ open: false, item: null });
+  const [unitForm, setUnitForm] = useState<{ open: boolean; item: Unit | null }>({ open: false, item: null });
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [generatingUnits, setGeneratingUnits] = useState(false);
 
   // Users management
   const [authUsers, setAuthUsers] = useState<any[]>([]);
