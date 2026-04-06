@@ -248,6 +248,10 @@ const AdminPanel = () => {
                 <Badge variant="destructive" className="ml-1 text-[10px] px-1.5 py-0 min-w-5 h-5">{issueCount}</Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="users" className="gap-1.5">
+              <UserCog className="h-3.5 w-3.5" />
+              Usuários ({userProfiles.length})
+            </TabsTrigger>
           </TabsList>
 
           {/* ── SEGMENTS TAB ── */}
