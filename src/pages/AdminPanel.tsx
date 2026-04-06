@@ -797,6 +797,56 @@ const AdminPanel = () => {
             </Card>
             </PermissionGate>
           </TabsContent>
+
+          {/* ── MARQUEE / AVISOS TAB ── */}
+          <TabsContent value="marquee">
+            <PermissionGate permission="admin.panel" featureName="Gestão de Avisos">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Megaphone className="h-5 w-5 text-primary" />
+                    Gestão de Avisos do Cabeçalho
+                  </CardTitle>
+                  <CardDescription>
+                    Os avisos aparecem como letreiro rolante no cabeçalho para todos os usuários. Atualizações são exibidas em tempo real.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Current messages */}
+                  {marqueeMessages.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">Nenhum aviso cadastrado.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {marqueeMessages.map((msg, idx) => (
+                        <div key={idx} className="flex items-start gap-2 p-3 border rounded-lg bg-muted/30">
+                          <Badge variant="outline" className="mt-0.5 shrink-0">{idx + 1}</Badge>
+                          <p className="text-sm flex-1 break-words">{msg}</p>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-destructive hover:text-destructive" onClick={() => removeMarqueeMsg(idx)} disabled={savingMarquee}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add new */}
+                  <div className="flex gap-2">
+                    <Textarea
+                      placeholder="Digite o texto do aviso (máx. 500 caracteres)..."
+                      value={newMarqueeMsg}
+                      onChange={e => setNewMarqueeMsg(e.target.value.slice(0, 500))}
+                      className="min-h-[60px]"
+                      maxLength={500}
+                    />
+                    <Button onClick={addMarqueeMsg} disabled={!newMarqueeMsg.trim() || savingMarquee} className="shrink-0 self-end">
+                      <Plus className="h-4 w-4 mr-1" /> Adicionar
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{newMarqueeMsg.length}/500 caracteres</p>
+                </CardContent>
+              </Card>
+            </PermissionGate>
+          </TabsContent>
         </Tabs>
       </main>
 
