@@ -70,6 +70,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const fetchDisplayName = async (userId: string) => {
+    const { data } = await supabase.from('profiles').select('display_name').eq('user_id', userId).maybeSingle();
+    if (data) setDisplayName(data.display_name);
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
