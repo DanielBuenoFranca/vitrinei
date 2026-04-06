@@ -1022,8 +1022,46 @@ const AdminPanel = () => {
             <div>
               <label className="text-sm font-medium mb-1.5 block">E-mail (autenticação)</label>
               <Input type="email" value={editUserEmail} onChange={e => setEditUserEmail(e.target.value)} placeholder="email@exemplo.com" />
+              {editUserDialog.profile && (
+                <div className="mt-2 flex items-center gap-2">
+                  {authUserConfirmed[editUserDialog.profile.user_id]
+                    ? <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">✓ E-mail verificado</Badge>
+                    : (
+                      <>
+                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">⏳ Pendente de verificação</Badge>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={resendingConfirmation}
+                          onClick={async () => {
+                            setResendingConfirmation(true);
+                            try {
+                              const email = authUserEmails[editUserDialog.profile.user_id];
+                              const { data, error } = await supabase.functions.invoke('resend-confirmation', {
+                                body: { user_id: editUserDialog.profile.user_id, email },
+                              });
+                              if (error || data?.error) {
+                                toast.error('Erro ao reenviar: ' + (data?.error || error?.message || 'desconhecido'));
+                              } else {
+                                toast.success('Link de confirmação reenviado!');
+                              }
+                            } catch {
+                              toast.error('Erro ao reenviar confirmação');
+                            }
+                            setResendingConfirmation(false);
+                          }}
+                        >
+                          {resendingConfirmation ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Mail className="h-3 w-3 mr-1" />}
+                          Reenviar confirmação
+                        </Button>
+                      </>
+                    )
+                  }
+                </div>
+              )}
               {editUserEmail !== (authUserEmails[editUserDialog.profile?.user_id] || '') && editUserEmail.trim() && (
-                <p className="text-xs text-amber-600 mt-1">⚠ O e-mail de login do usuário será alterado</p>
+                <p className="text-xs text-amber-600 mt-1">⚠ O e-mail de login do usuário será alterado. Uma confirmação será enviada.</p>
               )}
             </div>
             <div>
