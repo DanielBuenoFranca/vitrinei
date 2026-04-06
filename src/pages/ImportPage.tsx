@@ -29,6 +29,7 @@ interface ParsedRow {
   phone: string;
   email: string;
   city: string;
+  cpfCnpj: string;
 }
 
 interface RowError {
@@ -39,7 +40,7 @@ interface RowError {
 }
 
 interface AutoFix {
-  icon: 'segment' | 'provider' | 'price' | 'contact' | 'tags';
+  icon: 'segment' | 'provider' | 'price' | 'contact' | 'tags' | 'document' | 'logo';
   message: string;
 }
 
@@ -66,10 +67,11 @@ const FIELD_LABELS: Record<string, string> = {
   phone: 'Telefone',
   email: 'E-mail',
   city: 'Cidade',
+  cpfCnpj: 'CPF/CNPJ',
 };
 
 const COLUMNS: (keyof Omit<ParsedRow, '_id'>)[] = [
-  'providerName', 'segment', 'serviceName', 'servicePrice',
+  'providerName', 'cpfCnpj', 'segment', 'serviceName', 'servicePrice',
   'productName', 'productPrice', 'productStockType',
   'phone', 'email', 'city',
 ];
@@ -77,8 +79,8 @@ const COLUMNS: (keyof Omit<ParsedRow, '_id'>)[] = [
 /* ─── Template generator ─── */
 const generateTemplate = async () => {
   const XLSX = await import('xlsx');
-  const headers = ['Prestador', 'Segmento', 'Serviço', 'Preço Serviço', 'Produto', 'Preço Produto', 'Tipo Estoque', 'Telefone', 'E-mail', 'Cidade'];
-  const example = ['João Silva', 'Manutenção', 'Instalação Elétrica', '150', 'Tomada 3 pinos', '12.50', 'fisico', '(11) 99999-0000', 'joao@email.com', 'São Paulo'];
+  const headers = ['Prestador', 'CPF/CNPJ', 'Segmento', 'Serviço', 'Preço Serviço', 'Produto', 'Preço Produto', 'Tipo Estoque', 'Telefone', 'E-mail', 'Cidade'];
+  const example = ['João Silva', '123.456.789-09', 'Manutenção', 'Instalação Elétrica', '150', 'Tomada 3 pinos', '12.50', 'fisico', '(11) 99999-0000', 'joao@email.com', 'São Paulo'];
   const ws = XLSX.utils.aoa_to_sheet([headers, example]);
   ws['!cols'] = headers.map(() => ({ wch: 20 }));
   const wb = XLSX.utils.book_new();
@@ -143,6 +145,18 @@ const validateBusinessRules = (
         errors.push({
           rowId: row._id, field: 'phone',
           message: 'Prestador novo sem telefone e sem e-mail',
+          severity: 'warning',
+        });
+      }
+    }
+
+    // CPF/CNPJ missing
+    if (row.providerName.trim() && !row.cpfCnpj.trim()) {
+      const firstName = row.providerName.toLowerCase().split(' ')[0];
+      if (!existingProviderNames.has(firstName)) {
+        errors.push({
+          rowId: row._id, field: 'cpfCnpj',
+          message: 'Sem CPF/CNPJ — será marcado como ISENTO na importação',
           severity: 'warning',
         });
       }
@@ -245,6 +259,7 @@ const ImportPage = () => {
 
       const colMap = {
         provider: findCol(['prestador', 'provider', 'nome do prestador', 'profissional']),
+        cpfCnpj: findCol(['cpf', 'cnpj', 'cpf/cnpj', 'cpf_cnpj', 'documento']),
         segment: findCol(['segmento', 'segment', 'categoria', 'area']),
         service: findCol(['servico', 'service', 'serviço']),
         servicePrice: findCol(['preco_servico', 'preço serviço', 'preco servico', 'service_price', 'valor_servico', 'valor servico', 'preço_serviço']),
@@ -259,6 +274,7 @@ const ImportPage = () => {
       const parsed: ParsedRow[] = json.map((r: any, i: number) => ({
         _id: i + 1,
         providerName: String(r[colMap.provider || ''] ?? '').trim(),
+        cpfCnpj: String(r[colMap.cpfCnpj || ''] ?? '').trim().replace(/\D/g, ''),
         segment: String(r[colMap.segment || ''] ?? 'Geral').trim(),
         serviceName: String(r[colMap.service || ''] ?? '').trim(),
         servicePrice: String(r[colMap.servicePrice || ''] ?? '').trim(),
@@ -394,6 +410,7 @@ const ImportPage = () => {
         // --- Create new provider with all segments from rows ---
         const firstRow = provRows[0];
         const allSegments = [...new Set(provRows.map(r => r.segment.trim()).filter(Boolean))];
+        const cpfCnpjValue = firstRow.cpfCnpj.trim() || null;
         const { data: newProv, error } = await supabase.from('providers').insert({
           name: provName,
           segment: allSegments.length > 0 ? allSegments : ['Geral'],
@@ -401,14 +418,33 @@ const ImportPage = () => {
           phone: firstRow.phone || '',
           email: firstRow.email || '',
           city: firstRow.city || '',
+          cpf_cnpj: cpfCnpjValue || 'ISENTO',
         }).select().single();
         if (error || !newProv) { res.errors.push(`Erro ao criar ${provName}: ${error?.message}`); continue; }
         providerId = (newProv as any).id;
         provMap.set(firstName, { id: providerId, name: provName, segment: allSegments, phone: firstRow.phone, email: firstRow.email });
         res.providersCreated++;
 
+        if (!cpfCnpjValue) {
+          res.fixes.push({ icon: 'document', message: `Prestador "${provName}": CPF/CNPJ ausente — marcado como ISENTO (não gerará inconsistência)` });
+        }
+
         if (!firstRow.phone.trim() && !firstRow.email.trim()) {
           res.fixes.push({ icon: 'contact', message: `Prestador "${provName}" criado sem contato — corrija no painel Admin` });
+        }
+
+        // --- Auto-generate AI logo ---
+        try {
+          toast.info(`🎨 Gerando logo para "${provName}"...`);
+          const { data: logoData, error: logoErr } = await supabase.functions.invoke('generate-provider-logo', {
+            body: { providerName: provName, segment: allSegments[0] || 'Geral' },
+          });
+          if (!logoErr && logoData?.logoUrl) {
+            await supabase.from('providers').update({ logo_url: logoData.logoUrl }).eq('id', providerId);
+            res.fixes.push({ icon: 'logo', message: `Prestador "${provName}": logo gerado automaticamente por IA` });
+          }
+        } catch (e) {
+          console.error('Logo generation error:', e);
         }
       }
 
@@ -790,6 +826,8 @@ const ImportPage = () => {
                         contact: <Badge variant="secondary" className="text-[9px] h-4 bg-green-500/10 text-green-600 dark:text-green-400">Contato</Badge>,
                         price: <Badge variant="secondary" className="text-[9px] h-4 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400">Preço</Badge>,
                         tags: <Badge variant="secondary" className="text-[9px] h-4 bg-purple-500/10 text-purple-600 dark:text-purple-400">Tags</Badge>,
+                        document: <Badge variant="secondary" className="text-[9px] h-4 bg-orange-500/10 text-orange-600 dark:text-orange-400">Documento</Badge>,
+                        logo: <Badge variant="secondary" className="text-[9px] h-4 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">Logo IA</Badge>,
                       };
                       return (
                         <div key={i} className="flex items-start gap-2 text-[11px] text-foreground py-1 border-b border-border/50 last:border-0">
