@@ -340,6 +340,7 @@ const Landing = () => {
             <span className="font-display text-xl font-bold text-foreground">EcoMEI</span>
             <ThemeSwitcher />
           </div>
+          <HeaderMarquee />
           <div className="flex items-center gap-2">
             {user ? (
               <div className="flex items-center gap-1.5">
