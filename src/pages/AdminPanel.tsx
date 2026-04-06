@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield } from 'lucide-react';
+import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { ProviderForm } from '@/components/admin/ProviderForm';
@@ -16,6 +16,7 @@ import { ServiceForm } from '@/components/admin/ServiceForm';
 import { SegmentForm } from '@/components/admin/SegmentForm';
 import { ClearDataDialog } from '@/components/admin/ClearDataDialog';
 import { InconsistencyPanel } from '@/components/admin/InconsistencyPanel';
+import { UnitForm } from '@/components/admin/UnitForm';
 import { reloadDynamicEntries } from '@/data/searchData';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -46,6 +47,10 @@ interface Segment {
   id: number; name: string; created_at: string;
 }
 
+interface Unit {
+  id: number; name: string; label: string; created_at: string;
+}
+
 const AdminPanel = () => {
   const navigate = useNavigate();
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -59,6 +64,9 @@ const AdminPanel = () => {
   const [productForm, setProductForm] = useState<{ open: boolean; item: DynamicProduct | null }>({ open: false, item: null });
   const [serviceForm, setServiceForm] = useState<{ open: boolean; item: DynamicService | null }>({ open: false, item: null });
   const [segmentForm, setSegmentForm] = useState<{ open: boolean; item: Segment | null }>({ open: false, item: null });
+  const [unitForm, setUnitForm] = useState<{ open: boolean; item: Unit | null }>({ open: false, item: null });
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [generatingUnits, setGeneratingUnits] = useState(false);
 
   // Users management
   const [authUsers, setAuthUsers] = useState<any[]>([]);
@@ -70,16 +78,18 @@ const AdminPanel = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const [provRes, svcRes, prodRes, segRes] = await Promise.all([
+    const [provRes, svcRes, prodRes, segRes, unitRes] = await Promise.all([
       supabase.from('providers').select('*').order('created_at', { ascending: false }),
       supabase.from('dynamic_services').select('*').order('created_at', { ascending: false }),
       supabase.from('dynamic_products').select('*').order('created_at', { ascending: false }),
       supabase.from('segments').select('*').order('name'),
+      supabase.from('units').select('*').order('name'),
     ]);
     setProviders((provRes.data as Provider[]) || []);
     setServices((svcRes.data as DynamicService[]) || []);
     setProducts((prodRes.data as DynamicProduct[]) || []);
     setSegments((segRes.data as Segment[]) || []);
+    setUnits((unitRes.data as Unit[]) || []);
     setLoading(false);
   };
 
@@ -156,6 +166,45 @@ const AdminPanel = () => {
     fetchData();
   };
 
+  const deleteUnit = async (id: number) => {
+    await supabase.from('units').delete().eq('id', id);
+    toast.success('Unidade excluída');
+    fetchData();
+  };
+
+  const generateUnitsAI = async () => {
+    setGeneratingUnits(true);
+    try {
+      const existingNames = new Set(units.map(u => u.name));
+      const { data, error } = await supabase.functions.invoke('suggest-name', {
+        body: {
+          prompt: `Sugira 10 unidades de medida comuns para prestadores de serviço e comércio que NÃO estejam nesta lista: ${[...existingNames].join(', ')}. Retorne APENAS um JSON array com objetos {"name": "sigla", "label": "descrição"}. Exemplo: [{"name":"dz","label":"Dúzia"}]`,
+        },
+      });
+      if (error) throw error;
+      const text = typeof data === 'string' ? data : data?.suggestion || data?.name || JSON.stringify(data);
+      const match = text.match(/\[[\s\S]*\]/);
+      if (match) {
+        const suggestions: { name: string; label: string }[] = JSON.parse(match[0]);
+        const newUnits = suggestions.filter(s => s.name && s.label && !existingNames.has(s.name.toLowerCase()));
+        if (newUnits.length === 0) {
+          toast.info('IA não encontrou novas unidades para sugerir');
+        } else {
+          for (const u of newUnits) {
+            await supabase.from('units').insert({ name: u.name.toLowerCase(), label: u.label });
+          }
+          toast.success(`${newUnits.length} unidade(s) criada(s) pela IA`);
+          fetchData();
+        }
+      } else {
+        toast.error('Não foi possível interpretar a resposta da IA');
+      }
+    } catch (e: any) {
+      toast.error('Erro ao gerar: ' + (e.message || 'desconhecido'));
+    }
+    setGeneratingUnits(false);
+  };
+
   const providerList = providers.map(p => ({ id: p.id, name: p.name, segment: p.segment }));
   const segmentList = segments.map(s => ({ id: s.id, name: s.name }));
 
@@ -210,12 +259,13 @@ const AdminPanel = () => {
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-6 gap-4">
           {[
             { icon: Store, label: 'Prestadores', count: providers.length, color: 'bg-primary/10 text-primary' },
             { icon: Users, label: 'Serviços', count: services.length, color: 'bg-primary/10 text-primary' },
             { icon: Package, label: 'Produtos', count: products.length, color: 'bg-accent/20 text-accent-foreground' },
             { icon: Tag, label: 'Segmentos', count: segments.length, color: 'bg-secondary/50 text-secondary-foreground' },
+            { icon: Ruler, label: 'Unidades', count: units.length, color: 'bg-secondary/50 text-secondary-foreground' },
             { icon: Database, label: 'Total', count: providers.length + services.length + products.length, color: 'bg-secondary/50 text-secondary-foreground' },
           ].map((stat, i) => (
             <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
@@ -241,6 +291,10 @@ const AdminPanel = () => {
             <TabsTrigger value="providers">Prestadores ({providers.length})</TabsTrigger>
             <TabsTrigger value="services">Serviços ({services.length})</TabsTrigger>
             <TabsTrigger value="products">Produtos ({products.length})</TabsTrigger>
+            <TabsTrigger value="units" className="gap-1.5">
+              <Ruler className="h-3.5 w-3.5" />
+              Unidades ({units.length})
+            </TabsTrigger>
             <TabsTrigger value="issues" className="gap-1.5">
               <AlertTriangle className="h-3.5 w-3.5" />
               Inconsistências
@@ -544,6 +598,66 @@ const AdminPanel = () => {
             </Card>
           </TabsContent>
 
+          {/* ── UNITS TAB ── */}
+          <TabsContent value="units">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-base flex items-center gap-2"><Ruler className="w-4 h-4" /> Unidades de Medida</CardTitle>
+                  <CardDescription>Unidades utilizadas em serviços e produtos (ex: un, kg, hr, m²)</CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={generateUnitsAI} disabled={generatingUnits} className="gap-1.5">
+                    {generatingUnits ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    {generatingUnits ? 'Gerando...' : 'Gerar com IA'}
+                  </Button>
+                  <Button size="sm" onClick={() => setUnitForm({ open: true, item: null })}>
+                    <Plus className="h-4 w-4 mr-1" /> Nova Unidade
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {units.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">Nenhuma unidade cadastrada.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Sigla</TableHead>
+                          <TableHead>Descrição</TableHead>
+                          <TableHead>Criado em</TableHead>
+                          <TableHead></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {units.map(u => (
+                          <TableRow key={u.id}>
+                            <TableCell className="font-mono font-semibold">{u.name}</TableCell>
+                            <TableCell>{u.label}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {new Date(u.created_at).toLocaleDateString('pt-BR')}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setUnitForm({ open: true, item: u })}>
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteUnit(u.id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* ── INCONSISTENCIES TAB ── */}
           <TabsContent value="issues">
             <InconsistencyPanel
@@ -637,6 +751,7 @@ const AdminPanel = () => {
       <ProductForm open={productForm.open} onClose={() => setProductForm({ open: false, item: null })} onSaved={() => { reloadDynamicEntries(); fetchData(); }} product={productForm.item} providers={providerList} segments={segmentList} />
       <ServiceForm open={serviceForm.open} onClose={() => setServiceForm({ open: false, item: null })} onSaved={() => { reloadDynamicEntries(); fetchData(); }} service={serviceForm.item} providers={providerList} segments={segmentList} />
       <SegmentForm open={segmentForm.open} onClose={() => setSegmentForm({ open: false, item: null })} onSaved={fetchData} segment={segmentForm.item} />
+      <UnitForm open={unitForm.open} onClose={() => setUnitForm({ open: false, item: null })} onSaved={fetchData} unit={unitForm.item} />
       <ClearDataDialog open={clearDialog} onClose={() => setClearDialog(false)} onCleared={() => { reloadDynamicEntries(); fetchData(); }} counts={{ providers: providers.length, services: services.length, products: products.length, segments: segments.length }} />
 
       {/* Delete Provider Confirmation */}

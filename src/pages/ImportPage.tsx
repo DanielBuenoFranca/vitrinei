@@ -23,8 +23,10 @@ interface ParsedRow {
   segment: string;
   serviceName: string;
   servicePrice: string;
+  serviceUnit: string;
   productName: string;
   productPrice: string;
+  productUnit: string;
   productStockType: string;
   phone: string;
   email: string;
@@ -58,33 +60,50 @@ const STOCK_TYPES = ['fisico', 'drop'];
 
 const FIELD_LABELS: Record<string, string> = {
   providerName: 'Prestador',
+  cpfCnpj: 'CPF/CNPJ',
   segment: 'Segmento',
   serviceName: 'Serviço',
   servicePrice: 'Preço Serviço',
+  serviceUnit: 'Un. Serviço',
   productName: 'Produto',
   productPrice: 'Preço Produto',
+  productUnit: 'Un. Produto',
   productStockType: 'Tipo Estoque',
   phone: 'Telefone',
   email: 'E-mail',
   city: 'Cidade',
-  cpfCnpj: 'CPF/CNPJ',
 };
 
 const COLUMNS: (keyof Omit<ParsedRow, '_id'>)[] = [
-  'providerName', 'cpfCnpj', 'segment', 'serviceName', 'servicePrice',
-  'productName', 'productPrice', 'productStockType',
+  'providerName', 'cpfCnpj', 'segment', 'serviceName', 'servicePrice', 'serviceUnit',
+  'productName', 'productPrice', 'productUnit', 'productStockType',
   'phone', 'email', 'city',
 ];
 
 /* ─── Template generator ─── */
 const generateTemplate = async () => {
   const XLSX = await import('xlsx');
-  const headers = ['Prestador', 'CPF/CNPJ', 'Segmento', 'Serviço', 'Preço Serviço', 'Produto', 'Preço Produto', 'Tipo Estoque', 'Telefone', 'E-mail', 'Cidade'];
-  const example = ['João Silva', '123.456.789-09', 'Manutenção', 'Instalação Elétrica', '150', 'Tomada 3 pinos', '12.50', 'fisico', '(11) 99999-0000', 'joao@email.com', 'São Paulo'];
-  const ws = XLSX.utils.aoa_to_sheet([headers, example]);
+  // Fetch existing units for the template note
+  const { data: unitsData } = await supabase.from('units').select('name, label').order('name');
+  const unitsList = (unitsData || []).map((u: any) => u.name).join(', ');
+
+  const headers = ['Prestador', 'CPF/CNPJ', 'Segmento', 'Serviço', 'Preço Serviço', 'Un. Serviço', 'Produto', 'Preço Produto', 'Un. Produto', 'Tipo Estoque', 'Telefone', 'E-mail', 'Cidade'];
+  const example = ['João Silva', '123.456.789-09', 'Manutenção', 'Instalação Elétrica', '150', 'hr', 'Tomada 3 pinos', '12.50', 'un', 'fisico', '(11) 99999-0000', 'joao@email.com', 'São Paulo'];
+  const noteRow = ['', '', '', '', '', `Unidades: ${unitsList}`, '', '', `Unidades: ${unitsList}`, 'fisico ou drop', '', '', ''];
+  const ws = XLSX.utils.aoa_to_sheet([headers, example, noteRow]);
   ws['!cols'] = headers.map(() => ({ wch: 20 }));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Importação');
+
+  // Add a reference sheet with all units
+  if (unitsData && unitsData.length > 0) {
+    const unitsHeaders = ['Sigla', 'Descrição'];
+    const unitsRows = unitsData.map((u: any) => [u.name, u.label]);
+    const wsUnits = XLSX.utils.aoa_to_sheet([unitsHeaders, ...unitsRows]);
+    wsUnits['!cols'] = [{ wch: 12 }, { wch: 25 }];
+    XLSX.utils.book_append_sheet(wb, wsUnits, 'Unidades de Medida');
+  }
+
   XLSX.writeFile(wb, 'modelo_importacao.xlsx');
   toast.success('Modelo baixado!');
 };
@@ -263,8 +282,10 @@ const ImportPage = () => {
         segment: findCol(['segmento', 'segment', 'categoria', 'area']),
         service: findCol(['servico', 'service', 'serviço']),
         servicePrice: findCol(['preco_servico', 'preço serviço', 'preco servico', 'service_price', 'valor_servico', 'valor servico', 'preço_serviço']),
+        serviceUnit: findCol(['un. servico', 'un. serviço', 'unidade servico', 'unidade serviço', 'service_unit']),
         product: findCol(['produto', 'product']),
         productPrice: findCol(['preco_produto', 'preço produto', 'preco produto', 'product_price', 'valor_produto', 'valor produto', 'preço_produto']),
+        productUnit: findCol(['un. produto', 'unidade produto', 'product_unit']),
         stock: findCol(['estoque', 'stock', 'tipo_estoque', 'tipo estoque']),
         phone: findCol(['telefone', 'phone', 'cel']),
         email: findCol(['email', 'e-mail']),
@@ -278,8 +299,10 @@ const ImportPage = () => {
         segment: String(r[colMap.segment || ''] ?? 'Geral').trim(),
         serviceName: String(r[colMap.service || ''] ?? '').trim(),
         servicePrice: String(r[colMap.servicePrice || ''] ?? '').trim(),
+        serviceUnit: String(r[colMap.serviceUnit || ''] ?? 'hr').trim().toLowerCase(),
         productName: String(r[colMap.product || ''] ?? '').trim(),
         productPrice: String(r[colMap.productPrice || ''] ?? '').trim(),
+        productUnit: String(r[colMap.productUnit || ''] ?? 'un').trim().toLowerCase(),
         productStockType: String(r[colMap.stock || ''] ?? 'fisico').trim().toLowerCase(),
         phone: String(r[colMap.phone || ''] ?? '').trim(),
         email: String(r[colMap.email || ''] ?? '').trim(),
@@ -458,6 +481,7 @@ const ImportPage = () => {
             provider: provName,
             provider_id: providerId,
             price,
+            unit: row.serviceUnit || 'hr',
           });
           if (error) {
             res.errors.push(`Serviço ${row.serviceName}: ${error.message}`);
@@ -479,6 +503,7 @@ const ImportPage = () => {
             price,
             stock_type: row.productStockType === 'drop' ? 'drop' : 'fisico',
             tags,
+            unit: row.productUnit || 'un',
           });
           if (error) {
             res.errors.push(`Produto ${row.productName}: ${error.message}`);
