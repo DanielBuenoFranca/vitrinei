@@ -1,7 +1,7 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import {
   ArrowLeft, Upload, FileSpreadsheet, CheckCircle2, AlertTriangle,
-  Loader2, Download, Pencil, Trash2, X, Save
+  Loader2, Download, Pencil, Trash2, X, Save, ShieldAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { reloadDynamicEntries } from '@/data/searchData';
@@ -35,6 +35,7 @@ interface RowError {
   rowId: number;
   field: string;
   message: string;
+  severity: 'error' | 'warning';
 }
 
 interface ImportResult {
@@ -79,34 +80,92 @@ const generateTemplate = async () => {
   toast.success('Modelo baixado!');
 };
 
-/* ─── Validation ─── */
-const validateRows = (rows: ParsedRow[]): RowError[] => {
+/* ─── Basic validation (format) ─── */
+const validateFormat = (rows: ParsedRow[]): RowError[] => {
   const errors: RowError[] = [];
   rows.forEach(row => {
     if (!row.providerName.trim()) {
-      errors.push({ rowId: row._id, field: 'providerName', message: 'Prestador é obrigatório' });
+      errors.push({ rowId: row._id, field: 'providerName', message: 'Prestador é obrigatório', severity: 'error' });
     }
     if (!row.segment.trim()) {
-      errors.push({ rowId: row._id, field: 'segment', message: 'Segmento é obrigatório' });
+      errors.push({ rowId: row._id, field: 'segment', message: 'Segmento é obrigatório', severity: 'error' });
     }
     if (!row.serviceName.trim() && !row.productName.trim()) {
-      errors.push({ rowId: row._id, field: 'serviceName', message: 'Informe ao menos um Serviço ou Produto' });
+      errors.push({ rowId: row._id, field: 'serviceName', message: 'Informe ao menos um Serviço ou Produto', severity: 'error' });
     }
     if (row.serviceName.trim() && row.servicePrice.trim()) {
       const p = parseFloat(row.servicePrice);
-      if (isNaN(p) || p < 0) errors.push({ rowId: row._id, field: 'servicePrice', message: 'Preço inválido' });
+      if (isNaN(p) || p < 0) errors.push({ rowId: row._id, field: 'servicePrice', message: 'Preço inválido', severity: 'error' });
     }
     if (row.productName.trim() && row.productPrice.trim()) {
       const p = parseFloat(row.productPrice);
-      if (isNaN(p) || p < 0) errors.push({ rowId: row._id, field: 'productPrice', message: 'Preço inválido' });
+      if (isNaN(p) || p < 0) errors.push({ rowId: row._id, field: 'productPrice', message: 'Preço inválido', severity: 'error' });
     }
     if (row.productStockType.trim() && !STOCK_TYPES.includes(row.productStockType.toLowerCase())) {
-      errors.push({ rowId: row._id, field: 'productStockType', message: 'Use "fisico" ou "drop"' });
+      errors.push({ rowId: row._id, field: 'productStockType', message: 'Use "fisico" ou "drop"', severity: 'error' });
     }
     if (row.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)) {
-      errors.push({ rowId: row._id, field: 'email', message: 'E-mail inválido' });
+      errors.push({ rowId: row._id, field: 'email', message: 'E-mail inválido', severity: 'error' });
     }
   });
+  return errors;
+};
+
+/* ─── Business rules validation (inconsistency rules) ─── */
+const validateBusinessRules = (
+  rows: ParsedRow[],
+  existingSegments: Set<string>,
+  existingProviderNames: Set<string>,
+): RowError[] => {
+  const errors: RowError[] = [];
+
+  rows.forEach(row => {
+    // Segment doesn't exist in database
+    if (row.segment.trim() && !existingSegments.has(row.segment.trim())) {
+      errors.push({
+        rowId: row._id, field: 'segment',
+        message: `Segmento "${row.segment}" não existe no cadastro — será ignorado na aba Inconsistências`,
+        severity: 'warning',
+      });
+    }
+
+    // Provider without contact info
+    if (row.providerName.trim() && !row.phone.trim() && !row.email.trim()) {
+      const firstName = row.providerName.toLowerCase().split(' ')[0];
+      if (!existingProviderNames.has(firstName)) {
+        errors.push({
+          rowId: row._id, field: 'phone',
+          message: 'Prestador novo sem telefone e sem e-mail',
+          severity: 'warning',
+        });
+      }
+    }
+
+    // Service with zero price
+    if (row.serviceName.trim()) {
+      const p = parseFloat(row.servicePrice);
+      if (!row.servicePrice.trim() || p === 0) {
+        errors.push({
+          rowId: row._id, field: 'servicePrice',
+          message: 'Serviço com preço zerado — gerará inconsistência',
+          severity: 'warning',
+        });
+      }
+    }
+
+    // Product with zero price
+    if (row.productName.trim()) {
+      const p = parseFloat(row.productPrice);
+      if (!row.productPrice.trim() || p === 0) {
+        errors.push({
+          rowId: row._id, field: 'productPrice',
+          message: 'Produto com preço zerado — gerará inconsistência',
+          severity: 'warning',
+        });
+      }
+    }
+  });
+
   return errors;
 };
 
@@ -121,6 +180,40 @@ const ImportPage = () => {
   const [result, setResult] = useState<ImportResult | null>(null);
   const [fileName, setFileName] = useState('');
   const [editingCell, setEditingCell] = useState<{ rowId: number; field: string } | null>(null);
+  const [existingSegments, setExistingSegments] = useState<Set<string>>(new Set());
+  const [existingProviderNames, setExistingProviderNames] = useState<Set<string>>(new Set());
+  const [dbLoaded, setDbLoaded] = useState(false);
+
+  // Load existing segments and providers for business rule validation
+  useEffect(() => {
+    const load = async () => {
+      const [segRes, provRes] = await Promise.all([
+        supabase.from('segments').select('name'),
+        supabase.from('providers').select('name'),
+      ]);
+      setExistingSegments(new Set((segRes.data || []).map(s => s.name)));
+      setExistingProviderNames(new Set((provRes.data || []).map(p => p.name.toLowerCase().split(' ')[0])));
+      setDbLoaded(true);
+    };
+    load();
+  }, []);
+
+  /* ─── Full validation ─── */
+  const runValidation = useCallback((data: ParsedRow[]) => {
+    const formatErrors = validateFormat(data);
+    const businessErrors = validateBusinessRules(data, existingSegments, existingProviderNames);
+    // Deduplicate by rowId+field (format errors take priority)
+    const seen = new Set(formatErrors.map(e => `${e.rowId}:${e.field}`));
+    const combined = [...formatErrors, ...businessErrors.filter(e => !seen.has(`${e.rowId}:${e.field}`))];
+    return combined;
+  }, [existingSegments, existingProviderNames]);
+
+  // Re-validate when DB data loads
+  useEffect(() => {
+    if (rows.length > 0 && dbLoaded) {
+      setErrors(runValidation(rows));
+    }
+  }, [dbLoaded, existingSegments, existingProviderNames]);
 
   /* ─── Parse file ─── */
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -171,9 +264,11 @@ const ImportPage = () => {
       })).filter((r: ParsedRow) => r.providerName || r.serviceName || r.productName);
 
       setRows(parsed);
-      const errs = validateRows(parsed);
+      const errs = runValidation(parsed);
       setErrors(errs);
-      toast.success(`${parsed.length} linhas carregadas${errs.length > 0 ? ` — ${errs.length} inconsistência(s)` : ''}`);
+      const criticalCount = errs.filter(e => e.severity === 'error').length;
+      const warnCount = errs.filter(e => e.severity === 'warning').length;
+      toast.success(`${parsed.length} linhas carregadas${criticalCount > 0 ? ` — ${criticalCount} erro(s)` : ''}${warnCount > 0 ? ` · ${warnCount} aviso(s)` : ''}`);
     } catch (err: any) {
       toast.error('Erro ao ler planilha: ' + err.message);
     }
@@ -183,29 +278,33 @@ const ImportPage = () => {
   const updateCell = useCallback((rowId: number, field: string, value: string) => {
     setRows(prev => {
       const updated = prev.map(r => r._id === rowId ? { ...r, [field]: value } : r);
-      setErrors(validateRows(updated));
+      setErrors(runValidation(updated));
       return updated;
     });
-  }, []);
+  }, [runValidation]);
 
   const removeRow = useCallback((rowId: number) => {
     setRows(prev => {
       const updated = prev.filter(r => r._id !== rowId);
-      setErrors(validateRows(updated));
+      setErrors(runValidation(updated));
       return updated;
     });
-  }, []);
+  }, [runValidation]);
 
   /* ─── Get error for cell ─── */
   const getCellError = (rowId: number, field: string) =>
     errors.find(e => e.rowId === rowId && e.field === field);
 
-  const hasErrors = errors.length > 0;
+  const criticalErrors = errors.filter(e => e.severity === 'error');
+  const warnings = errors.filter(e => e.severity === 'warning');
+  const hasCriticalErrors = criticalErrors.length > 0;
+  const hasWarnings = warnings.length > 0;
   const errorRowIds = new Set(errors.map(e => e.rowId));
+  const criticalRowIds = new Set(criticalErrors.map(e => e.rowId));
 
   /* ─── Import ─── */
   const executeImport = async () => {
-    if (rows.length === 0 || hasErrors) return;
+    if (rows.length === 0 || hasCriticalErrors) return;
     setImporting(true);
     const res: ImportResult = { providersCreated: 0, providersLinked: 0, servicesCreated: 0, productsCreated: 0, errors: [] };
 
@@ -326,16 +425,24 @@ const ImportPage = () => {
       );
     }
 
+    const isWarning = cellError?.severity === 'warning';
+    const isError = cellError?.severity === 'error';
+
     return (
       <div
         className={`cursor-pointer px-1 py-0.5 rounded text-xs min-h-[24px] flex items-center ${
-          cellError ? 'bg-destructive/15 text-destructive ring-1 ring-destructive/30' : 'hover:bg-muted/50'
+          isError
+            ? 'bg-destructive/15 text-destructive ring-1 ring-destructive/30'
+            : isWarning
+              ? 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 ring-1 ring-yellow-500/30'
+              : 'hover:bg-muted/50'
         }`}
         onClick={() => setEditingCell({ rowId: row._id, field })}
         title={cellError?.message}
       >
         {value || <span className="text-muted-foreground italic">—</span>}
-        {cellError && <AlertTriangle className="w-3 h-3 ml-1 shrink-0" />}
+        {isError && <AlertTriangle className="w-3 h-3 ml-1 shrink-0" />}
+        {isWarning && <ShieldAlert className="w-3 h-3 ml-1 shrink-0" />}
       </div>
     );
   };
@@ -385,31 +492,83 @@ const ImportPage = () => {
               <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                 <Pencil className="w-3.5 h-3.5 text-primary" /> 3. Corrija e Salve
               </p>
-              <p className="text-[10px] text-muted-foreground">Edite células com erro direto na tabela. Só importa sem erros.</p>
+              <p className="text-[10px] text-muted-foreground">Corrija erros (vermelho) e avisos (amarelo) antes de importar.</p>
               <Button
                 size="sm"
                 className="gap-1.5 mt-auto"
-                disabled={rows.length === 0 || hasErrors || importing}
+                disabled={rows.length === 0 || hasCriticalErrors || importing}
                 onClick={executeImport}
               >
                 {importing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-                {importing ? 'Importando...' : 'Importar Dados'}
+                {importing ? 'Importando...' : hasWarnings ? 'Importar com Avisos' : 'Importar Dados'}
               </Button>
             </CardContent>
           </Card>
         </div>
 
-        {/* Error summary */}
+        {/* Error summary - critical errors */}
         <AnimatePresence>
-          {rows.length > 0 && hasErrors && !result && (
+          {rows.length > 0 && hasCriticalErrors && !result && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
               <Card className="border-destructive/40 bg-destructive/5">
-                <CardContent className="p-3 flex items-center gap-2 flex-wrap">
-                  <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
-                  <span className="text-xs font-medium text-destructive">
-                    {errors.length} inconsistência(s) em {errorRowIds.size} linha(s)
-                  </span>
-                  <span className="text-[10px] text-destructive/70">— clique nas células vermelhas para corrigir</span>
+                <CardContent className="p-3 space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+                    <span className="text-xs font-medium text-destructive">
+                      {criticalErrors.length} erro(s) crítico(s) em {criticalRowIds.size} linha(s) — importação bloqueada
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-destructive/70 pl-6">Clique nas células vermelhas para corrigir</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Warning summary - business rule issues */}
+        <AnimatePresence>
+          {rows.length > 0 && hasWarnings && !hasCriticalErrors && !result && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+              <Card className="border-yellow-500/40 bg-yellow-500/5">
+                <CardContent className="p-3 space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <ShieldAlert className="w-4 h-4 text-yellow-600 dark:text-yellow-400 shrink-0" />
+                    <span className="text-xs font-medium text-yellow-700 dark:text-yellow-400">
+                      {warnings.length} aviso(s) de inconsistência detectados
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-yellow-600/80 dark:text-yellow-400/70 pl-6">
+                    Esses dados gerarão inconsistências no painel após importação. Corrija agora ou importe assim mesmo.
+                  </p>
+                  <div className="pl-6 space-y-1 max-h-32 overflow-y-auto">
+                    {warnings.slice(0, 10).map((w, i) => (
+                      <div key={i} className="flex items-center gap-2 text-[10px] text-yellow-700 dark:text-yellow-400">
+                        <Badge variant="secondary" className="text-[9px] px-1 h-4">{FIELD_LABELS[w.field]}</Badge>
+                        <span>Linha {w.rowId}: {w.message}</span>
+                      </div>
+                    ))}
+                    {warnings.length > 10 && (
+                      <p className="text-[10px] text-yellow-600/60">...e mais {warnings.length - 10} aviso(s)</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Both warnings and errors */}
+        <AnimatePresence>
+          {rows.length > 0 && hasWarnings && hasCriticalErrors && !result && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+              <Card className="border-yellow-500/40 bg-yellow-500/5">
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4 text-yellow-600 dark:text-yellow-400 shrink-0" />
+                    <span className="text-xs font-medium text-yellow-700 dark:text-yellow-400">
+                      + {warnings.length} aviso(s) de regra de negócio (células amarelas)
+                    </span>
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
@@ -418,13 +577,13 @@ const ImportPage = () => {
 
         {/* Validation passed */}
         <AnimatePresence>
-          {rows.length > 0 && !hasErrors && !result && (
+          {rows.length > 0 && !hasCriticalErrors && !hasWarnings && !result && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
               <Card className="border-green-500/40 bg-green-500/5">
                 <CardContent className="p-3 flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
                   <span className="text-xs font-medium text-green-700 dark:text-green-400">
-                    ✓ Todas as {rows.length} linhas validadas — pronto para importar
+                    ✓ Todas as {rows.length} linhas validadas sem erros e sem inconsistências — pronto para importar
                   </span>
                 </CardContent>
               </Card>
@@ -437,7 +596,17 @@ const ImportPage = () => {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <Card>
               <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                <CardTitle className="text-sm">{rows.length} linhas · {errorRowIds.size} com erro</CardTitle>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  {rows.length} linhas
+                  {criticalErrors.length > 0 && (
+                    <Badge variant="destructive" className="text-[10px]">{criticalErrors.length} erro(s)</Badge>
+                  )}
+                  {warnings.length > 0 && (
+                    <Badge variant="secondary" className="text-[10px] bg-yellow-500/20 text-yellow-700 dark:text-yellow-400">
+                      {warnings.length} aviso(s)
+                    </Badge>
+                  )}
+                </CardTitle>
                 <Button variant="ghost" size="sm" className="text-xs gap-1 text-muted-foreground" onClick={resetAll}>
                   <X className="w-3 h-3" /> Limpar
                 </Button>
@@ -456,7 +625,16 @@ const ImportPage = () => {
                     </TableHeader>
                     <TableBody>
                       {rows.map(row => (
-                        <TableRow key={row._id} className={errorRowIds.has(row._id) ? 'bg-destructive/5' : ''}>
+                        <TableRow
+                          key={row._id}
+                          className={
+                            criticalRowIds.has(row._id)
+                              ? 'bg-destructive/5'
+                              : errorRowIds.has(row._id)
+                                ? 'bg-yellow-500/5'
+                                : ''
+                          }
+                        >
                           <TableCell className="text-[10px] text-muted-foreground font-mono">{row._id}</TableCell>
                           {COLUMNS.map(col => (
                             <TableCell key={col} className="py-1 px-1">{renderCell(row, col)}</TableCell>
