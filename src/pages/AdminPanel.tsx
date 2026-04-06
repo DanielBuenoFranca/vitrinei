@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield } from 'lucide-react';
+import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { ProviderForm } from '@/components/admin/ProviderForm';
@@ -16,6 +16,7 @@ import { ServiceForm } from '@/components/admin/ServiceForm';
 import { SegmentForm } from '@/components/admin/SegmentForm';
 import { ClearDataDialog } from '@/components/admin/ClearDataDialog';
 import { InconsistencyPanel } from '@/components/admin/InconsistencyPanel';
+import { UnitForm } from '@/components/admin/UnitForm';
 import { reloadDynamicEntries } from '@/data/searchData';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
