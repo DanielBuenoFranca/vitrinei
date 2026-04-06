@@ -12,6 +12,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isMaster: boolean;
   roles: AppRole[];
+  displayName: string | null;
   signOut: () => Promise<void>;
   requireAuth: (action?: string) => boolean;
 }
