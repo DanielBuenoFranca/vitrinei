@@ -38,12 +38,19 @@ interface RowError {
   severity: 'error' | 'warning';
 }
 
+interface AutoFix {
+  icon: 'segment' | 'provider' | 'price' | 'contact' | 'tags';
+  message: string;
+}
+
 interface ImportResult {
   providersCreated: number;
   providersLinked: number;
   servicesCreated: number;
   productsCreated: number;
+  segmentsCreated: number;
   errors: string[];
+  fixes: AutoFix[];
 }
 
 const STOCK_TYPES = ['fisico', 'drop'];
