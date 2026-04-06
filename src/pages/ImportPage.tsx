@@ -481,6 +481,7 @@ const ImportPage = () => {
             provider: provName,
             provider_id: providerId,
             price,
+            unit: row.serviceUnit || 'hr',
           });
           if (error) {
             res.errors.push(`Serviço ${row.serviceName}: ${error.message}`);
