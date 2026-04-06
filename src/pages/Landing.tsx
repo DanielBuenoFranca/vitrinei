@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -30,6 +31,7 @@ const aiSuggestions = [
 
 const Landing = () => {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [executedQuery, setExecutedQuery] = useState('');
   const [searchExecuted, setSearchExecuted] = useState(false);
@@ -336,6 +338,16 @@ const Landing = () => {
             <ThemeSwitcher />
           </div>
           <div className="flex items-center gap-2">
+            {user ? (
+              <div className="flex items-center gap-1.5">
+                <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => navigate('/carteira')}>
+                  💰 Carteira
+                </Button>
+                <Button variant="ghost" size="sm" className="text-xs" onClick={signOut}>Sair</Button>
+              </div>
+            ) : (
+              <Button variant="default" size="sm" className="text-xs" onClick={() => navigate('/auth')}>Entrar</Button>
+            )}
             <div className="relative group">
               <Button variant="ghost" size="sm" className="text-muted-foreground">
                 Mais ▾

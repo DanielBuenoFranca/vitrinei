@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { ProviderForm } from '@/components/admin/ProviderForm';
@@ -59,6 +60,11 @@ const AdminPanel = () => {
   const [serviceForm, setServiceForm] = useState<{ open: boolean; item: DynamicService | null }>({ open: false, item: null });
   const [segmentForm, setSegmentForm] = useState<{ open: boolean; item: Segment | null }>({ open: false, item: null });
 
+  // Users management
+  const [authUsers, setAuthUsers] = useState<any[]>([]);
+  const [userProfiles, setUserProfiles] = useState<any[]>([]);
+  const [userRoles, setUserRoles] = useState<any[]>([]);
+
   // Confirmation dialog for provider delete
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; provider: Provider | null }>({ open: false, provider: null });
 
@@ -77,7 +83,35 @@ const AdminPanel = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); fetchUsers(); }, []);
+
+  const fetchUsers = async () => {
+    const [profilesRes, rolesRes] = await Promise.all([
+      supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+      supabase.from('user_roles').select('*'),
+    ]);
+    setUserProfiles(profilesRes.data || []);
+    setUserRoles(rolesRes.data || []);
+  };
+
+  const toggleUserRole = async (userId: string, role: 'admin' | 'moderator' | 'user') => {
+    const existing = userRoles.find((r: any) => r.user_id === userId && r.role === role);
+    if (existing) {
+      await supabase.from('user_roles').delete().eq('id', existing.id);
+      toast.success('Papel removido');
+    } else {
+      await supabase.from('user_roles').insert({ user_id: userId, role });
+      toast.success('Papel atribuído');
+    }
+    fetchUsers();
+  };
+
+  const deleteUserProfile = async (userId: string) => {
+    await supabase.from('user_roles').delete().eq('user_id', userId);
+    await supabase.from('profiles').delete().eq('user_id', userId);
+    toast.success('Perfil removido');
+    fetchUsers();
+  };
 
   const deleteProvider = async (id: number) => {
     const prov = providers.find(p => p.id === id);
@@ -160,7 +194,10 @@ const AdminPanel = () => {
             <h1 className="text-lg font-bold">Painel Administrativo</h1>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
+            <Button variant="outline" size="sm" onClick={() => navigate('/importar')} className="gap-1">
+              <FileSpreadsheet className="h-4 w-4" /> Importar
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => { fetchData(); fetchUsers(); }} disabled={loading}>
               <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
               Atualizar
             </Button>
@@ -210,6 +247,10 @@ const AdminPanel = () => {
               {issueCount > 0 && (
                 <Badge variant="destructive" className="ml-1 text-[10px] px-1.5 py-0 min-w-5 h-5">{issueCount}</Badge>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="users" className="gap-1.5">
+              <UserCog className="h-3.5 w-3.5" />
+              Usuários ({userProfiles.length})
             </TabsTrigger>
           </TabsList>
 
@@ -516,6 +557,77 @@ const AdminPanel = () => {
               onDeleteService={deleteService}
               onDeleteProduct={deleteProduct}
             />
+          </TabsContent>
+
+          {/* ── USERS TAB ── */}
+          <TabsContent value="users">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2"><UserCog className="w-4 h-4" /> Gestão de Usuários</CardTitle>
+                <CardDescription>Usuários cadastrados no sistema e seus papéis</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {userProfiles.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">Nenhum usuário cadastrado ainda.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nome</TableHead>
+                          <TableHead>Telefone</TableHead>
+                          <TableHead>Papéis</TableHead>
+                          <TableHead>Criado em</TableHead>
+                          <TableHead></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {userProfiles.map((profile: any) => {
+                          const roles = userRoles.filter((r: any) => r.user_id === profile.user_id);
+                          return (
+                            <TableRow key={profile.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  {profile.avatar_url && <img src={profile.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover" />}
+                                  <span className="font-medium text-sm">{profile.display_name || 'Sem nome'}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-xs text-muted-foreground">{profile.phone || '—'}</TableCell>
+                              <TableCell>
+                                <div className="flex gap-1 flex-wrap">
+                                  {(['admin', 'moderator', 'user'] as const).map(role => {
+                                    const hasRole = roles.some((r: any) => r.role === role);
+                                    return (
+                                      <Badge
+                                        key={role}
+                                        variant={hasRole ? 'default' : 'outline'}
+                                        className="text-[10px] cursor-pointer"
+                                        onClick={() => toggleUserRole(profile.user_id, role)}
+                                      >
+                                        {role === 'admin' && <Shield className="w-2.5 h-2.5 mr-0.5" />}
+                                        {role}
+                                      </Badge>
+                                    );
+                                  })}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-xs text-muted-foreground">
+                                {new Date(profile.created_at).toLocaleDateString('pt-BR')}
+                              </TableCell>
+                              <TableCell>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteUserProfile(profile.user_id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </main>
