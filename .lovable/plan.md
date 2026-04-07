@@ -1,31 +1,45 @@
+## Fase 1 — Correções Críticas (Estabilidade)
 
-# Plano de Execução – Correção e Implementação EcoMEI
+1. **Correção da tela em branco no CRUD de usuários**
+   - Adicionar validação com Zod nos formulários do AdminPanel
+   - Garantir tratamento de erros com try/catch e feedback via Toast
+   - Corrigir layout com `flex-1` e `overflow-y-auto`
 
-## 🔴 FASE 1 (Esta mensagem) – Correções Críticas + Home UX
-1. **Loja do Prestador** – Correções de persistência, logo, banner, upload
-2. **Home UX** – Estado de busca (header + barra → expandir após pesquisa)
+2. **Proteção de rotas administrativas**
+   - Bloquear acesso direto via URL às abas admin para não-MESTRE
+   - Redirecionar usuários sem permissão
 
-## 🟡 FASE 2 (Próxima mensagem) – Autenticação + Admin
-3. **Login/Cadastro** – Google OAuth + Email/Senha via Lovable Cloud
-4. **Controle de Acesso** – Gatilhos de login para compra/contratação
-5. **Admin de Usuários** – CRUD de usuários no painel admin
+3. **Correção do fluxo de e-mail de ativação**
+   - Verificar configuração de confirmação de e-mail (auto_confirm desabilitado)
+   - Garantir que o perfil só seja liberado após confirmação do e-mail
 
-## 🟢 FASE 3 (Mensagem seguinte) – Indicação + Carteira
-6. **Módulo de Indicação** – Links/códigos únicos, comissionamento parametrizável
-7. **Carteira do Usuário** – Saldo interno, cashback, uso na plataforma
+## Fase 2 — RBAC e Gestão de Perfis
 
-## 🔵 FASE 4 (Última mensagem) – Importação de Planilha
-8. **Importação Inteligente** – Parse de Excel, vinculação automática de prestadores/produtos/serviços
+4. **Obrigatoriedade de perfil no cadastro**
+   - Adicionar seleção de perfil (Comprador/Prestador/Misto) na tela de Signup
+   - Inserir role automaticamente na tabela `user_roles` após cadastro
 
----
+5. **Proteção do último MESTRE**
+   - Criar função PostgreSQL que impede remoção do último master
 
-### Justificativa da divisão:
-- Cada fase requer migrações de banco que precisam de aprovação
-- Autenticação precisa estar pronta antes do módulo de indicação
-- A importação depende do schema final estar estabilizado
+6. **Cadastro manual de usuários pelo MESTRE**
+   - Criar Edge Function para criação de usuários via admin
+   - Adicionar formulário "Novo Usuário" na aba Usuários
 
-### Notas técnicas:
-- Migrações de banco para: profiles, user_roles, referrals, wallets
-- Storage bucket para uploads de banner/logo
-- Google OAuth via Lovable Cloud managed
-- Edge functions para comissionamento
+## Fase 3 — Motor Financeiro
+
+7. **Seleção obrigatória de plano no Signup**
+   - Integrar seleção de plano (Bronze/Prata/Ouro) ao fluxo de cadastro
+
+8. **Débito inicial na carteira**
+   - Ao finalizar cadastro, gerar lançamento de débito negativo
+
+9. **Contador regressivo de 24h**
+   - Exibir timer na carteira baseado em `created_at + 24h`
+   - Bloquear ativação se expirado, permitir reenvio
+
+10. **Botão "Pagar Assinatura" + Cashback**
+    - Zerar débito e gerar cashback automático como saldo positivo
+
+11. **Extrato transacional**
+    - Tela de extrato detalhado para usuário e MESTRE

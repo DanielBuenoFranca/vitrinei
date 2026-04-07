@@ -98,6 +98,15 @@ const AdminPanel = () => {
   const [newMarqueeMsg, setNewMarqueeMsg] = useState('');
   const [savingMarquee, setSavingMarquee] = useState(false);
 
+  // New user form
+  const [newUserDialog, setNewUserDialog] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserPhone, setNewUserPhone] = useState('');
+  const [newUserRole, setNewUserRole] = useState<string>('client');
+  const [creatingUser, setCreatingUser] = useState(false);
+
   const fetchMarquee = async () => {
     const { data } = await supabase.from('site_settings').select('value').eq('key', 'header_marquee').maybeSingle();
     if (data?.value && typeof data.value === 'object' && 'messages' in (data.value as any)) {
@@ -175,13 +184,71 @@ const AdminPanel = () => {
   const toggleUserRole = async (userId: string, role: string) => {
     const existing = userRoles.find((r: any) => r.user_id === userId && r.role === role);
     if (existing) {
-      await supabase.from('user_roles').delete().eq('id', existing.id);
-      toast.success('Papel removido');
+      // Prevent removing last master
+      if (role === 'master') {
+        const masterCount = userRoles.filter((r: any) => r.role === 'master').length;
+        if (masterCount <= 1) {
+          toast.error('Não é possível remover o último usuário Master do sistema');
+          return;
+        }
+      }
+      try {
+        const { error } = await supabase.from('user_roles').delete().eq('id', existing.id);
+        if (error) throw error;
+        toast.success('Papel removido');
+      } catch (e: any) {
+        toast.error('Erro: ' + (e.message || 'desconhecido'));
+        return;
+      }
     } else {
-      await supabase.from('user_roles').insert({ user_id: userId, role: role as any });
-      toast.success('Papel atribuído');
+      try {
+        const { error } = await supabase.from('user_roles').insert({ user_id: userId, role: role as any });
+        if (error) throw error;
+        toast.success('Papel atribuído');
+      } catch (e: any) {
+        toast.error('Erro: ' + (e.message || 'desconhecido'));
+        return;
+      }
     }
     fetchUsers();
+  };
+
+  const handleCreateUser = async () => {
+    if (!newUserEmail || !newUserPassword || !newUserRole) {
+      toast.error('Preencha email, senha e perfil');
+      return;
+    }
+    if (newUserPassword.length < 6) {
+      toast.error('Senha deve ter no mínimo 6 caracteres');
+      return;
+    }
+    setCreatingUser(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-user', {
+        body: {
+          email: newUserEmail.trim(),
+          password: newUserPassword,
+          name: newUserName.trim() || undefined,
+          phone: newUserPhone.trim() || undefined,
+          role: newUserRole,
+        },
+      });
+      if (error || data?.error) {
+        toast.error('Erro: ' + (data?.error || error?.message || 'desconhecido'));
+      } else {
+        toast.success('Usuário criado com sucesso! E-mail de ativação enviado.');
+        setNewUserDialog(false);
+        setNewUserEmail('');
+        setNewUserPassword('');
+        setNewUserName('');
+        setNewUserPhone('');
+        setNewUserRole('client');
+        fetchUsers();
+      }
+    } catch (e: any) {
+      toast.error('Erro ao criar usuário');
+    }
+    setCreatingUser(false);
   };
 
   const openEditUser = (profile: any) => {
@@ -230,10 +297,23 @@ const AdminPanel = () => {
   };
 
   const deleteUserProfile = async (userId: string) => {
-    await supabase.from('user_roles').delete().eq('user_id', userId);
-    await supabase.from('profiles').delete().eq('user_id', userId);
-    toast.success('Perfil removido');
-    fetchUsers();
+    // Prevent deleting last master
+    const isMasterUser = userRoles.some((r: any) => r.user_id === userId && r.role === 'master');
+    if (isMasterUser) {
+      const masterCount = userRoles.filter((r: any) => r.role === 'master').length;
+      if (masterCount <= 1) {
+        toast.error('Não é possível excluir o último usuário Master do sistema');
+        return;
+      }
+    }
+    try {
+      await supabase.from('user_roles').delete().eq('user_id', userId);
+      await supabase.from('profiles').delete().eq('user_id', userId);
+      toast.success('Perfil removido');
+      fetchUsers();
+    } catch (e: any) {
+      toast.error('Erro ao excluir: ' + (e.message || 'desconhecido'));
+    }
   };
 
   const deleteProvider = async (id: number) => {
@@ -795,11 +875,16 @@ const AdminPanel = () => {
           <TabsContent value="users">
             <PermissionGate permission="admin.users" featureName="Gestão de Usuários" readOnly>
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2"><UserCog className="w-4 h-4" /> Gestão de Usuários</CardTitle>
-                <CardDescription>Usuários cadastrados no sistema — dados completos e edição de perfil</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-base flex items-center gap-2"><UserCog className="w-4 h-4" /> Gestão de Usuários</CardTitle>
+                  <CardDescription>Usuários cadastrados no sistema — dados completos e edição de perfil</CardDescription>
+                </div>
+                <Button size="sm" onClick={() => setNewUserDialog(true)}>
+                  <Plus className="h-4 w-4 mr-1" /> Novo Usuário
+                </Button>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex-1 overflow-y-auto max-h-[60vh]">
                 {userProfiles.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">Nenhum usuário cadastrado ainda.</p>
                 ) : (
@@ -1093,6 +1178,71 @@ const AdminPanel = () => {
             <Button onClick={saveUserProfile} disabled={savingUser}>
               {savingUser && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
               Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create User Dialog */}
+      <Dialog open={newUserDialog} onOpenChange={setNewUserDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5 text-primary" />
+              Novo Usuário
+            </DialogTitle>
+            <DialogDescription>
+              Cadastre manualmente um novo usuário e atribua um perfil de acesso.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Nome</label>
+              <Input value={newUserName} onChange={e => setNewUserName(e.target.value)} placeholder="Nome do usuário" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">E-mail *</label>
+              <Input type="email" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} placeholder="email@exemplo.com" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Senha *</label>
+              <Input type="password" value={newUserPassword} onChange={e => setNewUserPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Telefone</label>
+              <Input value={newUserPhone} onChange={e => setNewUserPhone(e.target.value)} placeholder="(00) 00000-0000" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Perfil de Acesso *</label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: 'client', label: 'Comprador', icon: ShoppingCart },
+                  { id: 'provider', label: 'Prestador', icon: Wrench },
+                  { id: 'mixed', label: 'Misto', icon: Shuffle },
+                  { id: 'admin', label: 'Admin', icon: Shield },
+                ].map(opt => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setNewUserRole(opt.id)}
+                    className={`p-2 rounded-lg border text-center transition-all flex items-center gap-2 ${
+                      newUserRole === opt.id
+                        ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
+                        : 'border-border hover:border-primary/40'
+                    }`}
+                  >
+                    <opt.icon className={`w-4 h-4 ${newUserRole === opt.id ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <span className="text-xs font-medium">{opt.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewUserDialog(false)}>Cancelar</Button>
+            <Button onClick={handleCreateUser} disabled={creatingUser}>
+              {creatingUser && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              Criar Usuário
             </Button>
           </DialogFooter>
         </DialogContent>
