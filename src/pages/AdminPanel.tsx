@@ -184,13 +184,71 @@ const AdminPanel = () => {
   const toggleUserRole = async (userId: string, role: string) => {
     const existing = userRoles.find((r: any) => r.user_id === userId && r.role === role);
     if (existing) {
-      await supabase.from('user_roles').delete().eq('id', existing.id);
-      toast.success('Papel removido');
+      // Prevent removing last master
+      if (role === 'master') {
+        const masterCount = userRoles.filter((r: any) => r.role === 'master').length;
+        if (masterCount <= 1) {
+          toast.error('Não é possível remover o último usuário Master do sistema');
+          return;
+        }
+      }
+      try {
+        const { error } = await supabase.from('user_roles').delete().eq('id', existing.id);
+        if (error) throw error;
+        toast.success('Papel removido');
+      } catch (e: any) {
+        toast.error('Erro: ' + (e.message || 'desconhecido'));
+        return;
+      }
     } else {
-      await supabase.from('user_roles').insert({ user_id: userId, role: role as any });
-      toast.success('Papel atribuído');
+      try {
+        const { error } = await supabase.from('user_roles').insert({ user_id: userId, role: role as any });
+        if (error) throw error;
+        toast.success('Papel atribuído');
+      } catch (e: any) {
+        toast.error('Erro: ' + (e.message || 'desconhecido'));
+        return;
+      }
     }
     fetchUsers();
+  };
+
+  const handleCreateUser = async () => {
+    if (!newUserEmail || !newUserPassword || !newUserRole) {
+      toast.error('Preencha email, senha e perfil');
+      return;
+    }
+    if (newUserPassword.length < 6) {
+      toast.error('Senha deve ter no mínimo 6 caracteres');
+      return;
+    }
+    setCreatingUser(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-user', {
+        body: {
+          email: newUserEmail.trim(),
+          password: newUserPassword,
+          name: newUserName.trim() || undefined,
+          phone: newUserPhone.trim() || undefined,
+          role: newUserRole,
+        },
+      });
+      if (error || data?.error) {
+        toast.error('Erro: ' + (data?.error || error?.message || 'desconhecido'));
+      } else {
+        toast.success('Usuário criado com sucesso! E-mail de ativação enviado.');
+        setNewUserDialog(false);
+        setNewUserEmail('');
+        setNewUserPassword('');
+        setNewUserName('');
+        setNewUserPhone('');
+        setNewUserRole('client');
+        fetchUsers();
+      }
+    } catch (e: any) {
+      toast.error('Erro ao criar usuário');
+    }
+    setCreatingUser(false);
   };
 
   const openEditUser = (profile: any) => {
