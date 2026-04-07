@@ -862,11 +862,16 @@ const AdminPanel = () => {
           <TabsContent value="users">
             <PermissionGate permission="admin.users" featureName="Gestão de Usuários" readOnly>
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2"><UserCog className="w-4 h-4" /> Gestão de Usuários</CardTitle>
-                <CardDescription>Usuários cadastrados no sistema — dados completos e edição de perfil</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-base flex items-center gap-2"><UserCog className="w-4 h-4" /> Gestão de Usuários</CardTitle>
+                  <CardDescription>Usuários cadastrados no sistema — dados completos e edição de perfil</CardDescription>
+                </div>
+                <Button size="sm" onClick={() => setNewUserDialog(true)}>
+                  <Plus className="h-4 w-4 mr-1" /> Novo Usuário
+                </Button>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex-1 overflow-y-auto max-h-[60vh]">
                 {userProfiles.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">Nenhum usuário cadastrado ainda.</p>
                 ) : (
