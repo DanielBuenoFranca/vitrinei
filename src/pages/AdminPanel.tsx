@@ -297,10 +297,23 @@ const AdminPanel = () => {
   };
 
   const deleteUserProfile = async (userId: string) => {
-    await supabase.from('user_roles').delete().eq('user_id', userId);
-    await supabase.from('profiles').delete().eq('user_id', userId);
-    toast.success('Perfil removido');
-    fetchUsers();
+    // Prevent deleting last master
+    const isMasterUser = userRoles.some((r: any) => r.user_id === userId && r.role === 'master');
+    if (isMasterUser) {
+      const masterCount = userRoles.filter((r: any) => r.role === 'master').length;
+      if (masterCount <= 1) {
+        toast.error('Não é possível excluir o último usuário Master do sistema');
+        return;
+      }
+    }
+    try {
+      await supabase.from('user_roles').delete().eq('user_id', userId);
+      await supabase.from('profiles').delete().eq('user_id', userId);
+      toast.success('Perfil removido');
+      fetchUsers();
+    } catch (e: any) {
+      toast.error('Erro ao excluir: ' + (e.message || 'desconhecido'));
+    }
   };
 
   const deleteProvider = async (id: number) => {
