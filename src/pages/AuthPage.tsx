@@ -8,9 +8,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import { toast } from 'sonner';
-import { Zap, Mail, Lock, User, ArrowLeft, Gift } from 'lucide-react';
+import { Zap, Mail, Lock, User, ArrowLeft, Gift, ShoppingCart, Wrench, Shuffle, Crown, Check } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
+
+const profileOptions = [
+  { id: 'client', label: 'Comprador / Consumidor', icon: ShoppingCart, desc: 'Compre produtos e contrate serviços' },
+  { id: 'provider', label: 'Prestador / Vendedor', icon: Wrench, desc: 'Ofereça serviços e venda produtos' },
+  { id: 'mixed', label: 'Misto', icon: Shuffle, desc: 'Compre e venda no mesmo perfil' },
+];
+
+const plans = [
+  { id: 'bronze', name: 'Bronze', price: 50, badge: '🥉', discount: 5 },
+  { id: 'prata', name: 'Prata', price: 100, badge: '🥈', discount: 10, popular: true },
+  { id: 'ouro', name: 'Ouro', price: 200, badge: '🥇', discount: 20 },
+];
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -23,9 +35,10 @@ const AuthPage = () => {
   const [loading, setLoading] = useState(false);
   const [resetMode, setResetMode] = useState(false);
   const [refCode, setRefCode] = useState('');
+  const [selectedProfile, setSelectedProfile] = useState<string>('');
+  const [selectedPlan, setSelectedPlan] = useState<string>('bronze');
 
   useEffect(() => {
-    // Capture referral code from URL or localStorage
     const urlRef = searchParams.get('ref') || '';
     const storedRef = localStorage.getItem('ecomei_ref') || '';
     const code = urlRef || storedRef;
@@ -52,7 +65,6 @@ const AuthPage = () => {
   const processReferral = async (newUserId: string, userName: string, userEmail: string, userPhone: string) => {
     if (!refCode) return;
     try {
-      // Find the referral code owner
       const { data: refData } = await supabase.from('referrals')
         .select('*')
         .eq('referral_code', refCode)
@@ -62,22 +74,19 @@ const AuthPage = () => {
 
       if (!refData || refData.referrer_id === newUserId) return;
 
-      // Determine commission: R$15 for providers, R$5 for clients
-      const commission = 5; // Default client, can be updated later when role is assigned
+      const commission = selectedProfile === 'provider' ? 15 : 5;
 
-      // Update referral with referred user details
       await supabase.from('referrals').update({
         referred_id: newUserId,
         referred_name: userName || userEmail.split('@')[0],
         referred_email: userEmail,
         referred_phone: userPhone || null,
-        referred_role: 'client',
+        referred_role: selectedProfile || 'client',
         joined_at: new Date().toISOString(),
         commission_amount: commission,
         status: 'pending',
       }).eq('id', refData.id);
 
-      // Add pending balance to referrer's wallet
       const { data: referrerWallet } = await supabase.from('wallets')
         .select('id, pending_balance')
         .eq('user_id', refData.referrer_id)
@@ -88,11 +97,10 @@ const AuthPage = () => {
           pending_balance: (referrerWallet.pending_balance || 0) + commission,
         }).eq('id', referrerWallet.id);
 
-        // Record pending transaction
         await supabase.from('wallet_transactions').insert({
           user_id: refData.referrer_id,
           wallet_id: referrerWallet.id,
-          amount: 0, // Will be credited when activated
+          amount: 0,
           type: 'cashback_pending',
           description: `Indicação pendente - ${userName || userEmail.split('@')[0]} (aguardando 1ª transação)`,
         });
@@ -107,6 +115,9 @@ const AuthPage = () => {
   const handleSignup = async () => {
     if (!email || !password) { toast.error('Preencha email e senha'); return; }
     if (password.length < 6) { toast.error('Senha deve ter no mínimo 6 caracteres'); return; }
+    if (!selectedProfile) { toast.error('Selecione um perfil de acesso'); return; }
+    if (!selectedPlan) { toast.error('Selecione um plano de assinatura'); return; }
+
     setLoading(true);
     const { data, error } = await supabase.auth.signUp({
       email, password,
@@ -117,16 +128,48 @@ const AuthPage = () => {
     });
     if (error) {
       toast.error(error.message);
-    } else {
-      toast.success('Cadastro realizado! Verifique seu email para confirmar.');
-      // Process referral if user was created
-      if (data?.user?.id) {
-        await processReferral(data.user.id, name, email, phone);
+      setLoading(false);
+      return;
+    }
+
+    if (data?.user?.id) {
+      // Assign role
+      await supabase.from('user_roles').insert({ user_id: data.user.id, role: selectedProfile as any });
+
+      // Create subscription
+      const plan = plans.find(p => p.id === selectedPlan)!;
+      await supabase.from('subscriptions').insert({
+        user_id: data.user.id,
+        plan: plan.id,
+        price: plan.price,
+      });
+
+      // Create initial debit in wallet
+      const { data: walletData } = await supabase.from('wallets')
+        .select('id')
+        .eq('user_id', data.user.id)
+        .maybeSingle();
+
+      if (walletData) {
+        await supabase.from('wallets').update({
+          balance: -plan.price,
+        }).eq('id', walletData.id);
+
+        await supabase.from('wallet_transactions').insert({
+          user_id: data.user.id,
+          wallet_id: walletData.id,
+          amount: -plan.price,
+          type: 'subscription_debit',
+          description: `Débito inicial - Assinatura ${plan.name} (R$ ${plan.price.toFixed(2)})`,
+        });
       }
-      // After signup, redirect to subscription page
-      if (data?.session) {
-        navigate('/assinatura');
-      }
+
+      await processReferral(data.user.id, name, email, phone);
+    }
+
+    toast.success('Cadastro realizado! Verifique seu email para confirmar.');
+    if (data?.session) {
+      navigate('/carteira');
     }
     setLoading(false);
   };
@@ -182,7 +225,7 @@ const AuthPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md space-y-4">
         <div className="text-center">
           <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center mx-auto mb-3">
@@ -249,9 +292,7 @@ const AuthPage = () => {
             </div>
             <div className="space-y-2">
               <Label className="text-xs">Telefone</Label>
-              <div className="relative">
-                <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(11) 99999-9999" className="pl-10" />
-              </div>
+              <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(11) 99999-9999" />
             </div>
             <div className="space-y-2">
               <Label className="text-xs">Email</Label>
@@ -267,6 +308,56 @@ const AuthPage = () => {
                 <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" className="pl-10" />
               </div>
             </div>
+
+            {/* Profile Selection */}
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold">Perfil de Acesso *</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {profileOptions.map(opt => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setSelectedProfile(opt.id)}
+                    className={`p-2 rounded-lg border text-center transition-all ${
+                      selectedProfile === opt.id
+                        ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
+                        : 'border-border hover:border-primary/40'
+                    }`}
+                  >
+                    <opt.icon className={`w-5 h-5 mx-auto mb-1 ${selectedProfile === opt.id ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <p className="text-[10px] font-medium leading-tight">{opt.label}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Plan Selection */}
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold">Plano de Assinatura *</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {plans.map(plan => (
+                  <button
+                    key={plan.id}
+                    type="button"
+                    onClick={() => setSelectedPlan(plan.id)}
+                    className={`p-2 rounded-lg border text-center transition-all relative ${
+                      selectedPlan === plan.id
+                        ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
+                        : 'border-border hover:border-primary/40'
+                    }`}
+                  >
+                    {plan.popular && (
+                      <span className="absolute -top-1.5 right-1 text-[8px] bg-primary text-primary-foreground px-1 rounded">Popular</span>
+                    )}
+                    <span className="text-lg">{plan.badge}</span>
+                    <p className="text-[10px] font-medium">{plan.name}</p>
+                    <p className="text-xs font-bold text-primary">R$ {plan.price}</p>
+                    <p className="text-[9px] text-muted-foreground">{plan.discount}% desc.</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <Button className="w-full" onClick={handleSignup} disabled={loading}>
               {loading ? 'Cadastrando...' : 'Criar Conta'}
             </Button>
