@@ -1169,6 +1169,71 @@ const AdminPanel = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Create User Dialog */}
+      <Dialog open={newUserDialog} onOpenChange={setNewUserDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5 text-primary" />
+              Novo Usuário
+            </DialogTitle>
+            <DialogDescription>
+              Cadastre manualmente um novo usuário e atribua um perfil de acesso.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Nome</label>
+              <Input value={newUserName} onChange={e => setNewUserName(e.target.value)} placeholder="Nome do usuário" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">E-mail *</label>
+              <Input type="email" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} placeholder="email@exemplo.com" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Senha *</label>
+              <Input type="password" value={newUserPassword} onChange={e => setNewUserPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Telefone</label>
+              <Input value={newUserPhone} onChange={e => setNewUserPhone(e.target.value)} placeholder="(00) 00000-0000" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Perfil de Acesso *</label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: 'client', label: 'Comprador', icon: ShoppingCart },
+                  { id: 'provider', label: 'Prestador', icon: Wrench },
+                  { id: 'mixed', label: 'Misto', icon: Shuffle },
+                  { id: 'admin', label: 'Admin', icon: Shield },
+                ].map(opt => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setNewUserRole(opt.id)}
+                    className={`p-2 rounded-lg border text-center transition-all flex items-center gap-2 ${
+                      newUserRole === opt.id
+                        ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
+                        : 'border-border hover:border-primary/40'
+                    }`}
+                  >
+                    <opt.icon className={`w-4 h-4 ${newUserRole === opt.id ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <span className="text-xs font-medium">{opt.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewUserDialog(false)}>Cancelar</Button>
+            <Button onClick={handleCreateUser} disabled={creatingUser}>
+              {creatingUser && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              Criar Usuário
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
