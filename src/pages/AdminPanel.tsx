@@ -98,6 +98,15 @@ const AdminPanel = () => {
   const [newMarqueeMsg, setNewMarqueeMsg] = useState('');
   const [savingMarquee, setSavingMarquee] = useState(false);
 
+  // New user form
+  const [newUserDialog, setNewUserDialog] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserPhone, setNewUserPhone] = useState('');
+  const [newUserRole, setNewUserRole] = useState<string>('client');
+  const [creatingUser, setCreatingUser] = useState(false);
+
   const fetchMarquee = async () => {
     const { data } = await supabase.from('site_settings').select('value').eq('key', 'header_marquee').maybeSingle();
     if (data?.value && typeof data.value === 'object' && 'messages' in (data.value as any)) {
