@@ -238,9 +238,9 @@ const AdminPanel = () => {
       if (error || data?.error) {
         toast.error('Erro: ' + (data?.error || error?.message || 'desconhecido'));
       } else {
-        toast.success('Usuário criado com sucesso! E-mail de ativação enviado.');
+        toast.success('Usuário criado e ativado com sucesso!');
         setNewUserDialog(false);
-        setNewUserEmail('');
+        setNewUserEmail(''); setNewUserPassword(''); setNewUserName(''); setNewUserPhone(''); setNewUserRole('client');
         setNewUserPassword('');
         setNewUserName('');
         setNewUserPhone('');
