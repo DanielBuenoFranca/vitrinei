@@ -3,12 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { ArrowLeft, Wallet, TrendingUp, TrendingDown, Gift, Copy, Share2, Clock, CheckCircle2, Lock, CreditCard, Timer, AlertTriangle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { motion } from 'framer-motion';
+
+interface Campaign {
+  reward_buyer: number;
+  reward_seller: number;
+  reward_mixed_total: number;
+  is_active: boolean;
+}
 
 const WalletPage = () => {
   const navigate = useNavigate();
@@ -18,6 +26,7 @@ const WalletPage = () => {
   const [referralCode, setReferralCode] = useState('');
   const [referrals, setReferrals] = useState<any[]>([]);
   const [subscription, setSubscription] = useState<any>(null);
+  const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [paying, setPaying] = useState(false);
@@ -55,19 +64,28 @@ const WalletPage = () => {
   const loadData = async () => {
     if (!user) return;
     setLoading(true);
-    const [walletRes, txRes, refRes, subRes] = await Promise.all([
+    const [walletRes, txRes, refRes, subRes, campRes] = await Promise.all([
       supabase.from('wallets').select('*').eq('user_id', user.id).maybeSingle(),
       supabase.from('wallet_transactions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
       supabase.from('referrals').select('*').eq('referrer_id', user.id).order('created_at', { ascending: false }),
       supabase.from('subscriptions').select('*').eq('user_id', user.id).eq('status', 'active').maybeSingle(),
+      supabase.from('referral_campaigns').select('*').eq('is_active', true).limit(1).maybeSingle(),
     ]);
     setWallet(walletRes.data);
     setTransactions(txRes.data || []);
     setReferrals(refRes.data || []);
     setSubscription(subRes.data);
+    if (campRes.data) {
+      setCampaign({
+        reward_buyer: Number(campRes.data.reward_buyer),
+        reward_seller: Number(campRes.data.reward_seller),
+        reward_mixed_total: Number(campRes.data.reward_mixed_total),
+        is_active: campRes.data.is_active,
+      });
+    }
 
     // Check/create referral code
-    const existingRef = refRes.data?.find((r: any) => !r.referred_id);
+    const existingRef = (refRes.data || []).find((r: any) => !r.referred_id);
     if (existingRef) {
       setReferralCode(existingRef.referral_code);
     } else {
@@ -92,12 +110,8 @@ const WalletPage = () => {
         return;
       }
 
-      // Zero the debt
-      await supabase.from('wallets').update({
-        balance: 0,
-      }).eq('id', wallet.id);
+      await supabase.from('wallets').update({ balance: 0 }).eq('id', wallet.id);
 
-      // Record payment transaction
       await supabase.from('wallet_transactions').insert({
         user_id: user!.id,
         wallet_id: wallet.id,
@@ -106,7 +120,6 @@ const WalletPage = () => {
         description: `Pagamento - Assinatura ${subscription.plan} (R$ ${debitAmount.toFixed(2)})`,
       });
 
-      // Apply cashback (same value as subscription)
       await supabase.from('wallets').update({
         balance: debitAmount,
         total_earned: (wallet.total_earned || 0) + debitAmount,
@@ -143,8 +156,27 @@ const WalletPage = () => {
       cashback_subscription: '🎁 Cashback',
       cashback_pending: '⏳ Cashback Pendente',
       cashback_released: '✅ Cashback Liberado',
+      referral_cashback: '🎯 Indicação',
+      referral_bonus: '🏆 Bônus Indicação',
     };
     return labels[type] || type;
+  };
+
+  const getReferralProgress = (ref: any) => {
+    if (!ref.reward_snapshot) return { percent: 0, label: 'Pendente' };
+    const snapshot = typeof ref.reward_snapshot === 'string' ? JSON.parse(ref.reward_snapshot) : ref.reward_snapshot;
+    const total = Number(snapshot.reward_mixed_total) || 0;
+    if (total === 0) return { percent: 0, label: 'Pendente' };
+    const paid = Number(ref.total_paid) || 0;
+    const percent = Math.min(Math.round((paid / total) * 100), 100);
+
+    if (ref.referred_role === 'mixed') {
+      if (ref.buyer_released && ref.seller_released && ref.bonus_released) return { percent: 100, label: 'Completo' };
+      if (ref.buyer_released && ref.seller_released) return { percent: 80, label: 'Fase 2/2 - Bônus pendente' };
+      if (ref.buyer_released || ref.seller_released) return { percent: 50, label: 'Fase 1/2 concluída' };
+      return { percent: 0, label: 'Aguardando 1ª transação' };
+    }
+    return { percent, label: paid > 0 ? 'Liberado' : 'Aguardando transação' };
   };
 
   if (!user) {
@@ -158,9 +190,13 @@ const WalletPage = () => {
     );
   }
 
-  const pendingReferrals = referrals.filter((r: any) => r.status === 'pending' && r.referred_id);
+  const pendingReferrals = referrals.filter((r: any) => r.referred_id && r.status !== 'activated');
   const activatedReferrals = referrals.filter((r: any) => r.status === 'activated');
   const hasDebt = wallet && wallet.balance < 0;
+
+  const buyerReward = campaign?.reward_buyer ?? 5;
+  const sellerReward = campaign?.reward_seller ?? 15;
+  const mixedReward = campaign?.reward_mixed_total ?? 25;
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -245,60 +281,96 @@ const WalletPage = () => {
           </Card>
         )}
 
-        {/* Referral Card */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2"><Gift className="w-4 h-4 text-primary" /> Programa de Indicação</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-xs text-muted-foreground">
-              Indique clientes (R$ 5,00) ou fornecedores (R$ 15,00). O cashback fica pendente até a primeira transação do indicado.
-            </p>
-            <div className="flex gap-2">
-              <Input value={`${window.location.origin}?ref=${referralCode}`} readOnly className="text-xs" />
-              <Button variant="outline" size="sm" className="gap-1 shrink-0" onClick={copyReferralLink}>
-                {copied ? '✓' : <Copy className="w-3 h-3" />}
-              </Button>
+        {/* Dynamic Referral Card */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <Card className="overflow-hidden">
+            <div className="bg-gradient-to-r from-primary/10 to-accent/10 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <Gift className="w-5 h-5 text-primary" />
+                <h3 className="font-semibold text-sm">Indique e Ganhe</h3>
+                {campaign?.is_active && (
+                  <Badge variant="default" className="text-[10px] ml-auto">Campanha Ativa</Badge>
+                )}
+              </div>
             </div>
-            <Button variant="outline" size="sm" className="w-full gap-1 text-xs"
-              onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`Conheça o Vitrinei! Use meu código: ${referralCode}\n${window.location.origin}?ref=${referralCode}`)}`, '_blank')}>
-              <Share2 className="w-3 h-3" /> Compartilhar no WhatsApp
-            </Button>
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-green-500" /> {activatedReferrals.length} liberadas</span>
-              <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-yellow-500" /> {pendingReferrals.length} pendentes</span>
-            </div>
-          </CardContent>
-        </Card>
+            <CardContent className="p-4 space-y-3">
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="bg-muted/50 rounded-lg p-2">
+                  <p className="text-lg font-bold text-primary">R$ {buyerReward.toFixed(0)}</p>
+                  <p className="text-[10px] text-muted-foreground">Comprador</p>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-2">
+                  <p className="text-lg font-bold text-primary">R$ {sellerReward.toFixed(0)}</p>
+                  <p className="text-[10px] text-muted-foreground">Prestador</p>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-2">
+                  <p className="text-lg font-bold text-primary">R$ {mixedReward.toFixed(0)}</p>
+                  <p className="text-[10px] text-muted-foreground">Misto</p>
+                </div>
+              </div>
 
-        {/* Pending referrals details */}
+              <p className="text-xs text-muted-foreground">
+                O cashback é liberado após a primeira transação do indicado. Perfis Mistos recebem em fases.
+              </p>
+
+              <div className="flex gap-2">
+                <Input value={`${window.location.origin}?ref=${referralCode}`} readOnly className="text-xs" />
+                <Button variant="outline" size="sm" className="gap-1 shrink-0" onClick={copyReferralLink}>
+                  {copied ? '✓' : <Copy className="w-3 h-3" />}
+                </Button>
+              </div>
+
+              <Button variant="outline" size="sm" className="w-full gap-1 text-xs"
+                onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`Conheça o Vitrinei! Use meu código: ${referralCode}\n${window.location.origin}?ref=${referralCode}`)}`, '_blank')}>
+                <Share2 className="w-3 h-3" /> Compartilhar no WhatsApp
+              </Button>
+
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-green-500" /> {activatedReferrals.length} liberadas</span>
+                <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-yellow-500" /> {pendingReferrals.length} pendentes</span>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Referral Progress - Pending */}
         {pendingReferrals.length > 0 && (
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Clock className="w-4 h-4 text-yellow-500" /> Indicações Pendentes
+                <Clock className="w-4 h-4 text-yellow-500" /> Indicações em Progresso
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {pendingReferrals.map((ref: any) => (
-                  <div key={ref.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                    <div>
-                      <p className="text-xs font-medium text-foreground">{ref.referred_name || 'Usuário'}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {ref.referred_email && <span>{ref.referred_email} · </span>}
-                        {ref.referred_phone && <span>{ref.referred_phone} · </span>}
-                        {ref.joined_at && new Date(ref.joined_at).toLocaleString('pt-BR')}
-                      </p>
+              <div className="space-y-3">
+                {pendingReferrals.map((ref: any) => {
+                  const progress = getReferralProgress(ref);
+                  return (
+                    <div key={ref.id} className="space-y-1.5 py-2 border-b border-border last:border-0">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-medium text-foreground">{ref.referred_name || 'Usuário'}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {ref.referred_role === 'mixed' ? '🔀 Misto' : ref.referred_role === 'provider' ? '🔧 Prestador' : '🛒 Comprador'}
+                            {ref.joined_at && ` · ${new Date(ref.joined_at).toLocaleDateString('pt-BR')}`}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <Badge variant="outline" className="text-[10px]">
+                            {ref.status === 'partial' ? '⏳ Parcial' : '⏳ Pendente'}
+                          </Badge>
+                          <p className="text-xs font-semibold text-muted-foreground mt-0.5">
+                            R$ {Number(ref.total_paid || 0).toFixed(2)} / R$ {Number(ref.commission_amount).toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <Progress value={progress.percent} className="h-2" />
+                        <p className="text-[10px] text-muted-foreground">{progress.percent}% — {progress.label}</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <Badge variant="outline" className="text-[10px] text-yellow-600 border-yellow-300">
-                        Pendente
-                      </Badge>
-                      <p className="text-xs font-semibold text-muted-foreground mt-0.5">R$ {Number(ref.commission_amount).toFixed(2)}</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -309,7 +381,7 @@ const WalletPage = () => {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-500" /> Indicações Ativas
+                <CheckCircle2 className="w-4 h-4 text-green-500" /> Indicações Concluídas
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -327,7 +399,7 @@ const WalletPage = () => {
                       <Badge variant="outline" className="text-[10px] text-green-600 border-green-300">
                         Liberado
                       </Badge>
-                      <p className="text-xs font-semibold text-green-600 mt-0.5">+R$ {Number(ref.commission_amount).toFixed(2)}</p>
+                      <p className="text-xs font-semibold text-green-600 mt-0.5">+R$ {Number(ref.total_paid || ref.commission_amount).toFixed(2)}</p>
                     </div>
                   </div>
                 ))}
@@ -348,12 +420,12 @@ const WalletPage = () => {
               <div className="space-y-2">
                 {transactions.map((tx: any) => (
                   <div key={tx.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <p className="text-xs font-medium text-foreground">{getTypeLabel(tx.type)}</p>
-                      <p className="text-[10px] text-muted-foreground">{tx.description}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{tx.description}</p>
                       <p className="text-[10px] text-muted-foreground">{new Date(tx.created_at).toLocaleString('pt-BR')}</p>
                     </div>
-                    <span className={`text-sm font-semibold ${tx.amount > 0 ? 'text-green-500' : tx.amount < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                    <span className={`text-sm font-semibold shrink-0 ml-2 ${tx.amount > 0 ? 'text-green-500' : tx.amount < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
                       {tx.amount > 0 ? '+' : ''}R$ {Math.abs(tx.amount).toFixed(2)}
                     </span>
                   </div>
