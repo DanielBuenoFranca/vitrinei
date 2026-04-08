@@ -44,11 +44,11 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: 'email, password e role são obrigatórios' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   }
 
-  // Create user via admin API
+  // Create user via admin API — auto-confirm email since master is creating
   const { data: newUser, error: createErr } = await supabase.auth.admin.createUser({
     email,
     password,
-    email_confirm: false,
+    email_confirm: true,
     user_metadata: { full_name: name || email.split('@')[0] },
   })
 
@@ -58,18 +58,15 @@ Deno.serve(async (req) => {
 
   // Assign role
   if (newUser?.user) {
-    await supabase.from('user_roles').insert({ user_id: newUser.user.id, role })
+    const { error: roleErr } = await supabase.from('user_roles').insert({ user_id: newUser.user.id, role })
+    if (roleErr) {
+      console.error('Role insert error:', roleErr)
+    }
 
     // Update profile phone if provided
     if (phone) {
       await supabase.from('profiles').update({ phone }).eq('user_id', newUser.user.id)
     }
-
-    // Send confirmation email
-    await supabase.auth.admin.generateLink({
-      type: 'magiclink',
-      email,
-    })
   }
 
   return new Response(JSON.stringify({ success: true, user_id: newUser?.user?.id }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })

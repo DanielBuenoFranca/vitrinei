@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle, Megaphone, Mail, Gift } from 'lucide-react';
+import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle, Megaphone, Mail, Gift, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { ProviderForm } from '@/components/admin/ProviderForm';
@@ -93,6 +93,7 @@ const AdminPanel = () => {
   const [authUserEmails, setAuthUserEmails] = useState<Record<string, string>>({});
   const [authUserConfirmed, setAuthUserConfirmed] = useState<Record<string, string | null>>({});
   const [resendingConfirmation, setResendingConfirmation] = useState(false);
+  const [activatingUser, setActivatingUser] = useState<string | null>(null);
 
   // Marquee / Header announcements
   const [marqueeMessages, setMarqueeMessages] = useState<string[]>([]);
@@ -237,9 +238,9 @@ const AdminPanel = () => {
       if (error || data?.error) {
         toast.error('Erro: ' + (data?.error || error?.message || 'desconhecido'));
       } else {
-        toast.success('Usuário criado com sucesso! E-mail de ativação enviado.');
+        toast.success('Usuário criado e ativado com sucesso!');
         setNewUserDialog(false);
-        setNewUserEmail('');
+        setNewUserEmail(''); setNewUserPassword(''); setNewUserName(''); setNewUserPhone(''); setNewUserRole('client');
         setNewUserPassword('');
         setNewUserName('');
         setNewUserPhone('');
@@ -265,36 +266,64 @@ const AdminPanel = () => {
     setSavingUser(true);
     const userId = editUserDialog.profile.user_id;
 
-    const { error } = await supabase.from('profiles').update({
-      display_name: editUserName.trim() || null,
-      phone: editUserPhone.trim() || null,
-      avatar_url: editUserAvatar.trim() || null,
-    }).eq('user_id', userId);
+    try {
+      const { data: updated, error } = await supabase.from('profiles').update({
+        display_name: editUserName.trim() || null,
+        phone: editUserPhone.trim() || null,
+        avatar_url: editUserAvatar.trim() || null,
+      }).eq('user_id', userId).select();
 
-    if (error) {
-      toast.error('Erro ao salvar perfil');
-      setSavingUser(false);
-      return;
-    }
-
-    // Update email if changed
-    const originalEmail = authUserEmails[userId] || '';
-    const newEmail = editUserEmail.trim();
-    if (newEmail && newEmail !== originalEmail) {
-      const { data: emailRes, error: emailErr } = await supabase.functions.invoke('update-user-email', {
-        body: { user_id: userId, new_email: newEmail },
-      });
-      if (emailErr || emailRes?.error) {
-        toast.error('Erro ao alterar e-mail: ' + (emailRes?.error || emailErr?.message || 'desconhecido'));
+      if (error) {
+        toast.error('Erro ao salvar perfil: ' + error.message);
         setSavingUser(false);
         return;
       }
-    }
 
-    toast.success('Perfil atualizado');
-    setEditUserDialog({ open: false, profile: null });
-    fetchUsers();
+      if (!updated || updated.length === 0) {
+        toast.error('Perfil não foi atualizado — verifique as permissões.');
+        setSavingUser(false);
+        return;
+      }
+
+      // Update email if changed
+      const originalEmail = authUserEmails[userId] || '';
+      const newEmail = editUserEmail.trim();
+      if (newEmail && newEmail !== originalEmail) {
+        const { data: emailRes, error: emailErr } = await supabase.functions.invoke('update-user-email', {
+          body: { user_id: userId, new_email: newEmail },
+        });
+        if (emailErr || emailRes?.error) {
+          toast.error('Erro ao alterar e-mail: ' + (emailRes?.error || emailErr?.message || 'desconhecido'));
+          setSavingUser(false);
+          return;
+        }
+      }
+
+      toast.success('Perfil atualizado com sucesso');
+      setEditUserDialog({ open: false, profile: null });
+      await fetchUsers();
+    } catch (e: any) {
+      toast.error('Erro inesperado: ' + (e.message || 'desconhecido'));
+    }
     setSavingUser(false);
+  };
+
+  const activateUser = async (userId: string) => {
+    setActivatingUser(userId);
+    try {
+      const { data, error } = await supabase.functions.invoke('activate-user', {
+        body: { user_id: userId },
+      });
+      if (error || data?.error) {
+        toast.error('Erro ao ativar: ' + (data?.error || error?.message || 'desconhecido'));
+      } else {
+        toast.success('Usuário ativado com sucesso!');
+        await fetchUsers();
+      }
+    } catch (e: any) {
+      toast.error('Erro ao ativar usuário');
+    }
+    setActivatingUser(null);
   };
 
   const deleteUserProfile = async (userId: string) => {
@@ -972,6 +1001,21 @@ const AdminPanel = () => {
                               </TableCell>
                               <TableCell>
                                 <div className="flex gap-1">
+                                  {!authUserConfirmed[profile.user_id] && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-8 text-xs gap-1"
+                                      disabled={activatingUser === profile.user_id}
+                                      onClick={() => activateUser(profile.user_id)}
+                                    >
+                                      {activatingUser === profile.user_id
+                                        ? <Loader2 className="h-3 w-3 animate-spin" />
+                                        : <CheckCircle className="h-3 w-3" />
+                                      }
+                                      Ativar
+                                    </Button>
+                                  )}
                                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditUser(profile)}>
                                     <Pencil className="h-4 w-4" />
                                   </Button>
