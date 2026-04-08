@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle, Megaphone, Mail } from 'lucide-react';
+import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle, Megaphone, Mail, Gift } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { ProviderForm } from '@/components/admin/ProviderForm';
@@ -21,6 +21,7 @@ import { PermissionGate } from '@/components/PermissionGate';
 import { usePermissions } from '@/hooks/usePermissions';
 import { reloadDynamicEntries } from '@/data/searchData';
 import { Textarea } from '@/components/ui/textarea';
+import { CampaignForm } from '@/components/admin/CampaignForm';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
@@ -504,6 +505,10 @@ const AdminPanel = () => {
             <TabsTrigger value="marquee" className="gap-1.5">
               <Megaphone className="h-3.5 w-3.5" />
               Avisos
+            </TabsTrigger>
+            <TabsTrigger value="campaigns" className="gap-1.5">
+              <Gift className="h-3.5 w-3.5" />
+              Campanhas
             </TabsTrigger>
           </TabsList>
 
@@ -1034,6 +1039,13 @@ const AdminPanel = () => {
                   <p className="text-xs text-muted-foreground">{newMarqueeMsg.length}/500 caracteres</p>
                 </CardContent>
               </Card>
+            </PermissionGate>
+          </TabsContent>
+
+          {/* ── CAMPAIGNS TAB ── */}
+          <TabsContent value="campaigns">
+            <PermissionGate permission="admin.panel" featureName="Gestão de Campanhas">
+              <CampaignForm />
             </PermissionGate>
           </TabsContent>
         </Tabs>
