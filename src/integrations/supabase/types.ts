@@ -216,9 +216,41 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_campaigns: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          reward_buyer: number
+          reward_mixed_total: number
+          reward_seller: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          reward_buyer?: number
+          reward_mixed_total?: number
+          reward_seller?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          reward_buyer?: number
+          reward_mixed_total?: number
+          reward_seller?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       referrals: {
         Row: {
           activated_at: string | null
+          bonus_released: boolean
+          buyer_released: boolean
           commission_amount: number
           created_at: string
           id: string
@@ -230,10 +262,15 @@ export type Database = {
           referred_phone: string | null
           referred_role: string | null
           referrer_id: string
+          reward_snapshot: Json | null
+          seller_released: boolean
           status: string
+          total_paid: number
         }
         Insert: {
           activated_at?: string | null
+          bonus_released?: boolean
+          buyer_released?: boolean
           commission_amount?: number
           created_at?: string
           id?: string
@@ -245,10 +282,15 @@ export type Database = {
           referred_phone?: string | null
           referred_role?: string | null
           referrer_id: string
+          reward_snapshot?: Json | null
+          seller_released?: boolean
           status?: string
+          total_paid?: number
         }
         Update: {
           activated_at?: string | null
+          bonus_released?: boolean
+          buyer_released?: boolean
           commission_amount?: number
           created_at?: string
           id?: string
@@ -260,7 +302,10 @@ export type Database = {
           referred_phone?: string | null
           referred_role?: string | null
           referrer_id?: string
+          reward_snapshot?: Json | null
+          seller_released?: boolean
           status?: string
+          total_paid?: number
         }
         Relationships: []
       }
@@ -470,6 +515,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      release_fractioned_cashback: {
+        Args: { _phase: string; _referral_id: string }
+        Returns: Json
       }
       release_referral_cashback: {
         Args: { _referred_user_id: string }
