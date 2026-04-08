@@ -1001,6 +1001,21 @@ const AdminPanel = () => {
                               </TableCell>
                               <TableCell>
                                 <div className="flex gap-1">
+                                  {!authUserConfirmed[profile.user_id] && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-8 text-xs gap-1"
+                                      disabled={activatingUser === profile.user_id}
+                                      onClick={() => activateUser(profile.user_id)}
+                                    >
+                                      {activatingUser === profile.user_id
+                                        ? <Loader2 className="h-3 w-3 animate-spin" />
+                                        : <CheckCircle className="h-3 w-3" />
+                                      }
+                                      Ativar
+                                    </Button>
+                                  )}
                                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditUser(profile)}>
                                     <Pencil className="h-4 w-4" />
                                   </Button>
