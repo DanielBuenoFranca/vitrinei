@@ -22,6 +22,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/contexts/AuthContext';
 import { reloadDynamicEntries } from '@/data/searchData';
 import { Textarea } from '@/components/ui/textarea';
+import { maskPhone, maskCPFCNPJ } from '@/lib/masks';
 import { CampaignForm } from '@/components/admin/CampaignForm';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
