@@ -6,70 +6,20 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { ArrowLeft, Crown, Check, Zap, Star, Shield, BarChart3, Users, Store, Package, Headphones, CreditCard } from 'lucide-react';
+import { ArrowLeft, Crown, Check, Zap, Star, Shield, BarChart3, Users, Store, Package, Headphones, CreditCard, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlans';
 
-const plans = [
-  {
-    id: 'bronze',
-    name: 'Bronze',
-    price: 50,
-    color: 'from-amber-700 to-amber-500',
-    badge: '🥉',
-    discount: 5,
-    features: [
-      { icon: Store, text: 'Vitrine digital básica' },
-      { icon: Package, text: 'Até 10 produtos/serviços' },
-      { icon: Users, text: 'Programa de indicação (R$ 5/cliente)' },
-      { icon: CreditCard, text: 'Carteira digital com cashback' },
-      { icon: Headphones, text: 'Suporte por email' },
-    ],
-    limitations: ['Sem relatórios avançados', 'Sem personalização de vitrine', 'Sem prioridade no marketplace'],
-  },
-  {
-    id: 'prata',
-    name: 'Prata',
-    price: 100,
-    color: 'from-slate-500 to-slate-300',
-    badge: '🥈',
-    discount: 10,
-    popular: true,
-    features: [
-      { icon: Store, text: 'Vitrine personalizada com logo' },
-      { icon: Package, text: 'Até 50 produtos/serviços' },
-      { icon: Users, text: 'Indicação premium (R$ 5/cliente + R$ 15/fornecedor)' },
-      { icon: CreditCard, text: 'Cashback dobrado' },
-      { icon: BarChart3, text: 'Relatórios de vendas e clientes' },
-      { icon: Headphones, text: 'Suporte prioritário' },
-      { icon: Shield, text: 'Selo de verificação' },
-    ],
-    limitations: ['Sem IA para vitrine'],
-  },
-  {
-    id: 'ouro',
-    name: 'Ouro',
-    price: 200,
-    color: 'from-yellow-500 to-amber-300',
-    badge: '🥇',
-    discount: 20,
-    features: [
-      { icon: Store, text: 'Vitrine com IA Designer' },
-      { icon: Package, text: 'Produtos/serviços ilimitados' },
-      { icon: Users, text: 'Indicação VIP (bônus triplo)' },
-      { icon: CreditCard, text: 'Cashback triplo + saque facilitado' },
-      { icon: BarChart3, text: 'Dashboards completos e exportação' },
-      { icon: Headphones, text: 'Suporte 24h com gestor dedicado' },
-      { icon: Shield, text: 'Selo premium + destaque no marketplace' },
-      { icon: Star, text: 'Prioridade máxima nos resultados' },
-      { icon: Zap, text: 'Automações e integrações avançadas' },
-    ],
-    limitations: [],
-  },
-];
+const PLAN_COLORS: Record<string, string> = {
+  bronze: 'from-amber-700 to-amber-500',
+  prata: 'from-slate-500 to-slate-300',
+  ouro: 'from-yellow-500 to-amber-300',
+};
 
 const SubscriptionPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { activePlans, loading: loadingPlans } = useSubscriptionPlans();
   const [currentSub, setCurrentSub] = useState<any>(null);
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -79,7 +29,7 @@ const SubscriptionPage = () => {
       .then(({ data }) => setCurrentSub(data));
   }, [user]);
 
-  const handleSubscribe = async (plan: typeof plans[0]) => {
+  const handleSubscribe = async (plan: typeof activePlans[0]) => {
     if (!user) { navigate('/auth'); return; }
     setLoading(plan.id);
     try {
@@ -121,9 +71,13 @@ const SubscriptionPage = () => {
           </p>
         </div>
 
+        {loadingPlans ? (
+          <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {plans.map((plan, i) => {
+          {activePlans.map((plan, i) => {
             const isActive = currentSub?.plan === plan.id;
+            const color = PLAN_COLORS[plan.id] || 'from-primary to-primary/70';
             return (
               <motion.div key={plan.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
                 <Card className={`relative overflow-hidden h-full flex flex-col ${plan.popular ? 'ring-2 ring-primary shadow-lg' : ''}`}>
@@ -132,7 +86,7 @@ const SubscriptionPage = () => {
                       MAIS POPULAR
                     </div>
                   )}
-                  <CardHeader className={`bg-gradient-to-br ${plan.color} text-white pb-4`}>
+                  <CardHeader className={`bg-gradient-to-br ${color} text-white pb-4`}>
                     <div className="text-2xl">{plan.badge}</div>
                     <CardTitle className="text-lg">{plan.name}</CardTitle>
                     <div className="flex items-baseline gap-1">
@@ -148,7 +102,7 @@ const SubscriptionPage = () => {
                       {plan.features.map((f, j) => (
                         <div key={j} className="flex items-start gap-2 text-xs">
                           <Check className="w-3.5 h-3.5 text-green-500 mt-0.5 shrink-0" />
-                          <span className="text-foreground">{f.text}</span>
+                          <span className="text-foreground">{typeof f === 'string' ? f : (f as any).text}</span>
                         </div>
                       ))}
                       {plan.limitations.map((l, j) => (
@@ -172,6 +126,7 @@ const SubscriptionPage = () => {
             );
           })}
         </div>
+        )}
 
         <p className="text-center text-[10px] text-muted-foreground mt-6">
           Todos os planos incluem acesso à carteira digital, programa de indicação e suporte básico.

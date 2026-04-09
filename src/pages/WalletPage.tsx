@@ -14,6 +14,7 @@ import { motion } from 'framer-motion';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
+import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlans';
 
 interface Campaign {
   reward_buyer: number;
@@ -22,15 +23,11 @@ interface Campaign {
   is_active: boolean;
 }
 
-const planOptions = [
-  { id: 'bronze', name: 'Bronze', price: 50, badge: '🥉' },
-  { id: 'prata', name: 'Prata', price: 100, badge: '🥈' },
-  { id: 'ouro', name: 'Ouro', price: 200, badge: '🥇' },
-];
-
 const WalletPage = () => {
   const navigate = useNavigate();
   const { user, requireAuth } = useAuth();
+  const { activePlans } = useSubscriptionPlans();
+  const planOptions = activePlans.map(p => ({ id: p.id, name: p.name, price: p.price, badge: p.badge }));
   const [wallet, setWallet] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [referralCode, setReferralCode] = useState('');
