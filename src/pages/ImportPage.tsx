@@ -352,6 +352,7 @@ const ImportPage = () => {
   const executeImport = async () => {
     if (rows.length === 0 || hasCriticalErrors) return;
     setImporting(true);
+    try {
     const res: ImportResult = {
       providersCreated: 0, providersLinked: 0, servicesCreated: 0,
       productsCreated: 0, segmentsCreated: 0, errors: [], fixes: [],
@@ -522,8 +523,13 @@ const ImportPage = () => {
 
     await reloadDynamicEntries();
     setResult(res);
-    setImporting(false);
     toast.success('Importação concluída!');
+    } catch (err: any) {
+      console.error('Import error:', err);
+      toast.error('Erro durante importação: ' + (err?.message || 'erro desconhecido'));
+    } finally {
+      setImporting(false);
+    }
   };
 
   const resetAll = () => {
