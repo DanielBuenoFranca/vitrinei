@@ -36,6 +36,7 @@ const Landing = () => {
   const navigate = useNavigate();
   const { user, signOut, displayName } = useAuth();
   const { profileLabel } = usePermissions();
+  const accessLevel = useAccessLevel();
   const [searchQuery, setSearchQuery] = useState('');
   const [executedQuery, setExecutedQuery] = useState('');
   const [searchExecuted, setSearchExecuted] = useState(false);
