@@ -22,11 +22,7 @@ interface Campaign {
   is_active: boolean;
 }
 
-const planOptions = [
-  { id: 'bronze', name: 'Bronze', price: 50, badge: '🥉' },
-  { id: 'prata', name: 'Prata', price: 100, badge: '🥈' },
-  { id: 'ouro', name: 'Ouro', price: 200, badge: '🥇' },
-];
+// planOptions now loaded dynamically via useSubscriptionPlans hook
 
 const WalletPage = () => {
   const navigate = useNavigate();
