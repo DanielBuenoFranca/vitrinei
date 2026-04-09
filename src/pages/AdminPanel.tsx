@@ -164,12 +164,14 @@ const AdminPanel = () => {
   useEffect(() => { fetchData(); fetchUsers(); fetchMarquee(); }, []);
 
   const fetchUsers = async () => {
-    const [profilesRes, rolesRes] = await Promise.all([
+    const [profilesRes, rolesRes, subsRes] = await Promise.all([
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('user_roles').select('*'),
+      supabase.from('subscriptions').select('*'),
     ]);
     setUserProfiles(profilesRes.data || []);
     setUserRoles(rolesRes.data || []);
+    setUserSubscriptions(subsRes.data || []);
 
     // Fetch auth emails via edge function (master only)
     try {
