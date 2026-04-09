@@ -82,7 +82,7 @@ const WalletPage = () => {
       supabase.from('wallets').select('*').eq('user_id', user.id).maybeSingle(),
       supabase.from('wallet_transactions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
       supabase.from('referrals').select('*').eq('referrer_id', user.id).order('created_at', { ascending: false }),
-      supabase.from('subscriptions').select('*').eq('user_id', user.id).eq('status', 'active').maybeSingle(),
+      supabase.from('subscriptions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
       supabase.from('referral_campaigns').select('*').eq('is_active', true).limit(1).maybeSingle(),
     ]);
     setWallet(walletRes.data);
