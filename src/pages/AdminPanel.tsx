@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle, Megaphone, Mail, Gift, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle, Megaphone, Mail, Gift, CheckCircle, KeyRound } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { ProviderForm } from '@/components/admin/ProviderForm';
@@ -1069,6 +1069,10 @@ const AdminPanel = () => {
                                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditUser(profile)}>
                                     <Pencil className="h-4 w-4" />
                                   </Button>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-600 hover:text-amber-700" title="Redefinir senha"
+                                    onClick={() => { setResetPwdDialog({ open: true, userId: profile.user_id, userName: profile.display_name || 'Usuário' }); setResetPwdValue(''); }}>
+                                    <KeyRound className="h-4 w-4" />
+                                  </Button>
                                   <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteUserProfile(profile.user_id)}>
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
@@ -1349,6 +1353,30 @@ const AdminPanel = () => {
             <Button onClick={handleCreateUser} disabled={creatingUser}>
               {creatingUser && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
               Criar Usuário
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Reset Password Dialog */}
+      <Dialog open={resetPwdDialog.open} onOpenChange={(o) => !o && setResetPwdDialog({ open: false, userId: '', userName: '' })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5" /> Redefinir Senha</DialogTitle>
+            <DialogDescription>
+              Defina uma senha temporária para <strong>{resetPwdDialog.userName}</strong>. Ao fazer login, o usuário será obrigado a criar uma nova senha.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1.5">
+              <Label>Senha Temporária</Label>
+              <Input type="text" placeholder="Mínimo 6 caracteres" value={resetPwdValue} onChange={e => setResetPwdValue(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetPwdDialog({ open: false, userId: '', userName: '' })}>Cancelar</Button>
+            <Button onClick={handleResetPassword} disabled={resettingPwd || resetPwdValue.length < 6}>
+              {resettingPwd && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              Redefinir Senha
             </Button>
           </DialogFooter>
         </DialogContent>
