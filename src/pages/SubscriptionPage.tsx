@@ -19,6 +19,7 @@ const PLAN_COLORS: Record<string, string> = {
 const SubscriptionPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { activePlans, loading: loadingPlans } = useSubscriptionPlans();
   const [currentSub, setCurrentSub] = useState<any>(null);
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -28,7 +29,7 @@ const SubscriptionPage = () => {
       .then(({ data }) => setCurrentSub(data));
   }, [user]);
 
-  const handleSubscribe = async (plan: typeof plans[0]) => {
+  const handleSubscribe = async (plan: typeof activePlans[0]) => {
     if (!user) { navigate('/auth'); return; }
     setLoading(plan.id);
     try {
