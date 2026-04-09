@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
 function respond(ok: boolean, payload: Record<string, unknown>, status = 200) {
@@ -75,16 +75,34 @@ Deno.serve(async (req) => {
       return respond(false, { error: createErr.message }, 400)
     }
 
-    // Assign role
+    // Assign role and update profile
     if (newUser?.user) {
       const { error: roleErr } = await supabase.from('user_roles').insert({ user_id: newUser.user.id, role })
       if (roleErr) {
         console.error('Role insert error:', roleErr)
       }
 
-      // Update profile phone if provided
-      if (phone) {
-        await supabase.from('profiles').update({ phone }).eq('user_id', newUser.user.id)
+      // Ensure profile exists (trigger should create it, but backfill just in case)
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', newUser.user.id)
+        .maybeSingle()
+
+      if (!existingProfile) {
+        await supabase.from('profiles').insert({
+          user_id: newUser.user.id,
+          display_name: name || email.split('@')[0],
+          phone: phone || null,
+        })
+      } else {
+        // Update with provided info
+        const updates: Record<string, string | null> = {}
+        if (name) updates.display_name = name
+        if (phone) updates.phone = phone
+        if (Object.keys(updates).length > 0) {
+          await supabase.from('profiles').update(updates).eq('user_id', newUser.user.id)
+        }
       }
     }
 
