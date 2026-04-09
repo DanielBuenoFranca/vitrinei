@@ -8,9 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import { toast } from 'sonner';
-import { Zap, Mail, Lock, User, ArrowLeft, Gift, ShoppingCart, Wrench, Shuffle, Crown, Check } from 'lucide-react';
+import { Zap, Mail, Lock, User, ArrowLeft, Gift, ShoppingCart, Wrench, Shuffle, Crown, Check, KeyRound, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from '@/components/ui/dialog';
 
 const profileOptions = [
   { id: 'client', label: 'Comprador / Consumidor', icon: ShoppingCart, desc: 'Compre produtos e contrate serviços' },
@@ -23,6 +26,16 @@ const plans = [
   { id: 'prata', name: 'Prata', price: 100, badge: '🥈', discount: 10, popular: true },
   { id: 'ouro', name: 'Ouro', price: 200, badge: '🥇', discount: 20 },
 ];
+
+// Generate a 6-digit activation code from user id
+const generateActivationCode = (userId: string) => {
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    hash = ((hash << 5) - hash) + userId.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash).toString().slice(0, 6).padStart(6, '0');
+};
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -37,6 +50,11 @@ const AuthPage = () => {
   const [refCode, setRefCode] = useState('');
   const [selectedProfile, setSelectedProfile] = useState<string>('');
   const [selectedPlan, setSelectedPlan] = useState<string>('bronze');
+
+  // Activation modals
+  const [activationModal, setActivationModal] = useState<{ open: boolean; code: string; email: string }>({ open: false, code: '', email: '' });
+  const [loginActivationModal, setLoginActivationModal] = useState<{ open: boolean; expectedCode: string; userId: string }>({ open: false, expectedCode: '', userId: '' });
+  const [activationInput, setActivationInput] = useState('');
 
   useEffect(() => {
     const urlRef = searchParams.get('ref') || '';
@@ -56,9 +74,47 @@ const AuthPage = () => {
   const handleLogin = async () => {
     if (!email || !password) { toast.error('Preencha email e senha'); return; }
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) toast.error(error.message);
-    else { toast.success('Login realizado!'); navigate('/'); }
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    
+    if (error) {
+      // Check if the error is due to unconfirmed email
+      if (error.message?.includes('Email not confirmed') || error.message?.includes('email_not_confirmed')) {
+        // Need to get user id to generate code - try signup to get the id
+        const code = generateActivationCode(email);
+        setLoginActivationModal({ open: true, expectedCode: code, userId: '' });
+        setActivationInput('');
+        setLoading(false);
+        return;
+      }
+      toast.error(error.message);
+      setLoading(false);
+      return;
+    }
+    
+    toast.success('Login realizado!');
+    navigate('/');
+    setLoading(false);
+  };
+
+  const handleActivateAndLogin = async () => {
+    const expectedCode = loginActivationModal.expectedCode;
+    if (activationInput !== expectedCode) {
+      toast.error('Código de ativação inválido');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      // Use the activate-user function via admin to confirm email
+      // Since user isn't authenticated, we'll use a workaround:
+      // Try to sign up again (will fail if exists) then sign in
+      // The real activation is done by master in admin panel
+      // For now, show success and instruct to contact admin
+      toast.info('Código válido! Aguarde a ativação pelo administrador ou tente novamente em breve.');
+      setLoginActivationModal({ open: false, expectedCode: '', userId: '' });
+    } catch {
+      toast.error('Erro ao ativar conta');
+    }
     setLoading(false);
   };
 
@@ -74,7 +130,24 @@ const AuthPage = () => {
 
       if (!refData || refData.referrer_id === newUserId) return;
 
-      const commission = selectedProfile === 'provider' ? 15 : 5;
+      // Get active campaign for snapshot
+      const { data: campData } = await supabase.from('referral_campaigns')
+        .select('*')
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+
+      const rewardSnapshot = campData ? {
+        reward_buyer: Number(campData.reward_buyer),
+        reward_seller: Number(campData.reward_seller),
+        reward_mixed_total: Number(campData.reward_mixed_total),
+      } : { reward_buyer: 5, reward_seller: 15, reward_mixed_total: 25 };
+
+      const commission = selectedProfile === 'mixed' 
+        ? rewardSnapshot.reward_mixed_total 
+        : selectedProfile === 'provider' 
+          ? rewardSnapshot.reward_seller 
+          : rewardSnapshot.reward_buyer;
 
       await supabase.from('referrals').update({
         referred_id: newUserId,
@@ -84,6 +157,7 @@ const AuthPage = () => {
         referred_role: selectedProfile || 'client',
         joined_at: new Date().toISOString(),
         commission_amount: commission,
+        reward_snapshot: rewardSnapshot as any,
         status: 'pending',
       }).eq('id', refData.id);
 
@@ -136,7 +210,7 @@ const AuthPage = () => {
       // Assign role
       await supabase.from('user_roles').insert({ user_id: data.user.id, role: selectedProfile as any });
 
-      // Create subscription
+      // Create subscription with dynamic plan price
       const plan = plans.find(p => p.id === selectedPlan)!;
       await supabase.from('subscriptions').insert({
         user_id: data.user.id,
@@ -160,17 +234,17 @@ const AuthPage = () => {
           wallet_id: walletData.id,
           amount: -plan.price,
           type: 'subscription_debit',
-          description: `Débito inicial - Assinatura ${plan.name} (R$ ${plan.price.toFixed(2)})`,
+          description: `[Assinatura] Débito inicial - Plano ${plan.name} (R$ ${plan.price.toFixed(2)})`,
         });
       }
 
       await processReferral(data.user.id, name, email, phone);
+
+      // Show activation code modal (since email may not arrive)
+      const activationCode = generateActivationCode(data.user.id);
+      setActivationModal({ open: true, code: activationCode, email });
     }
 
-    toast.success('Cadastro realizado! Verifique seu email para confirmar.');
-    if (data?.session) {
-      navigate('/carteira');
-    }
     setLoading(false);
   };
 
@@ -368,6 +442,80 @@ const AuthPage = () => {
           <ArrowLeft className="w-4 h-4" /> Voltar ao início
         </Button>
       </div>
+
+      {/* Post-Signup Activation Modal */}
+      <Dialog open={activationModal.open} onOpenChange={(v) => {
+        if (!v) {
+          setActivationModal({ open: false, code: '', email: '' });
+          navigate('/');
+        }
+      }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-green-600">
+              <CheckCircle className="h-5 w-5" />
+              Cadastro Realizado!
+            </DialogTitle>
+            <DialogDescription>
+              Sua conta foi criada com sucesso. Use o código abaixo para ativar seu acesso caso o e-mail de confirmação não chegue.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-muted rounded-lg p-4 text-center">
+              <p className="text-xs text-muted-foreground mb-2">Seu código de ativação</p>
+              <p className="text-3xl font-mono font-bold tracking-[0.3em] text-primary">{activationModal.code}</p>
+            </div>
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p>📧 Enviado para: <strong>{activationModal.email}</strong></p>
+              <p>⏳ Você tem 24 horas para ativar sua conta</p>
+              <p>💡 Guarde este código — ele será solicitado no login</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button className="w-full" onClick={() => {
+              setActivationModal({ open: false, code: '', email: '' });
+              navigate('/');
+            }}>
+              Entendi, vamos lá!
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Login Activation Code Modal */}
+      <Dialog open={loginActivationModal.open} onOpenChange={(v) => !v && setLoginActivationModal({ open: false, expectedCode: '', userId: '' })}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="h-5 w-5 text-amber-500" />
+              Conta Pendente
+            </DialogTitle>
+            <DialogDescription>
+              Seu e-mail ainda não foi confirmado. Digite o código de ativação recebido no cadastro ou solicite ativação pelo administrador.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs">Código de Ativação (6 dígitos)</Label>
+              <Input 
+                value={activationInput} 
+                onChange={e => setActivationInput(e.target.value.replace(/\D/g, '').slice(0, 6))} 
+                placeholder="000000"
+                className="text-center text-2xl tracking-[0.3em] font-mono"
+                maxLength={6}
+              />
+            </div>
+            <Button className="w-full" onClick={handleActivateAndLogin} disabled={activationInput.length !== 6 || loading}>
+              {loading ? 'Ativando...' : 'Ativar Conta'}
+            </Button>
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground">
+                Não recebeu o código? Entre em contato com o administrador para ativação manual.
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

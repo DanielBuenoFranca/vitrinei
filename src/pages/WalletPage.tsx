@@ -7,9 +7,13 @@ import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { ArrowLeft, Wallet, TrendingUp, TrendingDown, Gift, Copy, Share2, Clock, CheckCircle2, Lock, CreditCard, Timer, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Wallet, TrendingUp, TrendingDown, Gift, Copy, Share2, Clock, CheckCircle2, Lock, CreditCard, Timer, AlertTriangle, ShieldAlert, Eye } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { motion } from 'framer-motion';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from '@/components/ui/dialog';
 
 interface Campaign {
   reward_buyer: number;
@@ -17,6 +21,12 @@ interface Campaign {
   reward_mixed_total: number;
   is_active: boolean;
 }
+
+const planOptions = [
+  { id: 'bronze', name: 'Bronze', price: 50, badge: '🥉' },
+  { id: 'prata', name: 'Prata', price: 100, badge: '🥈' },
+  { id: 'ouro', name: 'Ouro', price: 200, badge: '🥇' },
+];
 
 const WalletPage = () => {
   const navigate = useNavigate();
@@ -32,6 +42,11 @@ const WalletPage = () => {
   const [paying, setPaying] = useState(false);
   const [countdown, setCountdown] = useState('');
   const [expired, setExpired] = useState(false);
+  
+  // Paywall / checkout state
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [checkoutPlan, setCheckoutPlan] = useState<string>('');
+  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'card'>('pix');
 
   useEffect(() => {
     if (!user) return;
@@ -75,6 +90,9 @@ const WalletPage = () => {
     setTransactions(txRes.data || []);
     setReferrals(refRes.data || []);
     setSubscription(subRes.data);
+    if (subRes.data) {
+      setCheckoutPlan(subRes.data.plan);
+    }
     if (campRes.data) {
       setCampaign({
         reward_buyer: Number(campRes.data.reward_buyer),
@@ -103,13 +121,47 @@ const WalletPage = () => {
     if (!wallet || !subscription) return;
     setPaying(true);
     try {
-      const debitAmount = Math.abs(wallet.balance);
-      if (wallet.balance >= 0) {
+      const selectedPlan = planOptions.find(p => p.id === checkoutPlan);
+      const planChanged = checkoutPlan && checkoutPlan !== subscription.plan && selectedPlan;
+      
+      // If plan changed, update subscription and adjust debt
+      if (planChanged) {
+        const oldPrice = Math.abs(wallet.balance);
+        const newPrice = selectedPlan.price;
+        const diff = newPrice - oldPrice;
+
+        // Update subscription
+        await supabase.from('subscriptions').update({
+          plan: selectedPlan.id,
+          price: selectedPlan.price,
+        }).eq('id', subscription.id);
+
+        // Adjust wallet balance if plan changed
+        if (diff !== 0) {
+          await supabase.from('wallets').update({
+            balance: -newPrice,
+          }).eq('id', wallet.id);
+
+          await supabase.from('wallet_transactions').insert({
+            user_id: user!.id,
+            wallet_id: wallet.id,
+            amount: -diff,
+            type: 'plan_change',
+            description: `[Assinatura] Mudança de plano: ${subscription.plan} → ${selectedPlan.name} (${diff > 0 ? '+' : ''}R$ ${diff.toFixed(2)})`,
+          });
+        }
+      }
+
+      const debitAmount = planChanged ? selectedPlan.price : Math.abs(wallet.balance);
+      
+      if (!planChanged && wallet.balance >= 0) {
         toast.info('Sua assinatura já está paga!');
         setPaying(false);
+        setCheckoutOpen(false);
         return;
       }
 
+      // Pay subscription - zero out debt
       await supabase.from('wallets').update({ balance: 0 }).eq('id', wallet.id);
 
       await supabase.from('wallet_transactions').insert({
@@ -117,9 +169,10 @@ const WalletPage = () => {
         wallet_id: wallet.id,
         amount: debitAmount,
         type: 'subscription_payment',
-        description: `Pagamento - Assinatura ${subscription.plan} (R$ ${debitAmount.toFixed(2)})`,
+        description: `[Pagamento] ${paymentMethod === 'pix' ? 'Pix' : 'Cartão'} - Assinatura ${planChanged ? selectedPlan.name : subscription.plan} (R$ ${debitAmount.toFixed(2)})`,
       });
 
+      // Apply cashback
       await supabase.from('wallets').update({
         balance: debitAmount,
         total_earned: (wallet.total_earned || 0) + debitAmount,
@@ -130,10 +183,11 @@ const WalletPage = () => {
         wallet_id: wallet.id,
         amount: debitAmount,
         type: 'cashback_subscription',
-        description: `Cashback - Assinatura ${subscription.plan} (R$ ${debitAmount.toFixed(2)})`,
+        description: `[Cashback] Crédito de boas-vindas - Plano ${planChanged ? selectedPlan.name : subscription.plan} (R$ ${debitAmount.toFixed(2)})`,
       });
 
       toast.success(`Assinatura paga! Cashback de R$ ${debitAmount.toFixed(2)} creditado.`);
+      setCheckoutOpen(false);
       loadData();
     } catch (e: any) {
       toast.error('Erro ao processar pagamento: ' + (e.message || 'desconhecido'));
@@ -151,13 +205,14 @@ const WalletPage = () => {
 
   const getTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
-      subscription_debit: '📉 Débito Assinatura',
+      subscription_debit: '📉 Assinatura',
       subscription_payment: '💳 Pagamento',
       cashback_subscription: '🎁 Cashback',
       cashback_pending: '⏳ Cashback Pendente',
       cashback_released: '✅ Cashback Liberado',
       referral_cashback: '🎯 Indicação',
       referral_bonus: '🏆 Bônus Indicação',
+      plan_change: '🔄 Mudança de Plano',
     };
     return labels[type] || type;
   };
@@ -206,10 +261,53 @@ const WalletPage = () => {
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <span className="font-bold text-foreground">Minha Carteira</span>
+          {hasDebt && (
+            <Badge variant="destructive" className="ml-auto text-[10px] gap-1">
+              <Eye className="w-3 h-3" /> Modo Leitura
+            </Badge>
+          )}
         </div>
       </nav>
 
       <div className="pt-20 px-4 container mx-auto max-w-lg space-y-4">
+        {/* Paywall Banner for negative balance */}
+        {hasDebt && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+            <Card className="border-destructive bg-destructive/5 overflow-hidden">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <ShieldAlert className="w-8 h-8 text-destructive shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <div>
+                      <p className="text-sm font-semibold text-destructive">Acesso em Modo Leitura</p>
+                      <p className="text-xs text-muted-foreground">
+                        Seu acesso está limitado até a liquidação da assinatura. 
+                        Pague via Pix ou Cartão para desbloquear todos os recursos.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="destructive" className="text-xs">
+                        Débito: R$ {Math.abs(wallet.balance).toFixed(2)}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        Plano: {subscription?.plan || '—'}
+                      </Badge>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      className="w-full gap-2"
+                      onClick={() => setCheckoutOpen(true)}
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      Pagar Agora
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
         {/* Balance Card */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <Card className={`${hasDebt ? 'bg-gradient-to-br from-destructive/90 to-destructive/70' : 'bg-gradient-to-br from-primary to-primary/80'} text-primary-foreground`}>
@@ -263,11 +361,10 @@ const WalletPage = () => {
                 <Button
                   className="w-full gap-2"
                   variant={expired ? 'destructive' : 'default'}
-                  onClick={handlePaySubscription}
-                  disabled={paying}
+                  onClick={() => setCheckoutOpen(true)}
                 >
                   <CreditCard className="w-4 h-4" />
-                  {paying ? 'Processando...' : `Pagar Assinatura (R$ ${Math.abs(wallet.balance).toFixed(2)})`}
+                  {`Pagar Assinatura (R$ ${Math.abs(wallet.balance).toFixed(2)})`}
                 </Button>
               )}
 
@@ -435,6 +532,100 @@ const WalletPage = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Checkout/Payment Modal */}
+      <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-primary" />
+              Pagamento da Assinatura
+            </DialogTitle>
+            <DialogDescription>
+              Escolha o método de pagamento e confirme. Você pode trocar o plano antes de pagar.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Plan selection */}
+            <div>
+              <Label className="text-xs font-semibold mb-2 block">Plano de Assinatura</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {planOptions.map(plan => (
+                  <button
+                    key={plan.id}
+                    type="button"
+                    onClick={() => setCheckoutPlan(plan.id)}
+                    className={`p-2 rounded-lg border text-center transition-all ${
+                      checkoutPlan === plan.id
+                        ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
+                        : 'border-border hover:border-primary/40'
+                    }`}
+                  >
+                    <span className="text-lg">{plan.badge}</span>
+                    <p className="text-[10px] font-medium">{plan.name}</p>
+                    <p className="text-xs font-bold text-primary">R$ {plan.price}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Payment method */}
+            <div>
+              <Label className="text-xs font-semibold mb-2 block">Forma de Pagamento</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('pix')}
+                  className={`p-3 rounded-lg border text-center transition-all ${
+                    paymentMethod === 'pix'
+                      ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
+                      : 'border-border hover:border-primary/40'
+                  }`}
+                >
+                  <p className="text-sm font-medium">💠 Pix</p>
+                  <p className="text-[10px] text-muted-foreground">Instantâneo</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('card')}
+                  className={`p-3 rounded-lg border text-center transition-all ${
+                    paymentMethod === 'card'
+                      ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
+                      : 'border-border hover:border-primary/40'
+                  }`}
+                >
+                  <p className="text-sm font-medium">💳 Cartão</p>
+                  <p className="text-[10px] text-muted-foreground">Crédito/Débito</p>
+                </button>
+              </div>
+            </div>
+
+            {/* Summary */}
+            <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+              <div className="flex justify-between text-xs">
+                <span>Plano {planOptions.find(p => p.id === checkoutPlan)?.name || '—'}</span>
+                <span className="font-semibold">R$ {(planOptions.find(p => p.id === checkoutPlan)?.price || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-xs text-green-600">
+                <span>Cashback de boas-vindas</span>
+                <span className="font-semibold">+R$ {(planOptions.find(p => p.id === checkoutPlan)?.price || 0).toFixed(2)}</span>
+              </div>
+              <div className="border-t border-border pt-1 flex justify-between text-sm font-bold">
+                <span>Total</span>
+                <span className="text-primary">R$ {(planOptions.find(p => p.id === checkoutPlan)?.price || 0).toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="flex-col gap-2 sm:flex-col">
+            <Button className="w-full gap-2" onClick={handlePaySubscription} disabled={paying}>
+              {paying ? 'Processando...' : `Confirmar Pagamento`}
+            </Button>
+            <Button variant="ghost" className="w-full" onClick={() => setCheckoutOpen(false)}>
+              Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
