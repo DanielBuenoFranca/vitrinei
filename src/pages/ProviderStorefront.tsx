@@ -162,8 +162,8 @@ const ProviderStorefront = () => {
 
       const [{ data: segsData }, { data: providers }, { data: allProvs }] = await Promise.all([
         supabase.from('segments').select('id, name').order('name'),
-        supabase.from('providers').select('*').eq('active', true),
-        supabase.from('providers').select('id, name, segment').eq('active', true),
+        supabase.from('providers').select('*'),
+        supabase.from('providers').select('id, name, segment'),
       ]);
       setDbSegments((segsData || []) as { id: number; name: string }[]);
       setAllProviders((allProvs || []).map((p: any) => ({ id: p.id, name: p.name, segment: p.segment || [] })));
