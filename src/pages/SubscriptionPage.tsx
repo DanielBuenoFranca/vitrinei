@@ -20,6 +20,7 @@ const PLAN_COLORS: Record<string, string> = {
 const SubscriptionPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const accessLevel = useAccessLevel();
   const { activePlans, loading: loadingPlans } = useSubscriptionPlans();
   const [currentSub, setCurrentSub] = useState<any>(null);
   const [loading, setLoading] = useState<string | null>(null);
