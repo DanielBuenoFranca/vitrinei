@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
 
     for (const u of users) {
       if (!profileUserIds.has(u.id)) {
-        console.log(`Backfilling profile for user ${u.id} (${u.email})`)
+        // Backfill profile silently
         await supabase.from('profiles').insert({
           user_id: u.id,
           display_name: u.user_metadata?.full_name || u.email?.split('@')[0] || 'Usuário',
