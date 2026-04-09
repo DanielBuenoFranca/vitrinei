@@ -19,6 +19,7 @@ import { InconsistencyPanel } from '@/components/admin/InconsistencyPanel';
 import { UnitForm } from '@/components/admin/UnitForm';
 import { PermissionGate } from '@/components/PermissionGate';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useAuth } from '@/contexts/AuthContext';
 import { reloadDynamicEntries } from '@/data/searchData';
 import { Textarea } from '@/components/ui/textarea';
 import { CampaignForm } from '@/components/admin/CampaignForm';
