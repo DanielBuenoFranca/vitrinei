@@ -933,18 +933,18 @@ const AdminPanel = () => {
                   <p className="text-sm text-muted-foreground text-center py-8">Nenhum usuário cadastrado ainda.</p>
                 ) : (
                   <div className="overflow-x-auto">
-                    <Table>
+                     <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>Avatar</TableHead>
                           <TableHead>Nome</TableHead>
                           <TableHead>E-mail</TableHead>
+                          <TableHead>Modalidade</TableHead>
+                          <TableHead>Plano</TableHead>
                           <TableHead>Status E-mail</TableHead>
                           <TableHead>Telefone</TableHead>
-                          <TableHead>User ID</TableHead>
                           <TableHead>Papéis</TableHead>
                           <TableHead>Criado em</TableHead>
-                          <TableHead>Atualizado em</TableHead>
                           <TableHead>Ações</TableHead>
                         </TableRow>
                       </TableHeader>
