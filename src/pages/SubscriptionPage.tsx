@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { ArrowLeft, Crown, Check, Zap, Star, Shield, BarChart3, Users, Store, Package, Headphones, CreditCard, Loader2 } from 'lucide-react';
+import { AccessBanner, MaskedPrice, useAccessLevel } from '@/components/AccessGate';
 import { motion } from 'framer-motion';
 import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlans';
 
@@ -19,6 +20,7 @@ const PLAN_COLORS: Record<string, string> = {
 const SubscriptionPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const accessLevel = useAccessLevel();
   const { activePlans, loading: loadingPlans } = useSubscriptionPlans();
   const [currentSub, setCurrentSub] = useState<any>(null);
   const [loading, setLoading] = useState<string | null>(null);
@@ -63,6 +65,7 @@ const SubscriptionPage = () => {
         </div>
       </nav>
 
+      <AccessBanner />
       <div className="pt-20 px-4 container mx-auto max-w-4xl">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-foreground">Escolha seu plano</h1>
@@ -90,7 +93,11 @@ const SubscriptionPage = () => {
                     <div className="text-2xl">{plan.badge}</div>
                     <CardTitle className="text-lg">{plan.name}</CardTitle>
                     <div className="flex items-baseline gap-1">
-                      <span className="text-3xl font-bold">R$ {plan.price}</span>
+                      {accessLevel === 'visitor' ? (
+                        <MaskedPrice value={plan.price} className="text-3xl font-bold" />
+                      ) : (
+                        <span className="text-3xl font-bold">R$ {plan.price}</span>
+                      )}
                       <span className="text-sm opacity-80">/mês</span>
                     </div>
                     <Badge className="bg-white/20 text-white border-0 text-[10px] w-fit">
@@ -116,9 +123,19 @@ const SubscriptionPage = () => {
                       className="w-full mt-4"
                       variant={isActive ? 'outline' : 'default'}
                       disabled={isActive || loading === plan.id}
-                      onClick={() => handleSubscribe(plan)}
+                      onClick={() => {
+                        if (accessLevel === 'visitor') { navigate('/auth'); return; }
+                        if (accessLevel === 'lead') {
+                          toast.warning('Confirme seu e-mail antes de assinar um plano', {
+                            description: 'Verifique sua caixa de entrada e clique no link de confirmação.',
+                            action: { label: 'Ver status', onClick: () => navigate('/carteira') },
+                          });
+                          return;
+                        }
+                        handleSubscribe(plan);
+                      }}
                     >
-                      {loading === plan.id ? 'Processando...' : isActive ? '✓ Plano Atual' : `Assinar ${plan.name}`}
+                      {loading === plan.id ? 'Processando...' : isActive ? '✓ Plano Atual' : accessLevel === 'visitor' ? 'Criar conta para assinar' : `Assinar ${plan.name}`}
                     </Button>
                   </CardContent>
                 </Card>
