@@ -514,33 +514,36 @@ const AdminPanel = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="providers">
-          <TabsList>
-            <TabsTrigger value="segments">Segmentos ({segments.length})</TabsTrigger>
-            <TabsTrigger value="providers">Prestadores ({providers.length})</TabsTrigger>
-            <TabsTrigger value="services">Serviços ({services.length})</TabsTrigger>
-            <TabsTrigger value="products">Produtos ({products.length})</TabsTrigger>
-            <TabsTrigger value="units" className="gap-1.5">
-              <Ruler className="h-3.5 w-3.5" />
-              Unidades ({units.length})
+          <TabsList className="flex flex-wrap h-auto gap-1 p-1">
+            <TabsTrigger value="segments" className="text-xs gap-1 px-2 py-1.5">
+              <Tag className="h-3 w-3" /> Segmentos
             </TabsTrigger>
-            <TabsTrigger value="issues" className="gap-1.5">
-              <AlertTriangle className="h-3.5 w-3.5" />
-              Inconsistências
+            <TabsTrigger value="providers" className="text-xs gap-1 px-2 py-1.5">
+              <Store className="h-3 w-3" /> Prestadores
+            </TabsTrigger>
+            <TabsTrigger value="services" className="text-xs gap-1 px-2 py-1.5">
+              <Wrench className="h-3 w-3" /> Serviços
+            </TabsTrigger>
+            <TabsTrigger value="products" className="text-xs gap-1 px-2 py-1.5">
+              <Package className="h-3 w-3" /> Produtos
+            </TabsTrigger>
+            <TabsTrigger value="units" className="text-xs gap-1 px-2 py-1.5">
+              <Ruler className="h-3 w-3" /> Unidades
+            </TabsTrigger>
+            <TabsTrigger value="issues" className="text-xs gap-1 px-2 py-1.5">
+              <AlertTriangle className="h-3 w-3" /> Problemas
               {issueCount > 0 && (
-                <Badge variant="destructive" className="ml-1 text-[10px] px-1.5 py-0 min-w-5 h-5">{issueCount}</Badge>
+                <Badge variant="destructive" className="ml-0.5 text-[9px] px-1 py-0 min-w-4 h-4">{issueCount}</Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="users" className="gap-1.5">
-              <UserCog className="h-3.5 w-3.5" />
-              Usuários ({userProfiles.length})
+            <TabsTrigger value="users" className="text-xs gap-1 px-2 py-1.5">
+              <UserCog className="h-3 w-3" /> Usuários
             </TabsTrigger>
-            <TabsTrigger value="marquee" className="gap-1.5">
-              <Megaphone className="h-3.5 w-3.5" />
-              Avisos
+            <TabsTrigger value="marquee" className="text-xs gap-1 px-2 py-1.5">
+              <Megaphone className="h-3 w-3" /> Avisos
             </TabsTrigger>
-            <TabsTrigger value="campaigns" className="gap-1.5">
-              <Gift className="h-3.5 w-3.5" />
-              Campanhas
+            <TabsTrigger value="campaigns" className="text-xs gap-1 px-2 py-1.5">
+              <Gift className="h-3 w-3" /> Campanhas
             </TabsTrigger>
           </TabsList>
 

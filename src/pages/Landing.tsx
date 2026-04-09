@@ -355,22 +355,35 @@ const Landing = () => {
               <Button variant="default" size="sm" className="text-xs" onClick={() => navigate('/auth')}>Entrar</Button>
             )}
             <div className="relative group">
-              <Button variant="ghost" size="sm" className="text-muted-foreground">
-                Mais ▾
+              <Button variant="ghost" size="icon" className="text-muted-foreground h-8 w-8">
+                <Plus className="w-4 h-4" />
               </Button>
-              <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 min-w-[200px] z-50">
-                <div className="p-2 space-y-1">
-                  <button onClick={() => navigate('/demos')} className="w-full text-left px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10 rounded-md transition-colors flex items-center gap-2">📱 Demonstrações</button>
+              <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 min-w-[220px] z-50">
+                <div className="p-1.5 space-y-0.5">
+                  <button onClick={() => navigate('/demos')} className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors flex items-center gap-2">
+                    <span className="w-4 text-center">📱</span> Demonstrações
+                  </button>
+                  <button onClick={() => navigate('/processos')} className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors flex items-center gap-2">
+                    <span className="w-4 text-center">🔄</span> Fluxos
+                  </button>
+                  <button onClick={() => navigate('/gestao')} className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors flex items-center gap-2">
+                    <span className="w-4 text-center">🔧</span> Gestão
+                  </button>
+                  <button onClick={() => navigate('/jornada-cliente')} className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors flex items-center gap-2">
+                    <span className="w-4 text-center">🛒</span> Jornada
+                  </button>
+                  <button onClick={() => navigate('/mei-acompanhamento')} className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors flex items-center gap-2">
+                    <span className="w-4 text-center">📊</span> MEI
+                  </button>
+                  <button onClick={() => navigate('/dropshipping')} className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors flex items-center gap-2">
+                    <span className="w-4 text-center">🌐</span> Drop
+                  </button>
+                  <button onClick={() => navigate('/central-atendimento')} className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors flex items-center gap-2">
+                    <span className="w-4 text-center">🎧</span> Central
+                  </button>
                   <div className="border-t border-border my-1" />
-                  <button onClick={() => navigate('/processos')} className="w-full text-left px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors">Fluxos de Processos</button>
-                  <button onClick={() => navigate('/gestao')} className="w-full text-left px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors">Gestão de Serviços</button>
-                  <button onClick={() => navigate('/jornada-cliente')} className="w-full text-left px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors">Jornada do Cliente</button>
-                  <button onClick={() => navigate('/mei-acompanhamento')} className="w-full text-left px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors">Gestor MEI</button>
-                  <button onClick={() => navigate('/dropshipping')} className="w-full text-left px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors">Drop-shipping Global</button>
-                  <button onClick={() => navigate('/central-atendimento')} className="w-full text-left px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors">Central de Atendimento</button>
-                  <div className="border-t border-border my-1" />
-                  <button onClick={() => navigate('/admin')} className="w-full text-left px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 rounded-md transition-colors flex items-center gap-2">
-                    <Settings className="w-4 h-4" /> Administrador
+                  <button onClick={() => navigate('/admin')} className="w-full text-left px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/10 rounded-md transition-colors flex items-center gap-2">
+                    <Settings className="w-3.5 h-3.5" /> Painel Administrativo
                   </button>
                 </div>
               </div>
