@@ -193,7 +193,7 @@ const WalletPage = () => {
   };
 
   const copyReferralLink = () => {
-    const link = `${window.location.origin}?ref=${referralCode}`;
+    const link = `${window.location.origin}/convite/${referralCode}`;
     navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -408,14 +408,14 @@ const WalletPage = () => {
               </p>
 
               <div className="flex gap-2">
-                <Input value={`${window.location.origin}?ref=${referralCode}`} readOnly className="text-xs" />
+                <Input value={`${window.location.origin}/convite/${referralCode}`} readOnly className="text-xs" />
                 <Button variant="outline" size="sm" className="gap-1 shrink-0" onClick={copyReferralLink}>
                   {copied ? '✓' : <Copy className="w-3 h-3" />}
                 </Button>
               </div>
 
               <Button variant="outline" size="sm" className="w-full gap-1 text-xs"
-                onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`Conheça o Vitrinei! Use meu código: ${referralCode}\n${window.location.origin}?ref=${referralCode}`)}`, '_blank')}>
+                onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`Conheça o Vitrinei! Cadastre-se pelo meu link:\n${window.location.origin}/convite/${referralCode}`)}`, '_blank')}>
                 <Share2 className="w-3 h-3" /> Compartilhar no WhatsApp
               </Button>
 
