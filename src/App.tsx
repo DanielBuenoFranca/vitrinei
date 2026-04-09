@@ -25,6 +25,7 @@ import AdminPanel from "./pages/AdminPanel.tsx";
 import ProviderStorefront from "./pages/ProviderStorefront.tsx";
 import AuthPage from "./pages/AuthPage.tsx";
 import ResetPasswordPage from "./pages/ResetPasswordPage.tsx";
+import ReferralLanding from "./pages/ReferralLanding.tsx";
 import WalletPage from "./pages/WalletPage.tsx";
 import SubscriptionPage from "./pages/SubscriptionPage.tsx";
 import ImportPage from "./pages/ImportPage.tsx";
@@ -61,6 +62,7 @@ const App = () => {
         <Routes>
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/convite/:code" element={<ReferralLanding />} />
           <Route path="/" element={<ForceResetGuard><Landing /></ForceResetGuard>} />
           <Route path="/carteira" element={<ForceResetGuard><WalletPage /></ForceResetGuard>} />
           <Route path="/assinatura" element={<ForceResetGuard><SubscriptionPage /></ForceResetGuard>} />
