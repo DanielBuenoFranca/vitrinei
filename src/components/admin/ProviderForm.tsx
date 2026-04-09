@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { maskPhone } from '@/lib/masks';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -323,7 +324,7 @@ export function ProviderForm({ open, onClose, onSaved, provider, segments }: Pro
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
               <Label>Telefone</Label>
-              <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="(11) 99999-0000" />
+              <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: maskPhone(e.target.value) }))} placeholder="(11) 99999-0000" />
             </div>
             <div className="grid gap-2">
               <Label>Email</Label>
