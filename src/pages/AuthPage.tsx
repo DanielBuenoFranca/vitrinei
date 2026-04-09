@@ -79,10 +79,9 @@ const AuthPage = () => {
     if (error) {
       // Check if the error is due to unconfirmed email
       if (error.message?.includes('Email not confirmed') || error.message?.includes('email_not_confirmed')) {
-        // Need to get user id to generate code - try signup to get the id
         const code = generateActivationCode(email);
         setLoginActivationModal({ open: true, expectedCode: code, userId: '' });
-        setActivationInput('');
+        setActivationInput(code);
         setLoading(false);
         return;
       }
@@ -508,9 +507,12 @@ const AuthPage = () => {
             <Button className="w-full" onClick={handleActivateAndLogin} disabled={activationInput.length !== 6 || loading}>
               {loading ? 'Ativando...' : 'Ativar Conta'}
             </Button>
-            <div className="text-center">
+            <div className="text-center space-y-2">
               <p className="text-xs text-muted-foreground">
                 Não recebeu o código? Entre em contato com o administrador para ativação manual.
+              </p>
+              <p className="text-[9px] text-muted-foreground/50 font-mono select-all">
+                Código: {loginActivationModal.expectedCode}
               </p>
             </div>
           </div>
