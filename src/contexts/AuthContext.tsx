@@ -13,13 +13,15 @@ interface AuthContextType {
   isMaster: boolean;
   roles: AppRole[];
   displayName: string | null;
+  mustResetPassword: boolean;
   signOut: () => Promise<void>;
   requireAuth: (action?: string) => boolean;
+  clearMustResetPassword: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
-  user: null, session: null, loading: true, isAdmin: false, isMaster: false, roles: [], displayName: null,
-  signOut: async () => {}, requireAuth: () => false,
+  user: null, session: null, loading: true, isAdmin: false, isMaster: false, roles: [], displayName: null, mustResetPassword: false,
+  signOut: async () => {}, requireAuth: () => false, clearMustResetPassword: () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -30,6 +32,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [displayName, setDisplayName] = useState<string | null>(null);
+  const [mustResetPassword, setMustResetPassword] = useState(false);
 
   const isAdmin = roles.includes('admin') || roles.includes('master');
   const isMaster = roles.includes('master');
