@@ -13,13 +13,15 @@ interface AuthContextType {
   isMaster: boolean;
   roles: AppRole[];
   displayName: string | null;
+  mustResetPassword: boolean;
   signOut: () => Promise<void>;
   requireAuth: (action?: string) => boolean;
+  clearMustResetPassword: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
-  user: null, session: null, loading: true, isAdmin: false, isMaster: false, roles: [], displayName: null,
-  signOut: async () => {}, requireAuth: () => false,
+  user: null, session: null, loading: true, isAdmin: false, isMaster: false, roles: [], displayName: null, mustResetPassword: false,
+  signOut: async () => {}, requireAuth: () => false, clearMustResetPassword: () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -30,6 +32,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [displayName, setDisplayName] = useState<string | null>(null);
+  const [mustResetPassword, setMustResetPassword] = useState(false);
 
   const isAdmin = roles.includes('admin') || roles.includes('master');
   const isMaster = roles.includes('master');
@@ -40,6 +43,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       setLoading(false);
       if (session?.user) {
+        const mustReset = session.user.user_metadata?.must_reset_password === true;
+        setMustResetPassword(mustReset);
         setTimeout(() => {
           fetchRoles(session.user.id);
           fetchDisplayName(session.user.id);
@@ -47,6 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setRoles([]);
         setDisplayName(null);
+        setMustResetPassword(false);
       }
     });
 
@@ -55,6 +61,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       setLoading(false);
       if (session?.user) {
+        const mustReset = session.user.user_metadata?.must_reset_password === true;
+        setMustResetPassword(mustReset);
         fetchRoles(session.user.id);
         fetchDisplayName(session.user.id);
       }
@@ -81,6 +89,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setSession(null);
     setRoles([]);
     setDisplayName(null);
+    setMustResetPassword(false);
+  };
+
+  const clearMustResetPassword = async () => {
+    await supabase.auth.updateUser({ data: { must_reset_password: false } });
+    setMustResetPassword(false);
   };
 
   const requireAuth = (action?: string): boolean => {
@@ -92,7 +106,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, isMaster, roles, displayName, signOut, requireAuth }}>
+    <AuthContext.Provider value={{ user, session, loading, isAdmin, isMaster, roles, displayName, mustResetPassword, signOut, requireAuth, clearMustResetPassword }}>
       {children}
     </AuthContext.Provider>
   );

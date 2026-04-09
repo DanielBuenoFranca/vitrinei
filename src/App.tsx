@@ -39,6 +39,12 @@ const MasterRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const ForceResetGuard = ({ children }: { children: React.ReactNode }) => {
+  const { mustResetPassword, user } = useAuth();
+  if (user && mustResetPassword) return <Navigate to="/reset-password" replace />;
+  return <>{children}</>;
+};
+
 const App = () => {
   useEffect(() => { loadDynamicEntries(); }, []);
   return (
@@ -53,23 +59,23 @@ const App = () => {
         <CartBar />
         <FloatingAiAvatar />
         <Routes>
-          <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/carteira" element={<WalletPage />} />
-          <Route path="/assinatura" element={<SubscriptionPage />} />
-          <Route path="/importar" element={<ImportPage />} />
-          <Route path="/mei" element={<MeiPanel />} />
-          <Route path="/client" element={<ClientApp />} />
-          <Route path="/processos" element={<ProcessFlows />} />
-          <Route path="/gestao" element={<ServiceManagementDemo />} />
-          <Route path="/jornada-cliente" element={<ClientJourneyDemo />} />
-          <Route path="/mei-acompanhamento" element={<MeiManagerDemo />} />
-          <Route path="/dropshipping" element={<DropshippingDemo />} />
-          <Route path="/demos" element={<Demos />} />
-          <Route path="/central-atendimento" element={<SupportCenterDemo />} />
+          <Route path="/" element={<ForceResetGuard><Landing /></ForceResetGuard>} />
+          <Route path="/carteira" element={<ForceResetGuard><WalletPage /></ForceResetGuard>} />
+          <Route path="/assinatura" element={<ForceResetGuard><SubscriptionPage /></ForceResetGuard>} />
+          <Route path="/importar" element={<ForceResetGuard><ImportPage /></ForceResetGuard>} />
+          <Route path="/mei" element={<ForceResetGuard><MeiPanel /></ForceResetGuard>} />
+          <Route path="/client" element={<ForceResetGuard><ClientApp /></ForceResetGuard>} />
+          <Route path="/processos" element={<ForceResetGuard><ProcessFlows /></ForceResetGuard>} />
+          <Route path="/gestao" element={<ForceResetGuard><ServiceManagementDemo /></ForceResetGuard>} />
+          <Route path="/jornada-cliente" element={<ForceResetGuard><ClientJourneyDemo /></ForceResetGuard>} />
+          <Route path="/mei-acompanhamento" element={<ForceResetGuard><MeiManagerDemo /></ForceResetGuard>} />
+          <Route path="/dropshipping" element={<ForceResetGuard><DropshippingDemo /></ForceResetGuard>} />
+          <Route path="/demos" element={<ForceResetGuard><Demos /></ForceResetGuard>} />
+          <Route path="/central-atendimento" element={<ForceResetGuard><SupportCenterDemo /></ForceResetGuard>} />
           <Route path="/admin" element={<MasterRoute><AdminPanel /></MasterRoute>} />
-          <Route path="/loja/:slug" element={<ProviderStorefront />} />
+          <Route path="/loja/:slug" element={<ForceResetGuard><ProviderStorefront /></ForceResetGuard>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

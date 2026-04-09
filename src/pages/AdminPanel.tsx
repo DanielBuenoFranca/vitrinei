@@ -6,8 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle, Megaphone, Mail, Gift, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle, Megaphone, Mail, Gift, CheckCircle, KeyRound } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { ProviderForm } from '@/components/admin/ProviderForm';
@@ -112,6 +113,11 @@ const AdminPanel = () => {
   const [newUserPhone, setNewUserPhone] = useState('');
   const [newUserRole, setNewUserRole] = useState<string>('client');
   const [creatingUser, setCreatingUser] = useState(false);
+
+  // Reset password dialog
+  const [resetPwdDialog, setResetPwdDialog] = useState<{ open: boolean; userId: string; userName: string }>({ open: false, userId: '', userName: '' });
+  const [resetPwdValue, setResetPwdValue] = useState('');
+  const [resettingPwd, setResettingPwd] = useState(false);
 
   const fetchMarquee = async () => {
     const { data } = await supabase.from('site_settings').select('value').eq('key', 'header_marquee').maybeSingle();
@@ -353,7 +359,27 @@ const AdminPanel = () => {
     }
   };
 
-  const deleteProvider = async (id: number) => {
+  const handleResetPassword = async () => {
+    if (resetPwdValue.length < 6) { toast.error('Senha deve ter no mínimo 6 caracteres'); return; }
+    setResettingPwd(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('reset-user-password', {
+        body: { user_id: resetPwdDialog.userId, new_password: resetPwdValue },
+      });
+      if (error || data?.error) {
+        toast.error('Erro: ' + (data?.error || error?.message || 'desconhecido'));
+      } else {
+        toast.success(`Senha redefinida! ${resetPwdDialog.userName} precisará definir nova senha ao logar.`);
+        setResetPwdDialog({ open: false, userId: '', userName: '' });
+        setResetPwdValue('');
+      }
+    } catch (e: any) {
+      toast.error('Erro ao redefinir senha');
+    }
+    setResettingPwd(false);
+  };
+
+
     const prov = providers.find(p => p.id === id);
     const relSvc = services.filter(s => s.provider_id === id || s.provider === prov?.name);
     const relProd = products.filter(p => p.provider_id === id || p.provider === prov?.name);
@@ -1044,6 +1070,10 @@ const AdminPanel = () => {
                                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditUser(profile)}>
                                     <Pencil className="h-4 w-4" />
                                   </Button>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-600 hover:text-amber-700" title="Redefinir senha"
+                                    onClick={() => { setResetPwdDialog({ open: true, userId: profile.user_id, userName: profile.display_name || 'Usuário' }); setResetPwdValue(''); }}>
+                                    <KeyRound className="h-4 w-4" />
+                                  </Button>
                                   <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteUserProfile(profile.user_id)}>
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
@@ -1324,6 +1354,30 @@ const AdminPanel = () => {
             <Button onClick={handleCreateUser} disabled={creatingUser}>
               {creatingUser && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
               Criar Usuário
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Reset Password Dialog */}
+      <Dialog open={resetPwdDialog.open} onOpenChange={(o) => !o && setResetPwdDialog({ open: false, userId: '', userName: '' })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5" /> Redefinir Senha</DialogTitle>
+            <DialogDescription>
+              Defina uma senha temporária para <strong>{resetPwdDialog.userName}</strong>. Ao fazer login, o usuário será obrigado a criar uma nova senha.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1.5">
+              <Label>Senha Temporária</Label>
+              <Input type="text" placeholder="Mínimo 6 caracteres" value={resetPwdValue} onChange={e => setResetPwdValue(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetPwdDialog({ open: false, userId: '', userName: '' })}>Cancelar</Button>
+            <Button onClick={handleResetPassword} disabled={resettingPwd || resetPwdValue.length < 6}>
+              {resettingPwd && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              Redefinir Senha
             </Button>
           </DialogFooter>
         </DialogContent>
