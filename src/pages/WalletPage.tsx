@@ -27,6 +27,7 @@ interface Campaign {
 const WalletPage = () => {
   const navigate = useNavigate();
   const { user, requireAuth } = useAuth();
+  const { refreshWallet: refreshConversionWallet } = useConversion();
   const { activePlans } = useSubscriptionPlans();
   const planOptions = activePlans.map(p => ({ id: p.id, name: p.name, price: p.price, badge: p.badge }));
   const [wallet, setWallet] = useState<any>(null);
