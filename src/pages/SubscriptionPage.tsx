@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { toast } from 'sonner';
 import { ArrowLeft, Crown, Check, Zap, Star, Shield, BarChart3, Users, Store, Package, Headphones, CreditCard, Loader2 } from 'lucide-react';
 import { AccessBanner, MaskedPrice, useAccessLevel } from '@/components/AccessGate';
 import { motion } from 'framer-motion';
