@@ -71,9 +71,13 @@ const SubscriptionPage = () => {
           </p>
         </div>
 
+        {loadingPlans ? (
+          <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {plans.map((plan, i) => {
+          {activePlans.map((plan, i) => {
             const isActive = currentSub?.plan === plan.id;
+            const color = PLAN_COLORS[plan.id] || 'from-primary to-primary/70';
             return (
               <motion.div key={plan.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
                 <Card className={`relative overflow-hidden h-full flex flex-col ${plan.popular ? 'ring-2 ring-primary shadow-lg' : ''}`}>
@@ -82,7 +86,7 @@ const SubscriptionPage = () => {
                       MAIS POPULAR
                     </div>
                   )}
-                  <CardHeader className={`bg-gradient-to-br ${plan.color} text-white pb-4`}>
+                  <CardHeader className={`bg-gradient-to-br ${color} text-white pb-4`}>
                     <div className="text-2xl">{plan.badge}</div>
                     <CardTitle className="text-lg">{plan.name}</CardTitle>
                     <div className="flex items-baseline gap-1">
@@ -98,7 +102,7 @@ const SubscriptionPage = () => {
                       {plan.features.map((f, j) => (
                         <div key={j} className="flex items-start gap-2 text-xs">
                           <Check className="w-3.5 h-3.5 text-green-500 mt-0.5 shrink-0" />
-                          <span className="text-foreground">{f.text}</span>
+                          <span className="text-foreground">{typeof f === 'string' ? f : (f as any).text}</span>
                         </div>
                       ))}
                       {plan.limitations.map((l, j) => (
@@ -122,6 +126,7 @@ const SubscriptionPage = () => {
             );
           })}
         </div>
+        )}
 
         <p className="text-center text-[10px] text-muted-foreground mt-6">
           Todos os planos incluem acesso à carteira digital, programa de indicação e suporte básico.
