@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useConversion } from '@/contexts/ConversionContext';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -41,6 +42,7 @@ const AuthPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const { refreshWallet } = useConversion();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -127,6 +129,7 @@ const AuthPage = () => {
 
       toast.success('Conta ativada com sucesso! Bem-vindo ao Vitrinei!');
       setLoginActivationModal({ open: false, expectedCode: '', userId: '' });
+      await refreshWallet();
       navigate('/');
     } catch {
       toast.error('Erro ao ativar conta');
@@ -212,7 +215,12 @@ const AuthPage = () => {
     const { data, error } = await supabase.auth.signUp({
       email, password,
       options: {
-        data: { full_name: name || email.split('@')[0] },
+        data: {
+          full_name: name || email.split('@')[0],
+          selected_profile: selectedProfile,
+          selected_plan: selectedPlan,
+          phone: phone || null,
+        },
         emailRedirectTo: window.location.origin,
       },
     });
