@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import {
   ArrowLeft, Upload, FileSpreadsheet, CheckCircle2, AlertTriangle,
-  Loader2, Download, Pencil, Trash2, X, Save, ShieldAlert
+  Loader2, Download, Pencil, Trash2, X, Save, ShieldAlert, Sparkles, Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { reloadDynamicEntries } from '@/data/searchData';
@@ -32,17 +32,23 @@ interface ParsedRow {
   email: string;
   city: string;
   cpfCnpj: string;
+  // Cascade match result
+  _matchType?: 'email' | 'name' | 'cpf' | 'new';
+  _matchedProviderId?: number;
+  _matchedProviderName?: string;
+  // AI enrichment tracking
+  _aiFields?: Set<string>;
 }
 
 interface RowError {
   rowId: number;
   field: string;
   message: string;
-  severity: 'error' | 'warning';
+  severity: 'error' | 'warning' | 'ai';
 }
 
 interface AutoFix {
-  icon: 'segment' | 'provider' | 'price' | 'contact' | 'tags' | 'document' | 'logo';
+  icon: 'segment' | 'provider' | 'price' | 'contact' | 'tags' | 'document' | 'logo' | 'ai' | 'merge';
   message: string;
 }
 
@@ -52,8 +58,17 @@ interface ImportResult {
   servicesCreated: number;
   productsCreated: number;
   segmentsCreated: number;
-  errors: string[];
+  errors: { line: number; message: string }[];
   fixes: AutoFix[];
+}
+
+interface ExistingProvider {
+  id: number;
+  name: string;
+  segment: string[];
+  phone: string | null;
+  email: string | null;
+  cpf_cnpj: string | null;
 }
 
 const STOCK_TYPES = ['fisico', 'drop'];
@@ -74,7 +89,7 @@ const FIELD_LABELS: Record<string, string> = {
   city: 'Cidade',
 };
 
-const COLUMNS: (keyof Omit<ParsedRow, '_id'>)[] = [
+const COLUMNS: (keyof Omit<ParsedRow, '_id' | '_matchType' | '_matchedProviderId' | '_matchedProviderName' | '_aiFields'>)[] = [
   'providerName', 'cpfCnpj', 'segment', 'serviceName', 'servicePrice', 'serviceUnit',
   'productName', 'productPrice', 'productUnit', 'productStockType',
   'phone', 'email', 'city',
@@ -83,7 +98,6 @@ const COLUMNS: (keyof Omit<ParsedRow, '_id'>)[] = [
 /* ─── Template generator ─── */
 const generateTemplate = async () => {
   const XLSX = await import('xlsx');
-  // Fetch existing units for the template note
   const { data: unitsData } = await supabase.from('units').select('name, label').order('name');
   const unitsList = (unitsData || []).map((u: any) => u.name).join(', ');
 
@@ -95,7 +109,6 @@ const generateTemplate = async () => {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Importação');
 
-  // Add a reference sheet with all units
   if (unitsData && unitsData.length > 0) {
     const unitsHeaders = ['Sigla', 'Descrição'];
     const unitsRows = unitsData.map((u: any) => [u.name, u.label]);
@@ -108,7 +121,40 @@ const generateTemplate = async () => {
   toast.success('Modelo baixado!');
 };
 
-/* ─── Basic validation (format) ─── */
+/* ─── Cascade matching logic ─── */
+const cascadeMatch = (
+  row: ParsedRow,
+  providers: ExistingProvider[],
+): { type: 'email' | 'name' | 'cpf' | 'new'; provider?: ExistingProvider } => {
+  const email = row.email.trim().toLowerCase();
+  const fullName = row.providerName.trim().toLowerCase();
+  const cpf = row.cpfCnpj.trim().replace(/\D/g, '');
+
+  // 1. Email match
+  if (email) {
+    const match = providers.find(p => p.email?.trim().toLowerCase() === email);
+    if (match) return { type: 'email', provider: match };
+  }
+
+  // 2. Name match (full name comparison)
+  if (fullName) {
+    const match = providers.find(p => p.name.trim().toLowerCase() === fullName);
+    if (match) return { type: 'name', provider: match };
+  }
+
+  // 3. CPF/CNPJ match
+  if (cpf && cpf !== 'isento') {
+    const match = providers.find(p => {
+      const pCpf = p.cpf_cnpj?.replace(/\D/g, '');
+      return pCpf && pCpf === cpf;
+    });
+    if (match) return { type: 'cpf', provider: match };
+  }
+
+  return { type: 'new' };
+};
+
+/* ─── Validation ─── */
 const validateFormat = (rows: ParsedRow[]): RowError[] => {
   const errors: RowError[] = [];
   rows.forEach(row => {
@@ -139,73 +185,40 @@ const validateFormat = (rows: ParsedRow[]): RowError[] => {
   return errors;
 };
 
-/* ─── Business rules validation (inconsistency rules) ─── */
 const validateBusinessRules = (
   rows: ParsedRow[],
   existingSegments: Set<string>,
-  existingProviderNames: Set<string>,
 ): RowError[] => {
   const errors: RowError[] = [];
-
   rows.forEach(row => {
-    // Segment doesn't exist in database
     if (row.segment.trim() && !existingSegments.has(row.segment.trim())) {
-      errors.push({
-        rowId: row._id, field: 'segment',
-        message: `Segmento "${row.segment}" não existe no cadastro — será ignorado na aba Inconsistências`,
-        severity: 'warning',
-      });
+      errors.push({ rowId: row._id, field: 'segment', message: `Segmento "${row.segment}" será criado automaticamente`, severity: 'warning' });
     }
-
-    // Provider without contact info
-    if (row.providerName.trim() && !row.phone.trim() && !row.email.trim()) {
-      const firstName = row.providerName.toLowerCase().split(' ')[0];
-      if (!existingProviderNames.has(firstName)) {
-        errors.push({
-          rowId: row._id, field: 'phone',
-          message: 'Prestador novo sem telefone e sem e-mail',
-          severity: 'warning',
-        });
-      }
+    if (row.providerName.trim() && !row.phone.trim() && !row.email.trim() && row._matchType === 'new') {
+      errors.push({ rowId: row._id, field: 'phone', message: 'Prestador novo sem contato', severity: 'warning' });
     }
-
-    // CPF/CNPJ missing
-    if (row.providerName.trim() && !row.cpfCnpj.trim()) {
-      const firstName = row.providerName.toLowerCase().split(' ')[0];
-      if (!existingProviderNames.has(firstName)) {
-        errors.push({
-          rowId: row._id, field: 'cpfCnpj',
-          message: 'Sem CPF/CNPJ — será marcado como ISENTO na importação',
-          severity: 'warning',
-        });
-      }
+    if (row.providerName.trim() && !row.cpfCnpj.trim() && row._matchType === 'new') {
+      errors.push({ rowId: row._id, field: 'cpfCnpj', message: 'Sem CPF/CNPJ — será ISENTO', severity: 'warning' });
     }
-
-    // Service with zero price
     if (row.serviceName.trim()) {
       const p = parseFloat(row.servicePrice);
       if (!row.servicePrice.trim() || p === 0) {
-        errors.push({
-          rowId: row._id, field: 'servicePrice',
-          message: 'Serviço com preço zerado — gerará inconsistência',
-          severity: 'warning',
-        });
+        errors.push({ rowId: row._id, field: 'servicePrice', message: 'Preço zerado', severity: 'warning' });
       }
     }
-
-    // Product with zero price
     if (row.productName.trim()) {
       const p = parseFloat(row.productPrice);
       if (!row.productPrice.trim() || p === 0) {
-        errors.push({
-          rowId: row._id, field: 'productPrice',
-          message: 'Produto com preço zerado — gerará inconsistência',
-          severity: 'warning',
-        });
+        errors.push({ rowId: row._id, field: 'productPrice', message: 'Preço zerado', severity: 'warning' });
+      }
+    }
+    // AI-enriched fields
+    if (row._aiFields) {
+      for (const field of row._aiFields) {
+        errors.push({ rowId: row._id, field, message: 'Dado gerado por IA — revise', severity: 'ai' });
       }
     }
   });
-
   return errors;
 };
 
@@ -217,22 +230,22 @@ const ImportPage = () => {
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [errors, setErrors] = useState<RowError[]>([]);
   const [importing, setImporting] = useState(false);
+  const [enriching, setEnriching] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [fileName, setFileName] = useState('');
   const [editingCell, setEditingCell] = useState<{ rowId: number; field: string } | null>(null);
   const [existingSegments, setExistingSegments] = useState<Set<string>>(new Set());
-  const [existingProviderNames, setExistingProviderNames] = useState<Set<string>>(new Set());
+  const [existingProviders, setExistingProviders] = useState<ExistingProvider[]>([]);
   const [dbLoaded, setDbLoaded] = useState(false);
 
-  // Load existing segments and providers for business rule validation
   useEffect(() => {
     const load = async () => {
       const [segRes, provRes] = await Promise.all([
         supabase.from('segments').select('name'),
-        supabase.from('providers').select('name'),
+        supabase.from('providers').select('id, name, segment, phone, email, cpf_cnpj'),
       ]);
       setExistingSegments(new Set((segRes.data || []).map(s => s.name)));
-      setExistingProviderNames(new Set((provRes.data || []).map(p => p.name.toLowerCase().split(' ')[0])));
+      setExistingProviders((provRes.data || []) as ExistingProvider[]);
       setDbLoaded(true);
     };
     load();
@@ -241,19 +254,29 @@ const ImportPage = () => {
   /* ─── Full validation ─── */
   const runValidation = useCallback((data: ParsedRow[]) => {
     const formatErrors = validateFormat(data);
-    const businessErrors = validateBusinessRules(data, existingSegments, existingProviderNames);
-    // Deduplicate by rowId+field (format errors take priority)
+    const businessErrors = validateBusinessRules(data, existingSegments);
     const seen = new Set(formatErrors.map(e => `${e.rowId}:${e.field}`));
-    const combined = [...formatErrors, ...businessErrors.filter(e => !seen.has(`${e.rowId}:${e.field}`))];
-    return combined;
-  }, [existingSegments, existingProviderNames]);
+    return [...formatErrors, ...businessErrors.filter(e => !seen.has(`${e.rowId}:${e.field}`))];
+  }, [existingSegments]);
 
-  // Re-validate when DB data loads
   useEffect(() => {
     if (rows.length > 0 && dbLoaded) {
       setErrors(runValidation(rows));
     }
-  }, [dbLoaded, existingSegments, existingProviderNames]);
+  }, [dbLoaded, existingSegments]);
+
+  /* ─── Cascade matching after parse ─── */
+  const applyCascadeMatching = useCallback((parsed: ParsedRow[]): ParsedRow[] => {
+    return parsed.map(row => {
+      const result = cascadeMatch(row, existingProviders);
+      return {
+        ...row,
+        _matchType: result.type,
+        _matchedProviderId: result.provider?.id,
+        _matchedProviderName: result.provider?.name,
+      };
+    });
+  }, [existingProviders]);
 
   /* ─── Parse file ─── */
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -295,39 +318,154 @@ const ImportPage = () => {
       const parsed: ParsedRow[] = json.map((r: any, i: number) => ({
         _id: i + 1,
         providerName: String(r[colMap.provider || ''] ?? '').trim(),
-        cpfCnpj: String(r[colMap.cpfCnpj || ''] ?? '').trim().replace(/\D/g, ''),
-        segment: String(r[colMap.segment || ''] ?? 'Geral').trim(),
+        cpfCnpj: String(r[colMap.cpfCnpj || ''] ?? '').trim(),
+        segment: String(r[colMap.segment || ''] ?? '').trim(),
         serviceName: String(r[colMap.service || ''] ?? '').trim(),
         servicePrice: String(r[colMap.servicePrice || ''] ?? '').trim(),
-        serviceUnit: String(r[colMap.serviceUnit || ''] ?? 'hr').trim().toLowerCase(),
+        serviceUnit: String(r[colMap.serviceUnit || ''] ?? '').trim().toLowerCase(),
         productName: String(r[colMap.product || ''] ?? '').trim(),
         productPrice: String(r[colMap.productPrice || ''] ?? '').trim(),
-        productUnit: String(r[colMap.productUnit || ''] ?? 'un').trim().toLowerCase(),
-        productStockType: String(r[colMap.stock || ''] ?? 'fisico').trim().toLowerCase(),
+        productUnit: String(r[colMap.productUnit || ''] ?? '').trim().toLowerCase(),
+        productStockType: String(r[colMap.stock || ''] ?? '').trim().toLowerCase(),
         phone: String(r[colMap.phone || ''] ?? '').trim(),
         email: String(r[colMap.email || ''] ?? '').trim(),
         city: String(r[colMap.city || ''] ?? '').trim(),
       })).filter((r: ParsedRow) => r.providerName || r.serviceName || r.productName);
 
-      setRows(parsed);
-      const errs = runValidation(parsed);
-      setErrors(errs);
-      const criticalCount = errs.filter(e => e.severity === 'error').length;
-      const warnCount = errs.filter(e => e.severity === 'warning').length;
-      toast.success(`${parsed.length} linhas carregadas${criticalCount > 0 ? ` — ${criticalCount} erro(s)` : ''}${warnCount > 0 ? ` · ${warnCount} aviso(s)` : ''}`);
+      // Apply cascade matching
+      const matched = applyCascadeMatching(parsed);
+      setRows(matched);
+      setErrors(runValidation(matched));
+
+      const newCount = matched.filter(r => r._matchType === 'new').length;
+      const mergeCount = matched.filter(r => r._matchType !== 'new').length;
+      toast.success(`${matched.length} linhas carregadas — ${mergeCount} existente(s), ${newCount} novo(s)`);
     } catch (err: any) {
       toast.error('Erro ao ler planilha: ' + err.message);
+    }
+  };
+
+  /* ─── AI Enrichment ─── */
+  const enrichWithAI = async () => {
+    if (rows.length === 0) return;
+    setEnriching(true);
+    try {
+      // Find rows with empty required fields
+      const rowsToEnrich = rows.filter(r => {
+        const hasEmptyFields = !r.segment.trim() || !r.phone.trim() || !r.email.trim() || !r.city.trim() ||
+          (r.serviceName.trim() && !r.servicePrice.trim()) ||
+          (r.productName.trim() && !r.productPrice.trim()) ||
+          (r.serviceName.trim() && !r.serviceUnit.trim()) ||
+          (r.productName.trim() && !r.productUnit.trim()) ||
+          (r.productName.trim() && !r.productStockType.trim());
+        return hasEmptyFields;
+      });
+
+      if (rowsToEnrich.length === 0) {
+        toast.info('Todos os campos obrigatórios já estão preenchidos');
+        setEnriching(false);
+        return;
+      }
+
+      // Send to AI in batches of 20
+      const batchSize = 20;
+      const allEnriched: ParsedRow[] = [...rows];
+      const segNames = [...existingSegments];
+
+      for (let i = 0; i < rowsToEnrich.length; i += batchSize) {
+        const batch = rowsToEnrich.slice(i, i + batchSize);
+        const simplifiedRows = batch.map(r => ({
+          _id: r._id,
+          providerName: r.providerName,
+          segment: r.segment,
+          serviceName: r.serviceName,
+          servicePrice: r.servicePrice,
+          serviceUnit: r.serviceUnit,
+          productName: r.productName,
+          productPrice: r.productPrice,
+          productUnit: r.productUnit,
+          productStockType: r.productStockType,
+          phone: r.phone,
+          email: r.email,
+          city: r.city,
+          cpfCnpj: r.cpfCnpj,
+        }));
+
+        const { data, error } = await supabase.functions.invoke('enrich-import-data', {
+          body: { rows: simplifiedRows, existingSegments: segNames },
+        });
+
+        if (error) {
+          toast.error('Erro ao enriquecer dados: ' + error.message);
+          continue;
+        }
+
+        if (data?.enriched) {
+          for (const enrichedRow of data.enriched) {
+            const idx = allEnriched.findIndex(r => r._id === enrichedRow._id);
+            if (idx === -1) continue;
+            const original = allEnriched[idx];
+            const aiFields = new Set<string>();
+
+            // Track which fields were filled by AI
+            const fieldsToCheck: (keyof ParsedRow)[] = [
+              'segment', 'phone', 'email', 'city', 'servicePrice', 'serviceUnit',
+              'productPrice', 'productUnit', 'productStockType',
+            ];
+
+            for (const field of fieldsToCheck) {
+              const origVal = String(original[field] || '').trim();
+              const newVal = String(enrichedRow[field] || '').trim();
+              if (!origVal && newVal) {
+                (allEnriched[idx] as any)[field] = newVal;
+                aiFields.add(field);
+              }
+            }
+
+            allEnriched[idx] = { ...allEnriched[idx], _aiFields: aiFields };
+          }
+        }
+      }
+
+      setRows(allEnriched);
+      setErrors(runValidation(allEnriched));
+      const aiCount = allEnriched.filter(r => r._aiFields && r._aiFields.size > 0).length;
+      toast.success(`IA enriqueceu ${aiCount} linha(s) — revise os campos em roxo antes de importar`);
+    } catch (err: any) {
+      toast.error('Erro no enriquecimento IA: ' + (err?.message || 'erro desconhecido'));
+    } finally {
+      setEnriching(false);
     }
   };
 
   /* ─── Cell editing ─── */
   const updateCell = useCallback((rowId: number, field: string, value: string) => {
     setRows(prev => {
-      const updated = prev.map(r => r._id === rowId ? { ...r, [field]: value } : r);
+      const updated = prev.map(r => {
+        if (r._id !== rowId) return r;
+        const updatedRow = { ...r, [field]: value };
+        // Remove AI tag if user edits the field
+        if (r._aiFields?.has(field)) {
+          const newAiFields = new Set(r._aiFields);
+          newAiFields.delete(field);
+          updatedRow._aiFields = newAiFields;
+        }
+        return updatedRow;
+      });
+      // Re-run cascade matching if key fields change
+      if (['email', 'providerName', 'cpfCnpj'].includes(field)) {
+        const reMatched = updated.map(row => {
+          if (row._id !== rowId) return row;
+          const result = cascadeMatch(row, existingProviders);
+          return { ...row, _matchType: result.type, _matchedProviderId: result.provider?.id, _matchedProviderName: result.provider?.name };
+        });
+        setErrors(runValidation(reMatched));
+        return reMatched;
+      }
       setErrors(runValidation(updated));
       return updated;
     });
-  }, [runValidation]);
+  }, [runValidation, existingProviders]);
 
   const removeRow = useCallback((rowId: number) => {
     setRows(prev => {
@@ -337,193 +475,193 @@ const ImportPage = () => {
     });
   }, [runValidation]);
 
-  /* ─── Get error for cell ─── */
   const getCellError = (rowId: number, field: string) =>
     errors.find(e => e.rowId === rowId && e.field === field);
 
   const criticalErrors = errors.filter(e => e.severity === 'error');
   const warnings = errors.filter(e => e.severity === 'warning');
+  const aiMarkers = errors.filter(e => e.severity === 'ai');
   const hasCriticalErrors = criticalErrors.length > 0;
   const hasWarnings = warnings.length > 0;
-  const errorRowIds = new Set(errors.map(e => e.rowId));
+  const hasAiData = aiMarkers.length > 0;
   const criticalRowIds = new Set(criticalErrors.map(e => e.rowId));
 
-  /* ─── Import ─── */
+  /* ─── Import (atomic) ─── */
   const executeImport = async () => {
     if (rows.length === 0 || hasCriticalErrors) return;
     setImporting(true);
     try {
-    const res: ImportResult = {
-      providersCreated: 0, providersLinked: 0, servicesCreated: 0,
-      productsCreated: 0, segmentsCreated: 0, errors: [], fixes: [],
-    };
+      const res: ImportResult = {
+        providersCreated: 0, providersLinked: 0, servicesCreated: 0,
+        productsCreated: 0, segmentsCreated: 0, errors: [], fixes: [],
+      };
 
-    // --- Step 1: Auto-create missing segments ---
-    const { data: dbSegments } = await supabase.from('segments').select('id, name, suggested_tags');
-    const segMap = new Map<string, number>();
-    (dbSegments || []).forEach((s: any) => segMap.set(s.name, s.id));
+      // Step 1: Auto-create missing segments
+      const { data: dbSegments } = await supabase.from('segments').select('id, name');
+      const segMap = new Map<string, number>();
+      (dbSegments || []).forEach((s: any) => segMap.set(s.name, s.id));
 
-    const uniqueSegments = new Set(rows.map(r => r.segment.trim()).filter(Boolean));
-    for (const segName of uniqueSegments) {
-      if (!segMap.has(segName)) {
-        const tags = [segName.toLowerCase()];
-        const { data: newSeg, error } = await supabase.from('segments').insert({
-          name: segName,
-          suggested_tags: tags,
-        }).select().single();
-        if (error) {
-          res.errors.push(`Erro ao criar segmento "${segName}": ${error.message}`);
-        } else if (newSeg) {
-          segMap.set(segName, (newSeg as any).id);
-          res.segmentsCreated++;
-          res.fixes.push({ icon: 'segment', message: `Segmento "${segName}" criado automaticamente com tag "${segName.toLowerCase()}"` });
+      const uniqueSegments = new Set(rows.map(r => r.segment.trim()).filter(Boolean));
+      for (const segName of uniqueSegments) {
+        if (!segMap.has(segName)) {
+          const { data: newSeg, error } = await supabase.from('segments').insert({
+            name: segName, suggested_tags: [segName.toLowerCase()],
+          }).select().single();
+          if (error) {
+            res.errors.push({ line: 0, message: `Erro ao criar segmento "${segName}": ${error.message}` });
+          } else if (newSeg) {
+            segMap.set(segName, (newSeg as any).id);
+            res.segmentsCreated++;
+            res.fixes.push({ icon: 'segment', message: `Segmento "${segName}" criado automaticamente` });
+          }
         }
       }
-    }
 
-    // --- Step 2: Load providers ---
-    const { data: existingProviders } = await supabase.from('providers').select('id, name, segment, phone, email');
-    const provMap = new Map<string, { id: number; name: string; segment: string[]; phone: string | null; email: string | null }>();
-    (existingProviders || []).forEach((p: any) => provMap.set(p.name.toLowerCase().split(' ')[0], p));
+      // Step 2: Get max IDs
+      const { data: maxSvc } = await supabase.from('dynamic_services').select('service_id').order('service_id', { ascending: false }).limit(1);
+      const { data: maxProd } = await supabase.from('dynamic_products').select('product_id').order('product_id', { ascending: false }).limit(1);
+      let nextServiceId = ((maxSvc?.[0]?.service_id) || 2000) + 1;
+      let nextProductId = ((maxProd?.[0]?.product_id) || 2000) + 1;
 
-    const { data: maxSvc } = await supabase.from('dynamic_services').select('service_id').order('service_id', { ascending: false }).limit(1);
-    const { data: maxProd } = await supabase.from('dynamic_products').select('product_id').order('product_id', { ascending: false }).limit(1);
-    let nextServiceId = ((maxSvc?.[0]?.service_id) || 2000) + 1;
-    let nextProductId = ((maxProd?.[0]?.product_id) || 2000) + 1;
+      // Group by provider
+      const byProvider = new Map<string, ParsedRow[]>();
+      rows.forEach(row => {
+        const key = row.providerName.trim();
+        if (!key) return;
+        if (!byProvider.has(key)) byProvider.set(key, []);
+        byProvider.get(key)!.push(row);
+      });
 
-    const byProvider = new Map<string, ParsedRow[]>();
-    rows.forEach(row => {
-      const key = row.providerName;
-      if (!byProvider.has(key)) byProvider.set(key, []);
-      byProvider.get(key)!.push(row);
-    });
+      // Reload providers for fresh data
+      const { data: freshProviders } = await supabase.from('providers').select('id, name, segment, phone, email, cpf_cnpj');
+      const providerList = (freshProviders || []) as ExistingProvider[];
 
-    for (const [provName, provRows] of byProvider) {
-      let providerId: number;
-      const firstName = provName.toLowerCase().split(' ')[0];
-      const existing = provMap.get(firstName);
-
-      if (existing) {
-        providerId = existing.id;
-        res.providersLinked++;
-
-        // --- Auto-fix: add missing segments to existing provider ---
-        const rowSegments = new Set(provRows.map(r => r.segment.trim()).filter(Boolean));
-        const currentSegments = new Set(existing.segment || []);
-        const newSegments = [...rowSegments].filter(s => !currentSegments.has(s));
-        if (newSegments.length > 0) {
-          const merged = [...currentSegments, ...newSegments];
-          await supabase.from('providers').update({ segment: merged }).eq('id', providerId);
-          res.fixes.push({ icon: 'provider', message: `Prestador "${provName}": segmento(s) "${newSegments.join(', ')}" vinculado(s)` });
-        }
-
-        // --- Auto-fix: fill missing contact on existing provider ---
+      for (const [provName, provRows] of byProvider) {
         const firstRow = provRows[0];
-        const updates: Record<string, string> = {};
-        if (!existing.phone && firstRow.phone.trim()) {
-          updates.phone = firstRow.phone;
+        let providerId: number;
+
+        // Use cascade match result
+        const matchResult = cascadeMatch(firstRow, providerList);
+
+        if (matchResult.type !== 'new' && matchResult.provider) {
+          // MERGE: existing provider
+          providerId = matchResult.provider.id;
+          res.providersLinked++;
+          res.fixes.push({
+            icon: 'merge',
+            message: `"${provName}" vinculado a "${matchResult.provider.name}" via ${matchResult.type === 'email' ? 'e-mail' : matchResult.type === 'name' ? 'nome' : 'CPF/CNPJ'}`,
+          });
+
+          // Merge segments
+          const rowSegments = new Set(provRows.map(r => r.segment.trim()).filter(Boolean));
+          const currentSegments = new Set(matchResult.provider.segment || []);
+          const newSegments = [...rowSegments].filter(s => !currentSegments.has(s));
+          if (newSegments.length > 0) {
+            await supabase.from('providers').update({ segment: [...currentSegments, ...newSegments] }).eq('id', providerId);
+            res.fixes.push({ icon: 'provider', message: `"${provName}": segmento(s) "${newSegments.join(', ')}" vinculado(s)` });
+          }
+
+          // Fill missing contact
+          const updates: Record<string, string> = {};
+          if (!matchResult.provider.phone && firstRow.phone.trim()) updates.phone = firstRow.phone;
+          if (!matchResult.provider.email && firstRow.email.trim()) updates.email = firstRow.email;
+          if (Object.keys(updates).length > 0) {
+            await supabase.from('providers').update(updates).eq('id', providerId);
+            res.fixes.push({ icon: 'contact', message: `"${provName}": contato atualizado` });
+          }
+        } else {
+          // NEW: create as Lead (Pendente)
+          const allSegments = [...new Set(provRows.map(r => r.segment.trim()).filter(Boolean))];
+          const cpfVal = firstRow.cpfCnpj.replace(/\D/g, '').trim() || null;
+          const { data: newProv, error } = await supabase.from('providers').insert({
+            name: provName,
+            segment: allSegments.length > 0 ? allSegments : ['Geral'],
+            type: 'mei',
+            phone: firstRow.phone || '',
+            email: firstRow.email || '',
+            city: firstRow.city || '',
+            cpf_cnpj: cpfVal || 'ISENTO',
+            active: false, // LEAD status - pendente
+          }).select().single();
+
+          if (error || !newProv) {
+            res.errors.push({ line: firstRow._id, message: `Erro ao criar "${provName}": ${error?.message}` });
+            continue;
+          }
+          providerId = (newProv as any).id;
+          providerList.push({ id: providerId, name: provName, segment: allSegments, phone: firstRow.phone, email: firstRow.email, cpf_cnpj: cpfVal });
+          res.providersCreated++;
+
+          if (!cpfVal) {
+            res.fixes.push({ icon: 'document', message: `"${provName}": CPF/CNPJ ausente — marcado como ISENTO` });
+          }
+          if (!firstRow.phone.trim() && !firstRow.email.trim()) {
+            res.fixes.push({ icon: 'contact', message: `"${provName}" criado sem contato — corrija no Admin` });
+          }
+
+          // Generate logo
+          try {
+            const { data: logoData, error: logoErr } = await supabase.functions.invoke('generate-provider-logo', {
+              body: { providerName: provName, segment: allSegments[0] || 'Geral' },
+            });
+            if (!logoErr && logoData?.logoUrl) {
+              await supabase.from('providers').update({ logo_url: logoData.logoUrl }).eq('id', providerId);
+              res.fixes.push({ icon: 'logo', message: `"${provName}": logo gerado por IA` });
+            }
+          } catch (e) {
+            console.error('Logo generation error:', e);
+          }
         }
-        if (!existing.email && firstRow.email.trim()) {
-          updates.email = firstRow.email;
+
+        // Insert services and products (stock merge)
+        for (const row of provRows) {
+          if (row.serviceName.trim()) {
+            const price = parseFloat(row.servicePrice) || 0;
+            const { error } = await supabase.from('dynamic_services').insert({
+              service_id: nextServiceId++,
+              name: row.serviceName,
+              segment: row.segment || 'Geral',
+              provider: provName,
+              provider_id: providerId,
+              price,
+              unit: row.serviceUnit || 'hr',
+            });
+            if (error) {
+              res.errors.push({ line: row._id, message: `Serviço "${row.serviceName}": ${error.message}` });
+            } else {
+              res.servicesCreated++;
+            }
+          }
+          if (row.productName.trim()) {
+            const price = parseFloat(row.productPrice) || 0;
+            const tags = row.segment ? [row.segment.toLowerCase()] : [];
+            const { error } = await supabase.from('dynamic_products').insert({
+              product_id: nextProductId++,
+              name: row.productName,
+              provider: provName,
+              provider_id: providerId,
+              price,
+              stock_type: row.productStockType === 'drop' ? 'drop' : 'fisico',
+              tags,
+              unit: row.productUnit || 'un',
+            });
+            if (error) {
+              res.errors.push({ line: row._id, message: `Produto "${row.productName}": ${error.message}` });
+            } else {
+              res.productsCreated++;
+            }
+          }
         }
-        if (Object.keys(updates).length > 0) {
-          await supabase.from('providers').update(updates).eq('id', providerId);
-          res.fixes.push({ icon: 'contact', message: `Prestador "${provName}": contato atualizado (${Object.keys(updates).join(', ')})` });
-        }
+      }
+
+      await reloadDynamicEntries();
+      setResult(res);
+
+      if (res.errors.length === 0) {
+        toast.success('Importação concluída com sucesso!');
       } else {
-        // --- Create new provider with all segments from rows ---
-        const firstRow = provRows[0];
-        const allSegments = [...new Set(provRows.map(r => r.segment.trim()).filter(Boolean))];
-        const cpfCnpjValue = firstRow.cpfCnpj.trim() || null;
-        const { data: newProv, error } = await supabase.from('providers').insert({
-          name: provName,
-          segment: allSegments.length > 0 ? allSegments : ['Geral'],
-          type: 'mei',
-          phone: firstRow.phone || '',
-          email: firstRow.email || '',
-          city: firstRow.city || '',
-          cpf_cnpj: cpfCnpjValue || 'ISENTO',
-        }).select().single();
-        if (error || !newProv) { res.errors.push(`Erro ao criar ${provName}: ${error?.message}`); continue; }
-        providerId = (newProv as any).id;
-        provMap.set(firstName, { id: providerId, name: provName, segment: allSegments, phone: firstRow.phone, email: firstRow.email });
-        res.providersCreated++;
-
-        if (!cpfCnpjValue) {
-          res.fixes.push({ icon: 'document', message: `Prestador "${provName}": CPF/CNPJ ausente — marcado como ISENTO (não gerará inconsistência)` });
-        }
-
-        if (!firstRow.phone.trim() && !firstRow.email.trim()) {
-          res.fixes.push({ icon: 'contact', message: `Prestador "${provName}" criado sem contato — corrija no painel Admin` });
-        }
-
-        // --- Auto-generate AI logo ---
-        try {
-          toast.info(`🎨 Gerando logo para "${provName}"...`);
-          const { data: logoData, error: logoErr } = await supabase.functions.invoke('generate-provider-logo', {
-            body: { providerName: provName, segment: allSegments[0] || 'Geral' },
-          });
-          if (!logoErr && logoData?.logoUrl) {
-            await supabase.from('providers').update({ logo_url: logoData.logoUrl }).eq('id', providerId);
-            res.fixes.push({ icon: 'logo', message: `Prestador "${provName}": logo gerado automaticamente por IA` });
-          }
-        } catch (e) {
-          console.error('Logo generation error:', e);
-        }
+        toast.warning(`Importação parcial: ${res.errors.length} erro(s) em linhas específicas`);
       }
-
-      for (const row of provRows) {
-        if (row.serviceName.trim()) {
-          const price = parseFloat(row.servicePrice) || 0;
-          const { error } = await supabase.from('dynamic_services').insert({
-            service_id: nextServiceId++,
-            name: row.serviceName,
-            segment: row.segment || 'Geral',
-            provider: provName,
-            provider_id: providerId,
-            price,
-            unit: row.serviceUnit || 'hr',
-          });
-          if (error) {
-            res.errors.push(`Serviço ${row.serviceName}: ${error.message}`);
-          } else {
-            res.servicesCreated++;
-            if (price === 0) {
-              res.fixes.push({ icon: 'price', message: `Serviço "${row.serviceName}" importado com preço R$ 0 — ajuste no Admin` });
-            }
-          }
-        }
-        if (row.productName.trim()) {
-          const price = parseFloat(row.productPrice) || 0;
-          const tags = row.segment ? [row.segment.toLowerCase()] : [];
-          const { error } = await supabase.from('dynamic_products').insert({
-            product_id: nextProductId++,
-            name: row.productName,
-            provider: provName,
-            provider_id: providerId,
-            price,
-            stock_type: row.productStockType === 'drop' ? 'drop' : 'fisico',
-            tags,
-            unit: row.productUnit || 'un',
-          });
-          if (error) {
-            res.errors.push(`Produto ${row.productName}: ${error.message}`);
-          } else {
-            res.productsCreated++;
-            if (tags.length > 0) {
-              res.fixes.push({ icon: 'tags', message: `Produto "${row.productName}": tag "${tags[0]}" adicionada automaticamente` });
-            }
-            if (price === 0) {
-              res.fixes.push({ icon: 'price', message: `Produto "${row.productName}" importado com preço R$ 0 — ajuste no Admin` });
-            }
-          }
-        }
-      }
-    }
-
-    await reloadDynamicEntries();
-    setResult(res);
-    toast.success('Importação concluída!');
     } catch (err: any) {
       console.error('Import error:', err);
       toast.error('Erro durante importação: ' + (err?.message || 'erro desconhecido'));
@@ -533,27 +671,35 @@ const ImportPage = () => {
   };
 
   const resetAll = () => {
-    setRows([]);
-    setErrors([]);
-    setResult(null);
-    setFileName('');
-    setEditingCell(null);
+    setRows([]); setErrors([]); setResult(null); setFileName(''); setEditingCell(null);
     if (fileRef.current) fileRef.current.value = '';
   };
 
+  /* ─── Match type badge ─── */
+  const matchBadge = (row: ParsedRow) => {
+    if (!row._matchType || row._matchType === 'new') {
+      return <Badge variant="outline" className="text-[8px] h-4 border-primary/40 text-primary">NOVO</Badge>;
+    }
+    const labels = { email: 'E-mail', name: 'Nome', cpf: 'CPF' };
+    return (
+      <Badge variant="secondary" className="text-[8px] h-4 bg-blue-500/15 text-blue-600 dark:text-blue-400">
+        MERGE ({labels[row._matchType]})
+      </Badge>
+    );
+  };
+
   /* ─── Render cell ─── */
-  const renderCell = (row: ParsedRow, field: keyof Omit<ParsedRow, '_id'>) => {
+  const renderCell = (row: ParsedRow, field: keyof Omit<ParsedRow, '_id' | '_matchType' | '_matchedProviderId' | '_matchedProviderName' | '_aiFields'>) => {
     const isEditing = editingCell?.rowId === row._id && editingCell?.field === field;
     const cellError = getCellError(row._id, field);
     const value = row[field] as string;
+    const isAiField = row._aiFields?.has(field);
 
     if (isEditing) {
       if (field === 'productStockType') {
         return (
           <Select value={value} onValueChange={(v) => { updateCell(row._id, field, v); setEditingCell(null); }}>
-            <SelectTrigger className="h-7 text-xs w-24">
-              <SelectValue />
-            </SelectTrigger>
+            <SelectTrigger className="h-7 text-xs w-24"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="fisico">Físico</SelectItem>
               <SelectItem value="drop">Drop</SelectItem>
@@ -577,25 +723,35 @@ const ImportPage = () => {
 
     const isWarning = cellError?.severity === 'warning';
     const isError = cellError?.severity === 'error';
+    const isAi = cellError?.severity === 'ai' || isAiField;
 
     return (
       <div
-        className={`cursor-pointer px-1 py-0.5 rounded text-xs min-h-[24px] flex items-center ${
+        className={`cursor-pointer px-1 py-0.5 rounded text-xs min-h-[24px] flex items-center gap-1 ${
           isError
             ? 'bg-destructive/15 text-destructive ring-1 ring-destructive/30'
-            : isWarning
-              ? 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 ring-1 ring-yellow-500/30'
-              : 'hover:bg-muted/50'
+            : isAi
+              ? 'bg-purple-500/15 text-purple-700 dark:text-purple-400 ring-1 ring-purple-500/30'
+              : isWarning
+                ? 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 ring-1 ring-yellow-500/30'
+                : 'hover:bg-muted/50'
         }`}
         onClick={() => setEditingCell({ rowId: row._id, field })}
-        title={cellError?.message}
+        title={cellError?.message || (isAiField ? 'Gerado por IA — clique para editar' : undefined)}
       >
         {value || <span className="text-muted-foreground italic">—</span>}
-        {isError && <AlertTriangle className="w-3 h-3 ml-1 shrink-0" />}
-        {isWarning && <ShieldAlert className="w-3 h-3 ml-1 shrink-0" />}
+        {isError && <AlertTriangle className="w-3 h-3 shrink-0" />}
+        {isAi && <Sparkles className="w-3 h-3 shrink-0" />}
+        {isWarning && !isAi && <ShieldAlert className="w-3 h-3 shrink-0" />}
       </div>
     );
   };
+
+  const hasEmptyFields = rows.some(r =>
+    !r.segment.trim() || !r.phone.trim() || !r.email.trim() || !r.city.trim() ||
+    (r.serviceName.trim() && !r.servicePrice.trim()) ||
+    (r.productName.trim() && !r.productPrice.trim())
+  );
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -606,43 +762,75 @@ const ImportPage = () => {
           </Button>
           <FileSpreadsheet className="w-5 h-5 text-primary" />
           <span className="font-bold text-foreground">Importação Inteligente</span>
+          {rows.length > 0 && (
+            <div className="ml-auto flex items-center gap-2 text-[10px] text-muted-foreground">
+              <span>{rows.filter(r => r._matchType === 'new').length} novos</span>
+              <span>·</span>
+              <span>{rows.filter(r => r._matchType !== 'new').length} merge</span>
+              {hasAiData && (
+                <>
+                  <span>·</span>
+                  <span className="text-purple-500">{aiMarkers.length} IA</span>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </nav>
 
-      <div className="pt-20 px-4 container mx-auto max-w-5xl space-y-4">
+      <div className="pt-20 px-4 container mx-auto max-w-6xl space-y-4">
         {/* Actions row */}
         <div className="flex flex-wrap gap-3">
-          <Card className="flex-1 min-w-[200px]">
+          <Card className="flex-1 min-w-[180px]">
             <CardContent className="p-4 flex flex-col gap-2">
               <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <Download className="w-3.5 h-3.5 text-primary" /> 1. Baixe o Modelo
+                <Download className="w-3.5 h-3.5 text-primary" /> 1. Modelo
               </p>
-              <p className="text-[10px] text-muted-foreground">Planilha com cabeçalhos e linha de exemplo.</p>
+              <p className="text-[10px] text-muted-foreground">Baixe a planilha modelo.</p>
               <Button variant="outline" size="sm" className="gap-1.5 mt-auto" onClick={generateTemplate}>
-                <Download className="w-3 h-3" /> Modelo para Importação
+                <Download className="w-3 h-3" /> Baixar Modelo
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="flex-1 min-w-[200px]">
+          <Card className="flex-1 min-w-[180px]">
             <CardContent className="p-4 flex flex-col gap-2">
               <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <Upload className="w-3.5 h-3.5 text-primary" /> 2. Faça Upload
+                <Upload className="w-3.5 h-3.5 text-primary" /> 2. Upload
               </p>
-              <p className="text-[10px] text-muted-foreground">Excel (.xlsx) ou CSV. Colunas identificadas automaticamente.</p>
+              <p className="text-[10px] text-muted-foreground">Excel (.xlsx) ou CSV.</p>
               <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleFileSelect} className="hidden" />
               <Button variant="outline" size="sm" className="gap-1.5 mt-auto" onClick={() => fileRef.current?.click()}>
-                <Upload className="w-3 h-3" /> {fileName || 'Selecionar Arquivo'}
+                <Upload className="w-3 h-3" /> {fileName || 'Selecionar'}
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="flex-1 min-w-[200px]">
+          <Card className="flex-1 min-w-[180px]">
             <CardContent className="p-4 flex flex-col gap-2">
               <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <Pencil className="w-3.5 h-3.5 text-primary" /> 3. Corrija e Salve
+                <Sparkles className="w-3.5 h-3.5 text-purple-500" /> 3. Enriquecer (IA)
               </p>
-              <p className="text-[10px] text-muted-foreground">Corrija erros (vermelho) e avisos (amarelo) antes de importar.</p>
+              <p className="text-[10px] text-muted-foreground">Preencha campos vazios com IA.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 mt-auto border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10"
+                disabled={rows.length === 0 || enriching || !hasEmptyFields}
+                onClick={enrichWithAI}
+              >
+                {enriching ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                {enriching ? 'Enriquecendo...' : 'Enriquecer'}
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="flex-1 min-w-[180px]">
+            <CardContent className="p-4 flex flex-col gap-2">
+              <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Save className="w-3.5 h-3.5 text-primary" /> 4. Importar
+              </p>
+              <p className="text-[10px] text-muted-foreground">Revise e confirme a importação.</p>
               <Button
                 size="sm"
                 className="gap-1.5 mt-auto"
@@ -650,56 +838,49 @@ const ImportPage = () => {
                 onClick={executeImport}
               >
                 {importing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-                {importing ? 'Importando...' : hasWarnings ? 'Importar com Avisos' : 'Importar Dados'}
+                {importing ? 'Importando...' : 'Confirmar Importação'}
               </Button>
             </CardContent>
           </Card>
         </div>
 
-        {/* Error summary - critical errors */}
+        {/* Legend */}
+        {rows.length > 0 && !result && (
+          <div className="flex flex-wrap gap-3 text-[10px]">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-destructive/20 ring-1 ring-destructive/40" />
+              <span className="text-muted-foreground">Erro crítico (bloqueia importação)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-yellow-500/20 ring-1 ring-yellow-500/40" />
+              <span className="text-muted-foreground">Aviso / inconsistência</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-purple-500/20 ring-1 ring-purple-500/40" />
+              <span className="text-muted-foreground">Gerado por IA — revise</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Badge variant="outline" className="text-[8px] h-4 border-primary/40 text-primary">NOVO</Badge>
+              <span className="text-muted-foreground">Será criado como Lead</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Badge variant="secondary" className="text-[8px] h-4 bg-blue-500/15 text-blue-600 dark:text-blue-400">MERGE</Badge>
+              <span className="text-muted-foreground">Será vinculado a existente</span>
+            </div>
+          </div>
+        )}
+
+        {/* Error/Warning summaries */}
         <AnimatePresence>
           {rows.length > 0 && hasCriticalErrors && !result && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
               <Card className="border-destructive/40 bg-destructive/5">
-                <CardContent className="p-3 space-y-1">
-                  <div className="flex items-center gap-2 flex-wrap">
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
                     <span className="text-xs font-medium text-destructive">
-                      {criticalErrors.length} erro(s) crítico(s) em {criticalRowIds.size} linha(s) — importação bloqueada
+                      {criticalErrors.length} erro(s) crítico(s) — importação bloqueada. Clique nas células para corrigir.
                     </span>
-                  </div>
-                  <p className="text-[10px] text-destructive/70 pl-6">Clique nas células vermelhas para corrigir</p>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Warning summary - business rule issues */}
-        <AnimatePresence>
-          {rows.length > 0 && hasWarnings && !hasCriticalErrors && !result && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
-              <Card className="border-yellow-500/40 bg-yellow-500/5">
-                <CardContent className="p-3 space-y-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <ShieldAlert className="w-4 h-4 text-yellow-600 dark:text-yellow-400 shrink-0" />
-                    <span className="text-xs font-medium text-yellow-700 dark:text-yellow-400">
-                      {warnings.length} aviso(s) de inconsistência detectados
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-yellow-600/80 dark:text-yellow-400/70 pl-6">
-                    Esses dados gerarão inconsistências no painel após importação. Corrija agora ou importe assim mesmo.
-                  </p>
-                  <div className="pl-6 space-y-1 max-h-32 overflow-y-auto">
-                    {warnings.slice(0, 10).map((w, i) => (
-                      <div key={i} className="flex items-center gap-2 text-[10px] text-yellow-700 dark:text-yellow-400">
-                        <Badge variant="secondary" className="text-[9px] px-1 h-4">{FIELD_LABELS[w.field]}</Badge>
-                        <span>Linha {w.rowId}: {w.message}</span>
-                      </div>
-                    ))}
-                    {warnings.length > 10 && (
-                      <p className="text-[10px] text-yellow-600/60">...e mais {warnings.length - 10} aviso(s)</p>
-                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -707,16 +888,15 @@ const ImportPage = () => {
           )}
         </AnimatePresence>
 
-        {/* Both warnings and errors */}
         <AnimatePresence>
-          {rows.length > 0 && hasWarnings && hasCriticalErrors && !result && (
+          {rows.length > 0 && (hasWarnings || hasAiData) && !hasCriticalErrors && !result && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
               <Card className="border-yellow-500/40 bg-yellow-500/5">
-                <CardContent className="p-3">
+                <CardContent className="p-3 space-y-1">
                   <div className="flex items-center gap-2">
                     <ShieldAlert className="w-4 h-4 text-yellow-600 dark:text-yellow-400 shrink-0" />
                     <span className="text-xs font-medium text-yellow-700 dark:text-yellow-400">
-                      + {warnings.length} aviso(s) de regra de negócio (células amarelas)
+                      {warnings.length} aviso(s){hasAiData ? ` + ${aiMarkers.length} campo(s) IA` : ''} — revise antes de importar
                     </span>
                   </div>
                 </CardContent>
@@ -725,15 +905,14 @@ const ImportPage = () => {
           )}
         </AnimatePresence>
 
-        {/* Validation passed */}
         <AnimatePresence>
-          {rows.length > 0 && !hasCriticalErrors && !hasWarnings && !result && (
+          {rows.length > 0 && !hasCriticalErrors && !hasWarnings && !hasAiData && !result && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
               <Card className="border-green-500/40 bg-green-500/5">
                 <CardContent className="p-3 flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
                   <span className="text-xs font-medium text-green-700 dark:text-green-400">
-                    ✓ Todas as {rows.length} linhas validadas sem erros e sem inconsistências — pronto para importar
+                    ✓ {rows.length} linhas validadas — pronto para importar
                   </span>
                 </CardContent>
               </Card>
@@ -747,13 +926,17 @@ const ImportPage = () => {
             <Card>
               <CardHeader className="pb-2 flex flex-row items-center justify-between">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  {rows.length} linhas
-                  {criticalErrors.length > 0 && (
-                    <Badge variant="destructive" className="text-[10px]">{criticalErrors.length} erro(s)</Badge>
-                  )}
+                  <Search className="w-4 h-4 text-muted-foreground" />
+                  Preview — {rows.length} linhas
+                  {criticalErrors.length > 0 && <Badge variant="destructive" className="text-[10px]">{criticalErrors.length} erro(s)</Badge>}
                   {warnings.length > 0 && (
                     <Badge variant="secondary" className="text-[10px] bg-yellow-500/20 text-yellow-700 dark:text-yellow-400">
                       {warnings.length} aviso(s)
+                    </Badge>
+                  )}
+                  {aiMarkers.length > 0 && (
+                    <Badge variant="secondary" className="text-[10px] bg-purple-500/20 text-purple-700 dark:text-purple-400">
+                      {aiMarkers.length} IA
                     </Badge>
                   )}
                 </CardTitle>
@@ -767,6 +950,7 @@ const ImportPage = () => {
                     <TableHeader className="sticky top-0 bg-card z-10">
                       <TableRow>
                         <TableHead className="text-[10px] w-8">#</TableHead>
+                        <TableHead className="text-[10px] w-16">Status</TableHead>
                         {COLUMNS.map(col => (
                           <TableHead key={col} className="text-[10px] whitespace-nowrap">{FIELD_LABELS[col]}</TableHead>
                         ))}
@@ -780,12 +964,15 @@ const ImportPage = () => {
                           className={
                             criticalRowIds.has(row._id)
                               ? 'bg-destructive/5'
-                              : errorRowIds.has(row._id)
-                                ? 'bg-yellow-500/5'
-                                : ''
+                              : row._aiFields && row._aiFields.size > 0
+                                ? 'bg-purple-500/5'
+                                : row._matchType !== 'new'
+                                  ? 'bg-blue-500/5'
+                                  : ''
                           }
                         >
                           <TableCell className="text-[10px] text-muted-foreground font-mono">{row._id}</TableCell>
+                          <TableCell className="py-1 px-1">{matchBadge(row)}</TableCell>
                           {COLUMNS.map(col => (
                             <TableCell key={col} className="py-1 px-1">{renderCell(row, col)}</TableCell>
                           ))}
@@ -817,8 +1004,8 @@ const ImportPage = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                   {[
                     { n: result.segmentsCreated, l: 'Segmentos criados' },
-                    { n: result.providersCreated, l: 'Prestadores criados' },
-                    { n: result.providersLinked, l: 'Prestadores vinculados' },
+                    { n: result.providersCreated, l: 'Leads criados' },
+                    { n: result.providersLinked, l: 'Merges realizados' },
                     { n: result.servicesCreated, l: 'Serviços criados' },
                     { n: result.productsCreated, l: 'Produtos criados' },
                   ].map(({ n, l }) => (
@@ -831,21 +1018,27 @@ const ImportPage = () => {
                 {result.errors.length > 0 && (
                   <div className="bg-destructive/10 rounded-lg p-3">
                     <p className="text-xs font-semibold text-destructive flex items-center gap-1 mb-1">
-                      <AlertTriangle className="w-3 h-3" /> {result.errors.length} erro(s)
+                      <AlertTriangle className="w-3 h-3" /> {result.errors.length} erro(s) por linha
                     </p>
-                    {result.errors.slice(0, 5).map((err, i) => <p key={i} className="text-[10px] text-destructive/80">{err}</p>)}
+                    {result.errors.slice(0, 10).map((err, i) => (
+                      <p key={i} className="text-[10px] text-destructive/80">
+                        {err.line > 0 ? `Linha ${err.line}: ` : ''}{err.message}
+                      </p>
+                    ))}
+                    {result.errors.length > 10 && (
+                      <p className="text-[10px] text-destructive/60">...e mais {result.errors.length - 10} erro(s)</p>
+                    )}
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Auto-fixes applied */}
             {result.fixes.length > 0 && (
               <Card className="border-primary/30">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-primary" />
-                    {result.fixes.length} Correção(ões) Automática(s) Aplicada(s)
+                    {result.fixes.length} Correção(ões) Automática(s)
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -859,6 +1052,8 @@ const ImportPage = () => {
                         tags: <Badge variant="secondary" className="text-[9px] h-4 bg-purple-500/10 text-purple-600 dark:text-purple-400">Tags</Badge>,
                         document: <Badge variant="secondary" className="text-[9px] h-4 bg-orange-500/10 text-orange-600 dark:text-orange-400">Documento</Badge>,
                         logo: <Badge variant="secondary" className="text-[9px] h-4 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">Logo IA</Badge>,
+                        ai: <Badge variant="secondary" className="text-[9px] h-4 bg-purple-500/10 text-purple-600 dark:text-purple-400">IA</Badge>,
+                        merge: <Badge variant="secondary" className="text-[9px] h-4 bg-blue-500/10 text-blue-600 dark:text-blue-400">Merge</Badge>,
                       };
                       return (
                         <div key={i} className="flex items-start gap-2 text-[11px] text-foreground py-1 border-b border-border/50 last:border-0">
