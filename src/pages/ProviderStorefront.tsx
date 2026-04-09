@@ -25,6 +25,7 @@ import { ProductForm } from '@/components/admin/ProductForm';
 import { ServiceForm } from '@/components/admin/ServiceForm';
 import { ProviderForm } from '@/components/admin/ProviderForm';
 import { toast } from 'sonner';
+import { MaskedPrice, AccessBanner, useAccessLevel } from '@/components/AccessGate';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
@@ -91,6 +92,7 @@ interface ChatMessage {
 const ProviderStorefront = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const accessLevel = useAccessLevel();
   const [provider, setProvider] = useState<ProviderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -534,6 +536,7 @@ const ProviderStorefront = () => {
 
   return (
     <div className="min-h-screen pb-24" style={{ backgroundColor: config.backgroundColor || undefined }}>
+      <AccessBanner />
       {/* Top bar */}
       <nav className="fixed top-0 w-full z-50 bg-card/80 backdrop-blur-lg border-b border-border">
         <div className="container mx-auto flex items-center justify-between h-14 px-4">
@@ -869,7 +872,21 @@ const ProviderStorefront = () => {
                         ? 'border-primary bg-primary/5 shadow-sm'
                         : 'border-border/50 hover:border-primary/30 hover:shadow-md'
                     }`}>
-                    <CardContent className="p-4 cursor-pointer" onClick={() => !editMode && toggleServiceInCart(svc)}>
+                    <CardContent className="p-4 cursor-pointer" onClick={() => {
+                      if (editMode) return;
+                      if (accessLevel === 'visitor') {
+                        toast.info('Crie sua conta para contratar serviços', {
+                          action: { label: 'Cadastrar', onClick: () => navigate('/auth') }, duration: 5000,
+                        }); return;
+                      }
+                      if (accessLevel === 'lead') {
+                        toast.warning('Confirme seu e-mail para contratar serviços', {
+                          description: 'Verifique sua caixa de entrada e clique no link de confirmação.',
+                          action: { label: 'Ver status', onClick: () => navigate('/carteira') }, duration: 6000,
+                        }); return;
+                      }
+                      toggleServiceInCart(svc);
+                    }}>
                       <div className="flex items-center gap-2 mb-2">
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isInServiceCart(svc.id) ? 'bg-primary/20' : 'bg-primary/10'}`}>
                           {isInServiceCart(svc.id) ? <CheckCircle2 className="w-4 h-4 text-primary" /> : <SIcon className="w-4 h-4 text-primary" />}
@@ -879,7 +896,7 @@ const ProviderStorefront = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> R$ {svc.price}/{svc.unit || 'hr'}</span>
+                        <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> <MaskedPrice value={`${svc.price}/${svc.unit || 'hr'}`} /></span>
                         <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {svc.time}</span>
                       </div>
                       {svc.products && svc.products.length > 0 && (
@@ -929,7 +946,21 @@ const ProviderStorefront = () => {
                       ? 'border-success bg-success/5 shadow-sm'
                       : 'border-border/50 hover:border-success/40 hover:shadow-md'
                   }`}>
-                  <CardContent className="p-4 cursor-pointer" onClick={() => !editMode && toggleProductInCart(product)}>
+                  <CardContent className="p-4 cursor-pointer" onClick={() => {
+                    if (editMode) return;
+                    if (accessLevel === 'visitor') {
+                      toast.info('Crie sua conta para adicionar produtos ao carrinho', {
+                        action: { label: 'Cadastrar', onClick: () => navigate('/auth') }, duration: 5000,
+                      }); return;
+                    }
+                    if (accessLevel === 'lead') {
+                      toast.warning('Confirme seu e-mail para comprar produtos', {
+                        description: 'Verifique sua caixa de entrada e clique no link de confirmação.',
+                        action: { label: 'Ver status', onClick: () => navigate('/carteira') }, duration: 6000,
+                      }); return;
+                    }
+                    toggleProductInCart(product);
+                  }}>
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isInProductCart(product.id) ? 'bg-success/20' : 'bg-success/10'}`}>
@@ -944,7 +975,7 @@ const ProviderStorefront = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span className="font-semibold text-foreground">R$ {product.price}</span>
+                      <MaskedPrice value={product.price} className="font-semibold text-foreground" />
                       <span>/{product.unit || 'un'}</span>
                       <span className="flex items-center gap-0.5"><Star className="w-2.5 h-2.5 fill-accent text-accent" /> {product.rating}</span>
                     </div>
