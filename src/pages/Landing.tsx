@@ -722,7 +722,7 @@ const Landing = () => {
                                                           </div>
                                                         </div>
                                                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                                          <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> R$ {result.price}</span>
+                                                          <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> <MaskedPrice value={result.price} /></span>
                                                           <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {result.time}</span>
                                                         </div>
                                                         {result.products.length > 0 && (
@@ -779,7 +779,7 @@ const Landing = () => {
                                                         </Badge>
                                                       </div>
                                                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                                        <span className="flex items-center gap-1 font-semibold text-foreground"><DollarSign className="w-3 h-3" /> R$ {product.price}</span>
+                                                        <span className="flex items-center gap-1 font-semibold text-foreground"><DollarSign className="w-3 h-3" /> <MaskedPrice value={product.price} /></span>
                                                         <span className="flex items-center gap-1"><Star className="w-3 h-3 fill-accent text-accent" /> {product.rating}</span>
                                                       </div>
                                                       <div className="mt-1 flex items-center gap-1 text-[10px] font-medium">
