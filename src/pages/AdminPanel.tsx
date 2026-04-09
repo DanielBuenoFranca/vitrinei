@@ -80,6 +80,7 @@ const AdminPanel = () => {
   const [authUsers, setAuthUsers] = useState<any[]>([]);
   const [userProfiles, setUserProfiles] = useState<any[]>([]);
   const [userRoles, setUserRoles] = useState<any[]>([]);
+  const [userSubscriptions, setUserSubscriptions] = useState<any[]>([]);
 
   // Confirmation dialog for provider delete
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; provider: Provider | null }>({ open: false, provider: null });
