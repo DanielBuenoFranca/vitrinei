@@ -945,7 +945,21 @@ const ProviderStorefront = () => {
                       ? 'border-success bg-success/5 shadow-sm'
                       : 'border-border/50 hover:border-success/40 hover:shadow-md'
                   }`}>
-                  <CardContent className="p-4 cursor-pointer" onClick={() => !editMode && toggleProductInCart(product)}>
+                  <CardContent className="p-4 cursor-pointer" onClick={() => {
+                    if (editMode) return;
+                    if (accessLevel === 'visitor') {
+                      toast.info('Crie sua conta para adicionar produtos ao carrinho', {
+                        action: { label: 'Cadastrar', onClick: () => navigate('/auth') }, duration: 5000,
+                      }); return;
+                    }
+                    if (accessLevel === 'lead') {
+                      toast.warning('Confirme seu e-mail para comprar produtos', {
+                        description: 'Verifique sua caixa de entrada e clique no link de confirmação.',
+                        action: { label: 'Ver status', onClick: () => navigate('/carteira') }, duration: 6000,
+                      }); return;
+                    }
+                    toggleProductInCart(product);
+                  }}>
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isInProductCart(product.id) ? 'bg-success/20' : 'bg-success/10'}`}>
@@ -960,7 +974,7 @@ const ProviderStorefront = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span className="font-semibold text-foreground">R$ {product.price}</span>
+                      <MaskedPrice value={product.price} className="font-semibold text-foreground" />
                       <span>/{product.unit || 'un'}</span>
                       <span className="flex items-center gap-0.5"><Star className="w-2.5 h-2.5 fill-accent text-accent" /> {product.rating}</span>
                     </div>
