@@ -536,6 +536,7 @@ const ProviderStorefront = () => {
 
   return (
     <div className="min-h-screen pb-24" style={{ backgroundColor: config.backgroundColor || undefined }}>
+      <AccessBanner />
       {/* Top bar */}
       <nav className="fixed top-0 w-full z-50 bg-card/80 backdrop-blur-lg border-b border-border">
         <div className="container mx-auto flex items-center justify-between h-14 px-4">
