@@ -177,6 +177,7 @@ const ProviderStorefront = () => {
         if (found) {
           const provData = found as ProviderData;
           setProvider(provData);
+          trackStoreVisit(provData.name);
           const cfg = { ...defaultConfig, ...((provData.storefront_config as StorefrontConfig) || {}) };
           setConfig(cfg);
           setOriginalConfig(JSON.parse(JSON.stringify(cfg)));
