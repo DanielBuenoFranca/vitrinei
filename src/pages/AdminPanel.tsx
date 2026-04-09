@@ -113,6 +113,11 @@ const AdminPanel = () => {
   const [newUserRole, setNewUserRole] = useState<string>('client');
   const [creatingUser, setCreatingUser] = useState(false);
 
+  // Reset password dialog
+  const [resetPwdDialog, setResetPwdDialog] = useState<{ open: boolean; userId: string; userName: string }>({ open: false, userId: '', userName: '' });
+  const [resetPwdValue, setResetPwdValue] = useState('');
+  const [resettingPwd, setResettingPwd] = useState(false);
+
   const fetchMarquee = async () => {
     const { data } = await supabase.from('site_settings').select('value').eq('key', 'header_marquee').maybeSingle();
     if (data?.value && typeof data.value === 'object' && 'messages' in (data.value as any)) {
