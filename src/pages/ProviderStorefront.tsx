@@ -871,7 +871,21 @@ const ProviderStorefront = () => {
                         ? 'border-primary bg-primary/5 shadow-sm'
                         : 'border-border/50 hover:border-primary/30 hover:shadow-md'
                     }`}>
-                    <CardContent className="p-4 cursor-pointer" onClick={() => !editMode && toggleServiceInCart(svc)}>
+                    <CardContent className="p-4 cursor-pointer" onClick={() => {
+                      if (editMode) return;
+                      if (accessLevel === 'visitor') {
+                        toast.info('Crie sua conta para contratar serviços', {
+                          action: { label: 'Cadastrar', onClick: () => navigate('/auth') }, duration: 5000,
+                        }); return;
+                      }
+                      if (accessLevel === 'lead') {
+                        toast.warning('Confirme seu e-mail para contratar serviços', {
+                          description: 'Verifique sua caixa de entrada e clique no link de confirmação.',
+                          action: { label: 'Ver status', onClick: () => navigate('/carteira') }, duration: 6000,
+                        }); return;
+                      }
+                      toggleServiceInCart(svc);
+                    }}>
                       <div className="flex items-center gap-2 mb-2">
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isInServiceCart(svc.id) ? 'bg-primary/20' : 'bg-primary/10'}`}>
                           {isInServiceCart(svc.id) ? <CheckCircle2 className="w-4 h-4 text-primary" /> : <SIcon className="w-4 h-4 text-primary" />}
@@ -881,7 +895,7 @@ const ProviderStorefront = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> R$ {svc.price}/{svc.unit || 'hr'}</span>
+                        <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> <MaskedPrice value={`${svc.price}/${svc.unit || 'hr'}`} /></span>
                         <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {svc.time}</span>
                       </div>
                       {svc.products && svc.products.length > 0 && (
