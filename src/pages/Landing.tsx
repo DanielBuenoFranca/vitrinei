@@ -711,6 +711,17 @@ const Landing = () => {
                                                       }`}
                                                       onClick={(e) => {
                                                         e.stopPropagation();
+                                                        if (accessLevel === 'visitor') {
+                                                          toast.info('Crie sua conta para adicionar serviços ao carrinho', {
+                                                            action: { label: 'Cadastrar', onClick: () => navigate('/auth') }, duration: 5000,
+                                                          }); return;
+                                                        }
+                                                        if (accessLevel === 'lead') {
+                                                          toast.warning('Confirme seu e-mail para contratar serviços', {
+                                                            description: 'Verifique sua caixa de entrada e clique no link de confirmação.',
+                                                            action: { label: 'Ver status', onClick: () => navigate('/carteira') }, duration: 6000,
+                                                          }); return;
+                                                        }
                                                         toggleServiceInCart(result);
                                                       }}>
                                                       <CardContent className="p-3">
