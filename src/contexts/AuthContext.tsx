@@ -89,6 +89,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setSession(null);
     setRoles([]);
     setDisplayName(null);
+    setMustResetPassword(false);
+  };
+
+  const clearMustResetPassword = async () => {
+    await supabase.auth.updateUser({ data: { must_reset_password: false } });
+    setMustResetPassword(false);
   };
 
   const requireAuth = (action?: string): boolean => {
@@ -100,7 +106,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, isMaster, roles, displayName, signOut, requireAuth }}>
+    <AuthContext.Provider value={{ user, session, loading, isAdmin, isMaster, roles, displayName, mustResetPassword, signOut, requireAuth, clearMustResetPassword }}>
       {children}
     </AuthContext.Provider>
   );
