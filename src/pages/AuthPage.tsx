@@ -212,7 +212,12 @@ const AuthPage = () => {
     const { data, error } = await supabase.auth.signUp({
       email, password,
       options: {
-        data: { full_name: name || email.split('@')[0] },
+        data: {
+          full_name: name || email.split('@')[0],
+          selected_profile: selectedProfile,
+          selected_plan: selectedPlan,
+          phone: phone || null,
+        },
         emailRedirectTo: window.location.origin,
       },
     });
