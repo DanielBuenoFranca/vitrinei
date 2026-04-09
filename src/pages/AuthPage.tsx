@@ -129,6 +129,7 @@ const AuthPage = () => {
 
       toast.success('Conta ativada com sucesso! Bem-vindo ao Vitrinei!');
       setLoginActivationModal({ open: false, expectedCode: '', userId: '' });
+      await refreshWallet();
       navigate('/');
     } catch {
       toast.error('Erro ao ativar conta');
