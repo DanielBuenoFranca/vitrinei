@@ -327,19 +327,20 @@ const AdminPanel = () => {
   };
 
   const deleteUserProfile = async (userId: string) => {
-    // Prevent deleting last master
-    const isMasterUser = userRoles.some((r: any) => r.user_id === userId && r.role === 'master');
-    if (isMasterUser) {
-      const masterCount = userRoles.filter((r: any) => r.role === 'master').length;
-      if (masterCount <= 1) {
-        toast.error('Não é possível excluir o último usuário Master do sistema');
-        return;
-      }
+    if (userId === user?.id) {
+      toast.error('Não é possível excluir a si mesmo');
+      return;
     }
     try {
-      await supabase.from('user_roles').delete().eq('user_id', userId);
-      await supabase.from('profiles').delete().eq('user_id', userId);
-      toast.success('Perfil removido');
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { user_id: userId },
+      });
+      if (error) throw error;
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+      toast.success('Usuário excluído permanentemente');
       fetchUsers();
     } catch (e: any) {
       toast.error('Erro ao excluir: ' + (e.message || 'desconhecido'));
