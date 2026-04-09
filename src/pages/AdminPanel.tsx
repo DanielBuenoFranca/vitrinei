@@ -379,7 +379,7 @@ const AdminPanel = () => {
     setResettingPwd(false);
   };
 
-
+  const deleteProvider = async (id: number) => {
     const prov = providers.find(p => p.id === id);
     const relSvc = services.filter(s => s.provider_id === id || s.provider === prov?.name);
     const relProd = products.filter(p => p.provider_id === id || p.provider === prov?.name);
