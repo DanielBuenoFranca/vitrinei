@@ -104,13 +104,30 @@ const AuthPage = () => {
     
     setLoading(true);
     try {
-      // Use the activate-user function via admin to confirm email
-      // Since user isn't authenticated, we'll use a workaround:
-      // Try to sign up again (will fail if exists) then sign in
-      // The real activation is done by master in admin panel
-      // For now, show success and instruct to contact admin
-      toast.info('Código válido! Aguarde a ativação pelo administrador ou tente novamente em breve.');
+      // Call self-activate edge function to confirm email
+      const { data: activateData, error: activateError } = await supabase.functions.invoke('self-activate', {
+        body: { email, code: activationInput },
+      });
+
+      if (activateError || activateData?.error) {
+        toast.error(activateData?.error || 'Erro ao ativar conta. Tente novamente.');
+        setLoading(false);
+        return;
+      }
+
+      // Now sign in with the confirmed account
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      
+      if (signInError) {
+        toast.error('Conta ativada, mas houve erro no login: ' + signInError.message);
+        setLoginActivationModal({ open: false, expectedCode: '', userId: '' });
+        setLoading(false);
+        return;
+      }
+
+      toast.success('Conta ativada com sucesso! Bem-vindo ao Vitrinei!');
       setLoginActivationModal({ open: false, expectedCode: '', userId: '' });
+      navigate('/');
     } catch {
       toast.error('Erro ao ativar conta');
     }
