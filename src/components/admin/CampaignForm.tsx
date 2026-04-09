@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Gift, Loader2, Save, Users, TrendingUp, DollarSign, Clock } from 'lucide-react';
+import { Gift, Loader2, Save, Users, TrendingUp, DollarSign, Clock, Crown, Plus, Pencil, Trash2, CreditCard } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 interface Campaign {
   id: string;
@@ -44,6 +45,24 @@ interface ReferralRow {
   referrer_name?: string;
 }
 
+interface SubscriptionPlan {
+  id: string;
+  name: string;
+  price: number;
+  badge: string;
+  discount: number;
+  popular?: boolean;
+  features: string[];
+  limitations: string[];
+  active: boolean;
+}
+
+const DEFAULT_PLANS: SubscriptionPlan[] = [
+  { id: 'bronze', name: 'Bronze', price: 50, badge: '🥉', discount: 5, features: ['Vitrine digital básica', 'Até 10 produtos/serviços', 'Programa de indicação', 'Carteira digital com cashback', 'Suporte por email'], limitations: ['Sem relatórios avançados', 'Sem personalização de vitrine'], active: true },
+  { id: 'prata', name: 'Prata', price: 100, badge: '🥈', discount: 10, popular: true, features: ['Vitrine personalizada com logo', 'Até 50 produtos/serviços', 'Indicação premium', 'Cashback dobrado', 'Relatórios de vendas', 'Suporte prioritário', 'Selo de verificação'], limitations: ['Sem IA para vitrine'], active: true },
+  { id: 'ouro', name: 'Ouro', price: 200, badge: '🥇', discount: 20, features: ['Vitrine com IA Designer', 'Produtos/serviços ilimitados', 'Indicação VIP (bônus triplo)', 'Cashback triplo', 'Dashboards completos', 'Suporte 24h', 'Selo premium + destaque', 'Prioridade nos resultados', 'Automações avançadas'], limitations: [], active: true },
+];
+
 export function CampaignForm() {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(true);
@@ -58,9 +77,20 @@ export function CampaignForm() {
   const [summary, setSummary] = useState<ReferralSummary>({ total: 0, pending: 0, partial: 0, activated: 0, totalPaid: 0, totalPending: 0 });
   const [loadingReferrals, setLoadingReferrals] = useState(true);
 
+  // Subscription plans
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [loadingPlans, setLoadingPlans] = useState(true);
+  const [savingPlans, setSavingPlans] = useState(false);
+  const [editPlan, setEditPlan] = useState<SubscriptionPlan | null>(null);
+  const [planDialogOpen, setPlanDialogOpen] = useState(false);
+
+  // Plan form state
+  const [planForm, setPlanForm] = useState({ name: '', price: '', badge: '', discount: '', features: '', limitations: '', active: true, popular: false });
+
   useEffect(() => {
     loadCampaign();
     loadReferrals();
+    loadPlans();
   }, []);
 
   const loadCampaign = async () => {
@@ -91,13 +121,12 @@ export function CampaignForm() {
       .limit(100);
 
     if (refs) {
-      // Get referrer names from profiles
       const referrerIds = [...new Set(refs.map(r => r.referrer_id))];
       const { data: profiles } = await supabase
         .from('profiles')
         .select('user_id, display_name')
         .in('user_id', referrerIds);
-      
+
       const nameMap: Record<string, string> = {};
       (profiles || []).forEach(p => { nameMap[p.user_id] = p.display_name || 'Sem nome'; });
 
@@ -115,6 +144,113 @@ export function CampaignForm() {
       setSummary({ total: refs.length, pending, partial, activated, totalPaid, totalPending });
     }
     setLoadingReferrals(false);
+  };
+
+  const loadPlans = async () => {
+    setLoadingPlans(true);
+    const { data } = await supabase
+      .from('site_settings')
+      .select('*')
+      .eq('key', 'subscription_plans')
+      .maybeSingle();
+
+    if (data?.value) {
+      const parsed = data.value as unknown;
+      if (Array.isArray(parsed)) {
+        setPlans(parsed as SubscriptionPlan[]);
+      } else {
+        setPlans(DEFAULT_PLANS);
+      }
+    } else {
+      setPlans(DEFAULT_PLANS);
+    }
+    setLoadingPlans(false);
+  };
+
+  const savePlans = async (updatedPlans: SubscriptionPlan[]) => {
+    setSavingPlans(true);
+    try {
+      const { data: existing } = await supabase
+        .from('site_settings')
+        .select('id')
+        .eq('key', 'subscription_plans')
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from('site_settings')
+          .update({ value: updatedPlans as any })
+          .eq('key', 'subscription_plans');
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('site_settings')
+          .insert({ key: 'subscription_plans', value: updatedPlans as any });
+        if (error) throw error;
+      }
+      setPlans(updatedPlans);
+      toast.success('Planos de assinatura atualizados');
+    } catch (e: any) {
+      toast.error('Erro ao salvar planos: ' + (e.message || 'desconhecido'));
+    }
+    setSavingPlans(false);
+  };
+
+  const openNewPlan = () => {
+    setEditPlan(null);
+    setPlanForm({ name: '', price: '', badge: '🏷️', discount: '0', features: '', limitations: '', active: true, popular: false });
+    setPlanDialogOpen(true);
+  };
+
+  const openEditPlan = (plan: SubscriptionPlan) => {
+    setEditPlan(plan);
+    setPlanForm({
+      name: plan.name,
+      price: String(plan.price),
+      badge: plan.badge,
+      discount: String(plan.discount),
+      features: plan.features.join('\n'),
+      limitations: plan.limitations.join('\n'),
+      active: plan.active,
+      popular: plan.popular || false,
+    });
+    setPlanDialogOpen(true);
+  };
+
+  const handleSavePlan = async () => {
+    if (!planForm.name.trim() || !planForm.price) {
+      toast.error('Nome e preço são obrigatórios');
+      return;
+    }
+    const newPlan: SubscriptionPlan = {
+      id: editPlan?.id || planForm.name.toLowerCase().replace(/\s+/g, '_'),
+      name: planForm.name.trim(),
+      price: parseFloat(planForm.price),
+      badge: planForm.badge || '🏷️',
+      discount: parseFloat(planForm.discount || '0'),
+      features: planForm.features.split('\n').map(f => f.trim()).filter(Boolean),
+      limitations: planForm.limitations.split('\n').map(l => l.trim()).filter(Boolean),
+      active: planForm.active,
+      popular: planForm.popular,
+    };
+
+    let updated: SubscriptionPlan[];
+    if (editPlan) {
+      updated = plans.map(p => p.id === editPlan.id ? newPlan : p);
+    } else {
+      if (plans.find(p => p.id === newPlan.id)) {
+        toast.error('Já existe um plano com esse identificador');
+        return;
+      }
+      updated = [...plans, newPlan];
+    }
+    await savePlans(updated);
+    setPlanDialogOpen(false);
+  };
+
+  const handleDeletePlan = async (planId: string) => {
+    const updated = plans.filter(p => p.id !== planId);
+    await savePlans(updated);
   };
 
   const saveCampaign = async () => {
@@ -193,7 +329,151 @@ export function CampaignForm() {
 
   return (
     <div className="space-y-6">
-      {/* Campaign Config */}
+
+      {/* ── SUBSCRIPTION PLANS ── */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Crown className="h-5 w-5 text-primary" />
+                Planos de Assinatura
+              </CardTitle>
+              <CardDescription>Gerencie preços, benefícios e descontos dos planos — fonte única de verdade</CardDescription>
+            </div>
+            <Button size="sm" className="gap-1" onClick={openNewPlan}>
+              <Plus className="h-4 w-4" /> Novo Plano
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loadingPlans ? (
+            <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+          ) : plans.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">Nenhum plano cadastrado. Clique em "Novo Plano".</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {plans.map(plan => (
+                <Card key={plan.id} className={`relative border ${plan.popular ? 'border-primary ring-1 ring-primary/20' : ''} ${!plan.active ? 'opacity-60' : ''}`}>
+                  {plan.popular && (
+                    <Badge className="absolute -top-2 left-1/2 -translate-x-1/2 text-[9px]">Popular</Badge>
+                  )}
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{plan.badge}</span>
+                        <div>
+                          <p className="font-bold text-sm">{plan.name}</p>
+                          <p className="text-xs text-muted-foreground">{plan.discount}% desconto</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-primary">R$ {plan.price.toFixed(2)}</p>
+                        <p className="text-[10px] text-muted-foreground">/mês</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      {plan.features.slice(0, 4).map((f, i) => (
+                        <p key={i} className="text-[10px] text-muted-foreground flex items-start gap-1">
+                          <span className="text-green-500 mt-px">✓</span> {f}
+                        </p>
+                      ))}
+                      {plan.features.length > 4 && (
+                        <p className="text-[10px] text-muted-foreground">+{plan.features.length - 4} benefícios</p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1 pt-1">
+                      <Badge variant={plan.active ? 'default' : 'secondary'} className="text-[9px]">
+                        {plan.active ? 'Ativo' : 'Inativo'}
+                      </Badge>
+                      <div className="flex-1" />
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditPlan(plan)}>
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeletePlan(plan.id)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Plan Edit Dialog */}
+      <Dialog open={planDialogOpen} onOpenChange={setPlanDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4" />
+              {editPlan ? `Editar ${editPlan.name}` : 'Novo Plano'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium block mb-1">Nome</label>
+                <Input value={planForm.name} onChange={e => setPlanForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex: Diamante" />
+              </div>
+              <div>
+                <label className="text-xs font-medium block mb-1">Preço (R$)</label>
+                <Input type="number" step="0.01" min="0" value={planForm.price} onChange={e => setPlanForm(f => ({ ...f, price: e.target.value }))} placeholder="150.00" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium block mb-1">Emoji/Badge</label>
+                <Input value={planForm.badge} onChange={e => setPlanForm(f => ({ ...f, badge: e.target.value }))} placeholder="🥉" />
+              </div>
+              <div>
+                <label className="text-xs font-medium block mb-1">Desconto (%)</label>
+                <Input type="number" min="0" max="100" value={planForm.discount} onChange={e => setPlanForm(f => ({ ...f, discount: e.target.value }))} placeholder="5" />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-medium block mb-1">Benefícios (um por linha)</label>
+              <textarea
+                className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={planForm.features}
+                onChange={e => setPlanForm(f => ({ ...f, features: e.target.value }))}
+                placeholder="Vitrine digital básica&#10;Até 10 produtos"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium block mb-1">Limitações (um por linha)</label>
+              <textarea
+                className="w-full min-h-[50px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={planForm.limitations}
+                onChange={e => setPlanForm(f => ({ ...f, limitations: e.target.value }))}
+                placeholder="Sem relatórios avançados"
+              />
+            </div>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 text-sm">
+                <Switch checked={planForm.active} onCheckedChange={v => setPlanForm(f => ({ ...f, active: v }))} />
+                Ativo
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <Switch checked={planForm.popular} onCheckedChange={v => setPlanForm(f => ({ ...f, popular: v }))} />
+                Popular
+              </label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPlanDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSavePlan} disabled={savingPlans} className="gap-1">
+              {savingPlans ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── REFERRAL CAMPAIGN ── */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-2">
@@ -216,45 +496,18 @@ export function CampaignForm() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="text-sm font-medium mb-1.5 block">
-                💰 Comprador (R$)
-              </label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={rewardBuyer}
-                onChange={e => setRewardBuyer(e.target.value)}
-                placeholder="5.00"
-              />
+              <label className="text-sm font-medium mb-1.5 block">💰 Comprador (R$)</label>
+              <Input type="number" step="0.01" min="0" value={rewardBuyer} onChange={e => setRewardBuyer(e.target.value)} placeholder="5.00" />
               <p className="text-[10px] text-muted-foreground mt-1">Liberado após 1ª compra</p>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1.5 block">
-                🔧 Prestador (R$)
-              </label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={rewardSeller}
-                onChange={e => setRewardSeller(e.target.value)}
-                placeholder="15.00"
-              />
+              <label className="text-sm font-medium mb-1.5 block">🔧 Prestador (R$)</label>
+              <Input type="number" step="0.01" min="0" value={rewardSeller} onChange={e => setRewardSeller(e.target.value)} placeholder="15.00" />
               <p className="text-[10px] text-muted-foreground mt-1">Liberado após 1ª venda</p>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1.5 block">
-                🔀 Misto Total (R$)
-              </label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={rewardMixed}
-                onChange={e => setRewardMixed(e.target.value)}
-                placeholder="25.00"
-              />
+              <label className="text-sm font-medium mb-1.5 block">🔀 Misto Total (R$)</label>
+              <Input type="number" step="0.01" min="0" value={rewardMixed} onChange={e => setRewardMixed(e.target.value)} placeholder="25.00" />
               <p className="text-[10px] text-muted-foreground mt-1">Compra + Venda + Bônus restante</p>
             </div>
           </div>
