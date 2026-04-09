@@ -59,6 +59,7 @@ interface Unit {
 const AdminPanel = () => {
   const navigate = useNavigate();
   const { can, requirePermission } = usePermissions();
+  const { user } = useAuth();
   const [providers, setProviders] = useState<Provider[]>([]);
   const [services, setServices] = useState<DynamicService[]>([]);
   const [products, setProducts] = useState<DynamicProduct[]>([]);
