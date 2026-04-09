@@ -358,7 +358,27 @@ const AdminPanel = () => {
     }
   };
 
-  const deleteProvider = async (id: number) => {
+  const handleResetPassword = async () => {
+    if (resetPwdValue.length < 6) { toast.error('Senha deve ter no mínimo 6 caracteres'); return; }
+    setResettingPwd(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('reset-user-password', {
+        body: { user_id: resetPwdDialog.userId, new_password: resetPwdValue },
+      });
+      if (error || data?.error) {
+        toast.error('Erro: ' + (data?.error || error?.message || 'desconhecido'));
+      } else {
+        toast.success(`Senha redefinida! ${resetPwdDialog.userName} precisará definir nova senha ao logar.`);
+        setResetPwdDialog({ open: false, userId: '', userName: '' });
+        setResetPwdValue('');
+      }
+    } catch (e: any) {
+      toast.error('Erro ao redefinir senha');
+    }
+    setResettingPwd(false);
+  };
+
+
     const prov = providers.find(p => p.id === id);
     const relSvc = services.filter(s => s.provider_id === id || s.provider === prov?.name);
     const relProd = products.filter(p => p.provider_id === id || p.provider === prov?.name);
