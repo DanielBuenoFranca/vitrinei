@@ -331,22 +331,24 @@ const WalletPage = () => {
           </Card>
         </motion.div>
 
-        {/* 24h Timer + Pay Subscription */}
+        {/* Subscription Info + Timer */}
         {subscription && (
-          <Card className={expired ? 'border-destructive' : ''}>
+          <Card className={hasDebt ? 'border-amber-500/50 bg-amber-500/5' : expired ? 'border-destructive' : ''}>
             <CardContent className="p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Timer className={`w-5 h-5 ${expired ? 'text-destructive' : 'text-amber-500'}`} />
+                  <Timer className={`w-5 h-5 ${hasDebt ? 'text-amber-500' : expired ? 'text-destructive' : 'text-primary'}`} />
                   <div>
-                    <p className="text-sm font-medium">Prazo de Ativação</p>
+                    <p className="text-sm font-medium">
+                      {hasDebt ? 'Assinatura Pendente de Pagamento' : 'Sua Assinatura'}
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      Plano {subscription.plan} — R$ {Number(subscription.price).toFixed(2)}/mês
+                      Plano {subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1)} — R$ {Number(subscription.price).toFixed(2)}/mês
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className={`text-lg font-mono font-bold ${expired ? 'text-destructive' : 'text-foreground'}`}>
+                  <p className={`text-lg font-mono font-bold ${expired ? 'text-destructive' : hasDebt ? 'text-amber-600' : 'text-foreground'}`}>
                     {countdown}
                   </p>
                   {expired && (
@@ -358,14 +360,32 @@ const WalletPage = () => {
               </div>
 
               {hasDebt && (
-                <Button
-                  className="w-full gap-2"
-                  variant={expired ? 'destructive' : 'default'}
-                  onClick={() => setCheckoutOpen(true)}
-                >
-                  <CreditCard className="w-4 h-4" />
-                  {`Pagar Assinatura (R$ ${Math.abs(wallet.balance).toFixed(2)})`}
-                </Button>
+                <div className="bg-amber-500/10 rounded-lg p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+                    <p className="text-xs text-foreground">
+                      <strong>Status:</strong> Aguardando pagamento para liberar acesso completo
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="bg-background/50 rounded p-2">
+                      <p className="text-muted-foreground">Plano</p>
+                      <p className="font-semibold">{subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1)}</p>
+                    </div>
+                    <div className="bg-background/50 rounded p-2">
+                      <p className="text-muted-foreground">Valor Pendente</p>
+                      <p className="font-semibold text-destructive">R$ {Math.abs(wallet.balance).toFixed(2)}</p>
+                    </div>
+                  </div>
+                  <Button
+                    className="w-full gap-2"
+                    variant={expired ? 'destructive' : 'default'}
+                    onClick={() => setCheckoutOpen(true)}
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    {`Pagar Assinatura (R$ ${Math.abs(wallet.balance).toFixed(2)})`}
+                  </Button>
+                </div>
               )}
 
               {!hasDebt && wallet?.balance >= 0 && (
@@ -374,6 +394,19 @@ const WalletPage = () => {
                   <span>Assinatura paga — saldo ativo!</span>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* No subscription found - show message */}
+        {!subscription && !loading && hasDebt && (
+          <Card className="border-amber-500/50">
+            <CardContent className="p-4 text-center space-y-2">
+              <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
+              <p className="text-sm font-medium">Nenhuma assinatura encontrada</p>
+              <p className="text-xs text-muted-foreground">
+                Seu saldo está negativo mas não encontramos um plano associado. Entre em contato com o suporte.
+              </p>
             </CardContent>
           </Card>
         )}
