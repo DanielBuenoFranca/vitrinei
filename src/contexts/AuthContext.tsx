@@ -43,6 +43,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       setLoading(false);
       if (session?.user) {
+        const mustReset = session.user.user_metadata?.must_reset_password === true;
+        setMustResetPassword(mustReset);
         setTimeout(() => {
           fetchRoles(session.user.id);
           fetchDisplayName(session.user.id);
@@ -50,6 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setRoles([]);
         setDisplayName(null);
+        setMustResetPassword(false);
       }
     });
 
@@ -58,6 +61,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       setLoading(false);
       if (session?.user) {
+        const mustReset = session.user.user_metadata?.must_reset_password === true;
+        setMustResetPassword(mustReset);
         fetchRoles(session.user.id);
         fetchDisplayName(session.user.id);
       }
