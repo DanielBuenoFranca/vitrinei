@@ -1219,7 +1219,7 @@ const AdminPanel = () => {
             </div>
             <div>
               <label className="text-sm font-medium mb-1.5 block">Telefone</label>
-              <Input value={editUserPhone} onChange={e => setEditUserPhone(e.target.value)} placeholder="(00) 00000-0000" />
+              <Input value={editUserPhone} onChange={e => setEditUserPhone(maskPhone(e.target.value))} placeholder="(00) 00000-0000" />
             </div>
             <div>
               <label className="text-sm font-medium mb-1.5 block">URL do Avatar</label>
@@ -1273,7 +1273,7 @@ const AdminPanel = () => {
             </div>
             <div>
               <label className="text-sm font-medium mb-1.5 block">Telefone</label>
-              <Input value={newUserPhone} onChange={e => setNewUserPhone(e.target.value)} placeholder="(00) 00000-0000" />
+              <Input value={newUserPhone} onChange={e => setNewUserPhone(maskPhone(e.target.value))} placeholder="(00) 00000-0000" />
             </div>
             <div>
               <label className="text-sm font-medium mb-1.5 block">Perfil de Acesso *</label>
