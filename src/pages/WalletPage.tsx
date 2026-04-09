@@ -188,6 +188,7 @@ const WalletPage = () => {
       toast.success(`Assinatura paga! Cashback de R$ ${debitAmount.toFixed(2)} creditado.`);
       setCheckoutOpen(false);
       loadData();
+      refreshConversionWallet();
     } catch (e: any) {
       toast.error('Erro ao processar pagamento: ' + (e.message || 'desconhecido'));
     }
