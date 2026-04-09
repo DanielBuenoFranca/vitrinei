@@ -43,8 +43,10 @@ Deno.serve(async (req) => {
 
     const { user_id, new_password } = await req.json()
 
+    // Update password and set must_reset_password flag in user metadata
     const { error } = await supabase.auth.admin.updateUserById(user_id, {
-      password: new_password
+      password: new_password,
+      user_metadata: { must_reset_password: true }
     })
 
     if (error) {
