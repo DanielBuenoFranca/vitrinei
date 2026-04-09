@@ -26,6 +26,7 @@ import { ServiceForm } from '@/components/admin/ServiceForm';
 import { ProviderForm } from '@/components/admin/ProviderForm';
 import { toast } from 'sonner';
 import { MaskedPrice, AccessBanner, useAccessLevel } from '@/components/AccessGate';
+import { useConversion } from '@/contexts/ConversionContext';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
@@ -93,6 +94,7 @@ const ProviderStorefront = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const accessLevel = useAccessLevel();
+  const { trackStoreVisit } = useConversion();
   const [provider, setProvider] = useState<ProviderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -175,6 +177,7 @@ const ProviderStorefront = () => {
         if (found) {
           const provData = found as ProviderData;
           setProvider(provData);
+          trackStoreVisit(provData.name);
           const cfg = { ...defaultConfig, ...((provData.storefront_config as StorefrontConfig) || {}) };
           setConfig(cfg);
           setOriginalConfig(JSON.parse(JSON.stringify(cfg)));

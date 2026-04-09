@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConversion } from '@/contexts/ConversionContext';
 import { toast } from 'sonner';
 import { ArrowLeft, Wallet, TrendingUp, TrendingDown, Gift, Copy, Share2, Clock, CheckCircle2, Lock, CreditCard, Timer, AlertTriangle, ShieldAlert, Eye } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -26,6 +27,7 @@ interface Campaign {
 const WalletPage = () => {
   const navigate = useNavigate();
   const { user, requireAuth } = useAuth();
+  const { refreshWallet: refreshConversionWallet } = useConversion();
   const { activePlans } = useSubscriptionPlans();
   const planOptions = activePlans.map(p => ({ id: p.id, name: p.name, price: p.price, badge: p.badge }));
   const [wallet, setWallet] = useState<any>(null);
@@ -186,6 +188,7 @@ const WalletPage = () => {
       toast.success(`Assinatura paga! Cashback de R$ ${debitAmount.toFixed(2)} creditado.`);
       setCheckoutOpen(false);
       loadData();
+      refreshConversionWallet();
     } catch (e: any) {
       toast.error('Erro ao processar pagamento: ' + (e.message || 'desconhecido'));
     }

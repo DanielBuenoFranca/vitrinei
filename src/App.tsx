@@ -8,7 +8,9 @@ import { FloatingAiAvatar } from "@/components/AiAvatarGlobal";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { ConversionProvider } from "@/contexts/ConversionContext";
 import CartBar from "@/components/CartBar";
+import { AttentionFooterBar } from "@/components/AttentionFooterBar";
 import { loadDynamicEntries } from "@/data/searchData";
 import Landing from "./pages/Landing.tsx";
 import MeiPanel from "./pages/MeiPanel.tsx";
@@ -57,6 +59,7 @@ const App = () => {
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <ConversionProvider>
         <CartBar />
         <FloatingAiAvatar />
         <Routes>
@@ -80,6 +83,8 @@ const App = () => {
           <Route path="/loja/:slug" element={<ForceResetGuard><ProviderStorefront /></ForceResetGuard>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <AttentionFooterBar />
+        </ConversionProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
