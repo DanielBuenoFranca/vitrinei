@@ -39,6 +39,12 @@ const MasterRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const ForceResetGuard = ({ children }: { children: React.ReactNode }) => {
+  const { mustResetPassword, user } = useAuth();
+  if (user && mustResetPassword) return <Navigate to="/reset-password" replace />;
+  return <>{children}</>;
+};
+
 const App = () => {
   useEffect(() => { loadDynamicEntries(); }, []);
   return (
