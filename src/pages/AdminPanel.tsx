@@ -80,6 +80,7 @@ const AdminPanel = () => {
   const [authUsers, setAuthUsers] = useState<any[]>([]);
   const [userProfiles, setUserProfiles] = useState<any[]>([]);
   const [userRoles, setUserRoles] = useState<any[]>([]);
+  const [userSubscriptions, setUserSubscriptions] = useState<any[]>([]);
 
   // Confirmation dialog for provider delete
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; provider: Provider | null }>({ open: false, provider: null });
@@ -163,12 +164,14 @@ const AdminPanel = () => {
   useEffect(() => { fetchData(); fetchUsers(); fetchMarquee(); }, []);
 
   const fetchUsers = async () => {
-    const [profilesRes, rolesRes] = await Promise.all([
+    const [profilesRes, rolesRes, subsRes] = await Promise.all([
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('user_roles').select('*'),
+      supabase.from('subscriptions').select('*'),
     ]);
     setUserProfiles(profilesRes.data || []);
     setUserRoles(rolesRes.data || []);
+    setUserSubscriptions(subsRes.data || []);
 
     // Fetch auth emails via edge function (master only)
     try {
@@ -930,24 +933,32 @@ const AdminPanel = () => {
                   <p className="text-sm text-muted-foreground text-center py-8">Nenhum usuário cadastrado ainda.</p>
                 ) : (
                   <div className="overflow-x-auto">
-                    <Table>
+                     <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>Avatar</TableHead>
                           <TableHead>Nome</TableHead>
                           <TableHead>E-mail</TableHead>
+                          <TableHead>Modalidade</TableHead>
+                          <TableHead>Plano</TableHead>
                           <TableHead>Status E-mail</TableHead>
                           <TableHead>Telefone</TableHead>
-                          <TableHead>User ID</TableHead>
                           <TableHead>Papéis</TableHead>
                           <TableHead>Criado em</TableHead>
-                          <TableHead>Atualizado em</TableHead>
                           <TableHead>Ações</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {userProfiles.map((profile: any) => {
                           const roles = userRoles.filter((r: any) => r.user_id === profile.user_id);
+                          const userSub = userSubscriptions.find((s: any) => s.user_id === profile.user_id && s.status === 'active');
+                          // Determine modalidade from roles
+                          const hasProvider = roles.some((r: any) => r.role === 'provider');
+                          const hasClient = roles.some((r: any) => r.role === 'client');
+                          const hasMixed = roles.some((r: any) => r.role === 'mixed');
+                          const modalidade = hasMixed ? 'Misto' : hasProvider && hasClient ? 'Misto' : hasProvider ? 'Prestador' : hasClient ? 'Comprador' : '—';
+                          const planLabel = userSub ? userSub.plan.charAt(0).toUpperCase() + userSub.plan.slice(1) : '—';
+                          const planColor = userSub ? (userSub.plan === 'ouro' ? 'bg-yellow-500/20 text-yellow-700 border-yellow-300' : userSub.plan === 'prata' ? 'bg-gray-400/20 text-gray-600 border-gray-300' : 'bg-orange-500/20 text-orange-700 border-orange-300') : '';
                           return (
                             <TableRow key={profile.id}>
                               <TableCell>
@@ -963,6 +974,21 @@ const AdminPanel = () => {
                                 <span className="font-medium text-sm">{profile.display_name || 'Sem nome'}</span>
                               </TableCell>
                               <TableCell className="text-xs text-muted-foreground">{authUserEmails[profile.user_id] || '—'}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="text-[10px]">
+                                  {modalidade === 'Prestador' && <Wrench className="w-2.5 h-2.5 mr-0.5 inline" />}
+                                  {modalidade === 'Comprador' && <ShoppingCart className="w-2.5 h-2.5 mr-0.5 inline" />}
+                                  {modalidade === 'Misto' && <Shuffle className="w-2.5 h-2.5 mr-0.5 inline" />}
+                                  {modalidade}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {userSub ? (
+                                  <Badge variant="outline" className={`text-[10px] ${planColor}`}>{planLabel}</Badge>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">—</span>
+                                )}
+                              </TableCell>
                               <TableCell className="text-xs">
                                 {authUserConfirmed[profile.user_id]
                                   ? <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Verificado</Badge>
@@ -970,11 +996,6 @@ const AdminPanel = () => {
                                 }
                               </TableCell>
                               <TableCell className="text-xs text-muted-foreground">{profile.phone || '—'}</TableCell>
-                              <TableCell>
-                                <code className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-mono">
-                                  {profile.user_id?.slice(0, 8)}…
-                                </code>
-                              </TableCell>
                               <TableCell>
                                 <div className="flex gap-1 flex-wrap">
                                   {([
@@ -1002,9 +1023,6 @@ const AdminPanel = () => {
                               </TableCell>
                               <TableCell className="text-xs text-muted-foreground">
                                 {new Date(profile.created_at).toLocaleDateString('pt-BR')}
-                              </TableCell>
-                              <TableCell className="text-xs text-muted-foreground">
-                                {new Date(profile.updated_at).toLocaleDateString('pt-BR')}
                               </TableCell>
                               <TableCell>
                                 <div className="flex gap-1">
