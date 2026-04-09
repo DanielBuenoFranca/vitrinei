@@ -25,6 +25,7 @@ import { ProductForm } from '@/components/admin/ProductForm';
 import { ServiceForm } from '@/components/admin/ServiceForm';
 import { ProviderForm } from '@/components/admin/ProviderForm';
 import { toast } from 'sonner';
+import { MaskedPrice, AccessBanner, useAccessLevel } from '@/components/AccessGate';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
