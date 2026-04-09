@@ -92,6 +92,7 @@ interface ChatMessage {
 const ProviderStorefront = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const accessLevel = useAccessLevel();
   const [provider, setProvider] = useState<ProviderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
