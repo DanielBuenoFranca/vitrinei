@@ -557,10 +557,18 @@ const ImportPage = () => {
   const hasAiData = aiMarkers.length > 0;
   const criticalRowIds = new Set(criticalErrors.map(e => e.rowId));
 
-  /* ─── Import (atomic) ─── */
+  /* ─── Import (atomic) with progress tracking ─── */
   const executeImport = async () => {
     if (rows.length === 0 || hasCriticalErrors) return;
+    // Block if unresolved dedup items
+    if (dedupPending.some(d => !d.resolved)) {
+      setShowDedupModal(true);
+      toast.error('Resolva as coincidências de prestador antes de importar.');
+      return;
+    }
+
     setImporting(true);
+    setImportProgress({ step: 'Preparando dados...', percent: 5 });
     try {
       const res: ImportResult = {
         providersCreated: 0, providersLinked: 0, servicesCreated: 0,
@@ -568,6 +576,7 @@ const ImportPage = () => {
       };
 
       // Step 1: Auto-create missing segments
+      setImportProgress({ step: 'Criando segmentos...', percent: 10 });
       const { data: dbSegments } = await supabase.from('segments').select('id, name');
       const segMap = new Map<string, number>();
       (dbSegments || []).forEach((s: any) => segMap.set(s.name, s.id));
@@ -589,6 +598,7 @@ const ImportPage = () => {
       }
 
       // Step 2: Get max IDs
+      setImportProgress({ step: 'Preparando IDs...', percent: 20 });
       const { data: maxSvc } = await supabase.from('dynamic_services').select('service_id').order('service_id', { ascending: false }).limit(1);
       const { data: maxProd } = await supabase.from('dynamic_products').select('product_id').order('product_id', { ascending: false }).limit(1);
       let nextServiceId = ((maxSvc?.[0]?.service_id) || 2000) + 1;
@@ -604,10 +614,18 @@ const ImportPage = () => {
       });
 
       // Reload providers for fresh data
+      setImportProgress({ step: 'Carregando prestadores...', percent: 25 });
       const { data: freshProviders } = await supabase.from('providers').select('id, name, segment, phone, email, cpf_cnpj');
       const providerList = (freshProviders || []) as ExistingProvider[];
 
+      const totalProviders = byProvider.size;
+      let processedProviders = 0;
+
       for (const [provName, provRows] of byProvider) {
+        processedProviders++;
+        const progressPercent = 25 + Math.round((processedProviders / totalProviders) * 50);
+        setImportProgress({ step: `Processando: ${provName}...`, percent: progressPercent });
+
         const firstRow = provRows[0];
         let providerId: number;
 
@@ -615,7 +633,6 @@ const ImportPage = () => {
         const matchResult = cascadeMatch(firstRow, providerList);
 
         if (matchResult.type !== 'new' && matchResult.provider) {
-          // MERGE: existing provider
           providerId = matchResult.provider.id;
           res.providersLinked++;
           res.fixes.push({
@@ -623,7 +640,6 @@ const ImportPage = () => {
             message: `"${provName}" vinculado a "${matchResult.provider.name}" via ${matchResult.type === 'email' ? 'e-mail' : matchResult.type === 'name' ? 'nome' : 'CPF/CNPJ'}`,
           });
 
-          // Merge segments
           const rowSegments = new Set(provRows.map(r => r.segment.trim()).filter(Boolean));
           const currentSegments = new Set(matchResult.provider.segment || []);
           const newSegments = [...rowSegments].filter(s => !currentSegments.has(s));
@@ -632,7 +648,6 @@ const ImportPage = () => {
             res.fixes.push({ icon: 'provider', message: `"${provName}": segmento(s) "${newSegments.join(', ')}" vinculado(s)` });
           }
 
-          // Fill missing contact
           const updates: Record<string, string> = {};
           if (!matchResult.provider.phone && firstRow.phone.trim()) updates.phone = firstRow.phone;
           if (!matchResult.provider.email && firstRow.email.trim()) updates.email = firstRow.email;
@@ -641,7 +656,6 @@ const ImportPage = () => {
             res.fixes.push({ icon: 'contact', message: `"${provName}": contato atualizado` });
           }
         } else {
-          // NEW: create as Lead (Pendente)
           const allSegments = [...new Set(provRows.map(r => r.segment.trim()).filter(Boolean))];
           const cpfVal = firstRow.cpfCnpj.replace(/\D/g, '').trim() || null;
           const { data: newProv, error } = await supabase.from('providers').insert({
@@ -652,7 +666,7 @@ const ImportPage = () => {
             email: firstRow.email || '',
             city: firstRow.city || '',
             cpf_cnpj: cpfVal || 'ISENTO',
-            active: false, // LEAD status - pendente
+            active: false,
           }).select().single();
 
           if (error || !newProv) {
@@ -684,7 +698,7 @@ const ImportPage = () => {
           }
         }
 
-        // Insert services and products (stock merge)
+        // Insert services and products
         for (const row of provRows) {
           if (row.serviceName.trim()) {
             const price = parseFloat(row.servicePrice) || 0;
@@ -725,7 +739,20 @@ const ImportPage = () => {
         }
       }
 
+      // Step 5: Generate product images in background (fire & forget)
+      setImportProgress({ step: 'Gerando imagens de produtos (IA)...', percent: 80 });
+      const productsToImage = rows.filter(r => r.productName.trim());
+      // Process images async, don't block
+      for (const row of productsToImage.slice(0, 10)) {
+        supabase.functions.invoke('search-product-image', {
+          body: { productName: row.productName, segment: row.segment, itemType: 'product' },
+        }).catch(console.error);
+      }
+
+      setImportProgress({ step: 'Finalizando...', percent: 90 });
       await reloadDynamicEntries();
+      
+      setImportProgress({ step: 'Concluído!', percent: 100 });
       setResult(res);
 
       if (res.errors.length === 0) {
@@ -738,6 +765,7 @@ const ImportPage = () => {
       toast.error('Erro durante importação: ' + (err?.message || 'erro desconhecido'));
     } finally {
       setImporting(false);
+      setTimeout(() => setImportProgress(null), 2000);
     }
   };
 
