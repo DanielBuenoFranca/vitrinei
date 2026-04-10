@@ -3,15 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import {
   ArrowLeft, Upload, FileSpreadsheet, CheckCircle2, AlertTriangle,
-  Loader2, Download, Pencil, Trash2, X, Save, ShieldAlert, Sparkles, Search
+  Loader2, Download, Pencil, Trash2, X, Save, ShieldAlert, Sparkles, Search, Users
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { reloadDynamicEntries } from '@/data/searchData';
@@ -237,6 +239,16 @@ const ImportPage = () => {
   const [existingSegments, setExistingSegments] = useState<Set<string>>(new Set());
   const [existingProviders, setExistingProviders] = useState<ExistingProvider[]>([]);
   const [dbLoaded, setDbLoaded] = useState(false);
+  const [importedFileHashes, setImportedFileHashes] = useState<Set<string>>(new Set());
+  const [importProgress, setImportProgress] = useState<{ step: string; percent: number } | null>(null);
+  // Provider dedup confirmation
+  const [dedupPending, setDedupPending] = useState<{
+    rowId: number;
+    providerName: string;
+    matches: ExistingProvider[];
+    resolved: boolean;
+  }[]>([]);
+  const [showDedupModal, setShowDedupModal] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -278,13 +290,48 @@ const ImportPage = () => {
     });
   }, [existingProviders]);
 
+  /* ─── File hash for duplicate prevention ─── */
+  const computeFileHash = async (file: File): Promise<string> => {
+    const buffer = await file.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  };
+
+  /* ─── Enhanced provider matching with fuzzy search ─── */
+  const findProviderMatches = (row: ParsedRow, providers: ExistingProvider[]): ExistingProvider[] => {
+    const matches: ExistingProvider[] = [];
+    const email = row.email.trim().toLowerCase();
+    const name = row.providerName.trim().toLowerCase();
+    const phone = row.phone.trim().replace(/\D/g, '');
+    const cpf = row.cpfCnpj.trim().replace(/\D/g, '');
+
+    for (const p of providers) {
+      if (email && p.email?.trim().toLowerCase() === email) { matches.push(p); continue; }
+      if (name && p.name.trim().toLowerCase() === name) { matches.push(p); continue; }
+      if (phone && phone.length >= 8 && p.phone?.replace(/\D/g, '')?.includes(phone.slice(-8))) { matches.push(p); continue; }
+      if (cpf && cpf !== 'isento' && p.cpf_cnpj?.replace(/\D/g, '') === cpf) { matches.push(p); continue; }
+    }
+    return matches;
+  };
+
   /* ─── Parse file ─── */
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Check for duplicate file
+    const fileHash = await computeFileHash(file);
+    if (importedFileHashes.has(fileHash)) {
+      toast.error('Este arquivo já foi importado. Selecione um arquivo diferente.');
+      if (fileRef.current) fileRef.current.value = '';
+      return;
+    }
+
     setFileName(file.name);
     setResult(null);
     setEditingCell(null);
+    setDedupPending([]);
 
     try {
       const XLSX = await import('xlsx');
@@ -334,12 +381,38 @@ const ImportPage = () => {
 
       // Apply cascade matching
       const matched = applyCascadeMatching(parsed);
+
+      // Check for provider matches that need user confirmation
+      const providerNames = [...new Set(matched.filter(r => r._matchType === 'new').map(r => r.providerName.trim()))];
+      const dedupItems: typeof dedupPending = [];
+
+      for (const pName of providerNames) {
+        const sampleRow = matched.find(r => r.providerName.trim() === pName)!;
+        const fuzzyMatches = findProviderMatches(sampleRow, existingProviders);
+        if (fuzzyMatches.length > 0) {
+          dedupItems.push({
+            rowId: sampleRow._id,
+            providerName: pName,
+            matches: fuzzyMatches,
+            resolved: false,
+          });
+        }
+      }
+
       setRows(matched);
       setErrors(runValidation(matched));
+      setDedupPending(dedupItems);
+
+      if (dedupItems.length > 0) {
+        setShowDedupModal(true);
+      }
+
+      // Store hash to prevent re-import
+      setImportedFileHashes(prev => new Set([...prev, fileHash]));
 
       const newCount = matched.filter(r => r._matchType === 'new').length;
       const mergeCount = matched.filter(r => r._matchType !== 'new').length;
-      toast.success(`${matched.length} linhas carregadas — ${mergeCount} existente(s), ${newCount} novo(s)`);
+      toast.success(`${matched.length} linhas carregadas — ${mergeCount} existente(s), ${newCount} novo(s)${dedupItems.length > 0 ? ` — ${dedupItems.length} coincidência(s) para revisão` : ''}`);
     } catch (err: any) {
       toast.error('Erro ao ler planilha: ' + err.message);
     }
@@ -486,10 +559,18 @@ const ImportPage = () => {
   const hasAiData = aiMarkers.length > 0;
   const criticalRowIds = new Set(criticalErrors.map(e => e.rowId));
 
-  /* ─── Import (atomic) ─── */
+  /* ─── Import (atomic) with progress tracking ─── */
   const executeImport = async () => {
     if (rows.length === 0 || hasCriticalErrors) return;
+    // Block if unresolved dedup items
+    if (dedupPending.some(d => !d.resolved)) {
+      setShowDedupModal(true);
+      toast.error('Resolva as coincidências de prestador antes de importar.');
+      return;
+    }
+
     setImporting(true);
+    setImportProgress({ step: 'Preparando dados...', percent: 5 });
     try {
       const res: ImportResult = {
         providersCreated: 0, providersLinked: 0, servicesCreated: 0,
@@ -497,6 +578,7 @@ const ImportPage = () => {
       };
 
       // Step 1: Auto-create missing segments
+      setImportProgress({ step: 'Criando segmentos...', percent: 10 });
       const { data: dbSegments } = await supabase.from('segments').select('id, name');
       const segMap = new Map<string, number>();
       (dbSegments || []).forEach((s: any) => segMap.set(s.name, s.id));
@@ -518,6 +600,7 @@ const ImportPage = () => {
       }
 
       // Step 2: Get max IDs
+      setImportProgress({ step: 'Preparando IDs...', percent: 20 });
       const { data: maxSvc } = await supabase.from('dynamic_services').select('service_id').order('service_id', { ascending: false }).limit(1);
       const { data: maxProd } = await supabase.from('dynamic_products').select('product_id').order('product_id', { ascending: false }).limit(1);
       let nextServiceId = ((maxSvc?.[0]?.service_id) || 2000) + 1;
@@ -533,10 +616,18 @@ const ImportPage = () => {
       });
 
       // Reload providers for fresh data
+      setImportProgress({ step: 'Carregando prestadores...', percent: 25 });
       const { data: freshProviders } = await supabase.from('providers').select('id, name, segment, phone, email, cpf_cnpj');
       const providerList = (freshProviders || []) as ExistingProvider[];
 
+      const totalProviders = byProvider.size;
+      let processedProviders = 0;
+
       for (const [provName, provRows] of byProvider) {
+        processedProviders++;
+        const progressPercent = 25 + Math.round((processedProviders / totalProviders) * 50);
+        setImportProgress({ step: `Processando: ${provName}...`, percent: progressPercent });
+
         const firstRow = provRows[0];
         let providerId: number;
 
@@ -544,7 +635,6 @@ const ImportPage = () => {
         const matchResult = cascadeMatch(firstRow, providerList);
 
         if (matchResult.type !== 'new' && matchResult.provider) {
-          // MERGE: existing provider
           providerId = matchResult.provider.id;
           res.providersLinked++;
           res.fixes.push({
@@ -552,7 +642,6 @@ const ImportPage = () => {
             message: `"${provName}" vinculado a "${matchResult.provider.name}" via ${matchResult.type === 'email' ? 'e-mail' : matchResult.type === 'name' ? 'nome' : 'CPF/CNPJ'}`,
           });
 
-          // Merge segments
           const rowSegments = new Set(provRows.map(r => r.segment.trim()).filter(Boolean));
           const currentSegments = new Set(matchResult.provider.segment || []);
           const newSegments = [...rowSegments].filter(s => !currentSegments.has(s));
@@ -561,7 +650,6 @@ const ImportPage = () => {
             res.fixes.push({ icon: 'provider', message: `"${provName}": segmento(s) "${newSegments.join(', ')}" vinculado(s)` });
           }
 
-          // Fill missing contact
           const updates: Record<string, string> = {};
           if (!matchResult.provider.phone && firstRow.phone.trim()) updates.phone = firstRow.phone;
           if (!matchResult.provider.email && firstRow.email.trim()) updates.email = firstRow.email;
@@ -570,7 +658,6 @@ const ImportPage = () => {
             res.fixes.push({ icon: 'contact', message: `"${provName}": contato atualizado` });
           }
         } else {
-          // NEW: create as Lead (Pendente)
           const allSegments = [...new Set(provRows.map(r => r.segment.trim()).filter(Boolean))];
           const cpfVal = firstRow.cpfCnpj.replace(/\D/g, '').trim() || null;
           const { data: newProv, error } = await supabase.from('providers').insert({
@@ -581,7 +668,7 @@ const ImportPage = () => {
             email: firstRow.email || '',
             city: firstRow.city || '',
             cpf_cnpj: cpfVal || 'ISENTO',
-            active: false, // LEAD status - pendente
+            active: false,
           }).select().single();
 
           if (error || !newProv) {
@@ -613,7 +700,7 @@ const ImportPage = () => {
           }
         }
 
-        // Insert services and products (stock merge)
+        // Insert services and products
         for (const row of provRows) {
           if (row.serviceName.trim()) {
             const price = parseFloat(row.servicePrice) || 0;
@@ -654,7 +741,20 @@ const ImportPage = () => {
         }
       }
 
+      // Step 5: Generate product images in background (fire & forget)
+      setImportProgress({ step: 'Gerando imagens de produtos (IA)...', percent: 80 });
+      const productsToImage = rows.filter(r => r.productName.trim());
+      // Process images async, don't block
+      for (const row of productsToImage.slice(0, 10)) {
+        supabase.functions.invoke('search-product-image', {
+          body: { productName: row.productName, segment: row.segment, itemType: 'product' },
+        }).catch(console.error);
+      }
+
+      setImportProgress({ step: 'Finalizando...', percent: 90 });
       await reloadDynamicEntries();
+      
+      setImportProgress({ step: 'Concluído!', percent: 100 });
       setResult(res);
 
       if (res.errors.length === 0) {
@@ -667,12 +767,30 @@ const ImportPage = () => {
       toast.error('Erro durante importação: ' + (err?.message || 'erro desconhecido'));
     } finally {
       setImporting(false);
+      setTimeout(() => setImportProgress(null), 2000);
     }
   };
 
   const resetAll = () => {
     setRows([]); setErrors([]); setResult(null); setFileName(''); setEditingCell(null);
+    setDedupPending([]); setImportProgress(null);
     if (fileRef.current) fileRef.current.value = '';
+  };
+
+  /* ─── Dedup resolution ─── */
+  const resolveDedupAsExisting = (providerName: string, existingProvider: ExistingProvider) => {
+    // Update all rows with this provider name to use the existing provider
+    setRows(prev => prev.map(row => {
+      if (row.providerName.trim() === providerName) {
+        return { ...row, _matchType: 'name' as const, _matchedProviderId: existingProvider.id, _matchedProviderName: existingProvider.name };
+      }
+      return row;
+    }));
+    setDedupPending(prev => prev.map(d => d.providerName === providerName ? { ...d, resolved: true } : d));
+  };
+
+  const resolveDedupAsNew = (providerName: string) => {
+    setDedupPending(prev => prev.map(d => d.providerName === providerName ? { ...d, resolved: true } : d));
   };
 
   /* ─── Match type badge ─── */
@@ -779,6 +897,31 @@ const ImportPage = () => {
       </nav>
 
       <div className="pt-20 px-4 container mx-auto max-w-6xl space-y-4">
+        {/* Import Progress Bar */}
+        {importProgress && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+            <Card className="border-primary/30 bg-primary/5">
+              <CardContent className="p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-foreground flex items-center gap-2">
+                    <Loader2 className={`w-4 h-4 ${importProgress.percent < 100 ? 'animate-spin' : ''} text-primary`} />
+                    {importProgress.step}
+                  </p>
+                  <span className="text-xs font-mono text-muted-foreground">{importProgress.percent}%</span>
+                </div>
+                <Progress value={importProgress.percent} className="h-2" />
+                <div className="flex justify-between text-[10px] text-muted-foreground">
+                  <span>Segmentos</span>
+                  <span>Prestadores</span>
+                  <span>Estoque</span>
+                  <span>Imagens IA</span>
+                  <span>Finalização</span>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
         {/* Actions row */}
         <div className="flex flex-wrap gap-3">
           <Card className="flex-1 min-w-[180px]">
@@ -1074,6 +1217,91 @@ const ImportPage = () => {
           </motion.div>
         )}
       </div>
+
+      {/* Provider Deduplication Modal */}
+      <Dialog open={showDedupModal} onOpenChange={setShowDedupModal}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              Prestadores Coincidentes
+            </DialogTitle>
+            <DialogDescription>
+              Encontramos prestadores na planilha que podem já existir na base de dados. 
+              Confirme se deseja vincular a um existente ou criar um novo registro.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {dedupPending.map((item) => (
+              <Card key={item.providerName} className={`${item.resolved ? 'border-green-500/40 bg-green-500/5' : 'border-amber-500/40 bg-amber-500/5'}`}>
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">📋 {item.providerName}</p>
+                      <p className="text-[10px] text-muted-foreground">Planilha</p>
+                    </div>
+                    {item.resolved && (
+                      <Badge variant="outline" className="text-[10px] text-green-600 border-green-300">
+                        ✓ Resolvido
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  {!item.resolved && (
+                    <>
+                      <p className="text-xs font-medium text-muted-foreground">Coincidências encontradas:</p>
+                      <div className="space-y-2">
+                        {item.matches.map((match) => (
+                          <div key={match.id} className="flex items-center justify-between p-2 rounded-lg bg-background border border-border">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-medium">{match.name}</p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {match.email && `📧 ${match.email}`}
+                                {match.phone && ` 📱 ${match.phone}`}
+                                {match.cpf_cnpj && ` 📄 ${match.cpf_cnpj}`}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground">
+                                Segmentos: {(match.segment || []).join(', ')}
+                              </p>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="shrink-0 ml-2 text-xs"
+                              onClick={() => resolveDedupAsExisting(item.providerName, match)}
+                            >
+                              Vincular
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="w-full text-xs text-muted-foreground"
+                        onClick={() => resolveDedupAsNew(item.providerName)}
+                      >
+                        Criar como novo prestador
+                      </Button>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button
+              className="w-full"
+              disabled={dedupPending.some(d => !d.resolved)}
+              onClick={() => setShowDedupModal(false)}
+            >
+              {dedupPending.some(d => !d.resolved)
+                ? `${dedupPending.filter(d => !d.resolved).length} pendente(s)`
+                : 'Confirmar e Continuar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

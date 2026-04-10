@@ -133,11 +133,13 @@ export const ConversionProvider = ({ children }: { children: ReactNode }) => {
       });
   }, []);
 
-  // Determine access level
+  // Determine access level — restrictions only lift after confirmed payment (balance >= 0)
   const accessLevel = (() => {
     if (authLoading || (!walletLoaded && user)) return 'loading' as const;
     if (!user) return 'visitor' as const;
+    // Lead = negative balance (subscription debt) — restrictions apply
     if (walletBalance !== null && walletBalance < 0) return 'lead' as const;
+    // Active = balance >= 0 (payment confirmed and processed)
     return 'active' as const;
   })();
 

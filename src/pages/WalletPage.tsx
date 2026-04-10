@@ -463,12 +463,12 @@ const WalletPage = () => {
           </Card>
         </motion.div>
 
-        {/* Referral Progress - Pending */}
+        {/* Referral Progress - Pending with Full Details */}
         {pendingReferrals.length > 0 && (
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Clock className="w-4 h-4 text-yellow-500" /> Indicações em Progresso
+                <Clock className="w-4 h-4 text-yellow-500" /> Indicados Pendentes ({pendingReferrals.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -476,16 +476,24 @@ const WalletPage = () => {
                 {pendingReferrals.map((ref: any) => {
                   const progress = getReferralProgress(ref);
                   return (
-                    <div key={ref.id} className="space-y-1.5 py-2 border-b border-border last:border-0">
+                    <div key={ref.id} className="space-y-2 py-3 border-b border-border last:border-0">
                       <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs font-medium text-foreground">{ref.referred_name || 'Usuário'}</p>
-                          <p className="text-[10px] text-muted-foreground">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-foreground">{ref.referred_name || 'Usuário'}</p>
+                          <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
+                            {ref.referred_email && (
+                              <p className="text-[10px] text-muted-foreground">📧 {ref.referred_email}</p>
+                            )}
+                            {ref.referred_phone && (
+                              <p className="text-[10px] text-muted-foreground">📱 {ref.referred_phone}</p>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
                             {ref.referred_role === 'mixed' ? '🔀 Misto' : ref.referred_role === 'provider' ? '🔧 Prestador' : '🛒 Comprador'}
-                            {ref.joined_at && ` · ${new Date(ref.joined_at).toLocaleDateString('pt-BR')}`}
+                            {ref.joined_at && ` · Cadastro: ${new Date(ref.joined_at).toLocaleString('pt-BR')}`}
                           </p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right shrink-0 ml-2">
                           <Badge variant="outline" className="text-[10px]">
                             {ref.status === 'partial' ? '⏳ Parcial' : '⏳ Pendente'}
                           </Badge>
