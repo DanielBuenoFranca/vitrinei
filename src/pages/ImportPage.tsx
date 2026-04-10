@@ -237,6 +237,16 @@ const ImportPage = () => {
   const [existingSegments, setExistingSegments] = useState<Set<string>>(new Set());
   const [existingProviders, setExistingProviders] = useState<ExistingProvider[]>([]);
   const [dbLoaded, setDbLoaded] = useState(false);
+  const [importedFileHashes, setImportedFileHashes] = useState<Set<string>>(new Set());
+  const [importProgress, setImportProgress] = useState<{ step: string; percent: number } | null>(null);
+  // Provider dedup confirmation
+  const [dedupPending, setDedupPending] = useState<{
+    rowId: number;
+    providerName: string;
+    matches: ExistingProvider[];
+    resolved: boolean;
+  }[]>([]);
+  const [showDedupModal, setShowDedupModal] = useState(false);
 
   useEffect(() => {
     const load = async () => {
