@@ -168,13 +168,17 @@ const AuthPage = () => {
           ? rewardSnapshot.reward_seller 
           : rewardSnapshot.reward_buyer;
 
+      const now = new Date();
+      const formattedDate = now.toLocaleDateString('pt-BR');
+      const formattedTime = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
       await supabase.from('referrals').update({
         referred_id: newUserId,
         referred_name: userName || userEmail.split('@')[0],
         referred_email: userEmail,
         referred_phone: userPhone || null,
         referred_role: selectedProfile || 'client',
-        joined_at: new Date().toISOString(),
+        joined_at: now.toISOString(),
         commission_amount: commission,
         reward_snapshot: rewardSnapshot as any,
         status: 'pending',
@@ -190,12 +194,13 @@ const AuthPage = () => {
           pending_balance: (referrerWallet.pending_balance || 0) + commission,
         }).eq('id', referrerWallet.id);
 
+        // Register bonus in referrer's ledger with full details
         await supabase.from('wallet_transactions').insert({
           user_id: refData.referrer_id,
           wallet_id: referrerWallet.id,
           amount: 0,
           type: 'cashback_pending',
-          description: `Indicação pendente - ${userName || userEmail.split('@')[0]} (aguardando 1ª transação)`,
+          description: `[Bônus (+)] Indicação de ${userName || userEmail.split('@')[0]} — ${formattedDate} ${formattedTime} — Tel: ${userPhone || 'N/A'} — E-mail: ${userEmail} — Aguardando Efetivação do Lead`,
         });
       }
 
