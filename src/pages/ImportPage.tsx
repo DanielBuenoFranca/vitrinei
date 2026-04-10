@@ -895,6 +895,31 @@ const ImportPage = () => {
       </nav>
 
       <div className="pt-20 px-4 container mx-auto max-w-6xl space-y-4">
+        {/* Import Progress Bar */}
+        {importProgress && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+            <Card className="border-primary/30 bg-primary/5">
+              <CardContent className="p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-foreground flex items-center gap-2">
+                    <Loader2 className={`w-4 h-4 ${importProgress.percent < 100 ? 'animate-spin' : ''} text-primary`} />
+                    {importProgress.step}
+                  </p>
+                  <span className="text-xs font-mono text-muted-foreground">{importProgress.percent}%</span>
+                </div>
+                <Progress value={importProgress.percent} className="h-2" />
+                <div className="flex justify-between text-[10px] text-muted-foreground">
+                  <span>Segmentos</span>
+                  <span>Prestadores</span>
+                  <span>Estoque</span>
+                  <span>Imagens IA</span>
+                  <span>Finalização</span>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
         {/* Actions row */}
         <div className="flex flex-wrap gap-3">
           <Card className="flex-1 min-w-[180px]">
