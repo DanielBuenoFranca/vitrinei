@@ -771,7 +771,24 @@ const ImportPage = () => {
 
   const resetAll = () => {
     setRows([]); setErrors([]); setResult(null); setFileName(''); setEditingCell(null);
+    setDedupPending([]); setImportProgress(null);
     if (fileRef.current) fileRef.current.value = '';
+  };
+
+  /* ─── Dedup resolution ─── */
+  const resolveDedupAsExisting = (providerName: string, existingProvider: ExistingProvider) => {
+    // Update all rows with this provider name to use the existing provider
+    setRows(prev => prev.map(row => {
+      if (row.providerName.trim() === providerName) {
+        return { ...row, _matchType: 'name' as const, _matchedProviderId: existingProvider.id, _matchedProviderName: existingProvider.name };
+      }
+      return row;
+    }));
+    setDedupPending(prev => prev.map(d => d.providerName === providerName ? { ...d, resolved: true } : d));
+  };
+
+  const resolveDedupAsNew = (providerName: string) => {
+    setDedupPending(prev => prev.map(d => d.providerName === providerName ? { ...d, resolved: true } : d));
   };
 
   /* ─── Match type badge ─── */
