@@ -5,7 +5,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Replicate the same hash logic used on the client
 function generateActivationCode(input: string): string {
   let hash = 0;
   for (let i = 0; i < input.length; i++) {
@@ -47,7 +46,7 @@ Deno.serve(async (req) => {
     })
   }
 
-  // Validate code against both email-based and id-based codes
+  // Validate code
   const codeFromEmail = generateActivationCode(email)
   const codeFromId = generateActivationCode(user.id)
   
@@ -73,6 +72,104 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: updateErr.message }), {
       status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
+  }
+
+  // --- LEDGER: Ensure wallet, subscription, role and initial debit exist ---
+  const meta = user.user_metadata || {}
+  const selectedPlan = meta.selected_plan || 'bronze'
+  const selectedProfile = meta.selected_profile || 'client'
+
+  // Get plan price from site_settings or fallback
+  let planPrice = 50
+  let planName = 'Bronze'
+  try {
+    const { data: settingsData } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'subscription_plans')
+      .maybeSingle()
+    
+    if (settingsData?.value) {
+      const plans = (settingsData.value as any)?.plans || []
+      const matchedPlan = plans.find((p: any) => p.id === selectedPlan)
+      if (matchedPlan) {
+        planPrice = Number(matchedPlan.price) || 50
+        planName = matchedPlan.name || selectedPlan
+      }
+    }
+  } catch { /* use defaults */ }
+
+  // Fallback plan prices
+  const fallbackPrices: Record<string, { price: number; name: string }> = {
+    bronze: { price: 50, name: 'Bronze' },
+    prata: { price: 100, name: 'Prata' },
+    ouro: { price: 200, name: 'Ouro' },
+  }
+  if (planPrice === 50 && fallbackPrices[selectedPlan]) {
+    planPrice = fallbackPrices[selectedPlan].price
+    planName = fallbackPrices[selectedPlan].name
+  }
+
+  // Ensure role exists
+  const { data: existingRole } = await supabase
+    .from('user_roles')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (!existingRole) {
+    await supabase.from('user_roles').insert({
+      user_id: user.id,
+      role: selectedProfile,
+    })
+  }
+
+  // Ensure subscription exists
+  const { data: existingSub } = await supabase
+    .from('subscriptions')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (!existingSub) {
+    await supabase.from('subscriptions').insert({
+      user_id: user.id,
+      plan: selectedPlan,
+      price: planPrice,
+    })
+  }
+
+  // Ensure wallet has initial debit
+  const { data: walletData } = await supabase
+    .from('wallets')
+    .select('id, balance')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (walletData) {
+    // Check if initial debit transaction exists
+    const { data: existingDebit } = await supabase
+      .from('wallet_transactions')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('type', 'subscription_debit')
+      .maybeSingle()
+
+    if (!existingDebit) {
+      // Set negative balance
+      await supabase.from('wallets').update({
+        balance: -planPrice,
+      }).eq('id', walletData.id)
+
+      // Register debit transaction in ledger
+      await supabase.from('wallet_transactions').insert({
+        user_id: user.id,
+        wallet_id: walletData.id,
+        amount: -planPrice,
+        type: 'subscription_debit',
+        description: `[Assinatura] Adesão ao Plano ${planName} (R$ ${planPrice.toFixed(2)})`,
+      })
+    }
   }
 
   return new Response(JSON.stringify({ success: true }), {
