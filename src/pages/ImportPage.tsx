@@ -1217,6 +1217,91 @@ const ImportPage = () => {
           </motion.div>
         )}
       </div>
+
+      {/* Provider Deduplication Modal */}
+      <Dialog open={showDedupModal} onOpenChange={setShowDedupModal}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              Prestadores Coincidentes
+            </DialogTitle>
+            <DialogDescription>
+              Encontramos prestadores na planilha que podem já existir na base de dados. 
+              Confirme se deseja vincular a um existente ou criar um novo registro.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {dedupPending.map((item) => (
+              <Card key={item.providerName} className={`${item.resolved ? 'border-green-500/40 bg-green-500/5' : 'border-amber-500/40 bg-amber-500/5'}`}>
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">📋 {item.providerName}</p>
+                      <p className="text-[10px] text-muted-foreground">Planilha</p>
+                    </div>
+                    {item.resolved && (
+                      <Badge variant="outline" className="text-[10px] text-green-600 border-green-300">
+                        ✓ Resolvido
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  {!item.resolved && (
+                    <>
+                      <p className="text-xs font-medium text-muted-foreground">Coincidências encontradas:</p>
+                      <div className="space-y-2">
+                        {item.matches.map((match) => (
+                          <div key={match.id} className="flex items-center justify-between p-2 rounded-lg bg-background border border-border">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-medium">{match.name}</p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {match.email && `📧 ${match.email}`}
+                                {match.phone && ` 📱 ${match.phone}`}
+                                {match.cpf_cnpj && ` 📄 ${match.cpf_cnpj}`}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground">
+                                Segmentos: {(match.segment || []).join(', ')}
+                              </p>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="shrink-0 ml-2 text-xs"
+                              onClick={() => resolveDedupAsExisting(item.providerName, match)}
+                            >
+                              Vincular
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="w-full text-xs text-muted-foreground"
+                        onClick={() => resolveDedupAsNew(item.providerName)}
+                      >
+                        Criar como novo prestador
+                      </Button>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button
+              className="w-full"
+              disabled={dedupPending.some(d => !d.resolved)}
+              onClick={() => setShowDedupModal(false)}
+            >
+              {dedupPending.some(d => !d.resolved)
+                ? `${dedupPending.filter(d => !d.resolved).length} pendente(s)`
+                : 'Confirmar e Continuar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
