@@ -288,13 +288,48 @@ const ImportPage = () => {
     });
   }, [existingProviders]);
 
+  /* ─── File hash for duplicate prevention ─── */
+  const computeFileHash = async (file: File): Promise<string> => {
+    const buffer = await file.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  };
+
+  /* ─── Enhanced provider matching with fuzzy search ─── */
+  const findProviderMatches = (row: ParsedRow, providers: ExistingProvider[]): ExistingProvider[] => {
+    const matches: ExistingProvider[] = [];
+    const email = row.email.trim().toLowerCase();
+    const name = row.providerName.trim().toLowerCase();
+    const phone = row.phone.trim().replace(/\D/g, '');
+    const cpf = row.cpfCnpj.trim().replace(/\D/g, '');
+
+    for (const p of providers) {
+      if (email && p.email?.trim().toLowerCase() === email) { matches.push(p); continue; }
+      if (name && p.name.trim().toLowerCase() === name) { matches.push(p); continue; }
+      if (phone && phone.length >= 8 && p.phone?.replace(/\D/g, '')?.includes(phone.slice(-8))) { matches.push(p); continue; }
+      if (cpf && cpf !== 'isento' && p.cpf_cnpj?.replace(/\D/g, '') === cpf) { matches.push(p); continue; }
+    }
+    return matches;
+  };
+
   /* ─── Parse file ─── */
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Check for duplicate file
+    const fileHash = await computeFileHash(file);
+    if (importedFileHashes.has(fileHash)) {
+      toast.error('Este arquivo já foi importado. Selecione um arquivo diferente.');
+      if (fileRef.current) fileRef.current.value = '';
+      return;
+    }
+
     setFileName(file.name);
     setResult(null);
     setEditingCell(null);
+    setDedupPending([]);
 
     try {
       const XLSX = await import('xlsx');
@@ -344,12 +379,38 @@ const ImportPage = () => {
 
       // Apply cascade matching
       const matched = applyCascadeMatching(parsed);
+
+      // Check for provider matches that need user confirmation
+      const providerNames = [...new Set(matched.filter(r => r._matchType === 'new').map(r => r.providerName.trim()))];
+      const dedupItems: typeof dedupPending = [];
+
+      for (const pName of providerNames) {
+        const sampleRow = matched.find(r => r.providerName.trim() === pName)!;
+        const fuzzyMatches = findProviderMatches(sampleRow, existingProviders);
+        if (fuzzyMatches.length > 0) {
+          dedupItems.push({
+            rowId: sampleRow._id,
+            providerName: pName,
+            matches: fuzzyMatches,
+            resolved: false,
+          });
+        }
+      }
+
       setRows(matched);
       setErrors(runValidation(matched));
+      setDedupPending(dedupItems);
+
+      if (dedupItems.length > 0) {
+        setShowDedupModal(true);
+      }
+
+      // Store hash to prevent re-import
+      setImportedFileHashes(prev => new Set([...prev, fileHash]));
 
       const newCount = matched.filter(r => r._matchType === 'new').length;
       const mergeCount = matched.filter(r => r._matchType !== 'new').length;
-      toast.success(`${matched.length} linhas carregadas — ${mergeCount} existente(s), ${newCount} novo(s)`);
+      toast.success(`${matched.length} linhas carregadas — ${mergeCount} existente(s), ${newCount} novo(s)${dedupItems.length > 0 ? ` — ${dedupItems.length} coincidência(s) para revisão` : ''}`);
     } catch (err: any) {
       toast.error('Erro ao ler planilha: ' + err.message);
     }
