@@ -190,6 +190,7 @@ export type Database = {
         Row: {
           active: boolean
           address: string | null
+          auth_split_5x: boolean
           city: string | null
           cpf_cnpj: string | null
           created_at: string
@@ -207,6 +208,7 @@ export type Database = {
         Insert: {
           active?: boolean
           address?: string | null
+          auth_split_5x?: boolean
           city?: string | null
           cpf_cnpj?: string | null
           created_at?: string
@@ -224,6 +226,7 @@ export type Database = {
         Update: {
           active?: boolean
           address?: string | null
+          auth_split_5x?: boolean
           city?: string | null
           cpf_cnpj?: string | null
           created_at?: string
@@ -414,6 +417,36 @@ export type Database = {
         }
         Relationships: []
       }
+      system_logs: {
+        Row: {
+          action: string
+          context: Json | null
+          created_at: string
+          id: string
+          level: string
+          message: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          context?: Json | null
+          created_at?: string
+          id?: string
+          level?: string
+          message: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          context?: Json | null
+          created_at?: string
+          id?: string
+          level?: string
+          message?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       units: {
         Row: {
           created_at: string
@@ -498,6 +531,7 @@ export type Database = {
         Row: {
           balance: number
           id: string
+          locked_cashback: number
           pending_balance: number
           total_earned: number
           total_spent: number
@@ -507,6 +541,7 @@ export type Database = {
         Insert: {
           balance?: number
           id?: string
+          locked_cashback?: number
           pending_balance?: number
           total_earned?: number
           total_spent?: number
@@ -516,6 +551,7 @@ export type Database = {
         Update: {
           balance?: number
           id?: string
+          locked_cashback?: number
           pending_balance?: number
           total_earned?: number
           total_spent?: number
@@ -548,6 +584,16 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      process_sale_split: {
+        Args: {
+          _amount: number
+          _buyer_id: string
+          _description: string
+          _installments?: number
+          _seller_id: string
+        }
+        Returns: Json
       }
       release_fractioned_cashback: {
         Args: { _phase: string; _referral_id: string }
