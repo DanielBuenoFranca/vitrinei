@@ -369,6 +369,12 @@ export function ProviderForm({ open, onClose, onSaved, provider, segments }: Pro
                 <Switch checked={form.active} onCheckedChange={v => setForm(f => ({ ...f, active: v }))} />
               </div>
             </div>
+            <div>
+              <Label className="text-xs">Parcelamento 5x</Label>
+              <div className="pt-2">
+                <Switch checked={form.auth_split_5x} onCheckedChange={v => setForm(f => ({ ...f, auth_split_5x: v }))} />
+              </div>
+            </div>
           </div>
         </div>
         <DialogFooter>
