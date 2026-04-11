@@ -25,6 +25,109 @@ interface Campaign {
   is_active: boolean;
 }
 
+/* ─── Banking Section Component ─── */
+const BankingSection = ({ userId }: { userId: string }) => {
+  const [bankData, setBankData] = useState({ bank_name: '', bank_agency: '', bank_account: '', pix_key: '', latitude: '', longitude: '' });
+  const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    supabase.from('profiles').select('bank_name, bank_agency, bank_account, pix_key, latitude, longitude')
+      .eq('user_id', userId).maybeSingle().then(({ data }) => {
+        if (data) {
+          setBankData({
+            bank_name: (data as any).bank_name || '',
+            bank_agency: (data as any).bank_agency || '',
+            bank_account: (data as any).bank_account || '',
+            pix_key: (data as any).pix_key || '',
+            latitude: (data as any).latitude?.toString() || '',
+            longitude: (data as any).longitude?.toString() || '',
+          });
+        }
+        setLoaded(true);
+      });
+  }, [userId]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    const updates: Record<string, any> = {
+      bank_name: bankData.bank_name || null,
+      bank_agency: bankData.bank_agency || null,
+      bank_account: bankData.bank_account || null,
+      pix_key: bankData.pix_key || null,
+      latitude: bankData.latitude ? parseFloat(bankData.latitude) : null,
+      longitude: bankData.longitude ? parseFloat(bankData.longitude) : null,
+    };
+    const { error } = await supabase.from('profiles').update(updates).eq('user_id', userId);
+    if (error) toast.error('Erro ao salvar: ' + error.message);
+    else toast.success('Dados bancários salvos!');
+    setSaving(false);
+  };
+
+  const getLocation = () => {
+    if (!navigator.geolocation) { toast.error('Geolocalização não suportada'); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setBankData(prev => ({ ...prev, latitude: pos.coords.latitude.toFixed(6), longitude: pos.coords.longitude.toFixed(6) }));
+        toast.success('Localização capturada!');
+      },
+      () => toast.error('Permissão de localização negada')
+    );
+  };
+
+  if (!loaded) return null;
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <Landmark className="w-4 h-4 text-primary" /> Dados Bancários e Localização
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label className="text-xs">Banco</Label>
+            <Input className="h-8 text-xs" placeholder="Nome do banco" value={bankData.bank_name} onChange={e => setBankData(p => ({ ...p, bank_name: e.target.value }))} />
+          </div>
+          <div>
+            <Label className="text-xs">Agência</Label>
+            <Input className="h-8 text-xs" placeholder="0001" value={bankData.bank_agency} onChange={e => setBankData(p => ({ ...p, bank_agency: e.target.value }))} />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label className="text-xs">Conta</Label>
+            <Input className="h-8 text-xs" placeholder="12345-6" value={bankData.bank_account} onChange={e => setBankData(p => ({ ...p, bank_account: e.target.value }))} />
+          </div>
+          <div>
+            <Label className="text-xs">Chave Pix</Label>
+            <Input className="h-8 text-xs" placeholder="CPF, e-mail ou chave" value={bankData.pix_key} onChange={e => setBankData(p => ({ ...p, pix_key: e.target.value }))} />
+          </div>
+        </div>
+        <div className="flex items-end gap-2">
+          <div className="flex-1 grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs">Latitude</Label>
+              <Input className="h-8 text-xs" placeholder="-23.550520" value={bankData.latitude} onChange={e => setBankData(p => ({ ...p, latitude: e.target.value }))} />
+            </div>
+            <div>
+              <Label className="text-xs">Longitude</Label>
+              <Input className="h-8 text-xs" placeholder="-46.633308" value={bankData.longitude} onChange={e => setBankData(p => ({ ...p, longitude: e.target.value }))} />
+            </div>
+          </div>
+          <Button variant="outline" size="sm" className="h-8 gap-1 shrink-0" onClick={getLocation}>
+            <MapPin className="w-3 h-3" /> GPS
+          </Button>
+        </div>
+        <Button size="sm" className="w-full" onClick={handleSave} disabled={saving}>
+          {saving ? 'Salvando...' : 'Salvar Dados'}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+};
+
 const WalletPage = () => {
   const navigate = useNavigate();
   const { user, requireAuth } = useAuth();
