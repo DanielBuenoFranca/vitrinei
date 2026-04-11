@@ -546,6 +546,9 @@ const WalletPage = () => {
           </Card>
         )}
 
+        {/* Banking / Pix Data */}
+        <BankingSection userId={user.id} />
+
         {/* Transaction History */}
         <Card>
           <CardHeader className="pb-2">

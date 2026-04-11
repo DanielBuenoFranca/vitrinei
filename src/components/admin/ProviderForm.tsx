@@ -174,18 +174,40 @@ export function ProviderForm({ open, onClose, onSaved, provider, segments }: Pro
       return;
     }
 
-    // Uniqueness check by CPF/CNPJ
+    // Cross-check uniqueness: CPF/CNPJ, Email, Phone
+    const excludeId = provider?.id || 0;
+    const uniqueChecks: Promise<any>[] = [];
+
     if (rawDigits.length >= 11) {
-      const { data: existing } = await supabase
-        .from('providers')
-        .select('id, name')
-        .eq('cpf_cnpj', rawDigits)
-        .neq('id', provider?.id || 0)
-        .limit(1);
-      if (existing && existing.length > 0) {
-        toast.error(`CPF/CNPJ já cadastrado para: ${existing[0].name}`);
-        return;
-      }
+      uniqueChecks.push(
+        supabase.from('providers').select('id, name').eq('cpf_cnpj', rawDigits).neq('id', excludeId).limit(1)
+          .then(({ data }) => {
+            if (data && data.length > 0) throw new Error(`CPF/CNPJ já cadastrado para: ${data[0].name}`);
+          })
+      );
+    }
+    if (form.email.trim()) {
+      uniqueChecks.push(
+        supabase.from('providers').select('id, name').eq('email', form.email.trim()).neq('id', excludeId).limit(1)
+          .then(({ data }) => {
+            if (data && data.length > 0) throw new Error(`E-mail já cadastrado para: ${data[0].name}`);
+          })
+      );
+    }
+    if (form.phone.trim()) {
+      uniqueChecks.push(
+        supabase.from('providers').select('id, name').eq('phone', form.phone.trim()).neq('id', excludeId).limit(1)
+          .then(({ data }) => {
+            if (data && data.length > 0) throw new Error(`Telefone já cadastrado para: ${data[0].name}`);
+          })
+      );
+    }
+
+    try {
+      await Promise.all(uniqueChecks);
+    } catch (e: any) {
+      toast.error(`Ação bloqueada: ${e.message}. Corrija ou recupere o acesso antes de prosseguir.`);
+      return;
     }
 
     setSaving(true);
