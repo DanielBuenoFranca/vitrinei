@@ -86,7 +86,7 @@ export function ProviderForm({ open, onClose, onSaved, provider, segments }: Pro
   const isEdit = !!provider;
   const [form, setForm] = useState({
     name: '', type: 'mei', phone: '', email: '',
-    address: '', city: '', distance: '2 km', rating: 4.5, active: true,
+    address: '', city: '', distance: '2 km', rating: 4.5, active: true, auth_split_5x: false,
   });
   const [selectedSegments, setSelectedSegments] = useState<string[]>([]);
   const [cpfCnpj, setCpfCnpj] = useState('');
@@ -103,12 +103,13 @@ export function ProviderForm({ open, onClose, onSaved, provider, segments }: Pro
         phone: provider.phone || '', email: provider.email || '',
         address: provider.address || '', city: provider.city || '',
         distance: provider.distance, rating: provider.rating, active: provider.active,
+        auth_split_5x: (provider as any).auth_split_5x || false,
       });
       setSelectedSegments(Array.isArray(provider.segment) ? provider.segment : [provider.segment].filter(Boolean));
       setCpfCnpj(provider.cpf_cnpj || '');
       setLogoUrl((provider as any).logo_url || null);
     } else {
-      setForm({ name: '', type: 'mei', phone: '', email: '', address: '', city: '', distance: '2 km', rating: 4.5, active: true });
+      setForm({ name: '', type: 'mei', phone: '', email: '', address: '', city: '', distance: '2 km', rating: 4.5, active: true, auth_split_5x: false });
       setSelectedSegments(segments[0] ? [segments[0].name] : []);
       setCpfCnpj('');
       setLogoUrl(null);
