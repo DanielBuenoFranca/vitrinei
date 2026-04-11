@@ -174,16 +174,28 @@ export function ProviderForm({ open, onClose, onSaved, provider, segments }: Pro
       return;
     }
 
-    // Uniqueness check by CPF/CNPJ
+    // Cross-check uniqueness: CPF/CNPJ, Email, Phone
+    const excludeId = provider?.id || 0;
+    const uniqueChecks: Promise<any>[] = [];
+
     if (rawDigits.length >= 11) {
-      const { data: existing } = await supabase
-        .from('providers')
-        .select('id, name')
-        .eq('cpf_cnpj', rawDigits)
-        .neq('id', provider?.id || 0)
-        .limit(1);
-      if (existing && existing.length > 0) {
-        toast.error(`CPF/CNPJ já cadastrado para: ${existing[0].name}`);
+      const { data } = await supabase.from('providers').select('id, name').eq('cpf_cnpj', rawDigits).neq('id', excludeId).limit(1);
+      if (data && data.length > 0) {
+        toast.error(`Ação bloqueada: CPF/CNPJ já vinculado a "${data[0].name}". Corrija ou recupere o acesso.`);
+        return;
+      }
+    }
+    if (form.email.trim()) {
+      const { data } = await supabase.from('providers').select('id, name').eq('email', form.email.trim()).neq('id', excludeId).limit(1);
+      if (data && data.length > 0) {
+        toast.error(`Ação bloqueada: E-mail já vinculado a "${data[0].name}". Corrija ou recupere o acesso.`);
+        return;
+      }
+    }
+    if (form.phone.trim()) {
+      const { data } = await supabase.from('providers').select('id, name').eq('phone', form.phone.trim()).neq('id', excludeId).limit(1);
+      if (data && data.length > 0) {
+        toast.error(`Ação bloqueada: Telefone já vinculado a "${data[0].name}". Corrija ou recupere o acesso.`);
         return;
       }
     }

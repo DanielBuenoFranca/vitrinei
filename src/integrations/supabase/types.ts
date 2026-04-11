@@ -135,28 +135,52 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bank_account: string | null
+          bank_agency: string | null
+          bank_name: string | null
           created_at: string
           display_name: string | null
           id: string
+          is_customer: boolean
+          is_provider: boolean
+          latitude: number | null
+          longitude: number | null
           phone: string | null
+          pix_key: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           avatar_url?: string | null
+          bank_account?: string | null
+          bank_agency?: string | null
+          bank_name?: string | null
           created_at?: string
           display_name?: string | null
           id?: string
+          is_customer?: boolean
+          is_provider?: boolean
+          latitude?: number | null
+          longitude?: number | null
           phone?: string | null
+          pix_key?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           avatar_url?: string | null
+          bank_account?: string | null
+          bank_agency?: string | null
+          bank_name?: string | null
           created_at?: string
           display_name?: string | null
           id?: string
+          is_customer?: boolean
+          is_provider?: boolean
+          latitude?: number | null
+          longitude?: number | null
           phone?: string | null
+          pix_key?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -505,6 +529,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_provider_uniqueness: {
+        Args: {
+          _cpf_cnpj?: string
+          _email?: string
+          _exclude_id?: number
+          _phone?: string
+        }
+        Returns: Json
+      }
       get_user_roles: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"][]

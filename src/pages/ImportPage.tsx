@@ -192,6 +192,41 @@ const validateBusinessRules = (
   existingSegments: Set<string>,
 ): RowError[] => {
   const errors: RowError[] = [];
+  
+  // Cross-row uniqueness check within the import itself
+  const cpfMap = new Map<string, number>();
+  const emailMap = new Map<string, number>();
+  const phoneMap = new Map<string, number>();
+  
+  rows.forEach(row => {
+    const cpf = row.cpfCnpj.replace(/\D/g, '').trim();
+    const email = row.email.trim().toLowerCase();
+    const phone = row.phone.replace(/\D/g, '').trim();
+    
+    if (cpf && cpf.length >= 11) {
+      if (cpfMap.has(cpf)) {
+        errors.push({ rowId: row._id, field: 'cpfCnpj', message: `CPF/CNPJ duplicado na planilha (linha ${cpfMap.get(cpf)})`, severity: 'error' });
+      } else {
+        cpfMap.set(cpf, row._id);
+      }
+    }
+    if (email) {
+      if (emailMap.has(email)) {
+        errors.push({ rowId: row._id, field: 'email', message: `E-mail duplicado na planilha (linha ${emailMap.get(email)})`, severity: 'error' });
+      } else {
+        emailMap.set(email, row._id);
+      }
+    }
+    if (phone && phone.length >= 8) {
+      const phoneKey = phone.slice(-8);
+      if (phoneMap.has(phoneKey)) {
+        errors.push({ rowId: row._id, field: 'phone', message: `Telefone duplicado na planilha (linha ${phoneMap.get(phoneKey)})`, severity: 'error' });
+      } else {
+        phoneMap.set(phoneKey, row._id);
+      }
+    }
+  });
+  
   rows.forEach(row => {
     if (row.segment.trim() && !existingSegments.has(row.segment.trim())) {
       errors.push({ rowId: row._id, field: 'segment', message: `Segmento "${row.segment}" será criado automaticamente`, severity: 'warning' });
