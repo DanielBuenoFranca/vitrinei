@@ -12,6 +12,7 @@ import { ArrowLeft, Wallet, TrendingUp, TrendingDown, Gift, Copy, Share2, Clock,
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { motion } from 'framer-motion';
+import { Landmark, MapPin } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
