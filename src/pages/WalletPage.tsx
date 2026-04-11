@@ -317,6 +317,11 @@ const WalletPage = () => {
       referral_cashback: '🎯 Indicação',
       referral_bonus: '🏆 Bônus Indicação',
       plan_change: '🔄 Mudança de Plano',
+      purchase: '🛒 Compra',
+      sale_credit: '💰 Venda',
+      platform_fee: '🏦 Taxa Vitrinei',
+      locked_cashback: '🔒 Cashback Retido',
+      anticipation_fee: '⚡ Desconto Antecipação',
     };
     return labels[type] || type;
   };
