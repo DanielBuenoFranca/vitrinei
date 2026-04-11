@@ -317,6 +317,11 @@ const WalletPage = () => {
       referral_cashback: '🎯 Indicação',
       referral_bonus: '🏆 Bônus Indicação',
       plan_change: '🔄 Mudança de Plano',
+      purchase: '🛒 Compra',
+      sale_credit: '💰 Venda',
+      platform_fee: '🏦 Taxa Vitrinei',
+      locked_cashback: '🔒 Cashback Retido',
+      anticipation_fee: '⚡ Desconto Antecipação',
     };
     return labels[type] || type;
   };
@@ -425,9 +430,12 @@ const WalletPage = () => {
                 <div className="text-right">
                   <p className="text-sm opacity-80 flex items-center gap-1 justify-end"><Lock className="w-3 h-3" /> A Liberar</p>
                   <p className="text-xl font-semibold mt-1">R$ {(wallet?.pending_balance || 0).toFixed(2)}</p>
+                  {(wallet?.locked_cashback || 0) > 0 && (
+                    <p className="text-xs opacity-70 mt-1">🔒 Retido: R$ {wallet.locked_cashback.toFixed(2)}</p>
+                  )}
                 </div>
               </div>
-              <div className="flex gap-4 mt-4 text-xs opacity-80">
+              <div className="flex gap-4 mt-4 text-xs opacity-80 flex-wrap">
                 <span className="flex items-center gap-1"><TrendingUp className="w-3 h-3" /> Ganhos: R$ {(wallet?.total_earned || 0).toFixed(2)}</span>
                 <span className="flex items-center gap-1"><TrendingDown className="w-3 h-3" /> Gastos: R$ {(wallet?.total_spent || 0).toFixed(2)}</span>
               </div>
