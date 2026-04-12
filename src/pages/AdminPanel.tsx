@@ -320,16 +320,16 @@ const AdminPanel = () => {
     setSavingUser(false);
   };
 
-  const activateUser = async (userId: string) => {
+  const activateUser = async (userId: string, enableSelling = false) => {
     setActivatingUser(userId);
     try {
       const { data, error } = await supabase.functions.invoke('activate-user', {
-        body: { user_id: userId },
+        body: { user_id: userId, enable_selling: enableSelling },
       });
       if (error || data?.error) {
         toast.error('Erro ao ativar: ' + (data?.error || error?.message || 'desconhecido'));
       } else {
-        toast.success('Usuário ativado com sucesso!');
+        toast.success(enableSelling ? 'Prestador ativado e liberado para vender!' : 'Usuário ativado com sucesso!');
         await fetchUsers();
       }
     } catch (e: any) {
@@ -1050,8 +1050,8 @@ const AdminPanel = () => {
                               <TableCell className="text-xs text-muted-foreground">
                                 {new Date(profile.created_at).toLocaleDateString('pt-BR')}
                               </TableCell>
-                              <TableCell>
-                                <div className="flex gap-1">
+                               <TableCell>
+                                <div className="flex gap-1 flex-wrap">
                                   {!authUserConfirmed[profile.user_id] && (
                                     <Button
                                       variant="outline"
@@ -1065,6 +1065,39 @@ const AdminPanel = () => {
                                         : <CheckCircle className="h-3 w-3" />
                                       }
                                       Ativar
+                                    </Button>
+                                  )}
+                                  {/* Enable selling: activates + applies subscription debit + creates provider */}
+                                  {(hasProvider || hasMixed) && authUserConfirmed[profile.user_id] && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-8 text-xs gap-1 border-green-300 text-green-700 hover:bg-green-50"
+                                      disabled={activatingUser === profile.user_id}
+                                      onClick={() => activateUser(profile.user_id, true)}
+                                      title="Liberar prestador para vender e aplicar débito de assinatura"
+                                    >
+                                      {activatingUser === profile.user_id
+                                        ? <Loader2 className="h-3 w-3 animate-spin" />
+                                        : <Store className="h-3 w-3" />
+                                      }
+                                      Liberar Venda
+                                    </Button>
+                                  )}
+                                  {!authUserConfirmed[profile.user_id] && (hasProvider || hasMixed) && (
+                                    <Button
+                                      variant="default"
+                                      size="sm"
+                                      className="h-8 text-xs gap-1"
+                                      disabled={activatingUser === profile.user_id}
+                                      onClick={() => activateUser(profile.user_id, true)}
+                                      title="Ativar conta + liberar venda + aplicar débito"
+                                    >
+                                      {activatingUser === profile.user_id
+                                        ? <Loader2 className="h-3 w-3 animate-spin" />
+                                        : <><CheckCircle className="h-3 w-3" /><Store className="h-3 w-3" /></>
+                                      }
+                                      Ativar + Venda
                                     </Button>
                                   )}
                                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditUser(profile)}>
