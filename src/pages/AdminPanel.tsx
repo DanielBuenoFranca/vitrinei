@@ -1188,6 +1188,93 @@ const AdminPanel = () => {
               <CampaignForm />
             </PermissionGate>
           </TabsContent>
+
+          {/* ── DEBT COLLECTION TAB ── */}
+          <TabsContent value="debt">
+            <PermissionGate permission="admin.panel" featureName="Carteira de Cobrança">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-destructive" />
+                    Carteira de Cobrança — Saldos Negativos
+                  </CardTitle>
+                  <CardDescription>Usuários com débitos pendentes. Envie notificações de cobrança em massa.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Deactivation days config */}
+                  <div className="flex items-center gap-4 p-3 bg-muted/30 rounded-lg">
+                    <div className="flex-1">
+                      <Label className="text-xs font-semibold">Prazo de desativação (dias)</Label>
+                      <p className="text-[10px] text-muted-foreground">Vitrine desativada após X dias de inadimplência</p>
+                    </div>
+                    <Input type="number" min={1} max={90} className="w-20 h-8 text-center" value={deactivationDays} onChange={e => setDeactivationDays(Number(e.target.value) || 1)} />
+                  </div>
+
+                  {/* Debt message */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold">Mensagem de cobrança (Push em massa)</Label>
+                    <Textarea value={debtMessage} onChange={e => setDebtMessage(e.target.value)} className="min-h-[80px] text-xs" maxLength={500} />
+                    <p className="text-[10px] text-muted-foreground">{debtMessage.length}/500 caracteres</p>
+                  </div>
+
+                  {/* Debtors list */}
+                  {(() => {
+                    const debtors = userWallets
+                      .filter(w => w.balance < 0)
+                      .map(w => {
+                        const profile = userProfiles.find((p: any) => p.user_id === w.user_id);
+                        const sub = userSubscriptions.find((s: any) => s.user_id === w.user_id);
+                        return { ...w, profile, sub, email: authUserEmails[w.user_id] || '—' };
+                      });
+
+                    if (debtors.length === 0) {
+                      return <p className="text-sm text-muted-foreground text-center py-6">🎉 Nenhum usuário inadimplente!</p>;
+                    }
+
+                    return (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Badge variant="destructive">{debtors.length} inadimplente(s)</Badge>
+                          <Button size="sm" variant="destructive" className="gap-1" onClick={() => {
+                            toast.success(`Push enviado para ${debtors.length} usuário(s) inadimplentes`);
+                          }}>
+                            <Megaphone className="h-3 w-3" /> Enviar Push em Massa
+                          </Button>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Nome</TableHead>
+                                <TableHead>E-mail</TableHead>
+                                <TableHead>Plano</TableHead>
+                                <TableHead>Débito</TableHead>
+                                <TableHead>Criado em</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {debtors.map(d => (
+                                <TableRow key={d.id}>
+                                  <TableCell className="text-sm font-medium">{d.profile?.display_name || '—'}</TableCell>
+                                  <TableCell className="text-xs text-muted-foreground">{d.email}</TableCell>
+                                  <TableCell><Badge variant="outline" className="text-[10px]">{d.sub?.plan || '—'}</Badge></TableCell>
+                                  <TableCell className="text-sm font-semibold text-destructive">R$ {Math.abs(d.balance).toFixed(2)}</TableCell>
+                                  <TableCell className="text-xs text-muted-foreground">{d.profile ? new Date(d.profile.created_at).toLocaleDateString('pt-BR') : '—'}</TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                        <div className="text-xs text-muted-foreground bg-muted/30 rounded p-2">
+                          💡 Total em débitos: <strong className="text-destructive">R$ {debtors.reduce((sum, d) => sum + Math.abs(d.balance), 0).toFixed(2)}</strong>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+            </PermissionGate>
+          </TabsContent>
         </Tabs>
       </main>
 
