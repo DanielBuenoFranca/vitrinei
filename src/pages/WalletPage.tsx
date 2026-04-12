@@ -264,32 +264,48 @@ const WalletPage = () => {
         return;
       }
 
-      // Pay subscription - zero out debt
-      await supabase.from('wallets').update({ balance: 0 }).eq('id', wallet.id);
+      // Apply financial rules: 1% Vitrinei fee on subscription payment
+      const vitrineiFee = Math.round(debitAmount * 0.01 * 100) / 100;
+      const netCashback = Math.round((debitAmount - vitrineiFee) * 100) / 100;
+      const planLabel = planChanged ? selectedPlan.name : subscription.plan;
 
-      await supabase.from('wallet_transactions').insert({
-        user_id: user!.id,
-        wallet_id: wallet.id,
-        amount: debitAmount,
-        type: 'subscription_payment',
-        description: `[Pagamento] ${paymentMethod === 'pix' ? 'Pix' : 'Cartão'} - Assinatura ${planChanged ? selectedPlan.name : subscription.plan} (R$ ${debitAmount.toFixed(2)})`,
-      });
-
-      // Apply cashback
-      await supabase.from('wallets').update({
-        balance: debitAmount,
-        total_earned: (wallet.total_earned || 0) + debitAmount,
+      // Pay subscription - credit the payment amount
+      await supabase.from('wallets').update({ 
+        balance: 0,
       }).eq('id', wallet.id);
 
       await supabase.from('wallet_transactions').insert({
         user_id: user!.id,
         wallet_id: wallet.id,
         amount: debitAmount,
-        type: 'cashback_subscription',
-        description: `[Cashback] Crédito de boas-vindas - Plano ${planChanged ? selectedPlan.name : subscription.plan} (R$ ${debitAmount.toFixed(2)})`,
+        type: 'subscription_payment',
+        description: `[Pagamento] ${paymentMethod === 'pix' ? 'Pix' : 'Cartão'} - Assinatura ${planLabel} (R$ ${debitAmount.toFixed(2)})`,
       });
 
-      toast.success(`Assinatura paga! Cashback de R$ ${debitAmount.toFixed(2)} creditado.`);
+      // Register Vitrinei fee (1% retention)
+      await supabase.from('wallet_transactions').insert({
+        user_id: user!.id,
+        wallet_id: wallet.id,
+        amount: -vitrineiFee,
+        type: 'platform_fee',
+        description: `[Taxa Vitrinei] 1% sobre pagamento de assinatura R$ ${debitAmount.toFixed(2)}`,
+      });
+
+      // Apply net cashback (payment - fee)
+      await supabase.from('wallets').update({
+        balance: netCashback,
+        total_earned: (wallet.total_earned || 0) + netCashback,
+      }).eq('id', wallet.id);
+
+      await supabase.from('wallet_transactions').insert({
+        user_id: user!.id,
+        wallet_id: wallet.id,
+        amount: netCashback,
+        type: 'cashback_subscription',
+        description: `[Cashback] Crédito líquido - Plano ${planLabel} (R$ ${netCashback.toFixed(2)} = R$ ${debitAmount.toFixed(2)} - Taxa 1%)`,
+      });
+
+      toast.success(`Assinatura paga! Cashback líquido de R$ ${netCashback.toFixed(2)} creditado (taxa 1%: R$ ${vitrineiFee.toFixed(2)}).`);
       setCheckoutOpen(false);
       loadData();
       refreshConversionWallet();
@@ -762,10 +778,23 @@ const WalletPage = () => {
                 <span>Plano {planOptions.find(p => p.id === checkoutPlan)?.name || '—'}</span>
                 <span className="font-semibold">R$ {(planOptions.find(p => p.id === checkoutPlan)?.price || 0).toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-xs text-green-600">
-                <span>Cashback de boas-vindas</span>
-                <span className="font-semibold">+R$ {(planOptions.find(p => p.id === checkoutPlan)?.price || 0).toFixed(2)}</span>
-              </div>
+              {(() => {
+                const planPrice = planOptions.find(p => p.id === checkoutPlan)?.price || 0;
+                const fee = Math.round(planPrice * 0.01 * 100) / 100;
+                const net = Math.round((planPrice - fee) * 100) / 100;
+                return (
+                  <>
+                    <div className="flex justify-between text-xs text-destructive">
+                      <span>Taxa Vitrinei (1%)</span>
+                      <span className="font-semibold">-R$ {fee.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-green-600">
+                      <span>Cashback líquido</span>
+                      <span className="font-semibold">+R$ {net.toFixed(2)}</span>
+                    </div>
+                  </>
+                );
+              })()}
               <div className="border-t border-border pt-1 flex justify-between text-sm font-bold">
                 <span>Total</span>
                 <span className="text-primary">R$ {(planOptions.find(p => p.id === checkoutPlan)?.price || 0).toFixed(2)}</span>

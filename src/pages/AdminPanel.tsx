@@ -76,6 +76,9 @@ const AdminPanel = () => {
   const [unitForm, setUnitForm] = useState<{ open: boolean; item: Unit | null }>({ open: false, item: null });
   const [units, setUnits] = useState<Unit[]>([]);
   const [generatingUnits, setGeneratingUnits] = useState(false);
+  const [userWallets, setUserWallets] = useState<any[]>([]);
+  const [debtMessage, setDebtMessage] = useState('Olá, verifiquei sua carteira e temos valores em débitos em aberto... faça contato com a central de atendimento para resolvermos juntos qualquer problema.');
+  const [deactivationDays, setDeactivationDays] = useState(1);
 
   // Users management
   const [authUsers, setAuthUsers] = useState<any[]>([]);
@@ -170,14 +173,16 @@ const AdminPanel = () => {
   useEffect(() => { fetchData(); fetchUsers(); fetchMarquee(); }, []);
 
   const fetchUsers = async () => {
-    const [profilesRes, rolesRes, subsRes] = await Promise.all([
+    const [profilesRes, rolesRes, subsRes, walletsRes] = await Promise.all([
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('user_roles').select('*'),
       supabase.from('subscriptions').select('*'),
+      supabase.from('wallets').select('*'),
     ]);
     setUserProfiles(profilesRes.data || []);
     setUserRoles(rolesRes.data || []);
     setUserSubscriptions(subsRes.data || []);
+    setUserWallets(walletsRes.data || []);
 
     // Fetch auth emails via edge function (master only)
     try {
@@ -320,16 +325,16 @@ const AdminPanel = () => {
     setSavingUser(false);
   };
 
-  const activateUser = async (userId: string) => {
+  const activateUser = async (userId: string, enableSelling = false) => {
     setActivatingUser(userId);
     try {
       const { data, error } = await supabase.functions.invoke('activate-user', {
-        body: { user_id: userId },
+        body: { user_id: userId, enable_selling: enableSelling },
       });
       if (error || data?.error) {
         toast.error('Erro ao ativar: ' + (data?.error || error?.message || 'desconhecido'));
       } else {
-        toast.success('Usuário ativado com sucesso!');
+        toast.success(enableSelling ? 'Prestador ativado e liberado para vender!' : 'Usuário ativado com sucesso!');
         await fetchUsers();
       }
     } catch (e: any) {
@@ -574,6 +579,9 @@ const AdminPanel = () => {
             </TabsTrigger>
             <TabsTrigger value="campaigns" className="text-xs gap-1 px-2 py-1.5">
               <Gift className="h-3 w-3" /> Campanhas
+            </TabsTrigger>
+            <TabsTrigger value="debt" className="text-xs gap-1 px-2 py-1.5">
+              <AlertTriangle className="h-3 w-3" /> Cobranças
             </TabsTrigger>
           </TabsList>
 
@@ -1050,8 +1058,8 @@ const AdminPanel = () => {
                               <TableCell className="text-xs text-muted-foreground">
                                 {new Date(profile.created_at).toLocaleDateString('pt-BR')}
                               </TableCell>
-                              <TableCell>
-                                <div className="flex gap-1">
+                               <TableCell>
+                                <div className="flex gap-1 flex-wrap">
                                   {!authUserConfirmed[profile.user_id] && (
                                     <Button
                                       variant="outline"
@@ -1065,6 +1073,39 @@ const AdminPanel = () => {
                                         : <CheckCircle className="h-3 w-3" />
                                       }
                                       Ativar
+                                    </Button>
+                                  )}
+                                  {/* Enable selling: activates + applies subscription debit + creates provider */}
+                                  {(hasProvider || hasMixed) && authUserConfirmed[profile.user_id] && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-8 text-xs gap-1 border-green-300 text-green-700 hover:bg-green-50"
+                                      disabled={activatingUser === profile.user_id}
+                                      onClick={() => activateUser(profile.user_id, true)}
+                                      title="Liberar prestador para vender e aplicar débito de assinatura"
+                                    >
+                                      {activatingUser === profile.user_id
+                                        ? <Loader2 className="h-3 w-3 animate-spin" />
+                                        : <Store className="h-3 w-3" />
+                                      }
+                                      Liberar Venda
+                                    </Button>
+                                  )}
+                                  {!authUserConfirmed[profile.user_id] && (hasProvider || hasMixed) && (
+                                    <Button
+                                      variant="default"
+                                      size="sm"
+                                      className="h-8 text-xs gap-1"
+                                      disabled={activatingUser === profile.user_id}
+                                      onClick={() => activateUser(profile.user_id, true)}
+                                      title="Ativar conta + liberar venda + aplicar débito"
+                                    >
+                                      {activatingUser === profile.user_id
+                                        ? <Loader2 className="h-3 w-3 animate-spin" />
+                                        : <><CheckCircle className="h-3 w-3" /><Store className="h-3 w-3" /></>
+                                      }
+                                      Ativar + Venda
                                     </Button>
                                   )}
                                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditUser(profile)}>
@@ -1145,6 +1186,93 @@ const AdminPanel = () => {
           <TabsContent value="campaigns">
             <PermissionGate permission="admin.panel" featureName="Gestão de Campanhas">
               <CampaignForm />
+            </PermissionGate>
+          </TabsContent>
+
+          {/* ── DEBT COLLECTION TAB ── */}
+          <TabsContent value="debt">
+            <PermissionGate permission="admin.panel" featureName="Carteira de Cobrança">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-destructive" />
+                    Carteira de Cobrança — Saldos Negativos
+                  </CardTitle>
+                  <CardDescription>Usuários com débitos pendentes. Envie notificações de cobrança em massa.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Deactivation days config */}
+                  <div className="flex items-center gap-4 p-3 bg-muted/30 rounded-lg">
+                    <div className="flex-1">
+                      <Label className="text-xs font-semibold">Prazo de desativação (dias)</Label>
+                      <p className="text-[10px] text-muted-foreground">Vitrine desativada após X dias de inadimplência</p>
+                    </div>
+                    <Input type="number" min={1} max={90} className="w-20 h-8 text-center" value={deactivationDays} onChange={e => setDeactivationDays(Number(e.target.value) || 1)} />
+                  </div>
+
+                  {/* Debt message */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold">Mensagem de cobrança (Push em massa)</Label>
+                    <Textarea value={debtMessage} onChange={e => setDebtMessage(e.target.value)} className="min-h-[80px] text-xs" maxLength={500} />
+                    <p className="text-[10px] text-muted-foreground">{debtMessage.length}/500 caracteres</p>
+                  </div>
+
+                  {/* Debtors list */}
+                  {(() => {
+                    const debtors = userWallets
+                      .filter(w => w.balance < 0)
+                      .map(w => {
+                        const profile = userProfiles.find((p: any) => p.user_id === w.user_id);
+                        const sub = userSubscriptions.find((s: any) => s.user_id === w.user_id);
+                        return { ...w, profile, sub, email: authUserEmails[w.user_id] || '—' };
+                      });
+
+                    if (debtors.length === 0) {
+                      return <p className="text-sm text-muted-foreground text-center py-6">🎉 Nenhum usuário inadimplente!</p>;
+                    }
+
+                    return (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Badge variant="destructive">{debtors.length} inadimplente(s)</Badge>
+                          <Button size="sm" variant="destructive" className="gap-1" onClick={() => {
+                            toast.success(`Push enviado para ${debtors.length} usuário(s) inadimplentes`);
+                          }}>
+                            <Megaphone className="h-3 w-3" /> Enviar Push em Massa
+                          </Button>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Nome</TableHead>
+                                <TableHead>E-mail</TableHead>
+                                <TableHead>Plano</TableHead>
+                                <TableHead>Débito</TableHead>
+                                <TableHead>Criado em</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {debtors.map(d => (
+                                <TableRow key={d.id}>
+                                  <TableCell className="text-sm font-medium">{d.profile?.display_name || '—'}</TableCell>
+                                  <TableCell className="text-xs text-muted-foreground">{d.email}</TableCell>
+                                  <TableCell><Badge variant="outline" className="text-[10px]">{d.sub?.plan || '—'}</Badge></TableCell>
+                                  <TableCell className="text-sm font-semibold text-destructive">R$ {Math.abs(d.balance).toFixed(2)}</TableCell>
+                                  <TableCell className="text-xs text-muted-foreground">{d.profile ? new Date(d.profile.created_at).toLocaleDateString('pt-BR') : '—'}</TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                        <div className="text-xs text-muted-foreground bg-muted/30 rounded p-2">
+                          💡 Total em débitos: <strong className="text-destructive">R$ {debtors.reduce((sum, d) => sum + Math.abs(d.balance), 0).toFixed(2)}</strong>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
             </PermissionGate>
           </TabsContent>
         </Tabs>

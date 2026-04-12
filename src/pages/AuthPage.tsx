@@ -247,6 +247,31 @@ const AuthPage = () => {
         price: plan.price,
       });
 
+      // Update profile flags based on selected profile
+      const isProvider = selectedProfile === 'provider' || selectedProfile === 'mixed';
+      const isCustomer = selectedProfile === 'client' || selectedProfile === 'mixed';
+      await supabase.from('profiles').update({
+        is_provider: isProvider,
+        is_customer: isCustomer,
+        phone: phone || null,
+      }).eq('user_id', data.user.id);
+
+      // Auto-create provider record for provider/mixed profiles
+      if (isProvider) {
+        const providerName = name || email.split('@')[0];
+        try {
+          await supabase.from('providers').insert({
+            name: providerName,
+            segment: ['Geral'],
+            type: 'mei',
+            email: email,
+            phone: phone || '',
+            active: true,
+            storefront_config: {},
+          });
+        } catch { /* provider may already exist — ignore */ }
+      }
+
       // Create initial debit in wallet
       const { data: walletData } = await supabase.from('wallets')
         .select('id')
