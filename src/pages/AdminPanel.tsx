@@ -76,6 +76,9 @@ const AdminPanel = () => {
   const [unitForm, setUnitForm] = useState<{ open: boolean; item: Unit | null }>({ open: false, item: null });
   const [units, setUnits] = useState<Unit[]>([]);
   const [generatingUnits, setGeneratingUnits] = useState(false);
+  const [userWallets, setUserWallets] = useState<any[]>([]);
+  const [debtMessage, setDebtMessage] = useState('Olá, verifiquei sua carteira e temos valores em débitos em aberto... faça contato com a central de atendimento para resolvermos juntos qualquer problema.');
+  const [deactivationDays, setDeactivationDays] = useState(1);
 
   // Users management
   const [authUsers, setAuthUsers] = useState<any[]>([]);
@@ -170,14 +173,16 @@ const AdminPanel = () => {
   useEffect(() => { fetchData(); fetchUsers(); fetchMarquee(); }, []);
 
   const fetchUsers = async () => {
-    const [profilesRes, rolesRes, subsRes] = await Promise.all([
+    const [profilesRes, rolesRes, subsRes, walletsRes] = await Promise.all([
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('user_roles').select('*'),
       supabase.from('subscriptions').select('*'),
+      supabase.from('wallets').select('*'),
     ]);
     setUserProfiles(profilesRes.data || []);
     setUserRoles(rolesRes.data || []);
     setUserSubscriptions(subsRes.data || []);
+    setUserWallets(walletsRes.data || []);
 
     // Fetch auth emails via edge function (master only)
     try {
