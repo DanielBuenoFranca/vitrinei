@@ -575,6 +575,9 @@ const AdminPanel = () => {
             <TabsTrigger value="campaigns" className="text-xs gap-1 px-2 py-1.5">
               <Gift className="h-3 w-3" /> Campanhas
             </TabsTrigger>
+            <TabsTrigger value="debt" className="text-xs gap-1 px-2 py-1.5">
+              <AlertTriangle className="h-3 w-3" /> Cobranças
+            </TabsTrigger>
           </TabsList>
 
           {/* ── SEGMENTS TAB ── */}
