@@ -318,7 +318,7 @@ const ProviderStorefront = () => {
         toast.success('Logo gerado com sucesso!');
       }
     } catch (e: any) {
-      toast.error('Erro ao gerar logo: ' + (e.message || 'Desconhecido'));
+      toast.warning('IA indisponível — faça upload manual do logo', { icon: '🤖', duration: 5000 });
     }
     setGeneratingLogo(false);
   };
@@ -382,7 +382,7 @@ const ProviderStorefront = () => {
 
       if (!resp.ok || !resp.body) {
         const errData = await resp.json().catch(() => ({ error: 'Erro desconhecido' }));
-        setChatMessages(prev => [...prev, { role: 'assistant', content: `❌ ${errData.error || 'Erro ao processar'}` }]);
+        setChatMessages(prev => [...prev, { role: 'assistant', content: `🤖 [AI off] — O assistente está temporariamente indisponível. Tente novamente mais tarde.` }]);
         setChatLoading(false);
         return;
       }
@@ -441,7 +441,7 @@ const ProviderStorefront = () => {
         }
       }
     } catch (err) {
-      setChatMessages(prev => [...prev, { role: 'assistant', content: '❌ Erro de conexão. Tente novamente.' }]);
+      setChatMessages(prev => [...prev, { role: 'assistant', content: '🤖 [AI off] — Conexão indisponível. O fluxo continua normalmente sem IA.' }]);
     }
 
     setChatLoading(false);
