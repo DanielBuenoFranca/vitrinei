@@ -767,6 +767,47 @@ const WalletPage = () => {
         </Card>
       </div>
 
+      {/* Credit Modal */}
+      <Dialog open={creditModalOpen} onOpenChange={setCreditModalOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-primary" />
+              Contratar Crédito
+            </DialogTitle>
+            <DialogDescription>
+              Use seu cashback retido como garantia. R$ 1,00 de cashback = R$ 0,50 de limite.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-muted/50 rounded-lg p-3 space-y-1 text-xs">
+              <div className="flex justify-between"><span>Cashback retido</span><span className="font-semibold">R$ {(wallet?.locked_cashback || 0).toFixed(2)}</span></div>
+              <div className="flex justify-between"><span>Limite total</span><span className="font-semibold">R$ {((wallet?.locked_cashback || 0) * 0.5).toFixed(2)}</span></div>
+              <div className="flex justify-between"><span>Já utilizado</span><span className="font-semibold">R$ {(wallet?.credit_used || 0).toFixed(2)}</span></div>
+              <div className="flex justify-between font-bold border-t pt-1"><span>Disponível</span><span className="text-primary">R$ {((wallet?.locked_cashback || 0) * 0.5 - (wallet?.credit_used || 0)).toFixed(2)}</span></div>
+            </div>
+            <div>
+              <Label className="text-xs">Valor do empréstimo (R$)</Label>
+              <Input type="number" min={1} step={0.01} value={creditAmount} onChange={e => setCreditAmount(e.target.value)} placeholder="0.00" />
+            </div>
+            {creditAmount && parseFloat(creditAmount) > 0 && (
+              <div className="bg-muted/50 rounded-lg p-3 space-y-1 text-xs">
+                <div className="flex justify-between"><span>Valor bruto</span><span>R$ {parseFloat(creditAmount).toFixed(2)}</span></div>
+                <div className="flex justify-between text-destructive"><span>Taxa Vitrinei (1%)</span><span>-R$ {(parseFloat(creditAmount) * 0.01).toFixed(2)}</span></div>
+                <div className="flex justify-between text-destructive"><span>Antecipação (20%)</span><span>-R$ {(parseFloat(creditAmount) * 0.20).toFixed(2)}</span></div>
+                <div className="flex justify-between font-bold border-t pt-1 text-primary"><span>Líquido na carteira</span><span>R$ {(parseFloat(creditAmount) * 0.79).toFixed(2)}</span></div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreditModalOpen(false)}>Cancelar</Button>
+            <Button onClick={handleContractCredit} disabled={contractingCredit || !creditAmount}>
+              {contractingCredit ? 'Processando...' : 'Contratar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Checkout/Payment Modal */}
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
         <DialogContent className="max-w-sm">
