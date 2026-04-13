@@ -239,8 +239,9 @@ const WalletPage = () => {
         _amount: amount,
       });
       if (error) { toast.error('Erro: ' + error.message); return; }
-      if (data?.error) { toast.error(data.error); return; }
-      toast.success(`Crédito de R$ ${data.net.toFixed(2)} liberado (líquido após taxas)`);
+      const result = data as any;
+      if (result?.error) { toast.error(result.error); return; }
+      toast.success(`Crédito de R$ ${(result.net as number).toFixed(2)} liberado (líquido após taxas)`);
       setCreditModalOpen(false);
       setCreditAmount('');
       loadData();
