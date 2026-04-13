@@ -1278,6 +1278,57 @@ const AdminPanel = () => {
               </Card>
             </PermissionGate>
           </TabsContent>
+          {/* ── BI DASHBOARD TAB ── */}
+          <TabsContent value="bi">
+            <PermissionGate permission="admin.panel" featureName="Dashboard BI">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-primary" />
+                    Saúde Financeira do Ecossistema
+                  </CardTitle>
+                  <CardDescription>Visão consolidada de saldos, taxas e conversão</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    const totalFloat = userWallets.filter(w => w.balance > 0).reduce((s, w) => s + w.balance, 0);
+                    const totalDebt = userWallets.filter(w => w.balance < 0).reduce((s, w) => s + Math.abs(w.balance), 0);
+                    const totalLocked = userWallets.reduce((s, w) => s + (w.locked_cashback || 0), 0);
+                    const totalPending = userWallets.reduce((s, w) => s + (w.pending_balance || 0), 0);
+                    const totalCreditUsed = userWallets.reduce((s, w) => s + (w.credit_used || 0), 0);
+                    const debtorsCount = userWallets.filter(w => w.balance < 0).length;
+                    const healthyCount = userWallets.filter(w => w.balance >= 0).length;
+                    const totalProviders = userProfiles.filter((p: any) => p.is_provider).length;
+                    const totalCustomers = userProfiles.filter((p: any) => p.is_customer).length;
+
+                    const metrics = [
+                      { label: 'Float Total', value: `R$ ${totalFloat.toFixed(2)}`, color: 'text-green-600' },
+                      { label: 'Dívida Total', value: `R$ ${totalDebt.toFixed(2)}`, color: 'text-destructive' },
+                      { label: 'Cashback Retido', value: `R$ ${totalLocked.toFixed(2)}`, color: 'text-amber-600' },
+                      { label: 'Pendente Liberação', value: `R$ ${totalPending.toFixed(2)}`, color: 'text-blue-600' },
+                      { label: 'Crédito Utilizado', value: `R$ ${totalCreditUsed.toFixed(2)}`, color: 'text-purple-600' },
+                      { label: 'Adimplentes', value: healthyCount.toString(), color: 'text-green-600' },
+                      { label: 'Inadimplentes', value: debtorsCount.toString(), color: 'text-destructive' },
+                      { label: 'Prestadores', value: totalProviders.toString(), color: 'text-primary' },
+                      { label: 'Compradores', value: totalCustomers.toString(), color: 'text-primary' },
+                      { label: 'Total Usuários', value: userProfiles.length.toString(), color: 'text-foreground' },
+                    ];
+
+                    return (
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                        {metrics.map(m => (
+                          <div key={m.label} className="bg-muted/30 rounded-lg p-3 text-center">
+                            <p className={`text-lg font-bold ${m.color}`}>{m.value}</p>
+                            <p className="text-[10px] text-muted-foreground">{m.label}</p>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+            </PermissionGate>
+          </TabsContent>
         </Tabs>
       </main>
 
