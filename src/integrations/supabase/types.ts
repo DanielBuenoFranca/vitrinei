@@ -24,6 +24,7 @@ export type Database = {
           product_id: number
           provider: string
           provider_id: number | null
+          quantity: number
           rating: number
           related_service_ids: number[]
           stock_type: string
@@ -39,6 +40,7 @@ export type Database = {
           product_id: number
           provider: string
           provider_id?: number | null
+          quantity?: number
           rating?: number
           related_service_ids?: number[]
           stock_type?: string
@@ -54,6 +56,7 @@ export type Database = {
           product_id?: number
           provider?: string
           provider_id?: number | null
+          quantity?: number
           rating?: number
           related_service_ids?: number[]
           stock_type?: string
@@ -82,6 +85,7 @@ export type Database = {
           products: string[]
           provider: string
           provider_id: number | null
+          quantity: number
           rating: number
           segment: string
           service_id: number
@@ -99,6 +103,7 @@ export type Database = {
           products?: string[]
           provider: string
           provider_id?: number | null
+          quantity?: number
           rating?: number
           segment: string
           service_id: number
@@ -116,6 +121,7 @@ export type Database = {
           products?: string[]
           provider?: string
           provider_id?: number | null
+          quantity?: number
           rating?: number
           segment?: string
           service_id?: number
@@ -134,12 +140,17 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
           avatar_url: string | null
           bank_account: string | null
           bank_agency: string | null
           bank_name: string | null
+          city: string | null
+          cpf_cnpj: string | null
           created_at: string
           display_name: string | null
+          elite_since: string | null
+          fidelity_score: number
           id: string
           is_customer: boolean
           is_provider: boolean
@@ -151,12 +162,17 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          address?: string | null
           avatar_url?: string | null
           bank_account?: string | null
           bank_agency?: string | null
           bank_name?: string | null
+          city?: string | null
+          cpf_cnpj?: string | null
           created_at?: string
           display_name?: string | null
+          elite_since?: string | null
+          fidelity_score?: number
           id?: string
           is_customer?: boolean
           is_provider?: boolean
@@ -168,12 +184,17 @@ export type Database = {
           user_id: string
         }
         Update: {
+          address?: string | null
           avatar_url?: string | null
           bank_account?: string | null
           bank_agency?: string | null
           bank_name?: string | null
+          city?: string | null
+          cpf_cnpj?: string | null
           created_at?: string
           display_name?: string | null
+          elite_since?: string | null
+          fidelity_score?: number
           id?: string
           is_customer?: boolean
           is_provider?: boolean
@@ -204,6 +225,7 @@ export type Database = {
           segment: string[]
           storefront_config: Json
           type: string
+          user_id: string | null
         }
         Insert: {
           active?: boolean
@@ -222,6 +244,7 @@ export type Database = {
           segment: string[]
           storefront_config?: Json
           type?: string
+          user_id?: string | null
         }
         Update: {
           active?: boolean
@@ -240,6 +263,7 @@ export type Database = {
           segment?: string[]
           storefront_config?: Json
           type?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -530,6 +554,8 @@ export type Database = {
       wallets: {
         Row: {
           balance: number
+          credit_limit: number
+          credit_used: number
           id: string
           locked_cashback: number
           pending_balance: number
@@ -540,6 +566,8 @@ export type Database = {
         }
         Insert: {
           balance?: number
+          credit_limit?: number
+          credit_used?: number
           id?: string
           locked_cashback?: number
           pending_balance?: number
@@ -550,6 +578,8 @@ export type Database = {
         }
         Update: {
           balance?: number
+          credit_limit?: number
+          credit_used?: number
           id?: string
           locked_cashback?: number
           pending_balance?: number
@@ -562,9 +592,28 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      admin_financial_health: {
+        Row: {
+          activated_referrals: number | null
+          debtors_count: number | null
+          healthy_count: number | null
+          pending_referrals: number | null
+          total_anticipation_fees: number | null
+          total_credit_used: number | null
+          total_customers: number | null
+          total_debt: number | null
+          total_float: number | null
+          total_locked_cashback: number | null
+          total_pending: number | null
+          total_providers: number | null
+          total_users: number | null
+          total_vitrinei_fees: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      calculate_fidelity_score: { Args: { _user_id: string }; Returns: number }
       check_provider_uniqueness: {
         Args: {
           _cpf_cnpj?: string
@@ -572,6 +621,10 @@ export type Database = {
           _exclude_id?: number
           _phone?: string
         }
+        Returns: Json
+      }
+      contract_credit: {
+        Args: { _amount: number; _user_id: string }
         Returns: Json
       }
       get_user_roles: {
@@ -584,6 +637,17 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      process_checkout_acid: {
+        Args: {
+          _buyer_id: string
+          _description?: string
+          _installments?: number
+          _items: Json
+          _seller_id: string
+          _use_cashback?: boolean
+        }
+        Returns: Json
       }
       process_sale_split: {
         Args: {
