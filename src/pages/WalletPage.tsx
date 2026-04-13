@@ -145,6 +145,12 @@ const WalletPage = () => {
   const [paying, setPaying] = useState(false);
   const [countdown, setCountdown] = useState('');
   const [expired, setExpired] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
+  
+  // Credit module
+  const [creditModalOpen, setCreditModalOpen] = useState(false);
+  const [creditAmount, setCreditAmount] = useState('');
+  const [contractingCredit, setContractingCredit] = useState(false);
   
   // Paywall / checkout state
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -182,17 +188,19 @@ const WalletPage = () => {
   const loadData = async () => {
     if (!user) return;
     setLoading(true);
-    const [walletRes, txRes, refRes, subRes, campRes] = await Promise.all([
+    const [walletRes, txRes, refRes, subRes, campRes, profileRes] = await Promise.all([
       supabase.from('wallets').select('*').eq('user_id', user.id).maybeSingle(),
       supabase.from('wallet_transactions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
       supabase.from('referrals').select('*').eq('referrer_id', user.id).order('created_at', { ascending: false }),
       supabase.from('subscriptions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
       supabase.from('referral_campaigns').select('*').eq('is_active', true).limit(1).maybeSingle(),
+      supabase.from('profiles').select('*').eq('user_id', user.id).maybeSingle(),
     ]);
     setWallet(walletRes.data);
     setTransactions(txRes.data || []);
     setReferrals(refRes.data || []);
     setSubscription(subRes.data);
+    setProfile(profileRes.data);
     if (subRes.data) {
       setCheckoutPlan(subRes.data.plan);
     }
@@ -218,6 +226,29 @@ const WalletPage = () => {
       if (newRef) setReferralCode(newRef.referral_code);
     }
     setLoading(false);
+  };
+
+  const handleContractCredit = async () => {
+    if (!wallet || !creditAmount) return;
+    const amount = parseFloat(creditAmount);
+    if (isNaN(amount) || amount <= 0) { toast.error('Valor inválido'); return; }
+    setContractingCredit(true);
+    try {
+      const { data, error } = await supabase.rpc('contract_credit', {
+        _user_id: user!.id,
+        _amount: amount,
+      });
+      if (error) { toast.error('Erro: ' + error.message); return; }
+      if (data?.error) { toast.error(data.error); return; }
+      toast.success(`Crédito de R$ ${data.net.toFixed(2)} liberado (líquido após taxas)`);
+      setCreditModalOpen(false);
+      setCreditAmount('');
+      loadData();
+      refreshConversionWallet();
+    } catch (e: any) {
+      toast.error('Erro: ' + (e.message || 'desconhecido'));
+    }
+    setContractingCredit(false);
   };
 
   const handlePaySubscription = async () => {
@@ -338,6 +369,8 @@ const WalletPage = () => {
       platform_fee: '🏦 Taxa Vitrinei',
       locked_cashback: '🔒 Cashback Retido',
       anticipation_fee: '⚡ Desconto Antecipação',
+      cashback_debit: '🔓 Cashback Utilizado',
+      credit_release: '💵 Empréstimo',
     };
     return labels[type] || type;
   };
@@ -455,6 +488,29 @@ const WalletPage = () => {
                 <span className="flex items-center gap-1"><TrendingUp className="w-3 h-3" /> Ganhos: R$ {(wallet?.total_earned || 0).toFixed(2)}</span>
                 <span className="flex items-center gap-1"><TrendingDown className="w-3 h-3" /> Gastos: R$ {(wallet?.total_spent || 0).toFixed(2)}</span>
               </div>
+              {/* Credit module */}
+              {(wallet?.locked_cashback || 0) > 0 && !hasDebt && (
+                <div className="mt-3 pt-3 border-t border-primary-foreground/20">
+                  <div className="flex items-center justify-between text-xs opacity-90">
+                    <span>💳 Limite de Crédito</span>
+                    <span className="font-semibold">R$ {((wallet?.locked_cashback || 0) * 0.5 - (wallet?.credit_used || 0)).toFixed(2)} disponível</span>
+                  </div>
+                  {(wallet?.credit_used || 0) > 0 && (
+                    <div className="flex items-center justify-between text-xs opacity-70 mt-0.5">
+                      <span>Crédito utilizado</span>
+                      <span>R$ {(wallet?.credit_used || 0).toFixed(2)}</span>
+                    </div>
+                  )}
+                  <Button 
+                    size="sm" 
+                    variant="secondary" 
+                    className="w-full mt-2 text-xs h-7 gap-1"
+                    onClick={() => setCreditModalOpen(true)}
+                  >
+                    <CreditCard className="w-3 h-3" /> Contratar Crédito
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
