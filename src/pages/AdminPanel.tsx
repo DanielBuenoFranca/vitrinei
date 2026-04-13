@@ -583,6 +583,9 @@ const AdminPanel = () => {
             <TabsTrigger value="debt" className="text-xs gap-1 px-2 py-1.5">
               <AlertTriangle className="h-3 w-3" /> Cobranças
             </TabsTrigger>
+            <TabsTrigger value="bi" className="text-xs gap-1 px-2 py-1.5">
+              <BarChart3 className="h-3 w-3" /> Dashboard BI
+            </TabsTrigger>
           </TabsList>
 
           {/* ── SEGMENTS TAB ── */}
