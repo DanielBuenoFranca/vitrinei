@@ -420,6 +420,11 @@ const WalletPage = () => {
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <span className="font-bold text-foreground">Minha Carteira</span>
+          {profile?.elite_since && !hasDebt && (
+            <Badge className="ml-1 bg-gradient-to-r from-yellow-400 to-amber-500 text-white border-0 text-[10px] gap-1">
+              <Crown className="w-3 h-3" /> ELITE
+            </Badge>
+          )}
           {hasDebt && (
             <Badge variant="destructive" className="ml-auto text-[10px] gap-1">
               <Eye className="w-3 h-3" /> Modo Leitura
