@@ -115,55 +115,5 @@ export function ActionGate({ children, action, triggerLabel }: { children: React
  * AccessBanner: Persistent banner shown to leads (negative balance) or visitors.
  */
 export function AccessBanner() {
-  const { accessLevel } = useConversion();
-  const navigate = useNavigate();
-  const [signupOpen, setSignupOpen] = useState(false);
-
   return null;
-
-  if (accessLevel === 'visitor') {
-    return (
-      <>
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-primary/10 border-b border-primary/20 px-4 py-2.5"
-        >
-          <div className="container mx-auto max-w-5xl flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 min-w-0">
-              <UserPlus className="w-4 h-4 text-primary shrink-0" />
-              <p className="text-xs text-foreground">
-                <strong>Bem-vindo!</strong> Cadastre-se para ver preços, contratar serviços e aproveitar cashback.
-              </p>
-            </div>
-            <Button size="sm" className="text-xs shrink-0 gap-1" onClick={() => setSignupOpen(true)}>
-              <UserPlus className="w-3.5 h-3.5" /> Criar conta
-            </Button>
-          </div>
-        </motion.div>
-        <SignupModal open={signupOpen} onOpenChange={setSignupOpen} trigger="acesso completo" />
-      </>
-    );
-  }
-
-  // Lead (negative balance)
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2.5"
-    >
-      <div className="container mx-auto max-w-5xl flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <Mail className="w-4 h-4 text-amber-600 shrink-0" />
-          <p className="text-xs text-foreground">
-            <strong>Modo Leitura!</strong> Pague sua assinatura para desbloquear preços e funcionalidades completas.
-          </p>
-        </div>
-        <Button size="sm" variant="outline" className="text-xs shrink-0 gap-1 border-amber-500/30 text-amber-700 hover:bg-amber-500/10" onClick={() => navigate('/carteira')}>
-          <AlertTriangle className="w-3.5 h-3.5" /> Ativar conta
-        </Button>
-      </div>
-    </motion.div>
-  );
 }
