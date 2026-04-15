@@ -119,7 +119,7 @@ export function AccessBanner() {
   const navigate = useNavigate();
   const [signupOpen, setSignupOpen] = useState(false);
 
-  if (accessLevel === 'active' || accessLevel === 'loading') return null;
+  return null;
 
   if (accessLevel === 'visitor') {
     return (
