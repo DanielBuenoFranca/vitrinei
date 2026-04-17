@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { ViniScene } from '@/components/vini/ViniScene';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,15 +26,12 @@ const ViniHome = () => {
   const { theme } = useTheme();
   const { supported, listening, transcript, start, stop } = useSpeechRecognition();
 
-  const greeting = useMemo(() => getGreeting(), []);
-  const [bubbles, setBubbles] = useState<Bubble[]>([
-    { id: 'g1', role: 'vini', text: greeting },
-    { id: 'g2', role: 'vini', text: 'Diga "Olá Vini" ou toque no microfone para começar.' },
-  ]);
+  // Estado de interação: começa "dormindo" — só desperta após primeira ação
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const [bubbles, setBubbles] = useState<Bubble[]>([]);
   const [history, setHistory] = useState<string[]>([]);
   const [showInput, setShowInput] = useState(false);
   const [text, setText] = useState('');
-  const [showFloatingMenu, setShowFloatingMenu] = useState(false);
   const [showPlusMenu, setShowPlusMenu] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -48,7 +44,24 @@ const ViniHome = () => {
     setBubbles((prev) => [...prev.slice(-3), { ...b, id: `${Date.now()}-${Math.random()}` }]);
   };
 
+  // Saudação personalizada (só calcula no momento da interação)
+  const buildGreeting = () => {
+    const base = getGreeting();
+    if (user && displayName) {
+      return `${base.replace(/^[^\s]+\s/, '')} — que bom te ver, ${displayName.split(' ')[0]}!`;
+    }
+    return base;
+  };
+
+  const wakeUp = () => {
+    if (!hasInteracted) {
+      setHasInteracted(true);
+      pushBubble({ role: 'vini', text: buildGreeting() });
+    }
+  };
+
   const handleVoiceTap = () => {
+    wakeUp();
     if (listening) {
       stop();
       if (text.trim()) sendQuery(text);
@@ -56,9 +69,8 @@ const ViniHome = () => {
     }
     if (supported) {
       start();
-      pushBubble({ role: 'vini', text: 'Estou ouvindo… 🎙️' });
+      setTimeout(() => pushBubble({ role: 'vini', text: 'Estou ouvindo… 🎙️' }), 200);
     } else {
-      // fallback: random mood suggestion + open input
       const s = getRandomMoodSuggestion(history);
       pushBubble({ role: 'vini', text: s.text });
       setShowInput(true);
@@ -66,32 +78,63 @@ const ViniHome = () => {
     }
   };
 
+  // Análise de contexto: define o próximo passo da jornada do cliente
+  const analyzeAndRoute = (query: string) => {
+    const q = query.toLowerCase();
+    // mapas de intenção → próximo passo
+    if (/(carrinho|comprar|finalizar|checkout|pagamento)/.test(q)) {
+      return { reply: 'Vou te levar para finalizar sua compra agora.', route: '/jornada-cliente' };
+    }
+    if (/(carteira|saldo|cashback|extrato)/.test(q)) {
+      return { reply: 'Abrindo sua carteira para você conferir o saldo.', route: '/carteira' };
+    }
+    if (/(loja|vitrine|minha loja|vender)/.test(q)) {
+      return { reply: 'Te levando para sua vitrine agora.', route: user ? '/mei' : '/auth' };
+    }
+    if (/(assinatura|plano|elite)/.test(q)) {
+      return { reply: 'Vamos conferir os planos disponíveis.', route: '/assinatura' };
+    }
+    if (/(login|entrar|cadastr)/.test(q)) {
+      return { reply: 'Vou te levar para o cadastro.', route: '/auth' };
+    }
+    if (/(demo|demonstra|conhecer|exemplo)/.test(q)) {
+      return { reply: 'Posso te mostrar uma demonstração.', route: '/demos' };
+    }
+    return null;
+  };
+
   const sendQuery = (q: string) => {
     const query = q.trim();
     if (!query) return;
+    wakeUp();
     pushBubble({ role: 'user', text: query });
     setHistory((h) => [...h, query]);
     setText('');
 
-    // run semantic search
     setTimeout(() => {
+      // 1) tenta intenção contextual
+      const intent = analyzeAndRoute(query);
+      if (intent) {
+        pushBubble({ role: 'vini', text: intent.reply });
+        setTimeout(() => navigate(intent.route), 1100);
+        return;
+      }
+      // 2) busca semântica
       const result = semanticSearch(query);
       const total = (result.products?.length || 0) + (result.services?.length || 0);
       if (total > 0) {
         pushBubble({
           role: 'vini',
-          text: `Encontrei ${total} opções para "${query}". Vou te mostrar agora!`,
+          text: `Encontrei ${total} opções para "${query}". Já te mostro!`,
         });
         setTimeout(() => {
-          navigate(`/?q=${encodeURIComponent(query)}`);
-          // landing legacy fallback for full results
-          window.location.href = `/?q=${encodeURIComponent(query)}`;
-        }, 900);
+          window.location.href = `/buscar?q=${encodeURIComponent(query)}`;
+        }, 1000);
       } else {
         const s = getRandomMoodSuggestion([...history, query]);
-        pushBubble({ role: 'vini', text: `Hmm, não achei "${query}" agora. ${s.text}` });
+        pushBubble({ role: 'vini', text: `Não achei "${query}" agora. ${s.text}` });
       }
-    }, 600);
+    }, 500);
   };
 
   const handleTextSubmit = (e: React.FormEvent) => {
@@ -126,7 +169,6 @@ const ViniHome = () => {
       {/* ─── Header ─── */}
       <header className="absolute top-0 inset-x-0 z-30 px-3 sm:px-5 pt-3">
         <div className="glass rounded-2xl flex items-center justify-between gap-2 px-3 py-2">
-          {/* user / brand */}
           <div className="flex items-center gap-2 min-w-0">
             <div className="relative shrink-0">
               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center vini-ring">
@@ -208,87 +250,102 @@ const ViniHome = () => {
         </AnimatePresence>
       </div>
 
-      {/* ─── Floating action menu (right of Vini) ─── */}
-      <div className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 z-30 flex flex-col gap-2">
-        {[
-          { icon: Search, label: 'Buscar', action: () => { setShowInput(true); setTimeout(() => inputRef.current?.focus(), 50); } },
-          { icon: MessageCircle, label: 'Chat', action: () => pushBubble({ role: 'vini', text: getRandomMoodSuggestion(history).text }) },
-          { icon: Bot, label: 'Vini', action: handleVoiceTap },
-        ].map((it, i) => (
-          <motion.button
-            key={it.label}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 + i * 0.08 }}
-            whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.92 }}
-            onClick={it.action}
-            className="glass w-11 h-11 rounded-xl flex items-center justify-center text-foreground hover:text-primary transition-colors"
-            title={it.label}
+      {/* ─── Floating action menu (right of Vini) — só após interação ─── */}
+      <AnimatePresence>
+        {hasInteracted && (
+          <motion.div
+            initial={{ opacity: 0, x: 60, scale: 0.8 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 60, scale: 0.8 }}
+            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 z-30"
           >
-            <it.icon className="w-4.5 h-4.5" />
-          </motion.button>
-        ))}
-      </div>
+            {/* Painel de vidro estilo "abas empilhadas" da imagem */}
+            <div className="relative">
+              <div className="absolute inset-0 translate-x-1.5 translate-y-1.5 rounded-2xl glass opacity-50" />
+              <div className="absolute inset-0 translate-x-3 translate-y-3 rounded-2xl glass opacity-25" />
+              <div className="relative glass-strong rounded-2xl p-2 flex flex-col gap-1.5 border border-[hsl(var(--vini-glow)/0.35)]">
+                {[
+                  { icon: Search, label: 'Buscar', action: () => { setShowInput(true); setTimeout(() => inputRef.current?.focus(), 50); } },
+                  { icon: MessageCircle, label: 'Sugestão', action: () => pushBubble({ role: 'vini', text: getRandomMoodSuggestion(history).text }) },
+                  { icon: Bot, label: 'Vini', action: handleVoiceTap },
+                ].map((it, i) => (
+                  <motion.button
+                    key={it.label}
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 + i * 0.07 }}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.92 }}
+                    onClick={it.action}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-[hsl(var(--text-accent))] hover:text-primary hover:bg-primary/10 transition-colors"
+                    title={it.label}
+                  >
+                    <it.icon className="w-4.5 h-4.5" />
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* ─── Greeting & speech bubbles (top-center) ─── */}
-      <div className="absolute top-24 sm:top-28 inset-x-0 z-20 flex flex-col items-center px-4 pointer-events-none">
-        <motion.h1
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center font-display text-xl sm:text-2xl md:text-3xl font-semibold leading-tight text-glow"
-        >
-          Bem-vindo.
-          <br />
-          <span className="text-[hsl(var(--text-accent))]">Diga "Vini, posso ajudar?"</span>
-        </motion.h1>
-      </div>
-
-      {/* ─── Speech bubbles around Vini ─── */}
-      <div className="absolute inset-x-0 bottom-44 sm:bottom-56 z-20 flex flex-col items-center gap-2 px-4 pointer-events-none">
-        <AnimatePresence>
-          {bubbles.slice(-2).map((b) => (
-            <motion.div
-              key={b.id}
-              initial={{ opacity: 0, y: 12, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -8, scale: 0.95 }}
-              transition={{ duration: 0.3 }}
-              className={cn(
-                'glass-strong px-4 py-2 rounded-2xl max-w-[88%] sm:max-w-md text-sm shadow-lg',
-                b.role === 'user'
-                  ? 'self-end mr-4 sm:mr-12 bg-primary/15 border-primary/30'
-                  : 'self-start ml-4 sm:ml-12'
+      {/* ─── Saudação inicial estática (some após primeira interação) ─── */}
+      <AnimatePresence>
+        {!hasInteracted && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.5 }}
+            className="absolute top-24 sm:top-28 inset-x-0 z-20 flex flex-col items-center px-4 pointer-events-none"
+          >
+            <h1 className="text-center font-display text-xl sm:text-2xl md:text-3xl font-semibold leading-tight text-glow">
+              {user && displayName ? (
+                <>Olá, {displayName.split(' ')[0]}.</>
+              ) : (
+                <>Bem-vindo.</>
               )}
-            >
-              {b.role === 'vini' && (
-                <span className="text-[10px] uppercase tracking-wider text-[hsl(var(--text-accent))] font-bold mr-1">
-                  Vini
-                </span>
-              )}
-              {b.text}
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
+              <br />
+              <span className="text-[hsl(var(--text-accent))]">Diga "Vini, posso ajudar?"</span>
+            </h1>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* ─── Microphone CTA ─── */}
+      {/* ─── Speech bubbles — só renderiza após interação ─── */}
+      {hasInteracted && (
+        <div className="absolute inset-x-0 bottom-44 sm:bottom-56 z-20 flex flex-col items-center gap-2 px-4 pointer-events-none">
+          <AnimatePresence>
+            {bubbles.slice(-2).map((b) => (
+              <motion.div
+                key={b.id}
+                initial={{ opacity: 0, y: 12, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                transition={{ duration: 0.3 }}
+                className={cn(
+                  'glass-strong px-4 py-2 rounded-2xl max-w-[88%] sm:max-w-md text-sm shadow-lg',
+                  b.role === 'user'
+                    ? 'self-end mr-4 sm:mr-12 bg-primary/15 border-primary/30'
+                    : 'self-start ml-4 sm:ml-12'
+                )}
+              >
+                {b.role === 'vini' && (
+                  <span className="text-[10px] uppercase tracking-wider text-[hsl(var(--text-accent))] font-bold mr-1">
+                    Vini
+                  </span>
+                )}
+                {b.text}
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      )}
+
+      {/* ─── Microphone CTA (sem texto auxiliar) ─── */}
       <div className="absolute inset-x-0 bottom-28 sm:bottom-36 z-20 flex flex-col items-center gap-2 px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="text-center pointer-events-none"
-        >
-          <p className="text-sm sm:text-base font-medium">
-            Diga <span className="text-[hsl(var(--text-accent))] font-bold text-glow">"Olá Vini"</span>
-          </p>
-          <p className="text-[11px] text-muted-foreground">…ou toque para começar</p>
-        </motion.div>
-
         <div className="relative">
-          {/* pulse rings */}
           {listening && (
             <>
               <span className="absolute inset-0 rounded-full bg-primary/30 animate-pulse-ring" />
@@ -310,7 +367,6 @@ const ViniHome = () => {
           </motion.button>
         </div>
 
-        {/* concentric rings decor */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-40 h-40 sm:w-56 sm:h-56 rounded-full border border-[hsl(var(--vini-glow)/0.2)]" />
           <div className="absolute w-56 h-56 sm:w-72 sm:h-72 rounded-full border border-[hsl(var(--vini-glow)/0.12)]" />
