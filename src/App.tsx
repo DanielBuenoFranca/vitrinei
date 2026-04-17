@@ -12,6 +12,7 @@ import { ConversionProvider } from "@/contexts/ConversionContext";
 import CartBar from "@/components/CartBar";
 import { AttentionFooterBar } from "@/components/AttentionFooterBar";
 import { loadDynamicEntries } from "@/data/searchData";
+import ViniHome from "./pages/ViniHome.tsx";
 import Landing from "./pages/Landing.tsx";
 import MeiPanel from "./pages/MeiPanel.tsx";
 import ClientApp from "./pages/ClientApp.tsx";
@@ -66,7 +67,8 @@ const App = () => {
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/convite/:code" element={<ReferralLanding />} />
-          <Route path="/" element={<ForceResetGuard><Landing /></ForceResetGuard>} />
+          <Route path="/" element={<ForceResetGuard><ViniHome /></ForceResetGuard>} />
+          <Route path="/buscar" element={<ForceResetGuard><Landing /></ForceResetGuard>} />
           <Route path="/carteira" element={<ForceResetGuard><WalletPage /></ForceResetGuard>} />
           <Route path="/assinatura" element={<ForceResetGuard><SubscriptionPage /></ForceResetGuard>} />
           <Route path="/importar" element={<ForceResetGuard><ImportPage /></ForceResetGuard>} />
