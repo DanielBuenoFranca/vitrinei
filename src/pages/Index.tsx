@@ -1,4 +1,4 @@
-import Landing from "./Landing";
+import ViniHome from "./ViniHome";
 
-const Index = Landing;
+const Index = ViniHome;
 export default Index;
