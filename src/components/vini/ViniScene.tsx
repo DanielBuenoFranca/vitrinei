@@ -182,7 +182,7 @@ function ViniContent() {
   return (
     <>
       <ParallaxBackground pointer={pointer} />
-      {theme === 'espacial' ? <ViniHologram pointer={pointer} /> : <ViniGlass pointer={pointer} />}
+      {/* central sphere removed — the avatar PNG now occupies the center */}
     </>
   );
 }
