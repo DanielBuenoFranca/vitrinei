@@ -87,12 +87,28 @@ export function ViniAvatar({ onClick, size = 280 }: ViniAvatarProps) {
       tabIndex={0}
       onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onClick?.()}
       className="relative cursor-pointer select-none outline-none"
-      style={{ width: size, height: size }}
-      animate={{ y: [0, -10, 0] }}
-      transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+      style={{ width: size, height: size, perspective: 800 }}
+      // Float vertical + leve balanço lateral (vivo, não robótico)
+      animate={{ y: [0, -10, 0, -6, 0], rotate: [0, 1.2, 0, -1.2, 0] }}
+      transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
       whileTap={{ scale: 0.96 }}
-      whileHover={{ scale: 1.03 }}
+      whileHover={{ scale: 1.04 }}
     >
+      {/* Pulsing glow halo (breathing light) */}
+      <motion.div
+        aria-hidden
+        className="absolute inset-0 rounded-full pointer-events-none"
+        style={{
+          background:
+            theme === 'espacial'
+              ? 'radial-gradient(circle at 50% 55%, hsl(var(--vini-glow) / 0.45), transparent 65%)'
+              : 'radial-gradient(circle at 50% 55%, hsl(var(--vini-glow) / 0.25), transparent 70%)',
+          filter: 'blur(12px)',
+        }}
+        animate={{ opacity: [0.55, 0.95, 0.55], scale: [0.95, 1.05, 0.95] }}
+        transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
+      />
+
       {/* Holographic rings (3D, behind avatar) */}
       <div className="absolute inset-0 pointer-events-none">
         <Canvas
@@ -107,23 +123,81 @@ export function ViniAvatar({ onClick, size = 280 }: ViniAvatarProps) {
         </Canvas>
       </div>
 
-      {/* Avatar PNG with subtle tilt */}
+      {/* Floating sparkle particles around the avatar */}
+      <div className="absolute inset-0 pointer-events-none overflow-visible">
+        {[
+          { left: '12%', top: '22%', delay: 0, dur: 4.2, color: 'hsl(190 95% 65%)' },
+          { left: '85%', top: '30%', delay: 0.8, dur: 5.0, color: 'hsl(295 85% 70%)' },
+          { left: '78%', top: '70%', delay: 1.6, dur: 4.6, color: 'hsl(190 95% 65%)' },
+          { left: '18%', top: '78%', delay: 2.2, dur: 5.4, color: 'hsl(295 85% 70%)' },
+          { left: '50%', top: '8%', delay: 1.2, dur: 4.0, color: 'hsl(190 95% 75%)' },
+        ].map((p, i) => (
+          <motion.span
+            key={i}
+            className="absolute w-1.5 h-1.5 rounded-full"
+            style={{
+              left: p.left,
+              top: p.top,
+              background: p.color,
+              boxShadow: `0 0 8px ${p.color}`,
+              opacity: theme === 'espacial' ? 1 : 0.55,
+            }}
+            animate={{
+              y: [0, -14, 0],
+              opacity: [0, 1, 0],
+              scale: [0.6, 1.2, 0.6],
+            }}
+            transition={{
+              duration: p.dur,
+              repeat: Infinity,
+              delay: p.delay,
+              ease: 'easeInOut',
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Avatar PNG — breathing scale + parallax tilt towards mouse */}
       <motion.img
         src={viniImg}
         alt="Vini — assistente Vitrinei"
         width={1024}
         height={1024}
         loading="eager"
+        draggable={false}
         className="absolute inset-0 w-full h-full object-contain"
         style={{
           filter:
             theme === 'espacial'
-              ? 'drop-shadow(0 0 24px hsl(var(--vini-glow) / 0.55)) drop-shadow(0 0 8px hsl(var(--vini-glow) / 0.35))'
-              : 'drop-shadow(0 6px 18px hsl(var(--vini-glow) / 0.25))',
+              ? 'drop-shadow(0 0 28px hsl(var(--vini-glow) / 0.6)) drop-shadow(0 0 10px hsl(var(--vini-glow) / 0.45))'
+              : 'drop-shadow(0 8px 22px hsl(var(--vini-glow) / 0.3))',
+          transformStyle: 'preserve-3d',
         }}
-        animate={{ rotateY: tilt.x, rotateX: -tilt.y }}
-        transition={{ type: 'spring', stiffness: 80, damping: 15 }}
+        animate={{
+          rotateY: tilt.x,
+          rotateX: -tilt.y,
+          scale: [1, 1.025, 1], // respiração
+        }}
+        transition={{
+          rotateY: { type: 'spring', stiffness: 80, damping: 15 },
+          rotateX: { type: 'spring', stiffness: 80, damping: 15 },
+          scale: { duration: 3.4, repeat: Infinity, ease: 'easeInOut' },
+        }}
+      />
+
+      {/* Subtle holographic shimmer sweeping across the avatar */}
+      <motion.div
+        aria-hidden
+        className="absolute inset-0 pointer-events-none mix-blend-screen rounded-[40%]"
+        style={{
+          background:
+            'linear-gradient(115deg, transparent 30%, hsl(var(--vini-glow) / 0.18) 50%, transparent 70%)',
+          opacity: theme === 'espacial' ? 0.55 : 0.3,
+        }}
+        animate={{ backgroundPositionX: ['-150%', '150%'] }}
+        transition={{ duration: 5, repeat: Infinity, ease: 'linear', repeatDelay: 2 }}
       />
     </motion.div>
   );
 }
+
