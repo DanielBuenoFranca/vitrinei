@@ -331,8 +331,37 @@ const ViniHome = () => {
                 : 'Olá, Eu sou o Vini !!'}
             </motion.p>
           </div>
+
+          {/* Microphone button — proportional to avatar, sits just below greeting */}
+          <div className="absolute left-1/2 -translate-x-1/2 -bottom-20 sm:-bottom-24 flex flex-col items-center gap-1.5 pointer-events-auto">
+            <div className="relative">
+              {listening && (
+                <>
+                  <span className="absolute inset-0 rounded-full bg-primary/30 animate-pulse-ring" />
+                  <span className="absolute inset-0 rounded-full bg-accent/30 animate-pulse-ring" style={{ animationDelay: '0.6s' }} />
+                </>
+              )}
+              <motion.button
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.92 }}
+                onClick={handleVoiceTap}
+                className={cn(
+                  'relative w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all',
+                  'bg-gradient-to-br from-primary via-accent to-primary text-primary-foreground vini-ring shadow-lg',
+                  listening && 'ring-4 ring-primary/40'
+                )}
+                aria-label={listening ? 'Parar microfone' : 'Falar com o Vini'}
+              >
+                <Mic className={cn('w-5 h-5 sm:w-6 sm:h-6', listening && 'animate-pulse')} />
+              </motion.button>
+            </div>
+            <span className="text-[10px] text-[hsl(var(--text-accent))] font-medium tracking-wide">
+              {listening ? 'Ouvindo…' : 'Toque para falar'}
+            </span>
+          </div>
         </div>
       </div>
+
 
       {/* ─── Speech bubbles — only after interaction ─── */}
       {hasInteracted && (
@@ -364,26 +393,7 @@ const ViniHome = () => {
         </div>
       )}
 
-      {/* ─── Discrete mic button — only when listening (visual feedback) ─── */}
-      <AnimatePresence>
-        {listening && (
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.8 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.8 }}
-            className="absolute bottom-20 left-1/2 -translate-x-1/2 z-30"
-          >
-            <button
-              onClick={handleVoiceTap}
-              className="relative w-14 h-14 rounded-full bg-gradient-to-br from-primary via-accent to-primary text-primary-foreground vini-ring ring-4 ring-primary/40 flex items-center justify-center"
-              aria-label="Parar microfone"
-            >
-              <span className="absolute inset-0 rounded-full bg-primary/30 animate-pulse-ring" />
-              <Mic className="w-6 h-6 animate-pulse" />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* mic now lives next to the avatar; standalone floating mic removed */}
 
       {/* ─── Text input drawer ─── */}
       <AnimatePresence>
