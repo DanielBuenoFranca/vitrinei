@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { ViniScene } from '@/components/vini/ViniScene';
+import { ViniAvatar } from '@/components/vini/ViniAvatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -19,6 +20,8 @@ import { cn } from '@/lib/utils';
 
 type Bubble = { role: 'vini' | 'user'; text: string; id: string };
 
+const AUTO_HIDE_MS = 5000;
+
 const ViniHome = () => {
   const navigate = useNavigate();
   const { user, signOut, displayName } = useAuth();
@@ -26,25 +29,38 @@ const ViniHome = () => {
   const { theme } = useTheme();
   const { supported, listening, transcript, start, stop } = useSpeechRecognition();
 
-  // Estado de interação: começa "dormindo" — só desperta após primeira ação
   const [hasInteracted, setHasInteracted] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
   const [history, setHistory] = useState<string[]>([]);
   const [showInput, setShowInput] = useState(false);
   const [text, setText] = useState('');
   const [showPlusMenu, setShowPlusMenu] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const hideTimerRef = useRef<number | null>(null);
 
-  // Voice → input
+  // Sync voice transcript -> text input
   useEffect(() => {
     if (transcript) setText(transcript);
   }, [transcript]);
+
+  // Auto-hide menu after 5s of inactivity
+  const scheduleHide = () => {
+    if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = window.setTimeout(() => setMenuOpen(false), AUTO_HIDE_MS);
+  };
+  const cancelHide = () => {
+    if (hideTimerRef.current) {
+      window.clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
+  };
+  useEffect(() => () => cancelHide(), []);
 
   const pushBubble = (b: Omit<Bubble, 'id'>) => {
     setBubbles((prev) => [...prev.slice(-3), { ...b, id: `${Date.now()}-${Math.random()}` }]);
   };
 
-  // Saudação personalizada (só calcula no momento da interação)
   const buildGreeting = () => {
     const base = getGreeting();
     if (user && displayName) {
@@ -60,8 +76,17 @@ const ViniHome = () => {
     }
   };
 
+  // Click on avatar = primary trigger: opens menu + wakes Vini
+  const handleAvatarClick = () => {
+    wakeUp();
+    setMenuOpen(true);
+    scheduleHide();
+  };
+
   const handleVoiceTap = () => {
     wakeUp();
+    setMenuOpen(true);
+    scheduleHide();
     if (listening) {
       stop();
       if (text.trim()) sendQuery(text);
@@ -78,10 +103,8 @@ const ViniHome = () => {
     }
   };
 
-  // Análise de contexto: define o próximo passo da jornada do cliente
   const analyzeAndRoute = (query: string) => {
     const q = query.toLowerCase();
-    // mapas de intenção → próximo passo
     if (/(carrinho|comprar|finalizar|checkout|pagamento)/.test(q)) {
       return { reply: 'Vou te levar para finalizar sua compra agora.', route: '/jornada-cliente' };
     }
@@ -110,16 +133,15 @@ const ViniHome = () => {
     pushBubble({ role: 'user', text: query });
     setHistory((h) => [...h, query]);
     setText('');
+    scheduleHide();
 
     setTimeout(() => {
-      // 1) tenta intenção contextual
       const intent = analyzeAndRoute(query);
       if (intent) {
         pushBubble({ role: 'vini', text: intent.reply });
         setTimeout(() => navigate(intent.route), 1100);
         return;
       }
-      // 2) busca semântica
       const result = semanticSearch(query);
       const total = (result.products?.length || 0) + (result.services?.length || 0);
       if (total > 0) {
@@ -145,7 +167,6 @@ const ViniHome = () => {
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-background text-foreground">
-      {/* 3D scene fills background */}
       <ViniScene />
 
       {/* gradient overlays for legibility */}
@@ -250,72 +271,72 @@ const ViniHome = () => {
         </AnimatePresence>
       </div>
 
-      {/* ─── Floating action menu (right of Vini) — só após interação ─── */}
-      <AnimatePresence>
-        {hasInteracted && (
-          <motion.div
-            initial={{ opacity: 0, x: 60, scale: 0.8 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: 60, scale: 0.8 }}
-            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 z-30"
-          >
-            {/* Painel de vidro estilo "abas empilhadas" da imagem */}
-            <div className="relative">
-              <div className="absolute inset-0 translate-x-1.5 translate-y-1.5 rounded-2xl glass opacity-50" />
-              <div className="absolute inset-0 translate-x-3 translate-y-3 rounded-2xl glass opacity-25" />
-              <div className="relative glass-strong rounded-2xl p-2 flex flex-col gap-1.5 border border-[hsl(var(--vini-glow)/0.35)]">
-                {[
-                  { icon: Search, label: 'Buscar', action: () => { setShowInput(true); setTimeout(() => inputRef.current?.focus(), 50); } },
-                  { icon: MessageCircle, label: 'Sugestão', action: () => pushBubble({ role: 'vini', text: getRandomMoodSuggestion(history).text }) },
-                  { icon: Bot, label: 'Vini', action: handleVoiceTap },
-                ].map((it, i) => (
-                  <motion.button
-                    key={it.label}
-                    initial={{ opacity: 0, y: -6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 + i * 0.07 }}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.92 }}
-                    onClick={it.action}
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-[hsl(var(--text-accent))] hover:text-primary hover:bg-primary/10 transition-colors"
-                    title={it.label}
-                  >
-                    <it.icon className="w-4.5 h-4.5" />
-                  </motion.button>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* ─── Central stage: Avatar + lateral menu ─── */}
+      <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+        <div className="relative pointer-events-auto" onMouseEnter={cancelHide} onMouseLeave={menuOpen ? scheduleHide : undefined}>
+          {/* Stacked-glass tabs menu — hidden behind avatar until interaction */}
+          <AnimatePresence>
+            {menuOpen && (
+              <motion.div
+                initial={{ opacity: 0, x: -40, scale: 0.8 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: -40, scale: 0.8 }}
+                transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                className="absolute top-1/2 -translate-y-1/2 left-full ml-2 sm:ml-4 z-40"
+              >
+                <div className="relative">
+                  {/* layered glass tabs (depth) */}
+                  <div className="absolute inset-0 translate-x-2 translate-y-2 rounded-3xl glass opacity-40 border border-[hsl(var(--vini-glow)/0.2)]" />
+                  <div className="absolute inset-0 translate-x-4 translate-y-4 rounded-3xl glass opacity-20 border border-[hsl(var(--vini-glow)/0.15)]" />
+                  <div className="relative glass-strong rounded-3xl p-2.5 flex flex-col gap-2 border border-[hsl(var(--vini-glow)/0.45)] shadow-[0_0_30px_hsl(var(--vini-glow)/0.25)]">
+                    {[
+                      { icon: Search, label: 'Buscar', action: () => { setShowInput(true); setTimeout(() => inputRef.current?.focus(), 50); scheduleHide(); } },
+                      { icon: MessageCircle, label: 'Sugestão', action: () => { pushBubble({ role: 'vini', text: getRandomMoodSuggestion(history).text }); scheduleHide(); } },
+                      { icon: Bot, label: 'Vini', action: handleVoiceTap },
+                    ].map((it, i) => (
+                      <motion.button
+                        key={it.label}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.12 + i * 0.08 }}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.92 }}
+                        onClick={it.action}
+                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center text-[hsl(var(--text-accent))] hover:text-primary hover:bg-primary/10 transition-colors border border-[hsl(var(--vini-glow)/0.25)]"
+                        title={it.label}
+                      >
+                        <it.icon className="w-5 h-5" />
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-      {/* ─── Saudação inicial estática (some após primeira interação) ─── */}
-      <AnimatePresence>
-        {!hasInteracted && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.5 }}
-            className="absolute top-24 sm:top-28 inset-x-0 z-20 flex flex-col items-center px-4 pointer-events-none"
-          >
-            <h1 className="text-center font-display text-xl sm:text-2xl md:text-3xl font-semibold leading-tight text-glow">
-              {user && displayName ? (
-                <>Olá, {displayName.split(' ')[0]}.</>
-              ) : (
-                <>Bem-vindo.</>
-              )}
-              <br />
-              <span className="text-[hsl(var(--text-accent))]">Diga "Vini, posso ajudar?"</span>
-            </h1>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          {/* The Avatar itself — primary interaction trigger */}
+          <ViniAvatar onClick={handleAvatarClick} size={typeof window !== 'undefined' && window.innerWidth < 640 ? 240 : 320} />
 
-      {/* ─── Speech bubbles — só renderiza após interação ─── */}
+          {/* Greeting label below avatar */}
+          <div className="absolute left-1/2 -translate-x-1/2 -bottom-4 sm:-bottom-2 whitespace-nowrap">
+            <motion.p
+              key={hasInteracted ? 'greeted' : 'idle'}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-center font-display text-base sm:text-lg font-semibold text-glow"
+            >
+              {hasInteracted && user && displayName
+                ? `Olá, ${displayName.split(' ')[0]} !!`
+                : 'Olá, Eu sou o Vini !!'}
+            </motion.p>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Speech bubbles — only after interaction ─── */}
       {hasInteracted && (
-        <div className="absolute inset-x-0 bottom-44 sm:bottom-56 z-20 flex flex-col items-center gap-2 px-4 pointer-events-none">
+        <div className="absolute inset-x-0 bottom-32 sm:bottom-40 z-20 flex flex-col items-center gap-2 px-4 pointer-events-none">
           <AnimatePresence>
             {bubbles.slice(-2).map((b) => (
               <motion.div
@@ -343,38 +364,28 @@ const ViniHome = () => {
         </div>
       )}
 
-      {/* ─── Microphone CTA (sem texto auxiliar) ─── */}
-      <div className="absolute inset-x-0 bottom-28 sm:bottom-36 z-20 flex flex-col items-center gap-2 px-4">
-        <div className="relative">
-          {listening && (
-            <>
-              <span className="absolute inset-0 rounded-full bg-primary/30 animate-pulse-ring" />
-              <span className="absolute inset-0 rounded-full bg-accent/30 animate-pulse-ring" style={{ animationDelay: '0.6s' }} />
-            </>
-          )}
-          <motion.button
-            whileHover={{ scale: 1.06 }}
-            whileTap={{ scale: 0.94 }}
-            onClick={handleVoiceTap}
-            className={cn(
-              'relative w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center transition-all',
-              'bg-gradient-to-br from-primary via-accent to-primary text-primary-foreground vini-ring',
-              listening && 'ring-4 ring-primary/40'
-            )}
-            aria-label={listening ? 'Parar microfone' : 'Iniciar microfone'}
+      {/* ─── Discrete mic button — only when listening (visual feedback) ─── */}
+      <AnimatePresence>
+        {listening && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.8 }}
+            className="absolute bottom-20 left-1/2 -translate-x-1/2 z-30"
           >
-            <Mic className={cn('w-7 h-7 sm:w-8 sm:h-8', listening && 'animate-pulse')} />
-          </motion.button>
-        </div>
+            <button
+              onClick={handleVoiceTap}
+              className="relative w-14 h-14 rounded-full bg-gradient-to-br from-primary via-accent to-primary text-primary-foreground vini-ring ring-4 ring-primary/40 flex items-center justify-center"
+              aria-label="Parar microfone"
+            >
+              <span className="absolute inset-0 rounded-full bg-primary/30 animate-pulse-ring" />
+              <Mic className="w-6 h-6 animate-pulse" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-40 h-40 sm:w-56 sm:h-56 rounded-full border border-[hsl(var(--vini-glow)/0.2)]" />
-          <div className="absolute w-56 h-56 sm:w-72 sm:h-72 rounded-full border border-[hsl(var(--vini-glow)/0.12)]" />
-          <div className="absolute w-72 h-72 sm:w-96 sm:h-96 rounded-full border border-[hsl(var(--vini-glow)/0.06)]" />
-        </div>
-      </div>
-
-      {/* ─── Text input drawer (when keyboard typing) ─── */}
+      {/* ─── Text input drawer ─── */}
       <AnimatePresence>
         {showInput && (
           <motion.form
@@ -403,30 +414,42 @@ const ViniHome = () => {
         )}
       </AnimatePresence>
 
-      {/* ─── Bottom nav (minimal icons) ─── */}
-      <nav className="absolute bottom-0 inset-x-0 z-30 px-3 pb-3">
-        <div className="glass rounded-2xl flex items-center justify-around py-2.5">
-          {[
-            { icon: Home, label: 'Home', to: '/', active: true },
-            { icon: Wallet, label: 'Carteira', to: '/carteira' },
-            { icon: UserIcon, label: 'Perfil', to: user ? '/carteira' : '/auth' },
-            { icon: Sparkles, label: 'Demos', to: '/demos' },
-          ].map((it) => (
-            <button
-              key={it.label}
-              onClick={() => navigate(it.to)}
-              className={cn(
-                'flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-colors',
-                it.active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-              )}
-              aria-label={it.label}
-            >
-              <it.icon className="w-5 h-5" />
-              <span className="text-[9px]">{it.label}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
+      {/* ─── Bottom nav (hidden behind avatar until interaction) ─── */}
+      <AnimatePresence>
+        {(menuOpen || hasInteracted) && (
+          <motion.nav
+            initial={{ opacity: 0, y: 30, scale: 0.85 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 30, scale: 0.85 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute bottom-0 inset-x-0 z-30 px-3 pb-3"
+            onMouseEnter={cancelHide}
+            onMouseLeave={menuOpen ? scheduleHide : undefined}
+          >
+            <div className="glass rounded-2xl flex items-center justify-around py-2.5">
+              {[
+                { icon: Home, label: 'Home', to: '/', active: true },
+                { icon: Wallet, label: 'Carteira', to: '/carteira' },
+                { icon: UserIcon, label: 'Perfil', to: user ? '/carteira' : '/auth' },
+                { icon: Sparkles, label: 'Demos', to: '/demos' },
+              ].map((it) => (
+                <button
+                  key={it.label}
+                  onClick={() => navigate(it.to)}
+                  className={cn(
+                    'flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-colors',
+                    it.active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                  )}
+                  aria-label={it.label}
+                >
+                  <it.icon className="w-5 h-5" />
+                  <span className="text-[9px]">{it.label}</span>
+                </button>
+              ))}
+            </div>
+          </motion.nav>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
