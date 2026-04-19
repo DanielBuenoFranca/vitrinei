@@ -155,9 +155,10 @@ function ViniAvatarPlane({
 
   useFrame((state) => {
     if (!ref.current) return;
-    const targetX = pointer.smooth.current.x * 0.15 * 4;
-    const float = Math.sin(state.clock.elapsedTime * 2) * 0.1;
-    const targetY = pointer.smooth.current.y * 0.15 * 2 + float;
+    // Parallax intensity 0.15 (3x background) + organic levitation
+    const targetX = pointer.smooth.current.x * 0.45;
+    const float = Math.sin(state.clock.elapsedTime * 2) * 0.08;
+    const targetY = pointer.smooth.current.y * 0.25 + float;
 
     ref.current.position.x = THREE.MathUtils.lerp(ref.current.position.x, targetX, 0.06);
     ref.current.position.y = THREE.MathUtils.lerp(ref.current.position.y, targetY, 0.08);
@@ -180,14 +181,17 @@ function ViniAvatarPlane({
     }
   });
 
-  const size: [number, number] = isMobile ? [2.0, 2.0] : [2.6, 2.6];
+  // Sized to sit perfectly inside the holographic rings of the office background
+  const size: [number, number] = isMobile ? [1.7, 1.7] : [2.2, 2.2];
+  // The rings of the office bg are slightly below screen center → offset Y down
+  const baseY = isMobile ? -0.35 : -0.45;
 
   return (
-    <group position={[0, 0, 0.5]}>
-      {/* Cyan portal backlight on Vini's back */}
+    <group position={[0, baseY, 0.5]}>
+      {/* Cyan portal backlight on Vini's back — emerges from the rings */}
       <pointLight
         ref={lightRef}
-        position={[0, 0.2, -0.6]}
+        position={[0, 0.1, -0.8]}
         intensity={2.6}
         color="#22d3ee"
         distance={5}
@@ -201,8 +205,8 @@ function ViniAvatarPlane({
           alphaTest={0.05}
           emissiveMap={tex}
           emissive="#ffffff"
-          emissiveIntensity={0.35}
-          roughness={0.6}
+          emissiveIntensity={0.4}
+          roughness={0.55}
           metalness={0.1}
           toneMapped={false}
         />
@@ -236,7 +240,6 @@ function SceneContent({ isMobile }: { isMobile: boolean }) {
       <ambientLight intensity={0.35} />
       <directionalLight position={[3, 4, 5]} intensity={0.9} color="#ffffff" />
       <BackgroundPlane pointer={pointer} />
-      {!isMobile && <StocksGlassPanel />}
       <ViniAvatarPlane pointer={pointer} isMobile={isMobile} />
     </>
   );
