@@ -197,18 +197,15 @@ function ViniAvatarPlane({
         distance={5}
         decay={2}
       />
-      <mesh ref={ref}>
+      <mesh ref={ref} renderOrder={10}>
         <planeGeometry args={size} />
-        <meshStandardMaterial
+        <meshBasicMaterial
           map={tex}
           transparent
-          alphaTest={0.05}
-          emissiveMap={tex}
-          emissive="#ffffff"
-          emissiveIntensity={0.4}
-          roughness={0.55}
-          metalness={0.1}
+          alphaTest={0.02}
+          depthWrite={false}
           toneMapped={false}
+          side={THREE.DoubleSide}
         />
       </mesh>
     </group>
