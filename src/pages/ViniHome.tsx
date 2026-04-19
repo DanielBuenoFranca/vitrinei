@@ -169,23 +169,9 @@ const ViniHome = () => {
     <div className="fixed inset-0 overflow-hidden bg-background text-foreground">
       <ViniScene />
 
-      {/* gradient overlays for legibility */}
-      <div
-        className={cn(
-          'absolute inset-x-0 top-0 h-32 pointer-events-none z-10',
-          theme === 'espacial'
-            ? 'bg-gradient-to-b from-background/80 to-transparent'
-            : 'bg-gradient-to-b from-background/70 to-transparent'
-        )}
-      />
-      <div
-        className={cn(
-          'absolute inset-x-0 bottom-0 h-40 pointer-events-none z-10',
-          theme === 'espacial'
-            ? 'bg-gradient-to-t from-background/80 to-transparent'
-            : 'bg-gradient-to-t from-background/70 to-transparent'
-        )}
-      />
+      {/* light gradient overlays for legibility — kept subtle so the 3D office is visible */}
+      <div className="absolute inset-x-0 top-0 h-24 pointer-events-none z-10 bg-gradient-to-b from-background/40 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-32 pointer-events-none z-10 bg-gradient-to-t from-background/40 to-transparent" />
 
       {/* ─── Header ─── */}
       <header className="absolute top-0 inset-x-0 z-30 px-3 sm:px-5 pt-3">

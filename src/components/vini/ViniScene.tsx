@@ -1,11 +1,13 @@
-import { Suspense, useRef, useMemo, useEffect, useState } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Stars, Float, MeshTransmissionMaterial, Sphere, Sparkles } from '@react-three/drei';
+import { Suspense, useRef, useEffect, useState } from 'react';
+import { Canvas, useFrame, useLoader } from '@react-three/fiber';
+import { MeshTransmissionMaterial } from '@react-three/drei';
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
-import { useTheme } from '@/contexts/ThemeContext';
+import officeBg from '@/assets/office-bg.png';
+import viniAvatar from '@/assets/vini-avatar.png';
 
 /* ──────────────────────────────────────────────────────────
-   Pointer parallax (mouse / gyro) with lerp smoothing
+   Pointer parallax (mouse / gyro) with elastic lerp
    ────────────────────────────────────────────────────────── */
 function usePointer() {
   const target = useRef({ x: 0, y: 0 });
@@ -40,149 +42,176 @@ function usePointer() {
 }
 
 /* ──────────────────────────────────────────────────────────
-   Holographic Vini sphere — Espacial
+   Layer 0 — Background (futuristic office)
+   parallax intensity 0.05
    ────────────────────────────────────────────────────────── */
-function ViniHologram({ pointer }: { pointer: ReturnType<typeof usePointer> }) {
-  const group = useRef<THREE.Group>(null);
-  const inner = useRef<THREE.Mesh>(null);
-  const ring = useRef<THREE.Mesh>(null);
+function BackgroundPlane({ pointer }: { pointer: ReturnType<typeof usePointer> }) {
+  const tex = useLoader(THREE.TextureLoader, officeBg);
+  const ref = useRef<THREE.Mesh>(null);
 
-  useFrame((state, delta) => {
-    if (!group.current) return;
-    pointer.smooth.current.x = THREE.MathUtils.lerp(pointer.smooth.current.x, pointer.target.current.x, 0.05);
-    pointer.smooth.current.y = THREE.MathUtils.lerp(pointer.smooth.current.y, pointer.target.current.y, 0.05);
-    group.current.rotation.y = pointer.smooth.current.x * 0.35;
-    group.current.rotation.x = pointer.smooth.current.y * 0.2;
-    group.current.position.x = pointer.smooth.current.x * 0.25;
-    group.current.position.y = Math.sin(state.clock.elapsedTime * 1.1) * 0.12 + pointer.smooth.current.y * 0.15;
-    if (inner.current) inner.current.rotation.y += delta * 0.4;
-    if (ring.current) ring.current.rotation.z += delta * 0.25;
-  });
-
-  return (
-    <group ref={group}>
-      {/* outer aura */}
-      <Sphere args={[1.35, 48, 48]}>
-        <meshBasicMaterial color="#22d3ee" transparent opacity={0.08} />
-      </Sphere>
-      {/* core sphere */}
-      <Sphere ref={inner} args={[1, 64, 64]}>
-        <meshPhysicalMaterial
-          color="#0ea5b7"
-          emissive="#22d3ee"
-          emissiveIntensity={0.6}
-          metalness={0.3}
-          roughness={0.15}
-          clearcoat={1}
-          clearcoatRoughness={0.05}
-          transmission={0.4}
-          thickness={0.8}
-          ior={1.4}
-        />
-      </Sphere>
-      {/* holographic ring */}
-      <mesh ref={ring} rotation={[Math.PI / 2.2, 0, 0]} position={[0, -0.05, 0]}>
-        <torusGeometry args={[1.7, 0.015, 16, 128]} />
-        <meshBasicMaterial color="#22d3ee" transparent opacity={0.6} />
-      </mesh>
-      <mesh rotation={[Math.PI / 2.4, 0.4, 0]} position={[0, -0.02, 0]}>
-        <torusGeometry args={[1.95, 0.008, 16, 128]} />
-        <meshBasicMaterial color="#e879f9" transparent opacity={0.45} />
-      </mesh>
-      <pointLight position={[0, 0, 2]} intensity={1.2} color="#22d3ee" />
-      <pointLight position={[1.5, 1, 1]} intensity={0.6} color="#e879f9" />
-    </group>
-  );
-}
-
-/* ──────────────────────────────────────────────────────────
-   Frosted-glass Vini sphere — Comercial
-   ────────────────────────────────────────────────────────── */
-function ViniGlass({ pointer }: { pointer: ReturnType<typeof usePointer> }) {
-  const group = useRef<THREE.Group>(null);
-
-  useFrame((state) => {
-    if (!group.current) return;
-    pointer.smooth.current.x = THREE.MathUtils.lerp(pointer.smooth.current.x, pointer.target.current.x, 0.04);
-    pointer.smooth.current.y = THREE.MathUtils.lerp(pointer.smooth.current.y, pointer.target.current.y, 0.04);
-    group.current.rotation.y = pointer.smooth.current.x * 0.3;
-    group.current.rotation.x = pointer.smooth.current.y * 0.18;
-    group.current.position.x = pointer.smooth.current.x * 0.2;
-    group.current.position.y = Math.sin(state.clock.elapsedTime * 1.0) * 0.1 + pointer.smooth.current.y * 0.12;
-  });
-
-  return (
-    <group ref={group}>
-      <Float speed={1.2} rotationIntensity={0.2} floatIntensity={0.4}>
-        <Sphere args={[1.05, 96, 96]}>
-          <MeshTransmissionMaterial
-            backside
-            samples={6}
-            thickness={1.4}
-            roughness={0.05}
-            chromaticAberration={0.04}
-            anisotropy={0.3}
-            distortion={0.15}
-            distortionScale={0.3}
-            temporalDistortion={0.05}
-            ior={1.45}
-            color="#dbeafe"
-            attenuationColor="#cffafe"
-            attenuationDistance={1.5}
-          />
-        </Sphere>
-      </Float>
-      <ambientLight intensity={0.6} />
-      <directionalLight position={[3, 3, 3]} intensity={0.8} color="#ffffff" />
-      <pointLight position={[-2, -1, 2]} intensity={0.4} color="#67e8f9" />
-    </group>
-  );
-}
-
-/* ──────────────────────────────────────────────────────────
-   Background — parallax stars (espacial) or particles (comercial)
-   ────────────────────────────────────────────────────────── */
-function ParallaxBackground({ pointer }: { pointer: ReturnType<typeof usePointer> }) {
-  const { theme } = useTheme();
-  const starsRef = useRef<THREE.Group>(null);
+  useEffect(() => {
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 8;
+    tex.needsUpdate = true;
+  }, [tex]);
 
   useFrame(() => {
-    if (!starsRef.current) return;
-    // background moves slower than foreground (parallax depth)
-    starsRef.current.position.x = pointer.smooth.current.x * 0.4;
-    starsRef.current.position.y = pointer.smooth.current.y * 0.3;
-    starsRef.current.rotation.y += 0.0003;
+    if (!ref.current) return;
+    ref.current.position.x = THREE.MathUtils.lerp(
+      ref.current.position.x,
+      pointer.smooth.current.x * 0.05 * 4,
+      0.06
+    );
+    ref.current.position.y = THREE.MathUtils.lerp(
+      ref.current.position.y,
+      pointer.smooth.current.y * 0.05 * 4,
+      0.06
+    );
   });
 
-  if (theme === 'espacial') {
-    return (
-      <group ref={starsRef}>
-        <Stars radius={60} depth={50} count={2500} factor={3} saturation={0.4} fade speed={0.6} />
-        <Sparkles count={80} scale={[14, 8, 8]} size={3} speed={0.3} color="#22d3ee" />
-        <Sparkles count={40} scale={[14, 8, 8]} size={4} speed={0.2} color="#e879f9" />
-      </group>
+  return (
+    <mesh ref={ref} position={[0, 0, -3]}>
+      <planeGeometry args={[18, 11]} />
+      <meshBasicMaterial map={tex} toneMapped={false} />
+    </mesh>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────
+   Layer 0.5 — Glass refraction panel (left side)
+   ────────────────────────────────────────────────────────── */
+function StocksGlassPanel() {
+  const ref = useRef<THREE.Mesh>(null);
+  useFrame((state) => {
+    if (!ref.current) return;
+    ref.current.position.y = -0.2 + Math.sin(state.clock.elapsedTime * 0.8) * 0.04;
+  });
+  return (
+    <mesh ref={ref} position={[-2.6, -0.2, -1.2]} rotation={[0, 0.18, 0]}>
+      <boxGeometry args={[1.4, 2.2, 0.08]} />
+      <MeshTransmissionMaterial
+        ior={1.5}
+        transmission={1}
+        chromaticAberration={0.06}
+        roughness={0.05}
+        thickness={0.4}
+        backside
+        samples={6}
+        anisotropy={0.2}
+        distortion={0.1}
+        distortionScale={0.2}
+        color="#cffafe"
+      />
+    </mesh>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────
+   Layer 1 — Vini avatar plane (centered, levitating)
+   parallax intensity 0.15
+   ────────────────────────────────────────────────────────── */
+function ViniAvatarPlane({
+  pointer,
+  isMobile,
+}: {
+  pointer: ReturnType<typeof usePointer>;
+  isMobile: boolean;
+}) {
+  const tex = useLoader(THREE.TextureLoader, viniAvatar);
+  const ref = useRef<THREE.Mesh>(null);
+  const lightRef = useRef<THREE.PointLight>(null);
+
+  useEffect(() => {
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 8;
+    tex.needsUpdate = true;
+  }, [tex]);
+
+  useFrame((state) => {
+    if (!ref.current) return;
+    const targetX = pointer.smooth.current.x * 0.15 * 4;
+    const float = Math.sin(state.clock.elapsedTime * 2) * 0.1;
+    const targetY = pointer.smooth.current.y * 0.15 * 2 + float;
+
+    ref.current.position.x = THREE.MathUtils.lerp(ref.current.position.x, targetX, 0.06);
+    ref.current.position.y = THREE.MathUtils.lerp(ref.current.position.y, targetY, 0.08);
+
+    // tilt towards pointer
+    ref.current.rotation.y = THREE.MathUtils.lerp(
+      ref.current.rotation.y,
+      pointer.smooth.current.x * 0.18,
+      0.06
     );
-  }
+    ref.current.rotation.x = THREE.MathUtils.lerp(
+      ref.current.rotation.x,
+      -pointer.smooth.current.y * 0.12,
+      0.06
+    );
+
+    // breathing pulse on backlight
+    if (lightRef.current) {
+      lightRef.current.intensity = 2.4 + Math.sin(state.clock.elapsedTime * 1.6) * 0.6;
+    }
+  });
+
+  const size: [number, number] = isMobile ? [2.0, 2.0] : [2.6, 2.6];
 
   return (
-    <group ref={starsRef}>
-      <Sparkles count={120} scale={[14, 8, 8]} size={2.5} speed={0.2} color="#94a3b8" opacity={0.6} />
-      <Sparkles count={60} scale={[10, 6, 6]} size={3.5} speed={0.15} color="#67e8f9" opacity={0.5} />
+    <group position={[0, 0, 0.5]}>
+      {/* Cyan portal backlight on Vini's back */}
+      <pointLight
+        ref={lightRef}
+        position={[0, 0.2, -0.6]}
+        intensity={2.6}
+        color="#22d3ee"
+        distance={5}
+        decay={2}
+      />
+      <mesh ref={ref}>
+        <planeGeometry args={size} />
+        <meshStandardMaterial
+          map={tex}
+          transparent
+          alphaTest={0.05}
+          emissiveMap={tex}
+          emissive="#ffffff"
+          emissiveIntensity={0.35}
+          roughness={0.6}
+          metalness={0.1}
+          toneMapped={false}
+        />
+      </mesh>
     </group>
   );
 }
 
 /* ──────────────────────────────────────────────────────────
-   Vini orchestrator (chooses material by theme)
+   Scene content
    ────────────────────────────────────────────────────────── */
-function ViniContent() {
-  const { theme } = useTheme();
+function SceneContent({ isMobile }: { isMobile: boolean }) {
   const pointer = usePointer();
+
+  // Smooth pointer once per frame (shared across consumers)
+  useFrame(() => {
+    pointer.smooth.current.x = THREE.MathUtils.lerp(
+      pointer.smooth.current.x,
+      pointer.target.current.x,
+      0.05
+    );
+    pointer.smooth.current.y = THREE.MathUtils.lerp(
+      pointer.smooth.current.y,
+      pointer.target.current.y,
+      0.05
+    );
+  });
 
   return (
     <>
-      <ParallaxBackground pointer={pointer} />
-      {/* central sphere removed — the avatar PNG now occupies the center */}
+      <ambientLight intensity={0.35} />
+      <directionalLight position={[3, 4, 5]} intensity={0.9} color="#ffffff" />
+      <BackgroundPlane pointer={pointer} />
+      {!isMobile && <StocksGlassPanel />}
+      <ViniAvatarPlane pointer={pointer} isMobile={isMobile} />
     </>
   );
 }
@@ -191,29 +220,46 @@ function ViniContent() {
    Public Canvas wrapper
    ────────────────────────────────────────────────────────── */
 export function ViniScene() {
-  const { theme } = useTheme();
   const [reduced, setReduced] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const m = window.matchMedia('(prefers-reduced-motion: reduce)');
     setReduced(m.matches);
     const handler = () => setReduced(m.matches);
     m.addEventListener?.('change', handler);
-    return () => m.removeEventListener?.('change', handler);
+
+    const mob = window.matchMedia('(max-width: 640px)');
+    setIsMobile(mob.matches);
+    const mobHandler = () => setIsMobile(mob.matches);
+    mob.addEventListener?.('change', mobHandler);
+
+    return () => {
+      m.removeEventListener?.('change', handler);
+      mob.removeEventListener?.('change', mobHandler);
+    };
   }, []);
 
   return (
-    <div className="absolute inset-0 pointer-events-none">
+    <div className="absolute inset-0 pointer-events-none z-0">
       <Canvas
         dpr={[1, 1.6]}
-        camera={{ position: [0, 0, 5], fov: 45 }}
-        gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+        camera={{ position: [0, 0, 5], fov: 42 }}
+        gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
         frameloop={reduced ? 'demand' : 'always'}
       >
         <Suspense fallback={null}>
-          <color attach="background" args={[theme === 'espacial' ? '#0B0E14' : '#F8FAFC']} />
-          <fog attach="fog" args={[theme === 'espacial' ? '#0B0E14' : '#F8FAFC', 8, 18]} />
-          <ViniContent />
+          <color attach="background" args={['#0B0E14']} />
+          <fog attach="fog" args={['#0B0E14', 9, 22]} />
+          <SceneContent isMobile={isMobile} />
+          <EffectComposer>
+            <Bloom
+              intensity={0.9}
+              luminanceThreshold={0.85}
+              luminanceSmoothing={0.2}
+              mipmapBlur
+            />
+          </EffectComposer>
         </Suspense>
       </Canvas>
     </div>
