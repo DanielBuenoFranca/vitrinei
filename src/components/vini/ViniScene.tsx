@@ -144,8 +144,11 @@ function ViniAvatarPlane({
   isMobile: boolean;
 }) {
   const tex = useLoader(THREE.TextureLoader, viniAvatar);
-  const ref = useRef<THREE.Mesh>(null);
+  const groupRef = useRef<THREE.Group>(null);
+  const meshRef = useRef<THREE.Mesh>(null);
   const lightRef = useRef<THREE.PointLight>(null);
+  const shadowRef = useRef<THREE.Mesh>(null);
+  const clickPulse = useRef(0);
 
   useEffect(() => {
     tex.colorSpace = THREE.SRGBColorSpace;
@@ -156,57 +159,93 @@ function ViniAvatarPlane({
     tex.needsUpdate = true;
   }, [tex]);
 
+  // Listen for click pulse from the DOM hit-area
+  useEffect(() => {
+    const handler = () => { clickPulse.current = 1; };
+    window.addEventListener('vini:click', handler);
+    return () => window.removeEventListener('vini:click', handler);
+  }, []);
+
+  // Sized to sit perfectly inside the holographic rings
+  const size: [number, number] = isMobile ? [2.0, 2.0] : [2.6, 2.6];
+  const baseY = isMobile ? -0.15 : -0.25;
+
   useFrame((state) => {
-    if (!ref.current) return;
-    // Parallax intensity 0.15 (3x background) + organic levitation
-    const targetX = pointer.smooth.current.x * 0.45;
-    const float = Math.sin(state.clock.elapsedTime * 2) * 0.08;
-    const targetY = pointer.smooth.current.y * 0.25 + float;
+    if (!groupRef.current || !meshRef.current) return;
+    const t = state.clock.elapsedTime;
 
-    ref.current.position.x = THREE.MathUtils.lerp(ref.current.position.x, targetX, 0.06);
-    ref.current.position.y = THREE.MathUtils.lerp(ref.current.position.y, targetY, 0.08);
+    // Float vertical (2-4s easing) + idle Y rotation
+    const float = Math.sin(t * 1.4) * 0.12;          // 4.5s period, smooth
+    const idleRotY = Math.sin(t * 0.6) * 0.06;       // gentle idle sway
 
-    // tilt towards pointer
-    ref.current.rotation.y = THREE.MathUtils.lerp(
-      ref.current.rotation.y,
-      pointer.smooth.current.x * 0.18,
-      0.06
-    );
-    ref.current.rotation.x = THREE.MathUtils.lerp(
-      ref.current.rotation.x,
-      -pointer.smooth.current.y * 0.12,
-      0.06
-    );
+    // Look-at mouse: clamped to ~12° (0.21 rad)
+    const targetRotY = THREE.MathUtils.clamp(pointer.smooth.current.x * 0.35, -0.21, 0.21) + idleRotY;
+    const targetRotX = THREE.MathUtils.clamp(-pointer.smooth.current.y * 0.25, -0.18, 0.18);
 
-    // breathing pulse on backlight
+    // Parallax position (intensity 0.15 vs 0.05 background)
+    const targetX = pointer.smooth.current.x * 0.35;
+    const targetY = baseY + float + pointer.smooth.current.y * 0.18;
+
+    // Click bounce
+    if (clickPulse.current > 0) {
+      clickPulse.current = Math.max(0, clickPulse.current - 0.04);
+    }
+    const bounce = Math.sin(clickPulse.current * Math.PI) * 0.18;
+    const scale = 1 + bounce;
+
+    groupRef.current.position.x = THREE.MathUtils.lerp(groupRef.current.position.x, targetX, 0.07);
+    groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.08);
+
+    meshRef.current.rotation.y = THREE.MathUtils.lerp(meshRef.current.rotation.y, targetRotY, 0.08);
+    meshRef.current.rotation.x = THREE.MathUtils.lerp(meshRef.current.rotation.x, targetRotX, 0.08);
+    meshRef.current.scale.setScalar(THREE.MathUtils.lerp(meshRef.current.scale.x, scale, 0.15));
+
+    // Backlight breathing
     if (lightRef.current) {
-      lightRef.current.intensity = 2.4 + Math.sin(state.clock.elapsedTime * 1.6) * 0.6;
+      lightRef.current.intensity = 3.2 + Math.sin(t * 1.6) * 0.8;
+    }
+    // Ground shadow follows float (smaller when higher)
+    if (shadowRef.current) {
+      const s = 1 - float * 0.6;
+      shadowRef.current.scale.set(s, s * 0.35, 1);
+      (shadowRef.current.material as THREE.MeshBasicMaterial).opacity = 0.45 - float * 0.25;
     }
   });
 
-  // Sized to sit perfectly inside the holographic rings of the office background
-  const size: [number, number] = isMobile ? [1.7, 1.7] : [2.2, 2.2];
-  // The rings of the office bg are slightly below screen center → offset Y down
-  const baseY = isMobile ? -0.35 : -0.45;
-
   return (
-    <group position={[0, baseY, 0.5]}>
-      {/* Cyan portal backlight on Vini's back — emerges from the rings */}
+    <group ref={groupRef} position={[0, baseY, 0.5]}>
+      {/* Ground shadow ellipse below the avatar */}
+      <mesh
+        ref={shadowRef}
+        position={[0, -1.05, -0.4]}
+        rotation={[-Math.PI / 2.2, 0, 0]}
+        renderOrder={5}
+      >
+        <circleGeometry args={[0.9, 48]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.4} depthWrite={false} />
+      </mesh>
+
+      {/* Cyan portal backlight emerging from the rings */}
       <pointLight
         ref={lightRef}
         position={[0, 0.1, -0.8]}
-        intensity={2.6}
+        intensity={3.2}
         color="#22d3ee"
-        distance={5}
+        distance={6}
         decay={2}
       />
-      <mesh ref={ref} renderOrder={10}>
+      {/* Warm rim light to integrate with office orange/amber accents */}
+      <pointLight position={[1.2, 0.8, 1.2]} intensity={0.8} color="#fb923c" distance={4} decay={2} />
+
+      {/* The avatar itself — high renderOrder, transparent, depth-tested off */}
+      <mesh ref={meshRef} renderOrder={20} position={[0, 0, 0]}>
         <planeGeometry args={size} />
         <meshBasicMaterial
           map={tex}
           transparent
-          alphaTest={0.02}
+          alphaTest={0.01}
           depthWrite={false}
+          depthTest={false}
           toneMapped={false}
           side={THREE.DoubleSide}
         />

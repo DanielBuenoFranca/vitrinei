@@ -76,11 +76,12 @@ const ViniHome = () => {
     }
   };
 
-  // Click on avatar = primary trigger: opens menu + wakes Vini
+  // Click on avatar = primary trigger: opens menu + wakes Vini + 3D bounce
   const handleAvatarClick = () => {
     wakeUp();
     setMenuOpen(true);
     scheduleHide();
+    window.dispatchEvent(new CustomEvent('vini:click'));
   };
 
   const handleVoiceTap = () => {
