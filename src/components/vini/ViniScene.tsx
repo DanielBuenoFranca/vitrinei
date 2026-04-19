@@ -149,7 +149,10 @@ function ViniAvatarPlane({
 
   useEffect(() => {
     tex.colorSpace = THREE.SRGBColorSpace;
-    tex.anisotropy = 8;
+    tex.anisotropy = 16;
+    tex.premultiplyAlpha = false;
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
+    tex.magFilter = THREE.LinearFilter;
     tex.needsUpdate = true;
   }, [tex]);
 
