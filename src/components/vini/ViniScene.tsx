@@ -1,5 +1,5 @@
-import { Suspense, useRef, useEffect, useState } from 'react';
-import { Canvas, useFrame, useLoader } from '@react-three/fiber';
+import { Suspense, useRef, useEffect, useState, useMemo } from 'react';
+import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
 import { MeshTransmissionMaterial } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
@@ -48,30 +48,56 @@ function usePointer() {
 function BackgroundPlane({ pointer }: { pointer: ReturnType<typeof usePointer> }) {
   const tex = useLoader(THREE.TextureLoader, officeBg);
   const ref = useRef<THREE.Mesh>(null);
+  const { camera, size: viewSize } = useThree();
+  const Z = -3; // background depth
 
   useEffect(() => {
     tex.colorSpace = THREE.SRGBColorSpace;
-    tex.anisotropy = 8;
+    tex.anisotropy = 16;
     tex.needsUpdate = true;
   }, [tex]);
 
+  // Compute plane dimensions to fully COVER the viewport (no distortion, no empty space).
+  // Visible height at depth Z = 2 * tan(fov/2) * |cameraZ - Z|; add a small overscan for parallax.
+  const dims = useMemo(() => {
+    const persp = camera as THREE.PerspectiveCamera;
+    const dist = Math.abs(persp.position.z - Z);
+    const visibleH = 2 * Math.tan((persp.fov * Math.PI) / 360) * dist;
+    const screenAspect = viewSize.width / viewSize.height;
+    const visibleW = visibleH * screenAspect;
+    const overscan = 1.18; // headroom for parallax shift
+
+    const img = tex.image as HTMLImageElement | undefined;
+    const imgAspect = img && img.width ? img.width / img.height : 16 / 9;
+
+    // COVER fit: plane >= screen, preserving image aspect (no stretch)
+    let planeW = visibleW * overscan;
+    let planeH = planeW / imgAspect;
+    if (planeH < visibleH * overscan) {
+      planeH = visibleH * overscan;
+      planeW = planeH * imgAspect;
+    }
+    return { planeW, planeH };
+  }, [tex, camera, viewSize.width, viewSize.height]);
+
   useFrame(() => {
     if (!ref.current) return;
+    // subtle parallax (intensity 0.05) — overscan ensures no edge ever shows
     ref.current.position.x = THREE.MathUtils.lerp(
       ref.current.position.x,
-      pointer.smooth.current.x * 0.05 * 4,
+      pointer.smooth.current.x * 0.25,
       0.06
     );
     ref.current.position.y = THREE.MathUtils.lerp(
       ref.current.position.y,
-      pointer.smooth.current.y * 0.05 * 4,
+      pointer.smooth.current.y * 0.18,
       0.06
     );
   });
 
   return (
-    <mesh ref={ref} position={[0, 0, -3]}>
-      <planeGeometry args={[18, 11]} />
+    <mesh ref={ref} position={[0, 0, Z]}>
+      <planeGeometry args={[dims.planeW, dims.planeH]} />
       <meshBasicMaterial map={tex} toneMapped={false} />
     </mesh>
   );
@@ -129,9 +155,10 @@ function ViniAvatarPlane({
 
   useFrame((state) => {
     if (!ref.current) return;
-    const targetX = pointer.smooth.current.x * 0.15 * 4;
-    const float = Math.sin(state.clock.elapsedTime * 2) * 0.1;
-    const targetY = pointer.smooth.current.y * 0.15 * 2 + float;
+    // Parallax intensity 0.15 (3x background) + organic levitation
+    const targetX = pointer.smooth.current.x * 0.45;
+    const float = Math.sin(state.clock.elapsedTime * 2) * 0.08;
+    const targetY = pointer.smooth.current.y * 0.25 + float;
 
     ref.current.position.x = THREE.MathUtils.lerp(ref.current.position.x, targetX, 0.06);
     ref.current.position.y = THREE.MathUtils.lerp(ref.current.position.y, targetY, 0.08);
@@ -154,14 +181,17 @@ function ViniAvatarPlane({
     }
   });
 
-  const size: [number, number] = isMobile ? [2.0, 2.0] : [2.6, 2.6];
+  // Sized to sit perfectly inside the holographic rings of the office background
+  const size: [number, number] = isMobile ? [1.7, 1.7] : [2.2, 2.2];
+  // The rings of the office bg are slightly below screen center → offset Y down
+  const baseY = isMobile ? -0.35 : -0.45;
 
   return (
-    <group position={[0, 0, 0.5]}>
-      {/* Cyan portal backlight on Vini's back */}
+    <group position={[0, baseY, 0.5]}>
+      {/* Cyan portal backlight on Vini's back — emerges from the rings */}
       <pointLight
         ref={lightRef}
-        position={[0, 0.2, -0.6]}
+        position={[0, 0.1, -0.8]}
         intensity={2.6}
         color="#22d3ee"
         distance={5}
@@ -175,8 +205,8 @@ function ViniAvatarPlane({
           alphaTest={0.05}
           emissiveMap={tex}
           emissive="#ffffff"
-          emissiveIntensity={0.35}
-          roughness={0.6}
+          emissiveIntensity={0.4}
+          roughness={0.55}
           metalness={0.1}
           toneMapped={false}
         />
@@ -210,7 +240,6 @@ function SceneContent({ isMobile }: { isMobile: boolean }) {
       <ambientLight intensity={0.35} />
       <directionalLight position={[3, 4, 5]} intensity={0.9} color="#ffffff" />
       <BackgroundPlane pointer={pointer} />
-      {!isMobile && <StocksGlassPanel />}
       <ViniAvatarPlane pointer={pointer} isMobile={isMobile} />
     </>
   );
