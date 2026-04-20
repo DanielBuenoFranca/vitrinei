@@ -201,7 +201,8 @@ function ViniAvatarPlane({
   // Geometry origin is at the avatar's center; baseY is offset so the bottom
   // edge (= -size/2) hits the background center (~y = 0).
   const size: [number, number] = isMobile ? [1.6, 1.6] : [2.1, 2.1];
-  const baseY = (isMobile ? 1.6 : 2.1) / 2 - 0.05; // bottom tip ≈ y=0 (ring center)
+  // Avatar lower so its base sits ON the floor's lit ring (slight overlap into ground)
+  const baseY = (isMobile ? 1.6 : 2.1) / 2 - 0.55;
   const baseZ = -1.2; // deep inside the scene → real perspective integration
 
   useFrame((state) => {
@@ -288,17 +289,17 @@ function ViniAvatarPlane({
     <group ref={groupRef} position={[0, baseY, baseZ]}>
       {/* warm rim light to integrate with office accents */}
       <pointLight position={[1.2, 0.8, 1.2]} intensity={0.7} color="#fb923c" distance={5} decay={2} />
-      {/* cyan key light from the holographic ring below — kisses the avatar */}
-      <pointLight position={[0, bottomY - 0.3, 0.4]} intensity={1.4} color="#22d3ee" distance={3.5} decay={2} />
+      {/* cyan key light from the holographic ring below — gentle kiss on the avatar */}
+      <pointLight position={[0, bottomY - 0.3, 0.4]} intensity={0.6} color="#22d3ee" distance={3} decay={2} />
 
-      {/* Soft cyan contact glow at the avatar's feet — sells depth integration */}
+      {/* Subtle cyan contact glow at the avatar's feet — soft blend with floor */}
       <mesh position={[0, bottomY + 0.02, -0.05]} rotation={[-Math.PI / 2.2, 0, 0]} renderOrder={18}>
-        <circleGeometry args={[0.55, 48]} />
-        <meshBasicMaterial color="#22d3ee" transparent opacity={0.35} depthWrite={false} toneMapped={false} />
+        <circleGeometry args={[0.45, 48]} />
+        <meshBasicMaterial color="#22d3ee" transparent opacity={0.14} depthWrite={false} toneMapped={false} />
       </mesh>
       <mesh position={[0, bottomY + 0.01, -0.04]} rotation={[-Math.PI / 2.2, 0, 0]} renderOrder={18}>
-        <circleGeometry args={[0.95, 48]} />
-        <meshBasicMaterial color="#22d3ee" transparent opacity={0.12} depthWrite={false} toneMapped={false} />
+        <circleGeometry args={[0.85, 48]} />
+        <meshBasicMaterial color="#22d3ee" transparent opacity={0.05} depthWrite={false} toneMapped={false} />
       </mesh>
 
       {/* Avatar — solid silhouette, integrated in 3D with proper depth */}
