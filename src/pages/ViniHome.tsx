@@ -366,33 +366,31 @@ const ViniHome = () => {
             </motion.p>
           </div>
 
-          {/* Microphone button — proportional to avatar, sits just below greeting */}
-          <div className="absolute left-1/2 -translate-x-1/2 -bottom-20 sm:-bottom-24 flex flex-col items-center gap-1.5 pointer-events-auto">
-            <div className="relative">
-              {listening && (
-                <>
-                  <span className="absolute inset-0 rounded-full bg-primary/30 animate-pulse-ring" />
-                  <span className="absolute inset-0 rounded-full bg-accent/30 animate-pulse-ring" style={{ animationDelay: '0.6s' }} />
-                </>
-              )}
-              <motion.button
-                whileHover={{ scale: 1.08 }}
-                whileTap={{ scale: 0.92 }}
-                onClick={handleVoiceTap}
-                className={cn(
-                  'relative w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all',
-                  'bg-gradient-to-br from-primary via-accent to-primary text-primary-foreground vini-ring shadow-lg',
-                  listening && 'ring-4 ring-primary/40'
-                )}
-                aria-label={listening ? 'Parar microfone' : 'Falar com o Vini'}
-              >
-                <Mic className={cn('w-5 h-5 sm:w-6 sm:h-6', listening && 'animate-pulse')} />
-              </motion.button>
-            </div>
-            <span className="text-[10px] text-[hsl(var(--text-accent))] font-medium tracking-wide">
-              {listening ? 'Ouvindo…' : 'Toque para falar'}
-            </span>
-          </div>
+        </div>
+      </div>
+
+      {/* Microphone button — fixed at the very bottom edge of the screen */}
+      <div className="absolute left-1/2 -translate-x-1/2 bottom-2 sm:bottom-3 z-40 pointer-events-auto">
+        <div className="relative">
+          {listening && (
+            <>
+              <span className="absolute inset-0 rounded-full bg-primary/30 animate-pulse-ring" />
+              <span className="absolute inset-0 rounded-full bg-accent/30 animate-pulse-ring" style={{ animationDelay: '0.6s' }} />
+            </>
+          )}
+          <motion.button
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.92 }}
+            onClick={handleVoiceTap}
+            className={cn(
+              'relative w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center transition-all',
+              'bg-gradient-to-br from-primary via-accent to-primary text-primary-foreground vini-ring shadow-lg',
+              listening && 'ring-4 ring-primary/40'
+            )}
+            aria-label={listening ? 'Parar microfone' : 'Falar com o Vini'}
+          >
+            <Mic className={cn('w-6 h-6 sm:w-7 sm:h-7', listening && 'animate-pulse')} />
+          </motion.button>
         </div>
       </div>
 
