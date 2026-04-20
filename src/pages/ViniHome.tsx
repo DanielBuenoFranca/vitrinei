@@ -419,53 +419,99 @@ const ViniHome = () => {
         </div>
       </div>
 
-      {/* ─── Live transcript while listening ─── */}
+      {/* ─── Live transcript while listening — visible until next Vini reply ─── */}
       <AnimatePresence>
-        {listening && transcript && (
+        {(listening || (transcript && transcript === lastTranscript)) && (transcript || lastTranscript) && (
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute left-1/2 -translate-x-1/2 top-[62%] sm:top-[58%] z-30 pointer-events-none px-4 w-full max-w-md"
+            className="absolute left-1/2 -translate-x-1/2 top-[18%] z-30 pointer-events-none px-4 w-full max-w-md"
           >
             <div className="glass-strong rounded-2xl px-4 py-2.5 text-center border border-primary/40 shadow-[0_0_30px_hsl(var(--primary)/0.25)]">
               <p className="text-[10px] uppercase tracking-widest text-primary font-bold mb-0.5">
-                Você disse
+                {listening ? 'Ouvindo…' : 'Você disse'}
               </p>
-              <p className="text-sm sm:text-base font-medium text-foreground">"{transcript}"</p>
+              <p className="text-sm sm:text-base font-medium text-foreground">"{transcript || lastTranscript}"</p>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ─── Speech bubbles — only after interaction ─── */}
-      {hasInteracted && (
-        <div className="absolute inset-x-0 bottom-32 sm:bottom-40 z-20 flex flex-col items-center gap-2 px-4 pointer-events-none">
-          <AnimatePresence>
-            {bubbles.slice(-2).map((b) => (
-              <motion.div
-                key={b.id}
-                initial={{ opacity: 0, y: 12, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                transition={{ duration: 0.3 }}
-                className={cn(
-                  'glass-strong px-4 py-2 rounded-2xl max-w-[88%] sm:max-w-md text-sm shadow-lg',
-                  b.role === 'user'
-                    ? 'self-end mr-4 sm:mr-12 bg-primary/15 border-primary/30'
-                    : 'self-start ml-4 sm:ml-12'
-                )}
-              >
-                {b.role === 'vini' && (
-                  <span className="text-[10px] uppercase tracking-wider text-[hsl(var(--text-accent))] font-bold mr-1">
-                    Vini
-                  </span>
-                )}
-                {b.text}
-              </motion.div>
-            ))}
-          </AnimatePresence>
+      {/* ─── Conversation panel — persistent, scrollable, humanized chat ─── */}
+      {hasInteracted && bubbles.length > 0 && (
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-24 sm:bottom-28 z-20 w-[94%] max-w-md pointer-events-auto">
+          <div className="glass-strong rounded-2xl border border-primary/20 shadow-[0_8px_30px_hsl(var(--primary)/0.15)] overflow-hidden">
+            {/* Header */}
+            <button
+              onClick={() => setChatExpanded((v) => !v)}
+              className="w-full flex items-center justify-between px-3 py-1.5 border-b border-border/40 hover:bg-primary/5 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Bot className="w-3.5 h-3.5 text-primary" />
+                <span className="text-[11px] font-semibold text-foreground">Conversa com o Vini</span>
+                <span className="text-[10px] text-muted-foreground">({bubbles.length})</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span
+                  role="button"
+                  onClick={(e) => { e.stopPropagation(); clearChat(); }}
+                  className="text-[10px] text-muted-foreground hover:text-destructive px-1.5 py-0.5 rounded"
+                  title="Limpar conversa"
+                >
+                  Limpar
+                </span>
+                <span className="text-[10px] text-muted-foreground">{chatExpanded ? '▾' : '▸'}</span>
+              </div>
+            </button>
+
+            <AnimatePresence initial={false}>
+              {chatExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <div
+                    ref={chatScrollRef}
+                    className="max-h-[32vh] overflow-y-auto px-3 py-2 flex flex-col gap-1.5"
+                  >
+                    {bubbles.map((b) => (
+                      <motion.div
+                        key={b.id}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className={cn(
+                          'flex flex-col max-w-[85%]',
+                          b.role === 'user' ? 'self-end items-end' : 'self-start items-start'
+                        )}
+                      >
+                        <span className="text-[9px] uppercase tracking-wider text-muted-foreground mb-0.5 px-1">
+                          {b.role === 'user' ? (displayName?.split(' ')[0] || 'Você') : 'Vini'}
+                          <span className="ml-1 opacity-60">
+                            {new Date(b.ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </span>
+                        <div
+                          className={cn(
+                            'px-3 py-1.5 rounded-2xl text-sm leading-snug shadow-sm',
+                            b.role === 'user'
+                              ? 'bg-primary text-primary-foreground rounded-br-sm'
+                              : 'bg-card/80 text-foreground border border-border/50 rounded-bl-sm'
+                          )}
+                        >
+                          {b.text}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       )}
 
