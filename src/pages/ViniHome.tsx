@@ -188,6 +188,7 @@ const ViniHome = () => {
     const query = q.trim();
     if (!query) return;
     wakeUp();
+    setLastTranscript(query);
     pushBubble({ role: 'user', text: query });
     setHistory((h) => [...h, query]);
     setText('');
