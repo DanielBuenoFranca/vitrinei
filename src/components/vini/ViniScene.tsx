@@ -326,7 +326,6 @@ function SceneContent({ isMobile }: { isMobile: boolean }) {
       <ambientLight intensity={0.35} />
       <directionalLight position={[3, 4, 5]} intensity={0.9} color="#ffffff" />
       <BackgroundPlane pointer={pointer} />
-      <HolographicCore avatarBreath={avatarBreath} emotion={emotion} />
       <ViniAvatarPlane pointer={pointer} isMobile={isMobile} avatarBreath={avatarBreath} emotion={emotion} />
     </>
   );
