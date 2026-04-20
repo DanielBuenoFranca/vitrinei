@@ -39,10 +39,43 @@ const ViniHome = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const hideTimerRef = useRef<number | null>(null);
 
-  // Sync voice transcript -> text input
+  // Track speech state
+  const lastSpokenRef = useRef('');
+  const autoSubmitTimerRef = useRef<number | null>(null);
+
+  // Helper: emit emotion to the 3D scene
+  const emitEmotion = (e: 'idle' | 'happy' | 'sad' | 'angry' | 'thinking' | 'listening') => {
+    window.dispatchEvent(new CustomEvent('vini:emotion', { detail: e }));
+  };
+
+  // Sync voice transcript -> text input + auto-submit when user pauses
   useEffect(() => {
-    if (transcript) setText(transcript);
+    if (!transcript) return;
+    setText(transcript);
+    lastSpokenRef.current = transcript;
+
+    // Reset auto-submit timer: when the user stops talking for ~1.2s, fire the search
+    if (autoSubmitTimerRef.current) window.clearTimeout(autoSubmitTimerRef.current);
+    autoSubmitTimerRef.current = window.setTimeout(() => {
+      const final = lastSpokenRef.current.trim();
+      if (final && listening) {
+        try { stop(); } catch {}
+        sendQuery(final);
+      } else if (final && !listening) {
+        sendQuery(final);
+      }
+    }, 1200);
+
+    return () => {
+      if (autoSubmitTimerRef.current) window.clearTimeout(autoSubmitTimerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transcript]);
+
+  // Drive emotion from listening state
+  useEffect(() => {
+    emitEmotion(listening ? 'listening' : 'idle');
+  }, [listening]);
 
   // Auto-hide menu after 5s of inactivity
   const scheduleHide = () => {
@@ -135,27 +168,41 @@ const ViniHome = () => {
     setHistory((h) => [...h, query]);
     setText('');
     scheduleHide();
+    emitEmotion('thinking');
 
     setTimeout(() => {
+      // [acao] — direct routing intents
       const intent = analyzeAndRoute(query);
       if (intent) {
+        emitEmotion('happy');
         pushBubble({ role: 'vini', text: intent.reply });
         setTimeout(() => navigate(intent.route), 1100);
         return;
       }
-      const result = semanticSearch(query);
+
+      // [detalhamento] — semantic search across providers' stock
+      const result = semanticSearch(query, history);
       const total = (result.products?.length || 0) + (result.services?.length || 0);
+
       if (total > 0) {
+        emitEmotion('happy');
         pushBubble({
           role: 'vini',
-          text: `Encontrei ${total} opções para "${query}". Já te mostro!`,
+          text: `Encontrei ${total} opções para "${query}". Levando você para a busca!`,
         });
         setTimeout(() => {
-          window.location.href = `/buscar?q=${encodeURIComponent(query)}`;
+          navigate(`/buscar?q=${encodeURIComponent(query)}`);
         }, 1000);
       } else {
-        const s = getRandomMoodSuggestion([...history, query]);
-        pushBubble({ role: 'vini', text: `Não achei "${query}" agora. ${s.text}` });
+        // Nothing in the providers' stock → suggest external search
+        emitEmotion('sad');
+        pushBubble({
+          role: 'vini',
+          text: `Nada no estoque local para "${query}". Vou buscar fora da base com sugestões 🔎`,
+        });
+        setTimeout(() => {
+          navigate(`/buscar?q=${encodeURIComponent(query)}&fora=1`);
+        }, 1300);
       }
     }, 500);
   };
