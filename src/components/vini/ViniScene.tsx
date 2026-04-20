@@ -1,6 +1,5 @@
 import { Suspense, useRef, useEffect, useState, useMemo } from 'react';
 import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
-import { MeshTransmissionMaterial } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import officeBg from '@/assets/office-bg.png';
@@ -43,13 +42,12 @@ function usePointer() {
 
 /* ──────────────────────────────────────────────────────────
    Layer 0 — Background (futuristic office)
-   parallax intensity 0.05
    ────────────────────────────────────────────────────────── */
 function BackgroundPlane({ pointer }: { pointer: ReturnType<typeof usePointer> }) {
   const tex = useLoader(THREE.TextureLoader, officeBg);
   const ref = useRef<THREE.Mesh>(null);
   const { camera, size: viewSize } = useThree();
-  const Z = -3; // background depth
+  const Z = -3;
 
   useEffect(() => {
     tex.colorSpace = THREE.SRGBColorSpace;
@@ -57,20 +55,17 @@ function BackgroundPlane({ pointer }: { pointer: ReturnType<typeof usePointer> }
     tex.needsUpdate = true;
   }, [tex]);
 
-  // Compute plane dimensions to fully COVER the viewport (no distortion, no empty space).
-  // Visible height at depth Z = 2 * tan(fov/2) * |cameraZ - Z|; add a small overscan for parallax.
   const dims = useMemo(() => {
     const persp = camera as THREE.PerspectiveCamera;
     const dist = Math.abs(persp.position.z - Z);
     const visibleH = 2 * Math.tan((persp.fov * Math.PI) / 360) * dist;
     const screenAspect = viewSize.width / viewSize.height;
     const visibleW = visibleH * screenAspect;
-    const overscan = 1.18; // headroom for parallax shift
+    const overscan = 1.18;
 
     const img = tex.image as HTMLImageElement | undefined;
     const imgAspect = img && img.width ? img.width / img.height : 16 / 9;
 
-    // COVER fit: plane >= screen, preserving image aspect (no stretch)
     let planeW = visibleW * overscan;
     let planeH = planeW / imgAspect;
     if (planeH < visibleH * overscan) {
@@ -82,7 +77,6 @@ function BackgroundPlane({ pointer }: { pointer: ReturnType<typeof usePointer> }
 
   useFrame(() => {
     if (!ref.current) return;
-    // subtle parallax (intensity 0.05) — overscan ensures no edge ever shows
     ref.current.position.x = THREE.MathUtils.lerp(
       ref.current.position.x,
       pointer.smooth.current.x * 0.25,
@@ -104,51 +98,77 @@ function BackgroundPlane({ pointer }: { pointer: ReturnType<typeof usePointer> }
 }
 
 /* ──────────────────────────────────────────────────────────
-   Layer 0.5 — Glass refraction panel (left side)
+   Holographic light source — pulses with avatar movement
    ────────────────────────────────────────────────────────── */
-function StocksGlassPanel() {
-  const ref = useRef<THREE.Mesh>(null);
+function HolographicCore({
+  avatarBreath,
+  emotion,
+}: {
+  avatarBreath: React.MutableRefObject<number>;
+  emotion: React.MutableRefObject<EmotionState>;
+}) {
+  const lightRef = useRef<THREE.PointLight>(null);
+  const haloRef = useRef<THREE.Mesh>(null);
+
   useFrame((state) => {
-    if (!ref.current) return;
-    ref.current.position.y = -0.2 + Math.sin(state.clock.elapsedTime * 0.8) * 0.04;
+    const t = state.clock.elapsedTime;
+    const breath = avatarBreath.current; // 0..1 normalized float
+    const emo = emotion.current;
+    // Color shifts by emotion
+    let color = new THREE.Color('#22d3ee'); // happy/idle = cyan
+    if (emo === 'sad') color = new THREE.Color('#3b82f6');
+    else if (emo === 'angry') color = new THREE.Color('#ef4444');
+    else if (emo === 'thinking') color = new THREE.Color('#a855f7');
+    else if (emo === 'listening') color = new THREE.Color('#10b981');
+
+    if (lightRef.current) {
+      lightRef.current.color = color;
+      lightRef.current.intensity = 3.5 + Math.sin(t * 2.2) * 0.6 + breath * 1.5;
+    }
+    if (haloRef.current) {
+      const mat = haloRef.current.material as THREE.MeshBasicMaterial;
+      mat.color = color;
+      mat.opacity = 0.18 + Math.sin(t * 1.6) * 0.06 + breath * 0.12;
+      const s = 1 + Math.sin(t * 1.2) * 0.05 + breath * 0.1;
+      haloRef.current.scale.set(s, s, 1);
+    }
   });
+
   return (
-    <mesh ref={ref} position={[-2.6, -0.2, -1.2]} rotation={[0, 0.18, 0]}>
-      <boxGeometry args={[1.4, 2.2, 0.08]} />
-      <MeshTransmissionMaterial
-        ior={1.5}
-        transmission={1}
-        chromaticAberration={0.06}
-        roughness={0.05}
-        thickness={0.4}
-        backside
-        samples={6}
-        anisotropy={0.2}
-        distortion={0.1}
-        distortionScale={0.2}
-        color="#cffafe"
-      />
-    </mesh>
+    <group position={[0, -0.55, -0.6]}>
+      <pointLight ref={lightRef} position={[0, 0.2, 0.4]} intensity={3.5} distance={7} decay={2} />
+      <mesh ref={haloRef} position={[0, 0, 0]}>
+        <ringGeometry args={[0.55, 0.95, 64]} />
+        <meshBasicMaterial color="#22d3ee" transparent opacity={0.2} side={THREE.DoubleSide} depthWrite={false} />
+      </mesh>
+    </group>
   );
 }
 
 /* ──────────────────────────────────────────────────────────
-   Layer 1 — Vini avatar plane (centered, levitating)
-   parallax intensity 0.15
+   Emotion state shared via refs
+   ────────────────────────────────────────────────────────── */
+type EmotionState = 'idle' | 'happy' | 'sad' | 'angry' | 'thinking' | 'listening';
+
+/* ──────────────────────────────────────────────────────────
+   Layer 1 — Vini avatar plane (positioned over light core)
    ────────────────────────────────────────────────────────── */
 function ViniAvatarPlane({
   pointer,
   isMobile,
+  avatarBreath,
+  emotion,
 }: {
   pointer: ReturnType<typeof usePointer>;
   isMobile: boolean;
+  avatarBreath: React.MutableRefObject<number>;
+  emotion: React.MutableRefObject<EmotionState>;
 }) {
   const tex = useLoader(THREE.TextureLoader, viniAvatar);
   const groupRef = useRef<THREE.Group>(null);
   const meshRef = useRef<THREE.Mesh>(null);
-  const lightRef = useRef<THREE.PointLight>(null);
-  const shadowRef = useRef<THREE.Mesh>(null);
   const clickPulse = useRef(0);
+  const emotionTime = useRef(0);
 
   useEffect(() => {
     tex.colorSpace = THREE.SRGBColorSpace;
@@ -159,91 +179,117 @@ function ViniAvatarPlane({
     tex.needsUpdate = true;
   }, [tex]);
 
-  // Listen for click pulse from the DOM hit-area
   useEffect(() => {
     const handler = () => { clickPulse.current = 1; };
+    const emoHandler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as EmotionState;
+      if (detail) {
+        emotion.current = detail;
+        emotionTime.current = 0;
+      }
+    };
     window.addEventListener('vini:click', handler);
-    return () => window.removeEventListener('vini:click', handler);
-  }, []);
+    window.addEventListener('vini:emotion', emoHandler as EventListener);
+    return () => {
+      window.removeEventListener('vini:click', handler);
+      window.removeEventListener('vini:emotion', emoHandler as EventListener);
+    };
+  }, [emotion]);
 
-  // Sized to sit perfectly inside the holographic rings
-  const size: [number, number] = isMobile ? [2.0, 2.0] : [2.6, 2.6];
-  const baseY = isMobile ? -0.15 : -0.25;
+  // Avatar sits deeper (further back) so it appears integrated with the office,
+  // centred on the holographic light core
+  const size: [number, number] = isMobile ? [1.7, 1.7] : [2.2, 2.2];
+  const baseY = isMobile ? -0.35 : -0.45;
+  const baseZ = -0.4; // pushed back into the scene, on top of the light source
 
   useFrame((state) => {
     if (!groupRef.current || !meshRef.current) return;
     const t = state.clock.elapsedTime;
+    emotionTime.current += 0.016;
+    const emo = emotion.current;
 
-    // Float vertical (2-4s easing) + idle Y rotation
-    const float = Math.sin(t * 1.4) * 0.12;          // 4.5s period, smooth
-    const idleRotY = Math.sin(t * 0.6) * 0.06;       // gentle idle sway
+    // Base float
+    const float = Math.sin(t * 1.4) * 0.10;
+    avatarBreath.current = (Math.sin(t * 1.4) + 1) / 2; // 0..1 for the light to follow
 
-    // Look-at mouse: clamped to ~12° (0.21 rad)
+    // Emotion-driven head/face animation (rotation = "head", scale.y squash = "face")
+    let extraRotZ = 0;
+    let extraRotX = 0;
+    let squash = 1;
+    let nodSpeed = 0.6;
+    let swaySpeed = 0.6;
+
+    switch (emo) {
+      case 'happy':
+        // gentle bouncy nod + slight upward tilt
+        extraRotX = -0.06 + Math.sin(t * 4) * 0.05;
+        squash = 1 + Math.sin(t * 5) * 0.04;
+        nodSpeed = 1.2;
+        break;
+      case 'sad':
+        // head down, slow droop
+        extraRotX = 0.18 + Math.sin(t * 0.8) * 0.02;
+        extraRotZ = Math.sin(t * 0.5) * 0.04;
+        squash = 0.96;
+        nodSpeed = 0.3;
+        break;
+      case 'angry':
+        // quick shakes + slight forward lean
+        extraRotZ = Math.sin(t * 18) * 0.06;
+        extraRotX = -0.08;
+        squash = 1.02 + Math.sin(t * 14) * 0.02;
+        nodSpeed = 0.6;
+        break;
+      case 'thinking':
+        // tilt to the side, slow
+        extraRotZ = 0.18 + Math.sin(t * 0.7) * 0.05;
+        extraRotX = -0.04;
+        nodSpeed = 0.4;
+        break;
+      case 'listening':
+        // attentive: lean slightly forward + subtle pulse
+        extraRotX = -0.05;
+        squash = 1 + Math.sin(t * 3) * 0.02;
+        nodSpeed = 0.8;
+        break;
+    }
+
+    const idleRotY = Math.sin(t * swaySpeed) * 0.06;
     const targetRotY = THREE.MathUtils.clamp(pointer.smooth.current.x * 0.35, -0.21, 0.21) + idleRotY;
-    const targetRotX = THREE.MathUtils.clamp(-pointer.smooth.current.y * 0.25, -0.18, 0.18);
+    const targetRotX = THREE.MathUtils.clamp(-pointer.smooth.current.y * 0.25, -0.18, 0.18) + extraRotX;
 
-    // Parallax position (intensity 0.15 vs 0.05 background)
-    const targetX = pointer.smooth.current.x * 0.35;
-    const targetY = baseY + float + pointer.smooth.current.y * 0.18;
+    const targetX = pointer.smooth.current.x * 0.30;
+    const targetY = baseY + float + pointer.smooth.current.y * 0.15;
 
-    // Click bounce
     if (clickPulse.current > 0) {
       clickPulse.current = Math.max(0, clickPulse.current - 0.04);
     }
     const bounce = Math.sin(clickPulse.current * Math.PI) * 0.18;
-    const scale = 1 + bounce;
+    const baseScale = 1 + bounce;
 
     groupRef.current.position.x = THREE.MathUtils.lerp(groupRef.current.position.x, targetX, 0.07);
     groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.08);
+    groupRef.current.position.z = baseZ;
 
     meshRef.current.rotation.y = THREE.MathUtils.lerp(meshRef.current.rotation.y, targetRotY, 0.08);
     meshRef.current.rotation.x = THREE.MathUtils.lerp(meshRef.current.rotation.x, targetRotX, 0.08);
-    meshRef.current.scale.setScalar(THREE.MathUtils.lerp(meshRef.current.scale.x, scale, 0.15));
-
-    // Backlight breathing
-    if (lightRef.current) {
-      lightRef.current.intensity = 3.2 + Math.sin(t * 1.6) * 0.8;
-    }
-    // Ground shadow follows float (smaller when higher)
-    if (shadowRef.current) {
-      const s = 1 - float * 0.6;
-      shadowRef.current.scale.set(s, s * 0.35, 1);
-      (shadowRef.current.material as THREE.MeshBasicMaterial).opacity = 0.45 - float * 0.25;
-    }
+    meshRef.current.rotation.z = THREE.MathUtils.lerp(meshRef.current.rotation.z, extraRotZ, 0.1);
+    meshRef.current.scale.x = THREE.MathUtils.lerp(meshRef.current.scale.x, baseScale, 0.15);
+    meshRef.current.scale.y = THREE.MathUtils.lerp(meshRef.current.scale.y, baseScale * squash, 0.15);
   });
 
   return (
-    <group ref={groupRef} position={[0, baseY, 0.5]}>
-      {/* Ground shadow ellipse below the avatar */}
-      <mesh
-        ref={shadowRef}
-        position={[0, -1.05, -0.4]}
-        rotation={[-Math.PI / 2.2, 0, 0]}
-        renderOrder={5}
-      >
-        <circleGeometry args={[0.9, 48]} />
-        <meshBasicMaterial color="#000000" transparent opacity={0.4} depthWrite={false} />
-      </mesh>
+    <group ref={groupRef} position={[0, baseY, baseZ]}>
+      {/* warm rim light to integrate with office accents */}
+      <pointLight position={[1.2, 0.8, 1.2]} intensity={0.6} color="#fb923c" distance={4} decay={2} />
 
-      {/* Cyan portal backlight emerging from the rings */}
-      <pointLight
-        ref={lightRef}
-        position={[0, 0.1, -0.8]}
-        intensity={3.2}
-        color="#22d3ee"
-        distance={6}
-        decay={2}
-      />
-      {/* Warm rim light to integrate with office orange/amber accents */}
-      <pointLight position={[1.2, 0.8, 1.2]} intensity={0.8} color="#fb923c" distance={4} decay={2} />
-
-      {/* The avatar itself — high renderOrder, transparent, depth-tested off */}
+      {/* Avatar — solid silhouette, no ground shadow */}
       <mesh ref={meshRef} renderOrder={20} position={[0, 0, 0]}>
         <planeGeometry args={size} />
         <meshBasicMaterial
           map={tex}
           transparent
-          alphaTest={0.01}
+          alphaTest={0.5}
           depthWrite={false}
           depthTest={false}
           toneMapped={false}
@@ -259,8 +305,9 @@ function ViniAvatarPlane({
    ────────────────────────────────────────────────────────── */
 function SceneContent({ isMobile }: { isMobile: boolean }) {
   const pointer = usePointer();
+  const avatarBreath = useRef(0);
+  const emotion = useRef<EmotionState>('idle');
 
-  // Smooth pointer once per frame (shared across consumers)
   useFrame(() => {
     pointer.smooth.current.x = THREE.MathUtils.lerp(
       pointer.smooth.current.x,
@@ -279,7 +326,8 @@ function SceneContent({ isMobile }: { isMobile: boolean }) {
       <ambientLight intensity={0.35} />
       <directionalLight position={[3, 4, 5]} intensity={0.9} color="#ffffff" />
       <BackgroundPlane pointer={pointer} />
-      <ViniAvatarPlane pointer={pointer} isMobile={isMobile} />
+      <HolographicCore avatarBreath={avatarBreath} emotion={emotion} />
+      <ViniAvatarPlane pointer={pointer} isMobile={isMobile} avatarBreath={avatarBreath} emotion={emotion} />
     </>
   );
 }
