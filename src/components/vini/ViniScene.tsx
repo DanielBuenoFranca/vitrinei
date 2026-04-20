@@ -260,8 +260,9 @@ function ViniAvatarPlane({
     const targetRotY = THREE.MathUtils.clamp(pointer.smooth.current.x * 0.35, -0.21, 0.21) + idleRotY;
     const targetRotX = THREE.MathUtils.clamp(-pointer.smooth.current.y * 0.25, -0.18, 0.18) + extraRotX;
 
-    const targetX = pointer.smooth.current.x * 0.30;
-    const targetY = baseY + float + pointer.smooth.current.y * 0.15;
+    // Smaller positional drift — avatar stays anchored over the ring
+    const targetX = pointer.smooth.current.x * 0.12;
+    const targetY = baseY + float + pointer.smooth.current.y * 0.06;
 
     if (clickPulse.current > 0) {
       clickPulse.current = Math.max(0, clickPulse.current - 0.04);
@@ -280,12 +281,27 @@ function ViniAvatarPlane({
     meshRef.current.scale.y = THREE.MathUtils.lerp(meshRef.current.scale.y, baseScale * squash, 0.15);
   });
 
+  // Bottom of the avatar in local coords (origin at center)
+  const bottomY = -size[1] / 2;
+
   return (
     <group ref={groupRef} position={[0, baseY, baseZ]}>
       {/* warm rim light to integrate with office accents */}
-      <pointLight position={[1.2, 0.8, 1.2]} intensity={0.6} color="#fb923c" distance={4} decay={2} />
+      <pointLight position={[1.2, 0.8, 1.2]} intensity={0.7} color="#fb923c" distance={5} decay={2} />
+      {/* cyan key light from the holographic ring below — kisses the avatar */}
+      <pointLight position={[0, bottomY - 0.3, 0.4]} intensity={1.4} color="#22d3ee" distance={3.5} decay={2} />
 
-      {/* Avatar — solid silhouette, no ground shadow */}
+      {/* Soft cyan contact glow at the avatar's feet — sells depth integration */}
+      <mesh position={[0, bottomY + 0.02, -0.05]} rotation={[-Math.PI / 2.2, 0, 0]} renderOrder={18}>
+        <circleGeometry args={[0.55, 48]} />
+        <meshBasicMaterial color="#22d3ee" transparent opacity={0.35} depthWrite={false} toneMapped={false} />
+      </mesh>
+      <mesh position={[0, bottomY + 0.01, -0.04]} rotation={[-Math.PI / 2.2, 0, 0]} renderOrder={18}>
+        <circleGeometry args={[0.95, 48]} />
+        <meshBasicMaterial color="#22d3ee" transparent opacity={0.12} depthWrite={false} toneMapped={false} />
+      </mesh>
+
+      {/* Avatar — solid silhouette, integrated in 3D with proper depth */}
       <mesh ref={meshRef} renderOrder={20} position={[0, 0, 0]}>
         <planeGeometry args={size} />
         <meshBasicMaterial
@@ -293,7 +309,6 @@ function ViniAvatarPlane({
           transparent
           alphaTest={0.5}
           depthWrite={false}
-          depthTest={false}
           toneMapped={false}
           side={THREE.DoubleSide}
         />
