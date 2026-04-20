@@ -196,11 +196,13 @@ function ViniAvatarPlane({
     };
   }, [emotion]);
 
-  // Avatar sits deeper (further back) so it appears integrated with the office,
-  // centred on the holographic light core
-  const size: [number, number] = isMobile ? [1.7, 1.7] : [2.2, 2.2];
-  const baseY = isMobile ? -0.35 : -0.45;
-  const baseZ = -0.4; // pushed back into the scene, on top of the light source
+  // Avatar sits deeper into the scene — its lower tip should land on the
+  // visible center of the office's holographic ring (≈ scene center).
+  // Geometry origin is at the avatar's center; baseY is offset so the bottom
+  // edge (= -size/2) hits the background center (~y = 0).
+  const size: [number, number] = isMobile ? [1.6, 1.6] : [2.1, 2.1];
+  const baseY = (isMobile ? 1.6 : 2.1) / 2 - 0.05; // bottom tip ≈ y=0 (ring center)
+  const baseZ = -1.2; // deep inside the scene → real perspective integration
 
   useFrame((state) => {
     if (!groupRef.current || !meshRef.current) return;
