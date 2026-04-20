@@ -18,9 +18,10 @@ import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { semanticSearch } from '@/data/searchData';
 import { cn } from '@/lib/utils';
 
-type Bubble = { role: 'vini' | 'user'; text: string; id: string };
+type Bubble = { role: 'vini' | 'user'; text: string; id: string; ts: number };
 
 const AUTO_HIDE_MS = 5000;
+const CHAT_STORAGE_KEY = 'vini:chat-history';
 
 const ViniHome = () => {
   const navigate = useNavigate();
@@ -31,13 +32,22 @@ const ViniHome = () => {
 
   const [hasInteracted, setHasInteracted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [bubbles, setBubbles] = useState<Bubble[]>([]);
+  const [bubbles, setBubbles] = useState<Bubble[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = sessionStorage.getItem(CHAT_STORAGE_KEY);
+      return raw ? (JSON.parse(raw) as Bubble[]) : [];
+    } catch { return []; }
+  });
   const [history, setHistory] = useState<string[]>([]);
   const [showInput, setShowInput] = useState(false);
   const [text, setText] = useState('');
   const [showPlusMenu, setShowPlusMenu] = useState(false);
+  const [chatExpanded, setChatExpanded] = useState(false);
+  const [lastTranscript, setLastTranscript] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
   const hideTimerRef = useRef<number | null>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
 
   // Track speech state
   const lastSpokenRef = useRef('');
@@ -90,8 +100,22 @@ const ViniHome = () => {
   };
   useEffect(() => () => cancelHide(), []);
 
-  const pushBubble = (b: Omit<Bubble, 'id'>) => {
-    setBubbles((prev) => [...prev.slice(-3), { ...b, id: `${Date.now()}-${Math.random()}` }]);
+  const pushBubble = (b: Omit<Bubble, 'id' | 'ts'>) => {
+    setBubbles((prev) => {
+      const next = [...prev, { ...b, id: `${Date.now()}-${Math.random()}`, ts: Date.now() }];
+      try { sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+    setChatExpanded(true);
+    // auto-scroll to bottom
+    requestAnimationFrame(() => {
+      chatScrollRef.current?.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: 'smooth' });
+    });
+  };
+
+  const clearChat = () => {
+    setBubbles([]);
+    try { sessionStorage.removeItem(CHAT_STORAGE_KEY); } catch {}
   };
 
   const buildGreeting = () => {
