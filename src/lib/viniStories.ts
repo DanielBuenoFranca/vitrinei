@@ -52,6 +52,24 @@ const STORIES: ViniStory[] = [
       'Conectar todo MEI do Brasil ao cliente certo, na hora certa, com o preço justo. Um ecossistema onde quem faz bem feito é encontrado, e quem precisa de ajuda nunca fica sozinho. Esse é o Vitrinei — e o Vini é a voz dele.',
     ctaHint: 'Bora construir esse sonho juntos?',
   },
+  {
+    title: '⚡ O super-poder do Vini',
+    body:
+      'Voz, texto e contexto, tudo junto. Você fala, ele escuta. Você digita, ele responde. Ele lembra do que conversaram e te leva direto pra solução, sem precisar repetir tudo. É como ter um concierge que nunca dorme.',
+    ctaHint: 'Compartilha esse super-poder!',
+  },
+  {
+    title: '🎨 Feito com carinho',
+    body:
+      'Cada animação, cada cor, cada som do Vini foi pensado pra te deixar à vontade. Nada de telas frias e cheias de campos. Aqui é papo reto, visual lúdico e tudo pulsando com a energia da sua busca.',
+    ctaHint: 'Convida quem ama experiências bonitas.',
+  },
+  {
+    title: '💸 Cashback que vira renda',
+    body:
+      'Tudo que você gasta no Vitrinei volta em forma de cashback bloqueado, que vira limite de crédito ou desconto na próxima. Indique amigos e veja seu saldo crescer de verdade — sem letra miúda.',
+    ctaHint: 'Indica e começa a colher hoje.',
+  },
 ];
 
 export function getRandomStory(): ViniStory {
