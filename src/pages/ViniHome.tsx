@@ -420,29 +420,36 @@ const ViniHome = () => {
         )}
       </AnimatePresence>
 
-      {/* ─── Conversation history panel ─── */}
+      {/* ─── Conversation history panel (holographic, no scrollbar) ─── */}
       {hasInteracted && bubbles.length > 0 && (
-        <div className="absolute right-3 sm:right-5 top-32 sm:top-36 z-30 w-[88%] sm:w-[340px] max-w-md pointer-events-auto">
-          <div className="glass-strong rounded-2xl border border-primary/20 shadow-[0_8px_30px_hsl(var(--primary)/0.15)] overflow-hidden">
+        <div className="absolute right-2 sm:right-3 top-24 sm:top-28 z-30 w-[78%] sm:w-[300px] max-w-sm pointer-events-auto">
+          <div
+            className={cn(
+              'rounded-2xl overflow-hidden',
+              'bg-white/[0.06] backdrop-blur-xl',
+              'border-[0.5px] border-[hsl(var(--vini-glow)/0.4)]',
+              'shadow-[0_0_24px_hsl(var(--vini-glow)/0.18)]',
+            )}
+          >
             <button
               onClick={() => setChatExpanded((v) => !v)}
-              className="w-full flex items-center justify-between px-3 py-1.5 border-b border-border/40 hover:bg-primary/5 transition-colors"
+              className="w-full flex items-center justify-between px-3 py-1.5 border-b border-white/10 hover:bg-white/[0.06] transition-colors"
             >
-              <div className="flex items-center gap-2">
-                <Bot className="w-3.5 h-3.5 text-primary" />
-                <span className="text-[11px] font-semibold text-foreground">Conversa com o Vini</span>
-                <span className="text-[10px] text-muted-foreground">({bubbles.length})</span>
+              <div className="flex items-center gap-1.5">
+                <Bot className="w-3 h-3 text-primary" strokeWidth={1.5} />
+                <span className="text-[10.5px] font-semibold text-foreground/90">Histórico</span>
+                <span className="text-[9px] text-muted-foreground">({bubbles.length})</span>
               </div>
               <div className="flex items-center gap-1">
                 <span
                   role="button"
                   onClick={(e) => { e.stopPropagation(); clearChat(); }}
-                  className="text-[10px] text-muted-foreground hover:text-destructive px-1.5 py-0.5 rounded"
+                  className="text-[9px] text-muted-foreground hover:text-destructive px-1 py-0.5 rounded"
                   title="Limpar conversa"
                 >
                   Limpar
                 </span>
-                <span className="text-[10px] text-muted-foreground">{chatExpanded ? '▾' : '▸'}</span>
+                <span className="text-[9px] text-muted-foreground">{chatExpanded ? '▾' : '▸'}</span>
               </div>
             </button>
 
@@ -454,7 +461,11 @@ const ViniHome = () => {
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.25 }}
                 >
-                  <div ref={chatScrollRef} className="max-h-[32vh] overflow-y-auto px-3 py-2 flex flex-col gap-1.5">
+                  <div
+                    ref={chatScrollRef}
+                    className="max-h-[26vh] overflow-y-auto px-2.5 py-2 flex flex-col gap-1.5 no-scrollbar"
+                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                  >
                     {bubbles.map((b) => (
                       <motion.div
                         key={b.id}
@@ -462,11 +473,11 @@ const ViniHome = () => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.2 }}
                         className={cn(
-                          'flex flex-col max-w-[85%]',
+                          'flex flex-col max-w-[88%]',
                           b.role === 'user' ? 'self-end items-end' : 'self-start items-start',
                         )}
                       >
-                        <span className="text-[9px] uppercase tracking-wider text-muted-foreground mb-0.5 px-1">
+                        <span className="text-[8.5px] uppercase tracking-wider text-muted-foreground/80 mb-0.5 px-1">
                           {b.role === 'user' ? (displayName?.split(' ')[0] || 'Você') : 'Vini'}
                           <span className="ml-1 opacity-60">
                             {new Date(b.ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
@@ -474,10 +485,10 @@ const ViniHome = () => {
                         </span>
                         <div
                           className={cn(
-                            'px-3 py-1.5 rounded-2xl text-sm leading-snug shadow-sm',
+                            'px-2.5 py-1.5 rounded-2xl text-[12px] leading-snug',
                             b.role === 'user'
-                              ? 'bg-primary text-primary-foreground rounded-br-sm'
-                              : 'bg-card/80 text-foreground border border-border/50 rounded-bl-sm',
+                              ? 'bg-primary/85 text-primary-foreground rounded-br-sm shadow-[0_0_10px_hsl(var(--primary)/0.3)]'
+                              : 'bg-white/[0.08] backdrop-blur-sm text-foreground border-[0.5px] border-[hsl(var(--vini-glow)/0.35)] rounded-bl-sm',
                           )}
                         >
                           {b.text}
@@ -495,15 +506,15 @@ const ViniHome = () => {
       {/* ─── Persistent text-input bar at the bottom (always visible) ─── */}
       <form
         onSubmit={handleTextSubmit}
-        className="absolute left-1/2 -translate-x-1/2 bottom-3 sm:bottom-4 z-40 w-[min(560px,calc(100%-200px))] pointer-events-auto"
+        className="absolute left-1/2 -translate-x-1/2 bottom-2 sm:bottom-3 z-40 w-[min(520px,calc(100%-180px))] pointer-events-auto"
       >
-        <div className="glass-strong rounded-full flex items-center gap-1.5 p-1.5 border border-[hsl(var(--vini-glow)/0.35)] shadow-[0_4px_24px_hsl(var(--vini-glow)/0.25)]">
+        <div className="flex items-center gap-1.5 p-1.5 rounded-full bg-white/[0.08] backdrop-blur-xl border-[0.5px] border-[hsl(var(--vini-glow)/0.5)] shadow-[0_0_22px_hsl(var(--vini-glow)/0.2)]">
           <Input
             ref={inputRef}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Pergunte qualquer coisa ao Vini…"
-            className="border-0 bg-transparent focus-visible:ring-0 text-sm flex-1 px-3"
+            placeholder="Pesquisa por voz ou texto…"
+            className="border-0 bg-transparent focus-visible:ring-0 text-sm flex-1 px-3 placeholder:text-foreground/50"
           />
           <motion.button
             type="button"
@@ -511,9 +522,10 @@ const ViniHome = () => {
             whileTap={{ scale: 0.92 }}
             onClick={handleVoiceTap}
             className={cn(
-              'relative w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center shrink-0',
-              'bg-gradient-to-br from-primary via-accent to-primary text-primary-foreground vini-ring',
-              listening && 'ring-4 ring-primary/40',
+              'relative w-9 h-9 rounded-full flex items-center justify-center shrink-0',
+              'bg-gradient-to-br from-primary via-accent to-primary text-primary-foreground',
+              'shadow-[0_0_14px_hsl(var(--primary)/0.5)]',
+              listening && 'ring-2 ring-primary/50',
             )}
             aria-label={listening ? 'Parar microfone' : 'Falar com o Vini'}
           >
@@ -523,15 +535,16 @@ const ViniHome = () => {
                 <span className="absolute inset-0 rounded-full bg-accent/30 animate-pulse-ring" style={{ animationDelay: '0.6s' }} />
               </>
             )}
-            <Mic className={cn('w-4 h-4 sm:w-5 sm:h-5 relative', listening && 'animate-pulse')} />
+            <Mic className={cn('w-4 h-4 relative', listening && 'animate-pulse')} strokeWidth={1.5} />
           </motion.button>
           <Button
             type="submit"
             size="icon"
-            className="h-10 w-10 sm:h-11 sm:w-11 rounded-full shrink-0 bg-gradient-to-br from-primary to-accent"
+            className="h-9 w-9 rounded-full shrink-0 bg-white/[0.1] hover:bg-white/[0.18] border-[0.5px] border-[hsl(var(--vini-glow)/0.5)] text-foreground"
             disabled={!text.trim()}
+            aria-label="Enviar"
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-3.5 h-3.5" strokeWidth={1.5} />
           </Button>
         </div>
       </form>
