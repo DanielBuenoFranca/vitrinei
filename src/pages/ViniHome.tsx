@@ -463,7 +463,7 @@ const ViniHome = () => {
                 >
                   <div
                     ref={chatScrollRef}
-                    className="max-h-[26vh] overflow-y-auto px-2.5 py-2 flex flex-col gap-1.5 scrollbar-hide"
+                    className="max-h-[26vh] overflow-y-auto px-2.5 py-2 flex flex-col gap-1.5 no-scrollbar"
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                   >
                     {bubbles.map((b) => (
