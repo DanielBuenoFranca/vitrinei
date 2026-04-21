@@ -506,15 +506,15 @@ const ViniHome = () => {
       {/* ─── Persistent text-input bar at the bottom (always visible) ─── */}
       <form
         onSubmit={handleTextSubmit}
-        className="absolute left-1/2 -translate-x-1/2 bottom-3 sm:bottom-4 z-40 w-[min(560px,calc(100%-200px))] pointer-events-auto"
+        className="absolute left-1/2 -translate-x-1/2 bottom-2 sm:bottom-3 z-40 w-[min(520px,calc(100%-180px))] pointer-events-auto"
       >
-        <div className="glass-strong rounded-full flex items-center gap-1.5 p-1.5 border border-[hsl(var(--vini-glow)/0.35)] shadow-[0_4px_24px_hsl(var(--vini-glow)/0.25)]">
+        <div className="flex items-center gap-1.5 p-1.5 rounded-full bg-white/[0.08] backdrop-blur-xl border-[0.5px] border-[hsl(var(--vini-glow)/0.5)] shadow-[0_0_22px_hsl(var(--vini-glow)/0.2)]">
           <Input
             ref={inputRef}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Pergunte qualquer coisa ao Vini…"
-            className="border-0 bg-transparent focus-visible:ring-0 text-sm flex-1 px-3"
+            placeholder="Pesquisa por voz ou texto…"
+            className="border-0 bg-transparent focus-visible:ring-0 text-sm flex-1 px-3 placeholder:text-foreground/50"
           />
           <motion.button
             type="button"
@@ -522,9 +522,10 @@ const ViniHome = () => {
             whileTap={{ scale: 0.92 }}
             onClick={handleVoiceTap}
             className={cn(
-              'relative w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center shrink-0',
-              'bg-gradient-to-br from-primary via-accent to-primary text-primary-foreground vini-ring',
-              listening && 'ring-4 ring-primary/40',
+              'relative w-9 h-9 rounded-full flex items-center justify-center shrink-0',
+              'bg-gradient-to-br from-primary via-accent to-primary text-primary-foreground',
+              'shadow-[0_0_14px_hsl(var(--primary)/0.5)]',
+              listening && 'ring-2 ring-primary/50',
             )}
             aria-label={listening ? 'Parar microfone' : 'Falar com o Vini'}
           >
@@ -534,15 +535,16 @@ const ViniHome = () => {
                 <span className="absolute inset-0 rounded-full bg-accent/30 animate-pulse-ring" style={{ animationDelay: '0.6s' }} />
               </>
             )}
-            <Mic className={cn('w-4 h-4 sm:w-5 sm:h-5 relative', listening && 'animate-pulse')} />
+            <Mic className={cn('w-4 h-4 relative', listening && 'animate-pulse')} strokeWidth={1.5} />
           </motion.button>
           <Button
             type="submit"
             size="icon"
-            className="h-10 w-10 sm:h-11 sm:w-11 rounded-full shrink-0 bg-gradient-to-br from-primary to-accent"
+            className="h-9 w-9 rounded-full shrink-0 bg-white/[0.1] hover:bg-white/[0.18] border-[0.5px] border-[hsl(var(--vini-glow)/0.5)] text-foreground"
             disabled={!text.trim()}
+            aria-label="Enviar"
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-3.5 h-3.5" strokeWidth={1.5} />
           </Button>
         </div>
       </form>
