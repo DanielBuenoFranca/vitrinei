@@ -354,8 +354,12 @@ function SceneContent({ isMobile }: { isMobile: boolean }) {
 
   return (
     <>
-      <ambientLight intensity={0.35} />
-      <directionalLight position={[3, 4, 5]} intensity={0.9} color="#ffffff" />
+      {/* Ambiente: luz fria geral simulando iluminação do escritório futurista */}
+      <ambientLight intensity={0.55} color="#cfe5ff" />
+      {/* Key directional vinda das janelas (canto superior esquerdo) */}
+      <directionalLight position={[-4, 5, 4]} intensity={0.85} color="#dbeafe" />
+      {/* Fill warm vindo das telas/anel — equilibra os tons */}
+      <directionalLight position={[3, -1, 3]} intensity={0.45} color="#fbbf24" />
       <BackgroundPlane pointer={pointer} />
       <ViniAvatarPlane pointer={pointer} isMobile={isMobile} avatarBreath={avatarBreath} emotion={emotion} />
     </>
