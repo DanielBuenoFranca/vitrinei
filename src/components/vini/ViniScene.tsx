@@ -291,40 +291,47 @@ function ViniAvatarPlane({
 
   return (
     <group ref={groupRef} position={[0, baseY, baseZ]}>
-      {/* Rim light frio das janelas (canto superior esquerdo) */}
-      <pointLight position={[-1.5, 1.4, 1.6]} intensity={0.55} color="#7dd3fc" distance={6} decay={2} />
-      {/* Rim light dourado/quente das telas e do anel (canto inferior direito) */}
-      <pointLight position={[1.4, -0.4, 1.4]} intensity={0.7} color="#fbbf24" distance={5.5} decay={2} />
-      {/* Key light cyan vinda do anel holográfico abaixo — beijo de luz na base oval */}
-      <pointLight position={[0, bottomY - 0.2, 0.6]} intensity={1.1} color="#22d3ee" distance={3.5} decay={2} />
-      {/* Spot ambiente para garantir que o avatar não fique chapado */}
-      <pointLight position={[0, 0.4, 1.8]} intensity={0.35} color="#ffffff" distance={4} decay={2} />
+      {/* Rim light frio das janelas (canto superior esquerdo) — pinta a lateral esquerda do robô */}
+      <pointLight position={[-1.6, 1.5, 1.4]} intensity={0.9} color="#7dd3fc" distance={5} decay={2} />
+      {/* Rim light dourado/quente das telas (canto inferior direito) — quebra o azul puro */}
+      <pointLight position={[1.5, -0.2, 1.2]} intensity={0.8} color="#fbbf24" distance={5} decay={2} />
+      {/* Key light cyan vinda do anel holográfico abaixo — ilumina a base oval */}
+      <pointLight position={[0, bottomY - 0.15, 0.5]} intensity={1.4} color="#22d3ee" distance={3} decay={2} />
+      {/* Fill frontal sutil para detalhes do peito/insígnia */}
+      <pointLight position={[0, 0.3, 1.6]} intensity={0.55} color="#ffffff" distance={3.5} decay={2} />
 
+      {/* Sombra elíptica suave projetada no chão — dá ancoragem real ao avatar */}
+      <mesh position={[0, bottomY - 0.02, -0.02]} rotation={[-Math.PI / 2.05, 0, 0]} renderOrder={17}>
+        <circleGeometry args={[0.42, 48]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.28} depthWrite={false} toneMapped={false} />
+      </mesh>
       {/* Reflexo cyan suave no chão (anel) — flutua sobre o ponto luminoso central */}
       <mesh position={[0, bottomY + 0.04, -0.05]} rotation={[-Math.PI / 2.15, 0, 0]} renderOrder={18}>
-        <circleGeometry args={[0.55, 64]} />
-        <meshBasicMaterial color="#22d3ee" transparent opacity={0.18} depthWrite={false} toneMapped={false} />
+        <circleGeometry args={[0.5, 64]} />
+        <meshBasicMaterial color="#22d3ee" transparent opacity={0.16} depthWrite={false} toneMapped={false} />
       </mesh>
       <mesh position={[0, bottomY + 0.02, -0.04]} rotation={[-Math.PI / 2.15, 0, 0]} renderOrder={18}>
-        <circleGeometry args={[1.05, 64]} />
-        <meshBasicMaterial color="#22d3ee" transparent opacity={0.06} depthWrite={false} toneMapped={false} />
+        <circleGeometry args={[0.95, 64]} />
+        <meshBasicMaterial color="#22d3ee" transparent opacity={0.05} depthWrite={false} toneMapped={false} />
       </mesh>
       {/* Highlight central dourado bem pequeno (faisca de contato) */}
       <mesh position={[0, bottomY + 0.06, -0.03]} rotation={[-Math.PI / 2.15, 0, 0]} renderOrder={19}>
-        <circleGeometry args={[0.18, 48]} />
-        <meshBasicMaterial color="#fde68a" transparent opacity={0.22} depthWrite={false} toneMapped={false} />
+        <circleGeometry args={[0.16, 48]} />
+        <meshBasicMaterial color="#fde68a" transparent opacity={0.28} depthWrite={false} toneMapped={false} />
       </mesh>
 
-      {/* Avatar — solid silhouette, integrated in 3D with proper depth */}
+      {/* Avatar — meshStandardMaterial recebe a iluminação real → aspecto 3D integrado */}
       <mesh ref={meshRef} renderOrder={20} position={[0, 0, 0]}>
         <planeGeometry args={size} />
-        <meshBasicMaterial
+        <meshStandardMaterial
           map={tex}
           transparent
           alphaTest={0.5}
           depthWrite={false}
-          toneMapped={false}
           side={THREE.DoubleSide}
+          roughness={0.45}
+          metalness={0.35}
+          envMapIntensity={0.8}
         />
       </mesh>
     </group>
