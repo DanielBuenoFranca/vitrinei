@@ -196,17 +196,17 @@ function ViniAvatarPlane({
     };
   }, [emotion]);
 
-  // Avatar (sem pernas) — proporção retrato 654x882 ≈ 0.74 (largura/altura).
-  // Origem do mesh é o centro; baseY desloca para que a borda inferior pouse
-  // exatamente sobre o anel iluminado do fundo (≈ centro vertical da cena).
-  // Fica MAIS ATRÁS no eixo Z para se integrar com a profundidade da imagem.
-  const aspect = 654 / 882; // 0.7415
-  const heightU = isMobile ? 2.0 : 2.55; // altura em unidades de cena
+  // Avatar (cápsula flutuante, sem pernas) — proporção retrato 701x1195 ≈ 0.587
+  // Posicionado MAIS PROFUNDO no eixo Z para integrar com a perspectiva do escritório.
+  // A base oval do avatar pousa flutuando sobre o ponto central iluminado do anel holográfico.
+  const aspect = 701 / 1195; // ≈ 0.587
+  const heightU = isMobile ? 2.35 : 2.95; // altura coerente com o ambiente do escritório
   const widthU  = heightU * aspect;
   const size: [number, number] = [widthU, heightU];
-  // Base do avatar alinhada ao chão iluminado (overlap mínimo)
-  const baseY = heightU / 2 - 0.92;
-  const baseZ = -1.85; // mais profundo na cena para integração realista
+  // baseY: a base oval flutua sobre o centro do anel (~y = 0 do background)
+  // Ajustado para que o ponto inferior do avatar fique sobre o brilho central do anel
+  const baseY = heightU / 2 - 1.55;
+  const baseZ = -2.4; // bem dentro da cena → escala/perspectiva integrada com o background
 
   useFrame((state) => {
     if (!groupRef.current || !meshRef.current) return;
@@ -291,19 +291,28 @@ function ViniAvatarPlane({
 
   return (
     <group ref={groupRef} position={[0, baseY, baseZ]}>
-      {/* warm rim light to integrate with office accents */}
-      <pointLight position={[1.2, 0.8, 1.2]} intensity={0.7} color="#fb923c" distance={5} decay={2} />
-      {/* cyan key light from the holographic ring below — gentle kiss on the avatar */}
-      <pointLight position={[0, bottomY - 0.3, 0.4]} intensity={0.6} color="#22d3ee" distance={3} decay={2} />
+      {/* Rim light frio das janelas (canto superior esquerdo) */}
+      <pointLight position={[-1.5, 1.4, 1.6]} intensity={0.55} color="#7dd3fc" distance={6} decay={2} />
+      {/* Rim light dourado/quente das telas e do anel (canto inferior direito) */}
+      <pointLight position={[1.4, -0.4, 1.4]} intensity={0.7} color="#fbbf24" distance={5.5} decay={2} />
+      {/* Key light cyan vinda do anel holográfico abaixo — beijo de luz na base oval */}
+      <pointLight position={[0, bottomY - 0.2, 0.6]} intensity={1.1} color="#22d3ee" distance={3.5} decay={2} />
+      {/* Spot ambiente para garantir que o avatar não fique chapado */}
+      <pointLight position={[0, 0.4, 1.8]} intensity={0.35} color="#ffffff" distance={4} decay={2} />
 
-      {/* Very subtle warm contact glow at the avatar's feet — barely visible kiss with floor */}
-      <mesh position={[0, bottomY + 0.02, -0.05]} rotation={[-Math.PI / 2.2, 0, 0]} renderOrder={18}>
-        <circleGeometry args={[0.30, 48]} />
-        <meshBasicMaterial color="#fbbf24" transparent opacity={0.07} depthWrite={false} toneMapped={false} />
+      {/* Reflexo cyan suave no chão (anel) — flutua sobre o ponto luminoso central */}
+      <mesh position={[0, bottomY + 0.04, -0.05]} rotation={[-Math.PI / 2.15, 0, 0]} renderOrder={18}>
+        <circleGeometry args={[0.55, 64]} />
+        <meshBasicMaterial color="#22d3ee" transparent opacity={0.18} depthWrite={false} toneMapped={false} />
       </mesh>
-      <mesh position={[0, bottomY + 0.01, -0.04]} rotation={[-Math.PI / 2.2, 0, 0]} renderOrder={18}>
-        <circleGeometry args={[0.55, 48]} />
-        <meshBasicMaterial color="#fbbf24" transparent opacity={0.025} depthWrite={false} toneMapped={false} />
+      <mesh position={[0, bottomY + 0.02, -0.04]} rotation={[-Math.PI / 2.15, 0, 0]} renderOrder={18}>
+        <circleGeometry args={[1.05, 64]} />
+        <meshBasicMaterial color="#22d3ee" transparent opacity={0.06} depthWrite={false} toneMapped={false} />
+      </mesh>
+      {/* Highlight central dourado bem pequeno (faisca de contato) */}
+      <mesh position={[0, bottomY + 0.06, -0.03]} rotation={[-Math.PI / 2.15, 0, 0]} renderOrder={19}>
+        <circleGeometry args={[0.18, 48]} />
+        <meshBasicMaterial color="#fde68a" transparent opacity={0.22} depthWrite={false} toneMapped={false} />
       </mesh>
 
       {/* Avatar — solid silhouette, integrated in 3D with proper depth */}
@@ -345,8 +354,12 @@ function SceneContent({ isMobile }: { isMobile: boolean }) {
 
   return (
     <>
-      <ambientLight intensity={0.35} />
-      <directionalLight position={[3, 4, 5]} intensity={0.9} color="#ffffff" />
+      {/* Ambiente: luz fria geral simulando iluminação do escritório futurista */}
+      <ambientLight intensity={0.55} color="#cfe5ff" />
+      {/* Key directional vinda das janelas (canto superior esquerdo) */}
+      <directionalLight position={[-4, 5, 4]} intensity={0.85} color="#dbeafe" />
+      {/* Fill warm vindo das telas/anel — equilibra os tons */}
+      <directionalLight position={[3, -1, 3]} intensity={0.45} color="#fbbf24" />
       <BackgroundPlane pointer={pointer} />
       <ViniAvatarPlane pointer={pointer} isMobile={isMobile} avatarBreath={avatarBreath} emotion={emotion} />
     </>
