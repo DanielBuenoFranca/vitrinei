@@ -197,16 +197,16 @@ function ViniAvatarPlane({
   }, [emotion]);
 
   // Avatar (cápsula flutuante, sem pernas) — proporção retrato 701x1195 ≈ 0.587
-  // Posicionado MAIS PROFUNDO no eixo Z para integrar com a perspectiva do escritório.
-  // A base oval do avatar pousa flutuando sobre o ponto central iluminado do anel holográfico.
+  // PROPORÇÃO REAL: o anel holográfico no chão tem ~60% da largura visível do escritório.
+  // O avatar deve caber DENTRO desse anel como um robô real (~1.6m de altura).
   const aspect = 701 / 1195; // ≈ 0.587
-  const heightU = isMobile ? 2.35 : 2.95; // altura coerente com o ambiente do escritório
+  const heightU = isMobile ? 1.85 : 2.15; // reduzido para proporção realista no escritório
   const widthU  = heightU * aspect;
   const size: [number, number] = [widthU, heightU];
-  // baseY: a base oval flutua sobre o centro do anel (~y = 0 do background)
-  // Ajustado para que o ponto inferior do avatar fique sobre o brilho central do anel
-  const baseY = heightU / 2 - 1.55;
-  const baseZ = -2.4; // bem dentro da cena → escala/perspectiva integrada com o background
+  // baseY: o ponto central iluminado do anel está ~ y = -0.55 no espaço do mundo (chão).
+  // O avatar flutua levemente acima — base do oval sobre o brilho central.
+  const baseY = heightU / 2 - 1.65;
+  const baseZ = -2.1; // profundidade que case com a perspectiva do anel central
 
   useFrame((state) => {
     if (!groupRef.current || !meshRef.current) return;
