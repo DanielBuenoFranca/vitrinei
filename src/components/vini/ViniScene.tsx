@@ -196,14 +196,17 @@ function ViniAvatarPlane({
     };
   }, [emotion]);
 
-  // Avatar sits deeper into the scene — its lower tip should land on the
-  // visible center of the office's holographic ring (≈ scene center).
-  // Geometry origin is at the avatar's center; baseY is offset so the bottom
-  // edge (= -size/2) hits the background center (~y = 0).
-  const size: [number, number] = isMobile ? [1.6, 1.6] : [2.1, 2.1];
-  // Avatar lower so its base sits ON the floor's lit ring (slight overlap into ground)
-  const baseY = (isMobile ? 1.6 : 2.1) / 2 - 0.55;
-  const baseZ = -1.2; // deep inside the scene → real perspective integration
+  // Avatar (sem pernas) — proporção retrato 654x882 ≈ 0.74 (largura/altura).
+  // Origem do mesh é o centro; baseY desloca para que a borda inferior pouse
+  // exatamente sobre o anel iluminado do fundo (≈ centro vertical da cena).
+  // Fica MAIS ATRÁS no eixo Z para se integrar com a profundidade da imagem.
+  const aspect = 654 / 882; // 0.7415
+  const heightU = isMobile ? 2.0 : 2.55; // altura em unidades de cena
+  const widthU  = heightU * aspect;
+  const size: [number, number] = [widthU, heightU];
+  // Base do avatar alinhada ao chão iluminado (overlap mínimo)
+  const baseY = heightU / 2 - 0.92;
+  const baseZ = -1.85; // mais profundo na cena para integração realista
 
   useFrame((state) => {
     if (!groupRef.current || !meshRef.current) return;
