@@ -291,19 +291,28 @@ function ViniAvatarPlane({
 
   return (
     <group ref={groupRef} position={[0, baseY, baseZ]}>
-      {/* warm rim light to integrate with office accents */}
-      <pointLight position={[1.2, 0.8, 1.2]} intensity={0.7} color="#fb923c" distance={5} decay={2} />
-      {/* cyan key light from the holographic ring below — gentle kiss on the avatar */}
-      <pointLight position={[0, bottomY - 0.3, 0.4]} intensity={0.6} color="#22d3ee" distance={3} decay={2} />
+      {/* Rim light frio das janelas (canto superior esquerdo) */}
+      <pointLight position={[-1.5, 1.4, 1.6]} intensity={0.55} color="#7dd3fc" distance={6} decay={2} />
+      {/* Rim light dourado/quente das telas e do anel (canto inferior direito) */}
+      <pointLight position={[1.4, -0.4, 1.4]} intensity={0.7} color="#fbbf24" distance={5.5} decay={2} />
+      {/* Key light cyan vinda do anel holográfico abaixo — beijo de luz na base oval */}
+      <pointLight position={[0, bottomY - 0.2, 0.6]} intensity={1.1} color="#22d3ee" distance={3.5} decay={2} />
+      {/* Spot ambiente para garantir que o avatar não fique chapado */}
+      <pointLight position={[0, 0.4, 1.8]} intensity={0.35} color="#ffffff" distance={4} decay={2} />
 
-      {/* Very subtle warm contact glow at the avatar's feet — barely visible kiss with floor */}
-      <mesh position={[0, bottomY + 0.02, -0.05]} rotation={[-Math.PI / 2.2, 0, 0]} renderOrder={18}>
-        <circleGeometry args={[0.30, 48]} />
-        <meshBasicMaterial color="#fbbf24" transparent opacity={0.07} depthWrite={false} toneMapped={false} />
+      {/* Reflexo cyan suave no chão (anel) — flutua sobre o ponto luminoso central */}
+      <mesh position={[0, bottomY + 0.04, -0.05]} rotation={[-Math.PI / 2.15, 0, 0]} renderOrder={18}>
+        <circleGeometry args={[0.55, 64]} />
+        <meshBasicMaterial color="#22d3ee" transparent opacity={0.18} depthWrite={false} toneMapped={false} />
       </mesh>
-      <mesh position={[0, bottomY + 0.01, -0.04]} rotation={[-Math.PI / 2.2, 0, 0]} renderOrder={18}>
-        <circleGeometry args={[0.55, 48]} />
-        <meshBasicMaterial color="#fbbf24" transparent opacity={0.025} depthWrite={false} toneMapped={false} />
+      <mesh position={[0, bottomY + 0.02, -0.04]} rotation={[-Math.PI / 2.15, 0, 0]} renderOrder={18}>
+        <circleGeometry args={[1.05, 64]} />
+        <meshBasicMaterial color="#22d3ee" transparent opacity={0.06} depthWrite={false} toneMapped={false} />
+      </mesh>
+      {/* Highlight central dourado bem pequeno (faisca de contato) */}
+      <mesh position={[0, bottomY + 0.06, -0.03]} rotation={[-Math.PI / 2.15, 0, 0]} renderOrder={19}>
+        <circleGeometry args={[0.18, 48]} />
+        <meshBasicMaterial color="#fde68a" transparent opacity={0.22} depthWrite={false} toneMapped={false} />
       </mesh>
 
       {/* Avatar — solid silhouette, integrated in 3D with proper depth */}
