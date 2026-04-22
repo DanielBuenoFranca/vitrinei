@@ -257,13 +257,14 @@ function ViniAvatarPlane({
         break;
     }
 
-    const idleRotY = Math.sin(t * swaySpeed) * 0.06;
-    const targetRotY = THREE.MathUtils.clamp(pointer.smooth.current.x * 0.35, -0.21, 0.21) + idleRotY;
-    const targetRotX = THREE.MathUtils.clamp(-pointer.smooth.current.y * 0.25, -0.18, 0.18) + extraRotX;
+    // Stronger on-axis yaw (looking left/right) following pointer/touch + tiny idle sway
+    const idleRotY = Math.sin(t * swaySpeed * 0.6) * 0.04;
+    const targetRotY = THREE.MathUtils.clamp(pointer.smooth.current.x * 0.55, -0.45, 0.45) + idleRotY;
+    const targetRotX = THREE.MathUtils.clamp(-pointer.smooth.current.y * 0.18, -0.12, 0.12) + extraRotX;
 
-    // Smaller positional drift — avatar stays anchored over the ring
-    const targetX = pointer.smooth.current.x * 0.12;
-    const targetY = baseY + float + pointer.smooth.current.y * 0.06;
+    // Greatly reduced positional drift — avatar stays anchored on the lit ring
+    const targetX = pointer.smooth.current.x * 0.04;
+    const targetY = baseY + float * 0.6 + pointer.smooth.current.y * 0.02;
 
     if (clickPulse.current > 0) {
       clickPulse.current = Math.max(0, clickPulse.current - 0.04);
@@ -292,14 +293,14 @@ function ViniAvatarPlane({
       {/* cyan key light from the holographic ring below — gentle kiss on the avatar */}
       <pointLight position={[0, bottomY - 0.3, 0.4]} intensity={0.6} color="#22d3ee" distance={3} decay={2} />
 
-      {/* Subtle cyan contact glow at the avatar's feet — soft blend with floor */}
+      {/* Very subtle warm contact glow at the avatar's feet — barely visible kiss with floor */}
       <mesh position={[0, bottomY + 0.02, -0.05]} rotation={[-Math.PI / 2.2, 0, 0]} renderOrder={18}>
-        <circleGeometry args={[0.45, 48]} />
-        <meshBasicMaterial color="#22d3ee" transparent opacity={0.14} depthWrite={false} toneMapped={false} />
+        <circleGeometry args={[0.30, 48]} />
+        <meshBasicMaterial color="#fbbf24" transparent opacity={0.07} depthWrite={false} toneMapped={false} />
       </mesh>
       <mesh position={[0, bottomY + 0.01, -0.04]} rotation={[-Math.PI / 2.2, 0, 0]} renderOrder={18}>
-        <circleGeometry args={[0.85, 48]} />
-        <meshBasicMaterial color="#22d3ee" transparent opacity={0.05} depthWrite={false} toneMapped={false} />
+        <circleGeometry args={[0.55, 48]} />
+        <meshBasicMaterial color="#fbbf24" transparent opacity={0.025} depthWrite={false} toneMapped={false} />
       </mesh>
 
       {/* Avatar — solid silhouette, integrated in 3D with proper depth */}
