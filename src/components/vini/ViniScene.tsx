@@ -79,13 +79,13 @@ function BackgroundPlane({ pointer }: { pointer: ReturnType<typeof usePointer> }
     if (!ref.current) return;
     ref.current.position.x = THREE.MathUtils.lerp(
       ref.current.position.x,
-      pointer.smooth.current.x * 0.25,
-      0.06
+      pointer.smooth.current.x * 0.10,
+      0.05
     );
     ref.current.position.y = THREE.MathUtils.lerp(
       ref.current.position.y,
-      pointer.smooth.current.y * 0.18,
-      0.06
+      pointer.smooth.current.y * 0.07,
+      0.05
     );
   });
 
