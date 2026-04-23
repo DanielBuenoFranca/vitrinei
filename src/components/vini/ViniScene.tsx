@@ -243,7 +243,6 @@ function ViniAvatar3D({
   const spinRef = useRef<THREE.Group>(null);    // rotates around Y (volumetric)
   const clickPulse = useRef(0);
   const emotionTime = useRef(0);
-  const autoSpinPhase = useRef(0); // tracks accumulated auto-spin
 
   useEffect(() => {
     [front, back].forEach((t) => {
