@@ -288,29 +288,33 @@ function ViniAvatar3D({
     avatarBreath.current = (Math.sin(t * 1.4) + 1) / 2;
 
     // ── Rotation logic ──────────────────────────────────────
-    // Auto-spin baseline (0.005 rad/frame ≈ slow continuous turn)
-    autoSpinPhase.current += 0.005;
+    // No auto-spin. Default state: facing forward (rotation.y = 0).
+    // User drags to rotate; on release, inertia decays and avatar smoothly
+    // returns to face-forward (nearest 0 mod 2π).
 
-    // Manual drag contributes manualY; release leaves velocity that decays (inertia)
     if (!drag.current.dragging) {
       // Inertia decay
       drag.current.manualY += drag.current.velocity;
       drag.current.velocity *= 0.94;
       if (Math.abs(drag.current.velocity) < 0.0005) drag.current.velocity = 0;
 
-      // After inertia stops, slowly return to facing camera (snap to nearest 2π)
-      if (drag.current.velocity === 0) {
+      // After inertia stops, smoothly snap back to facing camera
+      if (drag.current.velocity === 0 && Math.abs(drag.current.manualY) > 0.001) {
         const twoPi = Math.PI * 2;
+        // Find shortest path back to a multiple of 2π (facing forward)
         const wrapped = ((drag.current.manualY % twoPi) + twoPi) % twoPi;
         const target = wrapped > Math.PI ? twoPi : 0;
-        drag.current.manualY = THREE.MathUtils.lerp(drag.current.manualY, drag.current.manualY + (target - wrapped), 0.04);
+        const desired = drag.current.manualY + (target - wrapped);
+        drag.current.manualY = THREE.MathUtils.lerp(drag.current.manualY, desired, 0.06);
       }
     }
 
-    // Pointer tilt influence (look slightly toward the cursor when not being dragged)
-    const pointerYaw = drag.current.dragging ? 0 : THREE.MathUtils.clamp(pointer.smooth.current.x * 0.35, -0.45, 0.45);
-    const targetRotY = autoSpinPhase.current + drag.current.manualY + pointerYaw;
-    spinRef.current.rotation.y = targetRotY;
+    // Subtle pointer "look" only when idle and near-front
+    const nearFront = Math.abs(((drag.current.manualY % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) < 0.3;
+    const pointerYaw = !drag.current.dragging && nearFront
+      ? THREE.MathUtils.clamp(pointer.smooth.current.x * 0.25, -0.35, 0.35)
+      : 0;
+    spinRef.current.rotation.y = drag.current.manualY + pointerYaw;
 
     // ── Emotion squash/tilt on the outer group (doesn't affect spin) ──
     let extraRotZ = 0;
