@@ -240,6 +240,8 @@ function ViniAvatar3D({
 }) {
   const front = useLoader(THREE.TextureLoader, viniFront);
   const back = useLoader(THREE.TextureLoader, viniBack);
+  const left = useLoader(THREE.TextureLoader, viniLeft);
+  const right = useLoader(THREE.TextureLoader, viniRight);
 
   const groupRef = useRef<THREE.Group>(null);   // floats / sways / scales
   const spinRef = useRef<THREE.Group>(null);    // rotates around Y (volumetric)
@@ -247,14 +249,14 @@ function ViniAvatar3D({
   const emotionTime = useRef(0);
 
   useEffect(() => {
-    [front, back].forEach((t) => {
+    [front, back, left, right].forEach((t) => {
       t.colorSpace = THREE.SRGBColorSpace;
       t.anisotropy = 16;
       t.minFilter = THREE.LinearMipmapLinearFilter;
       t.magFilter = THREE.LinearFilter;
       t.needsUpdate = true;
     });
-  }, [front, back]);
+  }, [front, back, left, right]);
 
   useEffect(() => {
     const handler = () => { clickPulse.current = 1; };
