@@ -5,6 +5,8 @@ import * as THREE from 'three';
 import officeBg from '@/assets/office-bg.png';
 import viniFront from '@/assets/vini-avatar.png';
 import viniBack from '@/assets/vini-avatar-back.png';
+import viniLeft from '@/assets/vini-avatar-left.png';
+import viniRight from '@/assets/vini-avatar-right.png';
 
 /* ──────────────────────────────────────────────────────────
    Pointer (mouse / touch / gyro) with elastic lerp
