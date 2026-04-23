@@ -503,8 +503,10 @@ export function ViniScene() {
   }, []);
 
   return (
-    // pointer-events-auto so the avatar can be dragged for 360° rotation
-    <div className="absolute inset-0 z-0" style={{ pointerEvents: 'auto', cursor: 'grab' }}>
+    // Canvas itself is pointer-transparent so DOM UI (header, mic, menus) keeps working.
+    // The avatar's drag area is provided by the centered hit-area in ViniHome.tsx,
+    // which dispatches the same window mouse/touch events the drag hook listens to.
+    <div className="absolute inset-0 z-0 pointer-events-none">
       <Canvas
         dpr={[1, 1.6]}
         camera={{ position: [0, 0, 5], fov: 50 }}
