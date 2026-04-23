@@ -3,10 +3,11 @@ import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import officeBg from '@/assets/office-bg.png';
-import viniAvatar from '@/assets/vini-avatar.png';
+import viniFront from '@/assets/vini-avatar.png';
+import viniBack from '@/assets/vini-avatar-back.png';
 
 /* ──────────────────────────────────────────────────────────
-   Pointer parallax (mouse / gyro) with elastic lerp
+   Pointer (mouse / touch / gyro) with elastic lerp
    ────────────────────────────────────────────────────────── */
 function usePointer() {
   const target = useRef({ x: 0, y: 0 });
@@ -41,7 +42,7 @@ function usePointer() {
 }
 
 /* ──────────────────────────────────────────────────────────
-   Layer 0 — Background (futuristic office)
+   Layer 0 — Background (futuristic office) with parallax
    ────────────────────────────────────────────────────────── */
 function BackgroundPlane({ pointer }: { pointer: ReturnType<typeof usePointer> }) {
   const tex = useLoader(THREE.TextureLoader, officeBg);
@@ -75,17 +76,18 @@ function BackgroundPlane({ pointer }: { pointer: ReturnType<typeof usePointer> }
     return { planeW, planeH };
   }, [tex, camera, viewSize.width, viewSize.height]);
 
+  // very subtle parallax — background barely moves so the avatar feels grounded in the room
   useFrame(() => {
     if (!ref.current) return;
     ref.current.position.x = THREE.MathUtils.lerp(
       ref.current.position.x,
-      pointer.smooth.current.x * 0.10,
-      0.05
+      pointer.smooth.current.x * 0.06,
+      0.04
     );
     ref.current.position.y = THREE.MathUtils.lerp(
       ref.current.position.y,
-      pointer.smooth.current.y * 0.07,
-      0.05
+      pointer.smooth.current.y * 0.04,
+      0.04
     );
   });
 
@@ -98,24 +100,27 @@ function BackgroundPlane({ pointer }: { pointer: ReturnType<typeof usePointer> }
 }
 
 /* ──────────────────────────────────────────────────────────
-   Holographic light source — pulses with avatar movement
+   Holographic core — pulsing light from the floor ring
    ────────────────────────────────────────────────────────── */
 function HolographicCore({
   avatarBreath,
   emotion,
+  groundY,
+  baseZ,
 }: {
   avatarBreath: React.MutableRefObject<number>;
   emotion: React.MutableRefObject<EmotionState>;
+  groundY: number;
+  baseZ: number;
 }) {
   const lightRef = useRef<THREE.PointLight>(null);
   const haloRef = useRef<THREE.Mesh>(null);
 
   useFrame((state) => {
     const t = state.clock.elapsedTime;
-    const breath = avatarBreath.current; // 0..1 normalized float
+    const breath = avatarBreath.current;
     const emo = emotion.current;
-    // Color shifts by emotion
-    let color = new THREE.Color('#22d3ee'); // happy/idle = cyan
+    let color = new THREE.Color('#22d3ee');
     if (emo === 'sad') color = new THREE.Color('#3b82f6');
     else if (emo === 'angry') color = new THREE.Color('#ef4444');
     else if (emo === 'thinking') color = new THREE.Color('#a855f7');
@@ -123,23 +128,23 @@ function HolographicCore({
 
     if (lightRef.current) {
       lightRef.current.color = color;
-      lightRef.current.intensity = 3.5 + Math.sin(t * 2.2) * 0.6 + breath * 1.5;
+      lightRef.current.intensity = 2.4 + Math.sin(t * 2.2) * 0.5 + breath * 1.2;
     }
     if (haloRef.current) {
       const mat = haloRef.current.material as THREE.MeshBasicMaterial;
       mat.color = color;
-      mat.opacity = 0.18 + Math.sin(t * 1.6) * 0.06 + breath * 0.12;
-      const s = 1 + Math.sin(t * 1.2) * 0.05 + breath * 0.1;
+      mat.opacity = 0.16 + Math.sin(t * 1.6) * 0.05 + breath * 0.10;
+      const s = 1 + Math.sin(t * 1.2) * 0.04 + breath * 0.08;
       haloRef.current.scale.set(s, s, 1);
     }
   });
 
   return (
-    <group position={[0, -0.55, -0.6]}>
-      <pointLight ref={lightRef} position={[0, 0.2, 0.4]} intensity={3.5} distance={7} decay={2} />
-      <mesh ref={haloRef} position={[0, 0, 0]}>
-        <ringGeometry args={[0.55, 0.95, 64]} />
-        <meshBasicMaterial color="#22d3ee" transparent opacity={0.2} side={THREE.DoubleSide} depthWrite={false} />
+    <group position={[0, groundY, baseZ + 0.3]}>
+      <pointLight ref={lightRef} position={[0, 0.15, 0.4]} intensity={2.4} distance={6} decay={2} />
+      <mesh ref={haloRef} rotation={[-Math.PI / 2.05, 0, 0]} position={[0, 0.005, 0]}>
+        <ringGeometry args={[0.42, 0.78, 64]} />
+        <meshBasicMaterial color="#22d3ee" transparent opacity={0.18} side={THREE.DoubleSide} depthWrite={false} toneMapped={false} />
       </mesh>
     </group>
   );
@@ -151,33 +156,104 @@ function HolographicCore({
 type EmotionState = 'idle' | 'happy' | 'sad' | 'angry' | 'thinking' | 'listening';
 
 /* ──────────────────────────────────────────────────────────
-   Layer 1 — Vini avatar plane (positioned over light core)
+   Drag state shared between DOM listener and R3F frame loop
    ────────────────────────────────────────────────────────── */
-function ViniAvatarPlane({
+type DragState = {
+  dragging: boolean;
+  lastX: number;
+  velocity: number; // angular velocity (rad/frame) — inertia
+  manualY: number;  // accumulated manual rotation around Y
+};
+
+function useDragRotation() {
+  const drag = useRef<DragState>({ dragging: false, lastX: 0, velocity: 0, manualY: 0 });
+
+  useEffect(() => {
+    const getX = (e: MouseEvent | TouchEvent) =>
+      'touches' in e ? (e.touches[0]?.clientX ?? 0) : (e as MouseEvent).clientX;
+
+    const onDown = (e: MouseEvent | TouchEvent) => {
+      drag.current.dragging = true;
+      drag.current.lastX = getX(e);
+      drag.current.velocity = 0;
+    };
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      if (!drag.current.dragging) return;
+      const x = getX(e);
+      const dx = x - drag.current.lastX;
+      drag.current.lastX = x;
+      // 1px ≈ 0.012 rad — a full screen drag does ~ ±5 rad
+      const delta = dx * 0.012;
+      drag.current.manualY += delta;
+      drag.current.velocity = delta; // newest frame velocity, decays after release
+    };
+    const onUp = () => {
+      drag.current.dragging = false;
+    };
+
+    window.addEventListener('mousedown', onDown);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchstart', onDown, { passive: true });
+    window.addEventListener('touchmove', onMove, { passive: true });
+    window.addEventListener('touchend', onUp);
+    return () => {
+      window.removeEventListener('mousedown', onDown);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchstart', onDown);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onUp);
+    };
+  }, []);
+
+  return drag;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Avatar — volumetric 360° rotation (front + back impostor)
+
+   Two textured planes are crossed perpendicularly:
+     • Plane A shows the FRONT texture (visible when facing camera)
+     • Plane B shows the BACK texture (rotated 180° around Y)
+   Combined with metallic StandardMaterial + a directional rim light,
+   the silhouette feels like a 3D body rotating in space.
+   ────────────────────────────────────────────────────────── */
+function ViniAvatar3D({
   pointer,
   isMobile,
   avatarBreath,
   emotion,
+  drag,
+  baseY,
+  baseZ,
 }: {
   pointer: ReturnType<typeof usePointer>;
   isMobile: boolean;
   avatarBreath: React.MutableRefObject<number>;
   emotion: React.MutableRefObject<EmotionState>;
+  drag: ReturnType<typeof useDragRotation>;
+  baseY: number;
+  baseZ: number;
 }) {
-  const tex = useLoader(THREE.TextureLoader, viniAvatar);
-  const groupRef = useRef<THREE.Group>(null);
-  const meshRef = useRef<THREE.Mesh>(null);
+  const front = useLoader(THREE.TextureLoader, viniFront);
+  const back = useLoader(THREE.TextureLoader, viniBack);
+
+  const groupRef = useRef<THREE.Group>(null);   // floats / sways / scales
+  const spinRef = useRef<THREE.Group>(null);    // rotates around Y (volumetric)
   const clickPulse = useRef(0);
   const emotionTime = useRef(0);
+  const autoSpinPhase = useRef(0); // tracks accumulated auto-spin
 
   useEffect(() => {
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.anisotropy = 16;
-    tex.premultiplyAlpha = false;
-    tex.minFilter = THREE.LinearMipmapLinearFilter;
-    tex.magFilter = THREE.LinearFilter;
-    tex.needsUpdate = true;
-  }, [tex]);
+    [front, back].forEach((t) => {
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.anisotropy = 16;
+      t.minFilter = THREE.LinearMipmapLinearFilter;
+      t.magFilter = THREE.LinearFilter;
+      t.needsUpdate = true;
+    });
+  }, [front, back]);
 
   useEffect(() => {
     const handler = () => { clickPulse.current = 1; };
@@ -196,144 +272,153 @@ function ViniAvatarPlane({
     };
   }, [emotion]);
 
-  // Avatar (cápsula flutuante, sem pernas) — proporção retrato 701x1195 ≈ 0.587
-  // PROPORÇÃO REAL: o anel holográfico no chão tem ~60% da largura visível do escritório.
-  // O avatar deve caber DENTRO desse anel como um robô real (~1.6m de altura).
-  const aspect = 701 / 1195; // ≈ 0.587
-  const heightU = isMobile ? 1.85 : 2.15; // reduzido para proporção realista no escritório
-  const widthU  = heightU * aspect;
+  // Avatar dimensions — proportion of the cropped robot (896 x 1200 ≈ 0.747)
+  const aspect = 896 / 1200;
+  const heightU = isMobile ? 1.95 : 2.25;
+  const widthU = heightU * aspect;
   const size: [number, number] = [widthU, heightU];
-  // baseY: o ponto central iluminado do anel está ~ y = -0.55 no espaço do mundo (chão).
-  // O avatar flutua levemente acima — base do oval sobre o brilho central.
-  const baseY = heightU / 2 - 1.65;
-  const baseZ = -2.1; // profundidade que case com a perspectiva do anel central
 
   useFrame((state) => {
-    if (!groupRef.current || !meshRef.current) return;
+    if (!groupRef.current || !spinRef.current) return;
     const t = state.clock.elapsedTime;
     emotionTime.current += 0.016;
     const emo = emotion.current;
 
-    // Base float
+    // Float (breathing)
     const float = Math.sin(t * 1.4) * 0.10;
-    avatarBreath.current = (Math.sin(t * 1.4) + 1) / 2; // 0..1 for the light to follow
+    avatarBreath.current = (Math.sin(t * 1.4) + 1) / 2;
 
-    // Emotion-driven head/face animation (rotation = "head", scale.y squash = "face")
+    // ── Rotation logic ──────────────────────────────────────
+    // Auto-spin baseline (0.005 rad/frame ≈ slow continuous turn)
+    autoSpinPhase.current += 0.005;
+
+    // Manual drag contributes manualY; release leaves velocity that decays (inertia)
+    if (!drag.current.dragging) {
+      // Inertia decay
+      drag.current.manualY += drag.current.velocity;
+      drag.current.velocity *= 0.94;
+      if (Math.abs(drag.current.velocity) < 0.0005) drag.current.velocity = 0;
+
+      // After inertia stops, slowly return to facing camera (snap to nearest 2π)
+      if (drag.current.velocity === 0) {
+        const twoPi = Math.PI * 2;
+        const wrapped = ((drag.current.manualY % twoPi) + twoPi) % twoPi;
+        const target = wrapped > Math.PI ? twoPi : 0;
+        drag.current.manualY = THREE.MathUtils.lerp(drag.current.manualY, drag.current.manualY + (target - wrapped), 0.04);
+      }
+    }
+
+    // Pointer tilt influence (look slightly toward the cursor when not being dragged)
+    const pointerYaw = drag.current.dragging ? 0 : THREE.MathUtils.clamp(pointer.smooth.current.x * 0.35, -0.45, 0.45);
+    const targetRotY = autoSpinPhase.current + drag.current.manualY + pointerYaw;
+    spinRef.current.rotation.y = targetRotY;
+
+    // ── Emotion squash/tilt on the outer group (doesn't affect spin) ──
     let extraRotZ = 0;
     let extraRotX = 0;
     let squash = 1;
-    let nodSpeed = 0.6;
-    let swaySpeed = 0.6;
-
     switch (emo) {
       case 'happy':
-        // gentle bouncy nod + slight upward tilt
-        extraRotX = -0.06 + Math.sin(t * 4) * 0.05;
-        squash = 1 + Math.sin(t * 5) * 0.04;
-        nodSpeed = 1.2;
+        extraRotX = -0.05 + Math.sin(t * 4) * 0.04;
+        squash = 1 + Math.sin(t * 5) * 0.03;
         break;
       case 'sad':
-        // head down, slow droop
-        extraRotX = 0.18 + Math.sin(t * 0.8) * 0.02;
+        extraRotX = 0.16 + Math.sin(t * 0.8) * 0.02;
         extraRotZ = Math.sin(t * 0.5) * 0.04;
         squash = 0.96;
-        nodSpeed = 0.3;
         break;
       case 'angry':
-        // quick shakes + slight forward lean
-        extraRotZ = Math.sin(t * 18) * 0.06;
+        extraRotZ = Math.sin(t * 18) * 0.05;
         extraRotX = -0.08;
         squash = 1.02 + Math.sin(t * 14) * 0.02;
-        nodSpeed = 0.6;
         break;
       case 'thinking':
-        // tilt to the side, slow
-        extraRotZ = 0.18 + Math.sin(t * 0.7) * 0.05;
+        extraRotZ = 0.16 + Math.sin(t * 0.7) * 0.05;
         extraRotX = -0.04;
-        nodSpeed = 0.4;
         break;
       case 'listening':
-        // attentive: lean slightly forward + subtle pulse
         extraRotX = -0.05;
         squash = 1 + Math.sin(t * 3) * 0.02;
-        nodSpeed = 0.8;
         break;
     }
 
-    // Stronger on-axis yaw (looking left/right) following pointer/touch + tiny idle sway
-    const idleRotY = Math.sin(t * swaySpeed * 0.6) * 0.04;
-    const targetRotY = THREE.MathUtils.clamp(pointer.smooth.current.x * 0.55, -0.45, 0.45) + idleRotY;
-    const targetRotX = THREE.MathUtils.clamp(-pointer.smooth.current.y * 0.18, -0.12, 0.12) + extraRotX;
-
-    // Greatly reduced positional drift — avatar stays anchored on the lit ring
-    const targetX = pointer.smooth.current.x * 0.04;
-    const targetY = baseY + float * 0.6 + pointer.smooth.current.y * 0.02;
+    // Position — anchored above the lit ring; very small horizontal drift
+    const targetX = pointer.smooth.current.x * 0.03;
+    const targetY = baseY + float * 0.55 + pointer.smooth.current.y * 0.015;
 
     if (clickPulse.current > 0) {
       clickPulse.current = Math.max(0, clickPulse.current - 0.04);
     }
-    const bounce = Math.sin(clickPulse.current * Math.PI) * 0.18;
+    const bounce = Math.sin(clickPulse.current * Math.PI) * 0.16;
     const baseScale = 1 + bounce;
 
     groupRef.current.position.x = THREE.MathUtils.lerp(groupRef.current.position.x, targetX, 0.07);
     groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.08);
     groupRef.current.position.z = baseZ;
 
-    meshRef.current.rotation.y = THREE.MathUtils.lerp(meshRef.current.rotation.y, targetRotY, 0.08);
-    meshRef.current.rotation.x = THREE.MathUtils.lerp(meshRef.current.rotation.x, targetRotX, 0.08);
-    meshRef.current.rotation.z = THREE.MathUtils.lerp(meshRef.current.rotation.z, extraRotZ, 0.1);
-    meshRef.current.scale.x = THREE.MathUtils.lerp(meshRef.current.scale.x, baseScale, 0.15);
-    meshRef.current.scale.y = THREE.MathUtils.lerp(meshRef.current.scale.y, baseScale * squash, 0.15);
+    groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, extraRotX, 0.08);
+    groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, extraRotZ, 0.1);
+    groupRef.current.scale.x = THREE.MathUtils.lerp(groupRef.current.scale.x, baseScale, 0.15);
+    groupRef.current.scale.y = THREE.MathUtils.lerp(groupRef.current.scale.y, baseScale * squash, 0.15);
   });
 
-  // Bottom of the avatar in local coords (origin at center)
   const bottomY = -size[1] / 2;
 
   return (
     <group ref={groupRef} position={[0, baseY, baseZ]}>
-      {/* Rim light frio das janelas (canto superior esquerdo) — pinta a lateral esquerda do robô */}
+      {/* Shared rim/key lights so reflections shift while the body rotates */}
       <pointLight position={[-1.6, 1.5, 1.4]} intensity={0.9} color="#7dd3fc" distance={5} decay={2} />
-      {/* Rim light dourado/quente das telas (canto inferior direito) — quebra o azul puro */}
       <pointLight position={[1.5, -0.2, 1.2]} intensity={0.8} color="#fbbf24" distance={5} decay={2} />
-      {/* Key light cyan vinda do anel holográfico abaixo — ilumina a base oval */}
       <pointLight position={[0, bottomY - 0.15, 0.5]} intensity={1.4} color="#22d3ee" distance={3} decay={2} />
-      {/* Fill frontal sutil para detalhes do peito/insígnia */}
       <pointLight position={[0, 0.3, 1.6]} intensity={0.55} color="#ffffff" distance={3.5} decay={2} />
 
-      {/* Sombra elíptica suave projetada no chão — dá ancoragem real ao avatar */}
+      {/* Soft elliptical contact shadow on the ground */}
       <mesh position={[0, bottomY - 0.02, -0.02]} rotation={[-Math.PI / 2.05, 0, 0]} renderOrder={17}>
-        <circleGeometry args={[0.42, 48]} />
-        <meshBasicMaterial color="#000000" transparent opacity={0.28} depthWrite={false} toneMapped={false} />
+        <circleGeometry args={[0.36, 48]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.22} depthWrite={false} toneMapped={false} />
       </mesh>
-      {/* Reflexo cyan suave no chão (anel) — flutua sobre o ponto luminoso central */}
-      <mesh position={[0, bottomY + 0.04, -0.05]} rotation={[-Math.PI / 2.15, 0, 0]} renderOrder={18}>
-        <circleGeometry args={[0.5, 64]} />
-        <meshBasicMaterial color="#22d3ee" transparent opacity={0.16} depthWrite={false} toneMapped={false} />
+      {/* Cyan contact halo on the ring */}
+      <mesh position={[0, bottomY + 0.03, -0.05]} rotation={[-Math.PI / 2.15, 0, 0]} renderOrder={18}>
+        <circleGeometry args={[0.46, 64]} />
+        <meshBasicMaterial color="#22d3ee" transparent opacity={0.14} depthWrite={false} toneMapped={false} />
       </mesh>
-      <mesh position={[0, bottomY + 0.02, -0.04]} rotation={[-Math.PI / 2.15, 0, 0]} renderOrder={18}>
-        <circleGeometry args={[0.95, 64]} />
-        <meshBasicMaterial color="#22d3ee" transparent opacity={0.05} depthWrite={false} toneMapped={false} />
-      </mesh>
-      {/* Highlight central dourado bem pequeno (faisca de contato) */}
-      <mesh position={[0, bottomY + 0.06, -0.03]} rotation={[-Math.PI / 2.15, 0, 0]} renderOrder={19}>
-        <circleGeometry args={[0.16, 48]} />
-        <meshBasicMaterial color="#fde68a" transparent opacity={0.28} depthWrite={false} toneMapped={false} />
+      {/* Tiny golden contact spark */}
+      <mesh position={[0, bottomY + 0.05, -0.03]} rotation={[-Math.PI / 2.15, 0, 0]} renderOrder={19}>
+        <circleGeometry args={[0.12, 48]} />
+        <meshBasicMaterial color="#fde68a" transparent opacity={0.30} depthWrite={false} toneMapped={false} />
       </mesh>
 
-      {/* Avatar — meshStandardMaterial recebe a iluminação real → aspecto 3D integrado */}
-      <mesh ref={meshRef} renderOrder={20} position={[0, 0, 0]}>
-        <planeGeometry args={size} />
-        <meshStandardMaterial
-          map={tex}
-          transparent
-          alphaTest={0.5}
-          depthWrite={false}
-          side={THREE.DoubleSide}
-          roughness={0.45}
-          metalness={0.35}
-          envMapIntensity={0.8}
-        />
-      </mesh>
+      {/* ── Volumetric body: front + back planes that share the same Y rotation ── */}
+      <group ref={spinRef} renderOrder={20}>
+        {/* FRONT face */}
+        <mesh position={[0, 0, 0]}>
+          <planeGeometry args={size} />
+          <meshStandardMaterial
+            map={front}
+            transparent
+            alphaTest={0.4}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+            roughness={0.10}
+            metalness={0.90}
+            envMapIntensity={1.0}
+          />
+        </mesh>
+        {/* BACK face — same plane rotated 180° around Y so it appears when the spin shows the back */}
+        <mesh position={[0, 0, 0]} rotation={[0, Math.PI, 0]}>
+          <planeGeometry args={size} />
+          <meshStandardMaterial
+            map={back}
+            transparent
+            alphaTest={0.4}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+            roughness={0.10}
+            metalness={0.90}
+            envMapIntensity={1.0}
+          />
+        </mesh>
+      </group>
     </group>
   );
 }
@@ -343,8 +428,14 @@ function ViniAvatarPlane({
    ────────────────────────────────────────────────────────── */
 function SceneContent({ isMobile }: { isMobile: boolean }) {
   const pointer = usePointer();
+  const drag = useDragRotation();
   const avatarBreath = useRef(0);
   const emotion = useRef<EmotionState>('idle');
+
+  // Avatar anchored on the lit floor ring of the office background
+  const baseY = isMobile ? -0.05 : -0.10;
+  const baseZ = -2.1;
+  const groundY = baseY - (isMobile ? 1.10 : 1.20);
 
   useFrame(() => {
     pointer.smooth.current.x = THREE.MathUtils.lerp(
@@ -361,16 +452,28 @@ function SceneContent({ isMobile }: { isMobile: boolean }) {
 
   return (
     <>
-      {/* Ambiente: luz fria geral simulando iluminação do escritório futurista */}
-      <ambientLight intensity={0.7} color="#dce8f5" />
-      {/* Key directional vinda das janelas (canto superior esquerdo) — luz natural fria */}
-      <directionalLight position={[-4, 5, 4]} intensity={1.1} color="#e0ecff" />
-      {/* Fill warm vindo das telas/anel — equilibra com o tom de madeira do chão */}
-      <directionalLight position={[3, -1, 3]} intensity={0.55} color="#f59e0b" />
-      {/* Hemisphere: céu azul + chão de madeira — integra automaticamente o avatar ao ambiente */}
-      <hemisphereLight args={['#bfdcff', '#7a4a1f', 0.45]} />
+      {/* Office ambient — cool sky / warm wood floor */}
+      <ambientLight intensity={0.6} color="#dce8f5" />
+      {/* Key DirectionalLight at 45° — fixed in scene so reflections sweep across the spinning body */}
+      <directionalLight position={[5, 5, 5]} intensity={1.4} color="#ffffff" />
+      {/* Cool window fill from the upper-left */}
+      <directionalLight position={[-4, 3, 3]} intensity={0.6} color="#bfdcff" />
+      {/* Warm screen bounce from lower-right */}
+      <directionalLight position={[3, -1, 3]} intensity={0.45} color="#f59e0b" />
+      {/* Hemisphere — sky + wooden floor */}
+      <hemisphereLight args={['#bfdcff', '#7a4a1f', 0.4]} />
+
       <BackgroundPlane pointer={pointer} />
-      <ViniAvatarPlane pointer={pointer} isMobile={isMobile} avatarBreath={avatarBreath} emotion={emotion} />
+      <HolographicCore avatarBreath={avatarBreath} emotion={emotion} groundY={groundY} baseZ={baseZ} />
+      <ViniAvatar3D
+        pointer={pointer}
+        isMobile={isMobile}
+        avatarBreath={avatarBreath}
+        emotion={emotion}
+        drag={drag}
+        baseY={baseY}
+        baseZ={baseZ}
+      />
     </>
   );
 }
@@ -400,10 +503,11 @@ export function ViniScene() {
   }, []);
 
   return (
-    <div className="absolute inset-0 pointer-events-none z-0">
+    // pointer-events-auto so the avatar can be dragged for 360° rotation
+    <div className="absolute inset-0 z-0" style={{ pointerEvents: 'auto', cursor: 'grab' }}>
       <Canvas
         dpr={[1, 1.6]}
-        camera={{ position: [0, 0, 5], fov: 42 }}
+        camera={{ position: [0, 0, 5], fov: 50 }}
         gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
         frameloop={reduced ? 'demand' : 'always'}
       >
@@ -413,7 +517,7 @@ export function ViniScene() {
           <SceneContent isMobile={isMobile} />
           <EffectComposer>
             <Bloom
-              intensity={0.9}
+              intensity={0.85}
               luminanceThreshold={0.85}
               luminanceSmoothing={0.2}
               mipmapBlur
