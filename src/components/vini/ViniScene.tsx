@@ -243,7 +243,6 @@ function ViniAvatar3D({
   const spinRef = useRef<THREE.Group>(null);    // rotates around Y (volumetric)
   const clickPulse = useRef(0);
   const emotionTime = useRef(0);
-  const autoSpinPhase = useRef(0); // tracks accumulated auto-spin
 
   useEffect(() => {
     [front, back].forEach((t) => {
@@ -289,29 +288,33 @@ function ViniAvatar3D({
     avatarBreath.current = (Math.sin(t * 1.4) + 1) / 2;
 
     // ── Rotation logic ──────────────────────────────────────
-    // Auto-spin baseline (0.005 rad/frame ≈ slow continuous turn)
-    autoSpinPhase.current += 0.005;
+    // No auto-spin. Default state: facing forward (rotation.y = 0).
+    // User drags to rotate; on release, inertia decays and avatar smoothly
+    // returns to face-forward (nearest 0 mod 2π).
 
-    // Manual drag contributes manualY; release leaves velocity that decays (inertia)
     if (!drag.current.dragging) {
       // Inertia decay
       drag.current.manualY += drag.current.velocity;
       drag.current.velocity *= 0.94;
       if (Math.abs(drag.current.velocity) < 0.0005) drag.current.velocity = 0;
 
-      // After inertia stops, slowly return to facing camera (snap to nearest 2π)
-      if (drag.current.velocity === 0) {
+      // After inertia stops, smoothly snap back to facing camera
+      if (drag.current.velocity === 0 && Math.abs(drag.current.manualY) > 0.001) {
         const twoPi = Math.PI * 2;
+        // Find shortest path back to a multiple of 2π (facing forward)
         const wrapped = ((drag.current.manualY % twoPi) + twoPi) % twoPi;
         const target = wrapped > Math.PI ? twoPi : 0;
-        drag.current.manualY = THREE.MathUtils.lerp(drag.current.manualY, drag.current.manualY + (target - wrapped), 0.04);
+        const desired = drag.current.manualY + (target - wrapped);
+        drag.current.manualY = THREE.MathUtils.lerp(drag.current.manualY, desired, 0.06);
       }
     }
 
-    // Pointer tilt influence (look slightly toward the cursor when not being dragged)
-    const pointerYaw = drag.current.dragging ? 0 : THREE.MathUtils.clamp(pointer.smooth.current.x * 0.35, -0.45, 0.45);
-    const targetRotY = autoSpinPhase.current + drag.current.manualY + pointerYaw;
-    spinRef.current.rotation.y = targetRotY;
+    // Subtle pointer "look" only when idle and near-front
+    const nearFront = Math.abs(((drag.current.manualY % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) < 0.3;
+    const pointerYaw = !drag.current.dragging && nearFront
+      ? THREE.MathUtils.clamp(pointer.smooth.current.x * 0.25, -0.35, 0.35)
+      : 0;
+    spinRef.current.rotation.y = drag.current.manualY + pointerYaw;
 
     // ── Emotion squash/tilt on the outer group (doesn't affect spin) ──
     let extraRotZ = 0;
@@ -388,34 +391,82 @@ function ViniAvatar3D({
         <meshBasicMaterial color="#fde68a" transparent opacity={0.30} depthWrite={false} toneMapped={false} />
       </mesh>
 
-      {/* ── Volumetric body: front + back planes that share the same Y rotation ── */}
+      {/* ── Volumetric body: multiple crossed planes simulate a 3D volume ──
+          Front + back textures rendered on planes rotated at 0°, 45°, 90°, 135°.
+          The repeated silhouette gives the illusion of a solid body with sides
+          when the user spins it. alphaTest keeps edges crisp. */}
       <group ref={spinRef} renderOrder={20}>
-        {/* FRONT face */}
+        {/* Slab 0° — primary front/back */}
         <mesh position={[0, 0, 0]}>
           <planeGeometry args={size} />
           <meshStandardMaterial
             map={front}
             transparent
-            alphaTest={0.4}
+            alphaTest={0.5}
             depthWrite={false}
-            side={THREE.DoubleSide}
+            side={THREE.FrontSide}
             roughness={0.10}
             metalness={0.90}
             envMapIntensity={1.0}
           />
         </mesh>
-        {/* BACK face — same plane rotated 180° around Y so it appears when the spin shows the back */}
         <mesh position={[0, 0, 0]} rotation={[0, Math.PI, 0]}>
           <planeGeometry args={size} />
           <meshStandardMaterial
             map={back}
             transparent
-            alphaTest={0.4}
+            alphaTest={0.5}
             depthWrite={false}
-            side={THREE.DoubleSide}
+            side={THREE.FrontSide}
             roughness={0.10}
             metalness={0.90}
             envMapIntensity={1.0}
+          />
+        </mesh>
+
+        {/* Slab 45° — diagonal volume filler (front-ish texture) */}
+        <mesh position={[0, 0, 0]} rotation={[0, Math.PI / 4, 0]}>
+          <planeGeometry args={[widthU * 0.85, heightU]} />
+          <meshStandardMaterial
+            map={front}
+            transparent
+            alphaTest={0.55}
+            depthWrite={false}
+            side={THREE.FrontSide}
+            roughness={0.15}
+            metalness={0.85}
+            envMapIntensity={0.9}
+            opacity={0.85}
+          />
+        </mesh>
+        <mesh position={[0, 0, 0]} rotation={[0, Math.PI + Math.PI / 4, 0]}>
+          <planeGeometry args={[widthU * 0.85, heightU]} />
+          <meshStandardMaterial
+            map={back}
+            transparent
+            alphaTest={0.55}
+            depthWrite={false}
+            side={THREE.FrontSide}
+            roughness={0.15}
+            metalness={0.85}
+            envMapIntensity={0.9}
+            opacity={0.85}
+          />
+        </mesh>
+
+        {/* Slab 90° — pure side profile (compressed silhouette) */}
+        <mesh position={[0, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
+          <planeGeometry args={[widthU * 0.55, heightU]} />
+          <meshStandardMaterial
+            map={front}
+            transparent
+            alphaTest={0.6}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+            roughness={0.20}
+            metalness={0.80}
+            envMapIntensity={0.85}
+            opacity={0.75}
           />
         </mesh>
       </group>
