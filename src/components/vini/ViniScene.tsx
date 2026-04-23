@@ -395,84 +395,64 @@ function ViniAvatar3D({
         <meshBasicMaterial color="#fde68a" transparent opacity={0.30} depthWrite={false} toneMapped={false} />
       </mesh>
 
-      {/* ── Volumetric body: multiple crossed planes simulate a 3D volume ──
-          Front + back textures rendered on planes rotated at 0°, 45°, 90°, 135°.
-          The repeated silhouette gives the illusion of a solid body with sides
-          when the user spins it. alphaTest keeps edges crisp. */}
+      {/* ── Volumetric Sprite Cylinder ──
+          8 vertical slices distributed every 45° around Y axis.
+          Each slice picks the closest of 4 cardinal textures
+          (front/right/back/left) so the silhouette stays solid and
+          continuous in any rotation, eliminating the "flat paper" look.
+          Slices at the cardinal axes (0°, 90°, 180°, 270°) get full
+          width; intermediate slices (45°, 135°, 225°, 315°) are slightly
+          compressed and dimmed to act as volumetric fillers — this gives
+          the head/body real cylindrical mass without flicker. */}
       <group ref={spinRef} renderOrder={20}>
-        {/* Slab 0° — primary front/back */}
-        <mesh position={[0, 0, 0]}>
-          <planeGeometry args={size} />
-          <meshStandardMaterial
-            map={front}
-            transparent
-            alphaTest={0.5}
-            depthWrite={false}
-            side={THREE.FrontSide}
-            roughness={0.10}
-            metalness={0.90}
-            envMapIntensity={1.0}
-          />
-        </mesh>
-        <mesh position={[0, 0, 0]} rotation={[0, Math.PI, 0]}>
-          <planeGeometry args={size} />
-          <meshStandardMaterial
-            map={back}
-            transparent
-            alphaTest={0.5}
-            depthWrite={false}
-            side={THREE.FrontSide}
-            roughness={0.10}
-            metalness={0.90}
-            envMapIntensity={1.0}
-          />
-        </mesh>
-
-        {/* Slab 45° — diagonal volume filler (front-ish texture) */}
-        <mesh position={[0, 0, 0]} rotation={[0, Math.PI / 4, 0]}>
-          <planeGeometry args={[widthU * 0.85, heightU]} />
-          <meshStandardMaterial
-            map={front}
-            transparent
-            alphaTest={0.55}
-            depthWrite={false}
-            side={THREE.FrontSide}
-            roughness={0.15}
-            metalness={0.85}
-            envMapIntensity={0.9}
-            opacity={0.85}
-          />
-        </mesh>
-        <mesh position={[0, 0, 0]} rotation={[0, Math.PI + Math.PI / 4, 0]}>
-          <planeGeometry args={[widthU * 0.85, heightU]} />
-          <meshStandardMaterial
-            map={back}
-            transparent
-            alphaTest={0.55}
-            depthWrite={false}
-            side={THREE.FrontSide}
-            roughness={0.15}
-            metalness={0.85}
-            envMapIntensity={0.9}
-            opacity={0.85}
-          />
-        </mesh>
-
-        {/* Slab 90° — pure side profile (compressed silhouette) */}
-        <mesh position={[0, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
-          <planeGeometry args={[widthU * 0.55, heightU]} />
-          <meshStandardMaterial
-            map={front}
-            transparent
-            alphaTest={0.6}
-            depthWrite={false}
-            side={THREE.DoubleSide}
-            roughness={0.20}
-            metalness={0.80}
-            envMapIntensity={0.85}
-            opacity={0.75}
-          />
-        </mesh>
+        {(() => {
+          const SLICES = 8;
+          // Cardinal textures around the cylinder, starting facing camera (+Z)
+          // and going clockwise as seen from above:
+          //   0° = front, 90° = right, 180° = back, 270° = left
+          const tex = (angle: number) => {
+            const a = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+            const deg = (a * 180) / Math.PI;
+            if (deg < 45 || deg >= 315) return front;
+            if (deg < 135) return right;
+            if (deg < 225) return back;
+            return left;
+          };
+          // Slight depth offset on intermediate slices so the GPU doesn't z-fight
+          return Array.from({ length: SLICES }).map((_, i) => {
+            const angle = (i / SLICES) * Math.PI * 2;
+            const isCardinal = i % 2 === 0;
+            const w = isCardinal ? widthU : widthU * 0.78;
+            const h = heightU;
+            const op = isCardinal ? 1 : 0.78;
+            const aTest = isCardinal ? 0.5 : 0.55;
+            const rough = isCardinal ? 0.10 : 0.16;
+            const metal = isCardinal ? 0.90 : 0.85;
+            return (
+              <mesh
+                key={i}
+                rotation={[0, angle, 0]}
+                position={[0, 0, 0]}
+                renderOrder={20 + (isCardinal ? 1 : 0)}
+              >
+                <planeGeometry args={[w, h]} />
+                <meshStandardMaterial
+                  map={tex(angle)}
+                  transparent
+                  alphaTest={aTest}
+                  depthWrite={false}
+                  side={THREE.DoubleSide}
+                  roughness={rough}
+                  metalness={metal}
+                  envMapIntensity={1.0}
+                  opacity={op}
+                  polygonOffset
+                  polygonOffsetFactor={isCardinal ? 0 : -1}
+                />
+              </mesh>
+            );
+          });
+        })()}
       </group>
     </group>
   );
