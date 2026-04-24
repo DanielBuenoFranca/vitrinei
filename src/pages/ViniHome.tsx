@@ -44,6 +44,7 @@ const ViniHome = () => {
   const [history, setHistory] = useState<string[]>([]);
   const [text, setText] = useState('');
   const [showPlusMenu, setShowPlusMenu] = useState(false);
+  const [showDemoSubmenu, setShowDemoSubmenu] = useState(false);
   const [chatExpanded, setChatExpanded] = useState(false);
   const [lastTranscript, setLastTranscript] = useState<string>('');
   const [storyOpen, setStoryOpen] = useState(false);
@@ -271,9 +272,8 @@ const ViniHome = () => {
   const gridItems: GridItem[] = [
     { key: 'home', icon: Home, label: 'Home', onClick: handleHome, active: true },
     { key: 'radar', icon: Radar, label: 'Radar Urgência', onClick: handleRadar, badge: totalCartItems > 0 ? totalCartItems : undefined },
-    { key: 'indica', icon: Gift, label: 'Indicação', onClick: handleIndicacao, highlight: 'R$ 5,00' },
     { key: 'perfil', icon: UserIcon, label: 'Perfil', onClick: handlePerfil },
-    { key: 'demos', icon: Sparkles, label: 'Demos', onClick: handleDemos },
+    { key: 'indica', icon: Gift, label: 'Indicação', onClick: handleIndicacao, highlight: 'R$ 5,00' },
   ];
 
   return (
@@ -337,31 +337,52 @@ const ViniHome = () => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.95 }}
               transition={{ duration: 0.18 }}
-              className="absolute right-0 top-12 glass-strong rounded-xl p-1.5 min-w-[180px] space-y-0.5"
+              className="absolute right-0 top-12 glass-strong rounded-xl p-1.5 min-w-[200px] space-y-0.5"
             >
-              {[
-                { label: 'Demonstrações', icon: '📱', to: '/demos' },
-                { label: 'Fluxos', icon: '🔄', to: '/processos' },
-                { label: 'Gestão', icon: '🔧', to: '/gestao' },
-                { label: 'Jornada Cliente', icon: '🛒', to: '/jornada-cliente' },
-                { label: 'MEI', icon: '📊', to: '/mei-acompanhamento' },
-                { label: 'Drop', icon: '🌐', to: '/dropshipping' },
-                { label: 'Central', icon: '🎧', to: '/central-atendimento' },
-              ].map((it) => (
-                <button
-                  key={it.to}
-                  onClick={() => { setShowPlusMenu(false); navigate(it.to); }}
-                  className="w-full text-left px-3 py-1.5 text-xs hover:bg-primary/10 rounded-md transition-colors flex items-center gap-2"
-                >
-                  <span className="w-4 text-center">{it.icon}</span> {it.label}
-                </button>
-              ))}
+              <button
+                onClick={() => setShowDemoSubmenu((v) => !v)}
+                className="w-full text-left px-3 py-2 text-xs font-semibold hover:bg-primary/10 rounded-md transition-colors flex items-center justify-between gap-2"
+              >
+                <span className="flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5 text-primary" /> Demo
+                </span>
+                <span className="text-[10px] text-muted-foreground">{showDemoSubmenu ? '▾' : '▸'}</span>
+              </button>
+              <AnimatePresence>
+                {showDemoSubmenu && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.18 }}
+                    className="overflow-hidden pl-2 border-l border-border ml-2 space-y-0.5"
+                  >
+                    {[
+                      { label: 'Demonstrações', icon: '📱', to: '/demos' },
+                      { label: 'Fluxos', icon: '🔄', to: '/processos' },
+                      { label: 'Gestão', icon: '🔧', to: '/gestao' },
+                      { label: 'Jornada Cliente', icon: '🛒', to: '/jornada-cliente' },
+                      { label: 'MEI', icon: '📊', to: '/mei-acompanhamento' },
+                      { label: 'Drop', icon: '🌐', to: '/dropshipping' },
+                      { label: 'Central', icon: '🎧', to: '/central-atendimento' },
+                    ].map((it) => (
+                      <button
+                        key={it.to}
+                        onClick={() => { setShowPlusMenu(false); setShowDemoSubmenu(false); navigate(it.to); }}
+                        className="w-full text-left px-3 py-1.5 text-xs hover:bg-primary/10 rounded-md transition-colors flex items-center gap-2"
+                      >
+                        <span className="w-4 text-center">{it.icon}</span> {it.label}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
               <div className="border-t border-border my-1" />
               <button
                 onClick={() => { setShowPlusMenu(false); navigate('/admin'); }}
                 className="w-full text-left px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/10 rounded-md transition-colors flex items-center gap-2"
               >
-                <Settings className="w-3.5 h-3.5" /> Painel Administrativo
+                <Settings className="w-3.5 h-3.5" /> Administrador
               </button>
             </motion.div>
           )}
