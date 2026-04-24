@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { ViniScene } from '@/components/vini/ViniScene';
-import { ViniAvatar } from '@/components/vini/ViniAvatar';
 import { ViniSideButtons } from '@/components/vini/ViniSideButtons';
 import { ViniBottomGrid, type GridItem } from '@/components/vini/ViniBottomGrid';
 import { ViniStoryCard } from '@/components/vini/ViniStoryCard';
@@ -369,25 +368,25 @@ const ViniHome = () => {
         </AnimatePresence>
       </div>
 
-      {/* ─── Central avatar (3D Vini lives in ViniScene; this is just the click hit-area) ─── */}
-      <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-        <div className="relative pointer-events-auto">
-          <ViniAvatar onClick={handleAvatarClick} size={typeof window !== 'undefined' && window.innerWidth < 640 ? 240 : 320} />
-          <div className="absolute left-1/2 -translate-x-1/2 -bottom-4 sm:-bottom-2 whitespace-nowrap">
-            <motion.p
-              key={hasInteracted ? 'greeted' : 'idle'}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="text-center font-display text-base sm:text-lg font-semibold text-glow"
-            >
-              {hasInteracted && user && displayName
-                ? `Olá, ${displayName.split(' ')[0]} !!`
-                : 'Olá, Eu sou o Vini !!'}
-            </motion.p>
-          </div>
-        </div>
-      </div>
+      {/* ─── Central greeting (Vini avatar removed; greeting floats above the holographic ring) ─── */}
+      <button
+        type="button"
+        onClick={handleAvatarClick}
+        aria-label="Acordar Vini"
+        className="absolute left-1/2 top-[58%] sm:top-[62%] -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto bg-transparent border-0 p-0 cursor-pointer"
+      >
+        <motion.p
+          key={hasInteracted ? 'greeted' : 'idle'}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center font-display text-base sm:text-lg font-semibold text-glow whitespace-nowrap drop-shadow-[0_2px_12px_rgba(0,0,0,0.55)]"
+        >
+          {hasInteracted && user && displayName
+            ? `Olá, ${displayName.split(' ')[0]} !!`
+            : 'Olá, Eu sou o Vini !!'}
+        </motion.p>
+      </button>
 
       {/* ─── Right-edge action buttons (open from avatar click) ─── */}
       <ViniSideButtons
