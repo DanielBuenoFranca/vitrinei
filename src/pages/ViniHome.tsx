@@ -368,25 +368,15 @@ const ViniHome = () => {
         </AnimatePresence>
       </div>
 
-      {/* ─── Central greeting (Vini avatar removed; greeting floats above the holographic ring) ─── */}
+      {/* Invisible center tap zone to wake Vini (greeting text removed per spec) */}
       <button
         type="button"
         onClick={handleAvatarClick}
         aria-label="Acordar Vini"
-        className="absolute left-1/2 top-[58%] sm:top-[62%] -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto bg-transparent border-0 p-0 cursor-pointer"
-      >
-        <motion.p
-          key={hasInteracted ? 'greeted' : 'idle'}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-center font-display text-base sm:text-lg font-semibold text-glow whitespace-nowrap drop-shadow-[0_2px_12px_rgba(0,0,0,0.55)]"
-        >
-          {hasInteracted && user && displayName
-            ? `Olá, ${displayName.split(' ')[0]} !!`
-            : 'Olá, Eu sou o Vini !!'}
-        </motion.p>
-      </button>
+        className="absolute left-1/2 top-[58%] sm:top-[62%] -translate-x-1/2 -translate-y-1/2 z-20 w-32 h-32 bg-transparent border-0 p-0 cursor-pointer"
+      />
+      {/* keep motion import used elsewhere */}
+      {false && <motion.span />}
 
       {/* ─── Right-edge action buttons (open from avatar click) ─── */}
       <ViniSideButtons
