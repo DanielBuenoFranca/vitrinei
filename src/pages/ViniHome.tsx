@@ -49,6 +49,7 @@ const ViniHome = () => {
   const [lastTranscript, setLastTranscript] = useState<string>('');
   const [storyOpen, setStoryOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [searchBarVisible, setSearchBarVisible] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -138,6 +139,7 @@ const ViniHome = () => {
 
   const handleVoiceTap = () => {
     wakeUp();
+    setSearchBarVisible(true);
     if (listening) {
       stop();
       if (text.trim()) sendQuery(text);
@@ -217,11 +219,13 @@ const ViniHome = () => {
   const handleTextSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     sendQuery(text);
+    setSearchBarVisible(false);
   };
 
   const handleSideSearch = () => {
     wakeUp();
     setSideOpen(false);
+    setSearchBarVisible(true);
     setTimeout(() => inputRef.current?.focus(), 80);
   };
 
@@ -513,51 +517,70 @@ const ViniHome = () => {
         </div>
       )}
 
-      {/* ─── Persistent text-input bar at the bottom (always visible) ─── */}
-      <form
-        onSubmit={handleTextSubmit}
-        className="absolute left-1/2 -translate-x-1/2 bottom-2 sm:bottom-3 z-40 w-[min(520px,calc(100%-180px))] pointer-events-auto"
+      {/* ─── Search bar: only when listening, has text, or user requested ─── */}
+      <AnimatePresence>
+        {(searchBarVisible || listening || !!text.trim()) && (
+          <motion.form
+            key="search-bar"
+            onSubmit={handleTextSubmit}
+            initial={{ opacity: 0, y: 20, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.96 }}
+            transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute left-1/2 -translate-x-1/2 bottom-20 sm:bottom-24 z-30 w-[min(520px,calc(100%-32px))] pointer-events-auto"
+          >
+            <div className="flex items-center gap-1.5 p-1.5 rounded-full bg-white/[0.08] backdrop-blur-xl border-[0.5px] border-[hsl(var(--vini-glow)/0.5)] shadow-[0_0_22px_hsl(var(--vini-glow)/0.2)]">
+              <Input
+                ref={inputRef}
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onBlur={() => {
+                  // hide softly if empty and not listening
+                  setTimeout(() => {
+                    if (!text.trim() && !listening) setSearchBarVisible(false);
+                  }, 150);
+                }}
+                autoFocus
+                placeholder="Pesquisa por voz ou texto…"
+                className="border-0 bg-transparent focus-visible:ring-0 text-sm flex-1 px-3 placeholder:text-foreground/50"
+              />
+              <Button
+                type="submit"
+                size="icon"
+                className="h-9 w-9 rounded-full shrink-0 bg-white/[0.1] hover:bg-white/[0.18] border-[0.5px] border-[hsl(var(--vini-glow)/0.5)] text-foreground"
+                disabled={!text.trim()}
+                aria-label="Enviar"
+              >
+                <Send className="w-3.5 h-3.5" strokeWidth={1.5} />
+              </Button>
+            </div>
+          </motion.form>
+        )}
+      </AnimatePresence>
+
+      {/* ─── Floating mic trigger (always visible, opens bar + starts voice) ─── */}
+      <motion.button
+        type="button"
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.92 }}
+        onClick={handleVoiceTap}
+        className={cn(
+          'absolute left-1/2 -translate-x-1/2 bottom-3 sm:bottom-4 z-40',
+          'relative w-12 h-12 rounded-full flex items-center justify-center shrink-0',
+          'bg-gradient-to-br from-primary via-accent to-primary text-primary-foreground',
+          'shadow-[0_0_18px_hsl(var(--primary)/0.55)]',
+          listening && 'ring-2 ring-primary/60',
+        )}
+        aria-label={listening ? 'Parar microfone' : 'Falar com o Vini'}
       >
-        <div className="flex items-center gap-1.5 p-1.5 rounded-full bg-white/[0.08] backdrop-blur-xl border-[0.5px] border-[hsl(var(--vini-glow)/0.5)] shadow-[0_0_22px_hsl(var(--vini-glow)/0.2)]">
-          <Input
-            ref={inputRef}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Pesquisa por voz ou texto…"
-            className="border-0 bg-transparent focus-visible:ring-0 text-sm flex-1 px-3 placeholder:text-foreground/50"
-          />
-          <motion.button
-            type="button"
-            whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.92 }}
-            onClick={handleVoiceTap}
-            className={cn(
-              'relative w-9 h-9 rounded-full flex items-center justify-center shrink-0',
-              'bg-gradient-to-br from-primary via-accent to-primary text-primary-foreground',
-              'shadow-[0_0_14px_hsl(var(--primary)/0.5)]',
-              listening && 'ring-2 ring-primary/50',
-            )}
-            aria-label={listening ? 'Parar microfone' : 'Falar com o Vini'}
-          >
-            {listening && (
-              <>
-                <span className="absolute inset-0 rounded-full bg-primary/30 animate-pulse-ring" />
-                <span className="absolute inset-0 rounded-full bg-accent/30 animate-pulse-ring" style={{ animationDelay: '0.6s' }} />
-              </>
-            )}
-            <Mic className={cn('w-4 h-4 relative', listening && 'animate-pulse')} strokeWidth={1.5} />
-          </motion.button>
-          <Button
-            type="submit"
-            size="icon"
-            className="h-9 w-9 rounded-full shrink-0 bg-white/[0.1] hover:bg-white/[0.18] border-[0.5px] border-[hsl(var(--vini-glow)/0.5)] text-foreground"
-            disabled={!text.trim()}
-            aria-label="Enviar"
-          >
-            <Send className="w-3.5 h-3.5" strokeWidth={1.5} />
-          </Button>
-        </div>
-      </form>
+        {listening && (
+          <>
+            <span className="absolute inset-0 rounded-full bg-primary/30 animate-pulse-ring" />
+            <span className="absolute inset-0 rounded-full bg-accent/30 animate-pulse-ring" style={{ animationDelay: '0.6s' }} />
+          </>
+        )}
+        <Mic className={cn('w-5 h-5 relative', listening && 'animate-pulse')} strokeWidth={1.5} />
+      </motion.button>
 
       {/* ─── Modals ─── */}
       <ViniStoryCard
