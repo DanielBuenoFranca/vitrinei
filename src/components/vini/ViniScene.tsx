@@ -15,7 +15,7 @@ import officeBgMobile from '@/assets/office-bg-mobile.jpg';
  */
 export function ViniScene() {
   return (
-    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none">
+    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none bg-black">
       <picture>
         <source media="(max-width: 640px)" srcSet={officeBgMobile} />
         <img
@@ -23,18 +23,10 @@ export function ViniScene() {
           alt=""
           aria-hidden="true"
           draggable={false}
-          className="absolute inset-0 w-full h-full object-cover object-center"
+          className="absolute inset-0 w-full h-full object-contain object-center"
           style={{ imageRendering: 'auto' }}
         />
       </picture>
-      {/* Very subtle vignette to anchor edges; no color shift */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            'radial-gradient(ellipse at 50% 70%, transparent 45%, rgba(0,0,0,0.18) 85%, rgba(0,0,0,0.32) 100%)',
-        }}
-      />
     </div>
   );
 }
