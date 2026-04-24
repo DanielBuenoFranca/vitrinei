@@ -49,6 +49,7 @@ const ViniHome = () => {
   const [lastTranscript, setLastTranscript] = useState<string>('');
   const [storyOpen, setStoryOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [searchBarVisible, setSearchBarVisible] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -138,6 +139,7 @@ const ViniHome = () => {
 
   const handleVoiceTap = () => {
     wakeUp();
+    setSearchBarVisible(true);
     if (listening) {
       stop();
       if (text.trim()) sendQuery(text);
@@ -222,6 +224,7 @@ const ViniHome = () => {
   const handleSideSearch = () => {
     wakeUp();
     setSideOpen(false);
+    setSearchBarVisible(true);
     setTimeout(() => inputRef.current?.focus(), 80);
   };
 
