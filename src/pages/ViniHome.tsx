@@ -517,19 +517,19 @@ const ViniHome = () => {
         </div>
       )}
 
-      {/* ─── Search bar: only when listening, has text, or user requested ─── */}
+      {/* ─── Search bar: hidden by default, slides up from bottom edge (footer) ─── */}
       <AnimatePresence>
         {(searchBarVisible || listening || !!text.trim()) && (
           <motion.form
             key="search-bar"
             onSubmit={handleTextSubmit}
-            initial={{ opacity: 0, y: 14, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 14, scale: 0.96 }}
-            transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute right-2 sm:right-3 bottom-16 sm:bottom-[72px] z-30 w-[min(360px,calc(100%-90px))] pointer-events-auto"
+            initial={{ opacity: 0, y: 60 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 60 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute left-[calc(58px+0.75rem+0.5rem)] sm:left-[calc(58px+0.75rem+0.75rem)] right-[calc(48px+0.5rem+0.5rem)] sm:right-[calc(48px+0.75rem+0.75rem)] bottom-2 sm:bottom-3 z-30 pointer-events-auto"
           >
-            <div className="flex items-center gap-1.5 p-1 rounded-full bg-white/[0.08] backdrop-blur-xl border-[0.5px] border-[hsl(var(--vini-glow)/0.5)] shadow-[0_0_22px_hsl(var(--vini-glow)/0.2)]">
+            <div className="flex items-center gap-1 p-1 rounded-full bg-white/[0.08] backdrop-blur-xl border-[0.5px] border-[hsl(var(--vini-glow)/0.5)] shadow-[0_0_22px_hsl(var(--vini-glow)/0.2)] h-12">
               <Input
                 ref={inputRef}
                 value={text}
@@ -541,12 +541,12 @@ const ViniHome = () => {
                 }}
                 autoFocus
                 placeholder="Pesquisa por voz ou texto…"
-                className="border-0 bg-transparent focus-visible:ring-0 text-sm flex-1 px-3 placeholder:text-foreground/50 h-8"
+                className="border-0 bg-transparent focus-visible:ring-0 text-sm flex-1 px-3 placeholder:text-foreground/50 h-9"
               />
               <Button
                 type="submit"
                 size="icon"
-                className="h-8 w-8 rounded-full shrink-0 bg-white/[0.1] hover:bg-white/[0.18] border-[0.5px] border-[hsl(var(--vini-glow)/0.5)] text-foreground"
+                className="h-9 w-9 rounded-full shrink-0 bg-white/[0.1] hover:bg-white/[0.18] border-[0.5px] border-[hsl(var(--vini-glow)/0.5)] text-foreground"
                 disabled={!text.trim()}
                 aria-label="Enviar"
               >
