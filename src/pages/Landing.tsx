@@ -572,11 +572,17 @@ const Landing = () => {
                   {/* ── FOUND IN DATABASE ── */}
                   {hasResults && (
                     <>
-                      {/* Found badge */}
-                      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-3 flex items-center gap-2">
-                        <Badge className="bg-success/10 text-success border-success/20 text-xs px-3 py-1">
-                          <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> {executedQuery ? 'Encontrado na base de dados' : 'Catálogo disponível'}
-                        </Badge>
+                      {/* Found badge / fallback notice */}
+                      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-3 flex items-center gap-2 flex-wrap">
+                        {fallbackToAll ? (
+                          <Badge className="bg-accent/10 text-accent border-accent/20 text-xs px-3 py-1">
+                            <Sparkles className="w-3.5 h-3.5 mr-1.5" /> Sem correspondência exata para "{executedQuery}" — mostrando catálogo completo
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-success/10 text-success border-success/20 text-xs px-3 py-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> {executedQuery ? 'Encontrado na base de dados' : 'Catálogo disponível'}
+                          </Badge>
+                        )}
                         <span className="text-xs text-muted-foreground">
                           {filteredResults.length > 0 && `${filteredResults.length} serviço(s)`}
                           {filteredResults.length > 0 && searchResult.products.length > 0 && ' · '}
