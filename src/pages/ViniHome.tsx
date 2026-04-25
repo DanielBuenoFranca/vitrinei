@@ -351,33 +351,48 @@ const ViniHome = () => {
 
       {/* ─── Header ─── */}
       <header className="absolute top-0 inset-x-0 z-30 px-3 sm:px-5 pt-3">
-        <div className="glass rounded-2xl flex items-center justify-between gap-2 px-3 py-2">
-          <div className="flex items-center gap-2 min-w-0">
+        <div className="glass rounded-2xl flex items-center justify-between gap-2 px-2.5 py-1.5">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             <div className="relative shrink-0">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center vini-ring">
-                <span className="text-sm font-bold text-primary-foreground">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center vini-ring">
+                <span className="text-[11px] font-bold text-primary-foreground">
                   {(displayName || 'V')[0].toUpperCase()}
                 </span>
               </div>
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-success rounded-full ring-2 ring-background" />
+              <span className="absolute bottom-0 right-0 w-2 h-2 bg-success rounded-full ring-2 ring-background" />
             </div>
-            <div className="min-w-0 leading-tight">
-              <p className="text-sm font-bold truncate">{displayName || 'Vitrinei'}</p>
-              <p className="text-[10px] text-[hsl(var(--text-accent))] truncate">
-                {user ? profileLabel : 'Visitante'}
-              </p>
+            <div className="min-w-0 leading-tight flex-1">
+              <p className="text-[12.5px] font-semibold truncate">{displayName || 'Vitrinei'}</p>
+              <div className="flex items-center gap-1.5 text-[9.5px] text-muted-foreground/90 truncate">
+                {city && (
+                  <span className="inline-flex items-center gap-0.5 truncate">
+                    <MapPin className="w-2.5 h-2.5 text-[hsl(var(--text-accent))]" strokeWidth={2} />
+                    <span className="truncate max-w-[80px]">{city}</span>
+                  </span>
+                )}
+                {city && <span className="opacity-40">·</span>}
+                <span className="text-[hsl(var(--text-accent))] truncate">
+                  {user ? profileLabel : 'Visitante'}
+                </span>
+                {planLabel && (
+                  <>
+                    <span className="opacity-40">·</span>
+                    <span className="truncate font-medium">{planLabel}</span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             <ThemeSwitcher />
             {user ? (
-              <Button variant="outline" size="sm" className="h-8 text-xs gap-1 glass" onClick={signOut}>
+              <Button variant="outline" size="sm" className="h-7 text-[10.5px] px-2 gap-1 glass" onClick={signOut}>
                 Sair
               </Button>
             ) : (
-              <Button variant="outline" size="sm" className="h-8 text-xs gap-1 glass" onClick={() => navigate('/auth')}>
-                <LogIn className="w-3.5 h-3.5" /> Visitante
+              <Button variant="outline" size="sm" className="h-7 text-[10.5px] px-2 gap-1 glass" onClick={() => navigate('/auth')}>
+                <LogIn className="w-3 h-3" /> Entrar
               </Button>
             )}
           </div>
