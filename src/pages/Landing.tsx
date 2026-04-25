@@ -227,11 +227,13 @@ const Landing = () => {
   };
 
   // ── Motor de busca semântica universal ──
+  const [fallbackToAll, setFallbackToAll] = useState(false);
   const searchResult = (() => {
     void searchVersion;
     if (!searchExecuted) return { products: [] as ProductItem[], services: [] as typeof mockResults, followUp: undefined, needLabel: undefined, suggestedServices: undefined };
     const query = executedQuery.toLowerCase().trim();
     let rawResult: SearchResult;
+    let didFallback = false;
     if (!query && activeSegments.length === 0) {
       rawResult = { products: getAllProducts(), services: getAllServices() };
     } else if (!query && activeSegments.length > 0) {
@@ -255,6 +257,20 @@ const Landing = () => {
         ? result.services
         : result.services.filter(r => activeNorm.includes(norm(r.segment)));
       rawResult = { ...result, services: filteredServices };
+
+      // Fallback: nothing matched → show full inventory so user can keep browsing
+      if ((rawResult.products?.length || 0) === 0 && (rawResult.services?.length || 0) === 0) {
+        rawResult = {
+          products: getAllProducts(),
+          services: activeSegments.length === 0
+            ? getAllServices()
+            : getAllServices().filter((r: any) => activeNorm.includes(norm(r.segment))),
+          followUp: rawResult.followUp,
+          needLabel: rawResult.needLabel,
+          suggestedServices: rawResult.suggestedServices,
+        };
+        didFallback = true;
+      }
     }
 
     // Filter simulated providers if checkbox is unchecked
@@ -265,12 +281,16 @@ const Landing = () => {
         products: rawResult.products.filter((p: any) => !isSimulatedProvider(p.provider, p)),
       };
     }
+    if (didFallback !== fallbackToAll) {
+      // Defer state update to avoid render loop warning
+      queueMicrotask(() => setFallbackToAll(didFallback));
+    }
     return rawResult;
   })();
 
   const filteredResults = searchResult.services;
   const hasResults = searchExecuted && (filteredResults.length > 0 || searchResult.products.length > 0);
-  const noResults = searchExecuted && executedQuery && filteredResults.length === 0 && searchResult.products.length === 0;
+  const noResults = searchExecuted && executedQuery && !fallbackToAll && filteredResults.length === 0 && searchResult.products.length === 0;
 
   const handleAiSend = () => {
     if (!aiMessage.trim()) return;
