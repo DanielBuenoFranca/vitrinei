@@ -21,7 +21,8 @@ import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { semanticSearch } from '@/data/searchData';
 import { cn } from '@/lib/utils';
 
-type Bubble = { role: 'vini' | 'user'; text: string; id: string; ts: number };
+type BubbleAction = { label: string; route: string };
+type Bubble = { role: 'vini' | 'user'; text: string; id: string; ts: number; action?: BubbleAction };
 
 const CHAT_STORAGE_KEY = 'vini:chat-history';
 
@@ -50,6 +51,7 @@ const ViniHome = () => {
   const [storyOpen, setStoryOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [searchBarVisible, setSearchBarVisible] = useState(false);
+  const [radarActive, setRadarActive] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -202,16 +204,16 @@ const ViniHome = () => {
         emitEmotion('happy');
         pushBubble({
           role: 'vini',
-          text: `Encontrei ${total} opções para "${query}". Levando você para a busca!`,
+          text: `Encontrei ${total} ${total === 1 ? 'opção' : 'opções'} para "${query}". Já estou abrindo os resultados!`,
         });
         setTimeout(() => navigate(`/buscar?q=${encodeURIComponent(query)}`), 1000);
       } else {
         emitEmotion('sad');
         pushBubble({
           role: 'vini',
-          text: `Nada no estoque local para "${query}". Vou buscar fora da base com sugestões 🔎`,
+          text: `Não encontrei exatamente "${query}" no estoque local. Você pode refinar aqui mesmo, ou abrir a busca completa.`,
+          action: { label: 'Abrir busca completa', route: `/buscar?q=${encodeURIComponent(query)}&fora=1` },
         });
-        setTimeout(() => navigate(`/buscar?q=${encodeURIComponent(query)}&fora=1`), 1300);
       }
     }, 500);
   };
@@ -254,18 +256,27 @@ const ViniHome = () => {
   };
 
   const handleRadar = () => {
+    wakeUp();
+    // Toggle desligar
+    if (radarActive) {
+      setRadarActive(false);
+      pushBubble({ role: 'vini', text: 'Radar desativado. Quando quiser, é só me chamar de novo.' });
+      return;
+    }
+    setRadarActive(true);
     if (totalCartItems > 0) {
       pushBubble({
         role: 'vini',
-        text: `Ativando Radar de Urgência com seus ${totalCartItems} ${totalCartItems === 1 ? 'item' : 'itens'} do carrinho!`,
+        text: `📡 Radar ativado com seus ${totalCartItems} ${totalCartItems === 1 ? 'item' : 'itens'} do carrinho. Confirme a compra para acionar os prestadores próximos.`,
       });
-      setTimeout(() => navigate('/jornada-cliente?urgencia=1'), 900);
+      setTimeout(() => navigate('/jornada-cliente?urgencia=1'), 1100);
     } else {
       pushBubble({
         role: 'vini',
-        text: 'Carrinho vazio — abrindo a busca completa para você selecionar itens em modo urgência.',
+        text: '📡 Radar pré-ativado. Faça uma busca e selecione um item — vou tratar como Urgência e acionar o prestador disponível mais próximo.',
       });
-      setTimeout(() => navigate('/buscar?multi=1&urgencia=1'), 900);
+      setTimeout(() => inputRef.current?.focus(), 200);
+      setSearchBarVisible(true);
     }
   };
 
@@ -275,7 +286,7 @@ const ViniHome = () => {
 
   const gridItems: GridItem[] = [
     { key: 'home', icon: Home, label: 'Home', onClick: handleHome, active: true },
-    { key: 'radar', icon: Radar, label: 'Radar Urgência', onClick: handleRadar, badge: totalCartItems > 0 ? totalCartItems : undefined },
+    { key: 'radar', icon: Radar, label: 'Radar', onClick: handleRadar, active: radarActive, badge: totalCartItems > 0 ? totalCartItems : undefined },
     { key: 'perfil', icon: UserIcon, label: 'Perfil', onClick: handlePerfil },
     { key: 'indica', icon: Gift, label: 'Indicação', onClick: handleIndicacao, highlight: 'R$ 5,00' },
   ];
@@ -507,6 +518,15 @@ const ViniHome = () => {
                         >
                           {b.text}
                         </div>
+                        {b.action && (
+                          <button
+                            type="button"
+                            onClick={() => navigate(b.action!.route)}
+                            className="mt-1 self-start text-[10px] px-2 py-1 rounded-full border-[0.5px] border-[hsl(var(--vini-glow)/0.5)] bg-white/[0.05] hover:bg-white/[0.12] text-[hsl(var(--text-accent))] transition-colors"
+                          >
+                            {b.action.label} →
+                          </button>
+                        )}
                       </motion.div>
                     ))}
                   </div>
@@ -517,19 +537,20 @@ const ViniHome = () => {
         </div>
       )}
 
-      {/* ─── Search bar: hidden by default, slides up from bottom edge (footer) ─── */}
+      {/* ─── Search bar: hidden by default, slides up between left grid and right mic ─── */}
       <AnimatePresence>
         {(searchBarVisible || listening || !!text.trim()) && (
           <motion.form
             key="search-bar"
             onSubmit={handleTextSubmit}
-            initial={{ opacity: 0, y: 60 }}
+            initial={{ opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 60 }}
-            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute left-[calc(58px+0.75rem+0.5rem)] sm:left-[calc(58px+0.75rem+0.75rem)] right-[calc(48px+0.5rem+0.5rem)] sm:right-[calc(48px+0.75rem+0.75rem)] bottom-2 sm:bottom-3 z-30 pointer-events-auto"
+            exit={{ opacity: 0, y: 28 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            // Encaixa entre cards (à esquerda ~130px) e mic (à direita ~60px)
+            className="absolute left-[140px] right-[68px] sm:left-[150px] sm:right-[72px] bottom-3 sm:bottom-4 z-30 pointer-events-auto"
           >
-            <div className="flex items-center gap-1 p-1 rounded-full bg-white/[0.08] backdrop-blur-xl border-[0.5px] border-[hsl(var(--vini-glow)/0.5)] shadow-[0_0_22px_hsl(var(--vini-glow)/0.2)] h-12">
+            <div className="flex items-center gap-1 p-[3px] rounded-full bg-white/[0.07] backdrop-blur-2xl border-[0.5px] border-[hsl(var(--vini-glow)/0.45)] shadow-[0_4px_24px_hsl(var(--vini-glow)/0.18),inset_0_0_12px_hsl(var(--primary)/0.05)] h-10">
               <Input
                 ref={inputRef}
                 value={text}
@@ -540,13 +561,13 @@ const ViniHome = () => {
                   }, 150);
                 }}
                 autoFocus
-                placeholder="Pesquisa por voz ou texto…"
-                className="border-0 bg-transparent focus-visible:ring-0 text-sm flex-1 px-3 placeholder:text-foreground/50 h-9"
+                placeholder="Diga ou escreva…"
+                className="border-0 bg-transparent focus-visible:ring-0 text-[13px] flex-1 px-3 placeholder:text-foreground/45 h-8"
               />
               <Button
                 type="submit"
                 size="icon"
-                className="h-9 w-9 rounded-full shrink-0 bg-white/[0.1] hover:bg-white/[0.18] border-[0.5px] border-[hsl(var(--vini-glow)/0.5)] text-foreground"
+                className="h-8 w-8 rounded-full shrink-0 bg-white/[0.1] hover:bg-white/[0.2] border-[0.5px] border-[hsl(var(--vini-glow)/0.5)] text-foreground"
                 disabled={!text.trim()}
                 aria-label="Enviar"
               >
@@ -564,10 +585,10 @@ const ViniHome = () => {
         whileTap={{ scale: 0.92 }}
         onClick={handleVoiceTap}
         className={cn(
-          'absolute right-2 sm:right-3 bottom-2 sm:bottom-3 z-40',
-          'w-12 h-12 rounded-full flex items-center justify-center shrink-0',
+          'absolute right-3 sm:right-4 bottom-3 sm:bottom-4 z-40',
+          'w-11 h-11 rounded-full flex items-center justify-center shrink-0',
           'bg-gradient-to-br from-primary via-accent to-primary text-primary-foreground',
-          'shadow-[0_0_18px_hsl(var(--primary)/0.55)]',
+          'shadow-[0_4px_22px_hsl(var(--primary)/0.55)]',
           listening && 'ring-2 ring-primary/60',
         )}
         aria-label={listening ? 'Parar microfone' : 'Falar com o Vini'}
