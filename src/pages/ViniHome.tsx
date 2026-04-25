@@ -50,6 +50,7 @@ const ViniHome = () => {
   const [storyOpen, setStoryOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [searchBarVisible, setSearchBarVisible] = useState(false);
+  const [radarActive, setRadarActive] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -254,18 +255,27 @@ const ViniHome = () => {
   };
 
   const handleRadar = () => {
+    wakeUp();
+    // Toggle desligar
+    if (radarActive) {
+      setRadarActive(false);
+      pushBubble({ role: 'vini', text: 'Radar desativado. Quando quiser, é só me chamar de novo.' });
+      return;
+    }
+    setRadarActive(true);
     if (totalCartItems > 0) {
       pushBubble({
         role: 'vini',
-        text: `Ativando Radar de Urgência com seus ${totalCartItems} ${totalCartItems === 1 ? 'item' : 'itens'} do carrinho!`,
+        text: `📡 Radar ativado com seus ${totalCartItems} ${totalCartItems === 1 ? 'item' : 'itens'} do carrinho. Confirme a compra para acionar os prestadores próximos.`,
       });
-      setTimeout(() => navigate('/jornada-cliente?urgencia=1'), 900);
+      setTimeout(() => navigate('/jornada-cliente?urgencia=1'), 1100);
     } else {
       pushBubble({
         role: 'vini',
-        text: 'Carrinho vazio — abrindo a busca completa para você selecionar itens em modo urgência.',
+        text: '📡 Radar pré-ativado. Faça uma busca e selecione um item — vou tratar como Urgência e acionar o prestador disponível mais próximo.',
       });
-      setTimeout(() => navigate('/buscar?multi=1&urgencia=1'), 900);
+      setTimeout(() => inputRef.current?.focus(), 200);
+      setSearchBarVisible(true);
     }
   };
 
@@ -275,7 +285,7 @@ const ViniHome = () => {
 
   const gridItems: GridItem[] = [
     { key: 'home', icon: Home, label: 'Home', onClick: handleHome, active: true },
-    { key: 'radar', icon: Radar, label: 'Radar Urgência', onClick: handleRadar, badge: totalCartItems > 0 ? totalCartItems : undefined },
+    { key: 'radar', icon: Radar, label: 'Radar', onClick: handleRadar, active: radarActive, badge: totalCartItems > 0 ? totalCartItems : undefined },
     { key: 'perfil', icon: UserIcon, label: 'Perfil', onClick: handlePerfil },
     { key: 'indica', icon: Gift, label: 'Indicação', onClick: handleIndicacao, highlight: 'R$ 5,00' },
   ];
