@@ -21,7 +21,8 @@ import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { semanticSearch } from '@/data/searchData';
 import { cn } from '@/lib/utils';
 
-type Bubble = { role: 'vini' | 'user'; text: string; id: string; ts: number };
+type BubbleAction = { label: string; route: string };
+type Bubble = { role: 'vini' | 'user'; text: string; id: string; ts: number; action?: BubbleAction };
 
 const CHAT_STORAGE_KEY = 'vini:chat-history';
 
@@ -203,16 +204,16 @@ const ViniHome = () => {
         emitEmotion('happy');
         pushBubble({
           role: 'vini',
-          text: `Encontrei ${total} opções para "${query}". Levando você para a busca!`,
+          text: `Encontrei ${total} ${total === 1 ? 'opção' : 'opções'} para "${query}". Já estou abrindo os resultados!`,
         });
         setTimeout(() => navigate(`/buscar?q=${encodeURIComponent(query)}`), 1000);
       } else {
         emitEmotion('sad');
         pushBubble({
           role: 'vini',
-          text: `Nada no estoque local para "${query}". Vou buscar fora da base com sugestões 🔎`,
+          text: `Não encontrei exatamente "${query}" no estoque local. Você pode refinar aqui mesmo, ou abrir a busca completa.`,
+          action: { label: 'Abrir busca completa', route: `/buscar?q=${encodeURIComponent(query)}&fora=1` },
         });
-        setTimeout(() => navigate(`/buscar?q=${encodeURIComponent(query)}&fora=1`), 1300);
       }
     }, 500);
   };
