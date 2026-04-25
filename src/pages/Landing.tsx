@@ -1344,6 +1344,17 @@ const Landing = () => {
 
       {/* Cart is now rendered globally via CartBar */}
 
+      {/* Floating Home button — fixed bottom-left, returns to Vini Home */}
+      <button
+        type="button"
+        onClick={() => navigate('/')}
+        aria-label="Voltar à Home"
+        className="fixed left-2 bottom-2 sm:left-3 sm:bottom-3 z-50 w-[58px] h-[58px] rounded-xl flex flex-col items-center justify-center gap-0.5 bg-white/[0.08] backdrop-blur-xl border-[0.5px] border-[hsl(var(--vini-glow,188_100%_55%)/0.5)] text-foreground/90 shadow-[0_4px_18px_hsl(var(--primary)/0.25)] hover:bg-white/[0.16] transition-all"
+      >
+        <Home className="w-[18px] h-[18px]" strokeWidth={1.5} />
+        <span className="text-[8.5px] font-medium leading-tight">Home</span>
+      </button>
+
       {/* Footer - minimal */}
       <footer className="shrink-0 border-t border-border py-1.5 px-4 bg-card/50">
         <div className="container mx-auto flex items-center justify-center gap-2 text-[10px] text-muted-foreground">
