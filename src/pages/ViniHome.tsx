@@ -119,13 +119,13 @@ const ViniHome = () => {
       return;
     }
     (async () => {
-      const { data: prof } = await supabaseClient
+      const { data: prof } = await supabase
         .from('profiles')
         .select('city')
         .eq('user_id', user.id)
         .maybeSingle();
       if (prof?.city) setCity(prof.city);
-      const { data: sub } = await supabaseClient
+      const { data: sub } = await supabase
         .from('subscriptions')
         .select('plan,status')
         .eq('user_id', user.id)
