@@ -585,10 +585,10 @@ const ViniHome = () => {
         whileTap={{ scale: 0.92 }}
         onClick={handleVoiceTap}
         className={cn(
-          'absolute right-2 sm:right-3 bottom-2 sm:bottom-3 z-40',
-          'w-12 h-12 rounded-full flex items-center justify-center shrink-0',
+          'absolute right-3 sm:right-4 bottom-3 sm:bottom-4 z-40',
+          'w-11 h-11 rounded-full flex items-center justify-center shrink-0',
           'bg-gradient-to-br from-primary via-accent to-primary text-primary-foreground',
-          'shadow-[0_0_18px_hsl(var(--primary)/0.55)]',
+          'shadow-[0_4px_22px_hsl(var(--primary)/0.55)]',
           listening && 'ring-2 ring-primary/60',
         )}
         aria-label={listening ? 'Parar microfone' : 'Falar com o Vini'}
