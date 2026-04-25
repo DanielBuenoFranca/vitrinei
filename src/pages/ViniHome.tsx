@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, Wallet, User as UserIcon, Sparkles, Mic, Plus,
-  Bot, LogIn, Settings, X, Send, Radar, Gift,
+  Bot, LogIn, Settings, X, Send, Radar, Gift, MapPin, ShoppingBag,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,7 @@ import { getGreeting } from '@/lib/viniBrain';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { semanticSearch } from '@/data/searchData';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 type BubbleAction = { label: string; route: string };
 type Bubble = { role: 'vini' | 'user'; text: string; id: string; ts: number; action?: BubbleAction };
@@ -30,8 +31,11 @@ const ViniHome = () => {
   const navigate = useNavigate();
   const { user, signOut, displayName } = useAuth();
   const { profileLabel } = usePermissions();
-  const { totalCartItems, productCart, serviceCart } = useCart();
+  const { totalCartItems, totalCartValue, productCart, serviceCart } = useCart();
   const { supported, listening, transcript, start, stop } = useSpeechRecognition();
+
+  const [city, setCity] = useState<string | null>(null);
+  const [planLabel, setPlanLabel] = useState<string | null>(null);
 
   const [hasInteracted, setHasInteracted] = useState(false);
   const [sideOpen, setSideOpen] = useState(false);
@@ -88,6 +92,52 @@ const ViniHome = () => {
   useEffect(() => {
     emitEmotion(listening ? 'listening' : 'idle');
   }, [listening]);
+
+  // Load city + plan (discreet header info)
+  useEffect(() => {
+    if (!user) {
+      setCity(null);
+      setPlanLabel(null);
+      // try geolocation reverse for visitors (best-effort, silent)
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            try {
+              const r = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&zoom=10&addressdetails=1`,
+                { headers: { 'Accept-Language': 'pt-BR' } }
+              );
+              const j = await r.json();
+              const c = j?.address?.city || j?.address?.town || j?.address?.village || j?.address?.municipality;
+              if (c) setCity(c);
+            } catch {}
+          },
+          () => {},
+          { timeout: 4000, maximumAge: 600000 }
+        );
+      }
+      return;
+    }
+    (async () => {
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('city')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (prof?.city) setCity(prof.city);
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('plan,status')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+      if (sub?.plan) {
+        const p = String(sub.plan).toLowerCase();
+        const label = p === 'ouro' ? '🥇 Ouro' : p === 'prata' ? '🥈 Prata' : p === 'bronze' ? '🥉 Bronze' : sub.plan;
+        setPlanLabel(label);
+      }
+    })();
+  }, [user]);
 
   // Welcome back if user came back to home with cart items
   useEffect(() => {
@@ -301,46 +351,92 @@ const ViniHome = () => {
 
       {/* ─── Header ─── */}
       <header className="absolute top-0 inset-x-0 z-30 px-3 sm:px-5 pt-3">
-        <div className="glass rounded-2xl flex items-center justify-between gap-2 px-3 py-2">
-          <div className="flex items-center gap-2 min-w-0">
+        <div className="glass rounded-2xl flex items-center justify-between gap-2 px-2.5 py-1.5">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             <div className="relative shrink-0">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center vini-ring">
-                <span className="text-sm font-bold text-primary-foreground">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center vini-ring">
+                <span className="text-[11px] font-bold text-primary-foreground">
                   {(displayName || 'V')[0].toUpperCase()}
                 </span>
               </div>
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-success rounded-full ring-2 ring-background" />
+              <span className="absolute bottom-0 right-0 w-2 h-2 bg-success rounded-full ring-2 ring-background" />
             </div>
-            <div className="min-w-0 leading-tight">
-              <p className="text-sm font-bold truncate">{displayName || 'Vitrinei'}</p>
-              <p className="text-[10px] text-[hsl(var(--text-accent))] truncate">
-                {user ? profileLabel : 'Visitante'}
-              </p>
+            <div className="min-w-0 leading-tight flex-1">
+              <p className="text-[12.5px] font-semibold truncate">{displayName || 'Vitrinei'}</p>
+              <div className="flex items-center gap-1.5 text-[9.5px] text-muted-foreground/90 truncate">
+                {city && (
+                  <span className="inline-flex items-center gap-0.5 truncate">
+                    <MapPin className="w-2.5 h-2.5 text-[hsl(var(--text-accent))]" strokeWidth={2} />
+                    <span className="truncate max-w-[80px]">{city}</span>
+                  </span>
+                )}
+                {city && <span className="opacity-40">·</span>}
+                <span className="text-[hsl(var(--text-accent))] truncate">
+                  {user ? profileLabel : 'Visitante'}
+                </span>
+                {planLabel && (
+                  <>
+                    <span className="opacity-40">·</span>
+                    <span className="truncate font-medium">{planLabel}</span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             <ThemeSwitcher />
             {user ? (
-              <Button variant="outline" size="sm" className="h-8 text-xs gap-1 glass" onClick={signOut}>
+              <Button variant="outline" size="sm" className="h-7 text-[10.5px] px-2 gap-1 glass" onClick={signOut}>
                 Sair
               </Button>
             ) : (
-              <Button variant="outline" size="sm" className="h-8 text-xs gap-1 glass" onClick={() => navigate('/auth')}>
-                <LogIn className="w-3.5 h-3.5" /> Visitante
+              <Button variant="outline" size="sm" className="h-7 text-[10.5px] px-2 gap-1 glass" onClick={() => navigate('/auth')}>
+                <LogIn className="w-3 h-3" /> Entrar
               </Button>
             )}
           </div>
         </div>
       </header>
 
+      {/* ─── Floating cart icon (only visible when there are items) ─── */}
+      <AnimatePresence>
+        {totalCartItems > 0 && (
+          <motion.button
+            key="cart-fab"
+            type="button"
+            initial={{ opacity: 0, scale: 0.6, x: 8 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            exit={{ opacity: 0, scale: 0.6, x: 8 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 22 }}
+            whileHover={{ scale: 1.06 }}
+            whileTap={{ scale: 0.94 }}
+            onClick={() => navigate('/jornada-cliente')}
+            aria-label={`Abrir carrinho (${totalCartItems} ${totalCartItems === 1 ? 'item' : 'itens'})`}
+            className={cn(
+              'absolute top-[64px] right-3 sm:right-5 z-30',
+              'w-9 h-9 rounded-full flex items-center justify-center',
+              'bg-white/[0.07] backdrop-blur-xl',
+              'border-[0.5px] border-[hsl(var(--vini-glow)/0.5)]',
+              'shadow-[0_4px_18px_hsl(var(--vini-glow)/0.22)]',
+              'hover:bg-white/[0.12] transition-colors',
+            )}
+          >
+            <ShoppingBag className="w-4 h-4 text-foreground" strokeWidth={1.6} />
+            <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-gradient-to-br from-primary to-accent text-[9px] font-bold text-primary-foreground flex items-center justify-center shadow-[0_0_8px_hsl(var(--primary)/0.6)] ring-1 ring-background/60">
+              {totalCartItems > 99 ? '99+' : totalCartItems}
+            </span>
+          </motion.button>
+        )}
+      </AnimatePresence>
+
       {/* ─── Plus menu top-right ─── */}
-      <div className="absolute top-20 right-3 sm:right-5 z-30">
+      <div className="absolute top-[108px] right-3 sm:right-5 z-30">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setShowPlusMenu((v) => !v)}
-          className="glass w-10 h-10 rounded-xl"
+          className="glass w-9 h-9 rounded-xl"
           aria-label="Mais opções"
         >
           {showPlusMenu ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
