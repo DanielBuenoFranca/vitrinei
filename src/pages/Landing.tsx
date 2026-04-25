@@ -173,6 +173,20 @@ const Landing = () => {
         setProviderSegmentMap(map);
       }
       setDataLoaded(true);
+
+      // Pre-fill search from URL ?q= passed by Vini Home
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const incomingQ = (params.get('q') || '').trim();
+        if (incomingQ) {
+          setSearchQuery(incomingQ);
+          setExecutedQuery(incomingQ);
+          setSearchExecuted(true);
+          setSearchVersion(v => v + 1);
+          return;
+        }
+      } catch {}
+
       // Don't auto-show results — wait for user to search
       setSearchExecuted(false);
       setExecutedQuery('');
@@ -213,11 +227,13 @@ const Landing = () => {
   };
 
   // ── Motor de busca semântica universal ──
+  const [fallbackToAll, setFallbackToAll] = useState(false);
   const searchResult = (() => {
     void searchVersion;
     if (!searchExecuted) return { products: [] as ProductItem[], services: [] as typeof mockResults, followUp: undefined, needLabel: undefined, suggestedServices: undefined };
     const query = executedQuery.toLowerCase().trim();
     let rawResult: SearchResult;
+    let didFallback = false;
     if (!query && activeSegments.length === 0) {
       rawResult = { products: getAllProducts(), services: getAllServices() };
     } else if (!query && activeSegments.length > 0) {
@@ -241,6 +257,20 @@ const Landing = () => {
         ? result.services
         : result.services.filter(r => activeNorm.includes(norm(r.segment)));
       rawResult = { ...result, services: filteredServices };
+
+      // Fallback: nothing matched → show full inventory so user can keep browsing
+      if ((rawResult.products?.length || 0) === 0 && (rawResult.services?.length || 0) === 0) {
+        rawResult = {
+          products: getAllProducts(),
+          services: activeSegments.length === 0
+            ? getAllServices()
+            : getAllServices().filter((r: any) => activeNorm.includes(norm(r.segment))),
+          followUp: rawResult.followUp,
+          needLabel: rawResult.needLabel,
+          suggestedServices: rawResult.suggestedServices,
+        };
+        didFallback = true;
+      }
     }
 
     // Filter simulated providers if checkbox is unchecked
@@ -251,12 +281,16 @@ const Landing = () => {
         products: rawResult.products.filter((p: any) => !isSimulatedProvider(p.provider, p)),
       };
     }
+    if (didFallback !== fallbackToAll) {
+      // Defer state update to avoid render loop warning
+      queueMicrotask(() => setFallbackToAll(didFallback));
+    }
     return rawResult;
   })();
 
   const filteredResults = searchResult.services;
   const hasResults = searchExecuted && (filteredResults.length > 0 || searchResult.products.length > 0);
-  const noResults = searchExecuted && executedQuery && filteredResults.length === 0 && searchResult.products.length === 0;
+  const noResults = searchExecuted && executedQuery && !fallbackToAll && filteredResults.length === 0 && searchResult.products.length === 0;
 
   const handleAiSend = () => {
     if (!aiMessage.trim()) return;
@@ -538,11 +572,17 @@ const Landing = () => {
                   {/* ── FOUND IN DATABASE ── */}
                   {hasResults && (
                     <>
-                      {/* Found badge */}
-                      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-3 flex items-center gap-2">
-                        <Badge className="bg-success/10 text-success border-success/20 text-xs px-3 py-1">
-                          <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> {executedQuery ? 'Encontrado na base de dados' : 'Catálogo disponível'}
-                        </Badge>
+                      {/* Found badge / fallback notice */}
+                      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-3 flex items-center gap-2 flex-wrap">
+                        {fallbackToAll ? (
+                          <Badge className="bg-accent/10 text-accent border-accent/20 text-xs px-3 py-1">
+                            <Sparkles className="w-3.5 h-3.5 mr-1.5" /> Sem correspondência exata para "{executedQuery}" — mostrando catálogo completo
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-success/10 text-success border-success/20 text-xs px-3 py-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> {executedQuery ? 'Encontrado na base de dados' : 'Catálogo disponível'}
+                          </Badge>
+                        )}
                         <span className="text-xs text-muted-foreground">
                           {filteredResults.length > 0 && `${filteredResults.length} serviço(s)`}
                           {filteredResults.length > 0 && searchResult.products.length > 0 && ' · '}
