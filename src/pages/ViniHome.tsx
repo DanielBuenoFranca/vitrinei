@@ -20,6 +20,7 @@ import { getGreeting } from '@/lib/viniBrain';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { semanticSearch } from '@/data/searchData';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 type BubbleAction = { label: string; route: string };
 type Bubble = { role: 'vini' | 'user'; text: string; id: string; ts: number; action?: BubbleAction };
