@@ -92,6 +92,52 @@ const ViniHome = () => {
     emitEmotion(listening ? 'listening' : 'idle');
   }, [listening]);
 
+  // Load city + plan (discreet header info)
+  useEffect(() => {
+    if (!user) {
+      setCity(null);
+      setPlanLabel(null);
+      // try geolocation reverse for visitors (best-effort, silent)
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            try {
+              const r = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&zoom=10&addressdetails=1`,
+                { headers: { 'Accept-Language': 'pt-BR' } }
+              );
+              const j = await r.json();
+              const c = j?.address?.city || j?.address?.town || j?.address?.village || j?.address?.municipality;
+              if (c) setCity(c);
+            } catch {}
+          },
+          () => {},
+          { timeout: 4000, maximumAge: 600000 }
+        );
+      }
+      return;
+    }
+    (async () => {
+      const { data: prof } = await supabaseClient
+        .from('profiles')
+        .select('city')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (prof?.city) setCity(prof.city);
+      const { data: sub } = await supabaseClient
+        .from('subscriptions')
+        .select('plan,status')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+      if (sub?.plan) {
+        const p = String(sub.plan).toLowerCase();
+        const label = p === 'ouro' ? '🥇 Ouro' : p === 'prata' ? '🥈 Prata' : p === 'bronze' ? '🥉 Bronze' : sub.plan;
+        setPlanLabel(label);
+      }
+    })();
+  }, [user]);
+
   // Welcome back if user came back to home with cart items
   useEffect(() => {
     if (hasInteracted && totalCartItems > 0 && bubbles.length > 0) {
