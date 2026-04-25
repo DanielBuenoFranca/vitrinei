@@ -518,6 +518,15 @@ const ViniHome = () => {
                         >
                           {b.text}
                         </div>
+                        {b.action && (
+                          <button
+                            type="button"
+                            onClick={() => navigate(b.action!.route)}
+                            className="mt-1 self-start text-[10px] px-2 py-1 rounded-full border-[0.5px] border-[hsl(var(--vini-glow)/0.5)] bg-white/[0.05] hover:bg-white/[0.12] text-[hsl(var(--text-accent))] transition-colors"
+                          >
+                            {b.action.label} →
+                          </button>
+                        )}
                       </motion.div>
                     ))}
                   </div>
@@ -528,19 +537,20 @@ const ViniHome = () => {
         </div>
       )}
 
-      {/* ─── Search bar: hidden by default, slides up from bottom edge (footer) ─── */}
+      {/* ─── Search bar: hidden by default, slides up between left grid and right mic ─── */}
       <AnimatePresence>
         {(searchBarVisible || listening || !!text.trim()) && (
           <motion.form
             key="search-bar"
             onSubmit={handleTextSubmit}
-            initial={{ opacity: 0, y: 60 }}
+            initial={{ opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 60 }}
-            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute left-[calc(58px+0.75rem+0.5rem)] sm:left-[calc(58px+0.75rem+0.75rem)] right-[calc(48px+0.5rem+0.5rem)] sm:right-[calc(48px+0.75rem+0.75rem)] bottom-2 sm:bottom-3 z-30 pointer-events-auto"
+            exit={{ opacity: 0, y: 28 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            // Encaixa entre cards (à esquerda ~130px) e mic (à direita ~60px)
+            className="absolute left-[140px] right-[68px] sm:left-[150px] sm:right-[72px] bottom-3 sm:bottom-4 z-30 pointer-events-auto"
           >
-            <div className="flex items-center gap-1 p-1 rounded-full bg-white/[0.08] backdrop-blur-xl border-[0.5px] border-[hsl(var(--vini-glow)/0.5)] shadow-[0_0_22px_hsl(var(--vini-glow)/0.2)] h-12">
+            <div className="flex items-center gap-1 p-[3px] rounded-full bg-white/[0.07] backdrop-blur-2xl border-[0.5px] border-[hsl(var(--vini-glow)/0.45)] shadow-[0_4px_24px_hsl(var(--vini-glow)/0.18),inset_0_0_12px_hsl(var(--primary)/0.05)] h-10">
               <Input
                 ref={inputRef}
                 value={text}
@@ -551,13 +561,13 @@ const ViniHome = () => {
                   }, 150);
                 }}
                 autoFocus
-                placeholder="Pesquisa por voz ou texto…"
-                className="border-0 bg-transparent focus-visible:ring-0 text-sm flex-1 px-3 placeholder:text-foreground/50 h-9"
+                placeholder="Diga ou escreva…"
+                className="border-0 bg-transparent focus-visible:ring-0 text-[13px] flex-1 px-3 placeholder:text-foreground/45 h-8"
               />
               <Button
                 type="submit"
                 size="icon"
-                className="h-9 w-9 rounded-full shrink-0 bg-white/[0.1] hover:bg-white/[0.18] border-[0.5px] border-[hsl(var(--vini-glow)/0.5)] text-foreground"
+                className="h-8 w-8 rounded-full shrink-0 bg-white/[0.1] hover:bg-white/[0.2] border-[0.5px] border-[hsl(var(--vini-glow)/0.5)] text-foreground"
                 disabled={!text.trim()}
                 aria-label="Enviar"
               >
