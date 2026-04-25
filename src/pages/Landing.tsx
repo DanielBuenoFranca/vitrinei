@@ -173,6 +173,20 @@ const Landing = () => {
         setProviderSegmentMap(map);
       }
       setDataLoaded(true);
+
+      // Pre-fill search from URL ?q= passed by Vini Home
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const incomingQ = (params.get('q') || '').trim();
+        if (incomingQ) {
+          setSearchQuery(incomingQ);
+          setExecutedQuery(incomingQ);
+          setSearchExecuted(true);
+          setSearchVersion(v => v + 1);
+          return;
+        }
+      } catch {}
+
       // Don't auto-show results — wait for user to search
       setSearchExecuted(false);
       setExecutedQuery('');
