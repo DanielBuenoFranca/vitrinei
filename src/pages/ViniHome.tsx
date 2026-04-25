@@ -399,13 +399,44 @@ const ViniHome = () => {
         </div>
       </header>
 
+      {/* ─── Floating cart icon (only visible when there are items) ─── */}
+      <AnimatePresence>
+        {totalCartItems > 0 && (
+          <motion.button
+            key="cart-fab"
+            type="button"
+            initial={{ opacity: 0, scale: 0.6, x: 8 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            exit={{ opacity: 0, scale: 0.6, x: 8 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 22 }}
+            whileHover={{ scale: 1.06 }}
+            whileTap={{ scale: 0.94 }}
+            onClick={() => navigate('/jornada-cliente')}
+            aria-label={`Abrir carrinho (${totalCartItems} ${totalCartItems === 1 ? 'item' : 'itens'})`}
+            className={cn(
+              'absolute top-[64px] right-3 sm:right-5 z-30',
+              'w-9 h-9 rounded-full flex items-center justify-center',
+              'bg-white/[0.07] backdrop-blur-xl',
+              'border-[0.5px] border-[hsl(var(--vini-glow)/0.5)]',
+              'shadow-[0_4px_18px_hsl(var(--vini-glow)/0.22)]',
+              'hover:bg-white/[0.12] transition-colors',
+            )}
+          >
+            <ShoppingBag className="w-4 h-4 text-foreground" strokeWidth={1.6} />
+            <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-gradient-to-br from-primary to-accent text-[9px] font-bold text-primary-foreground flex items-center justify-center shadow-[0_0_8px_hsl(var(--primary)/0.6)] ring-1 ring-background/60">
+              {totalCartItems > 99 ? '99+' : totalCartItems}
+            </span>
+          </motion.button>
+        )}
+      </AnimatePresence>
+
       {/* ─── Plus menu top-right ─── */}
-      <div className="absolute top-20 right-3 sm:right-5 z-30">
+      <div className="absolute top-[108px] right-3 sm:right-5 z-30">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setShowPlusMenu((v) => !v)}
-          className="glass w-10 h-10 rounded-xl"
+          className="glass w-9 h-9 rounded-xl"
           aria-label="Mais opções"
         >
           {showPlusMenu ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
