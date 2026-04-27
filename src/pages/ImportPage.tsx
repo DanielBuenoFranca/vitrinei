@@ -690,10 +690,11 @@ const ImportPage = () => {
   /* ─── Import (atomic) with progress tracking ─── */
   const executeImport = async () => {
     if (rows.length === 0 || hasCriticalErrors) return;
-    // Block if unresolved dedup items
-    if (dedupPending.some(d => !d.resolved)) {
-      setShowDedupModal(true);
-      toast.error('Resolva as coincidências de prestador antes de importar.');
+    // Block if any group with existing-base coincidence is still pending decision
+    if (groupsNeedingDecision.length > 0) {
+      toast.error(`${groupsNeedingDecision.length} cadastro(s) aguardando confirmação (Vincular ou Criar novo).`);
+      const el = document.getElementById('entity-groups-panel');
+      el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
 
