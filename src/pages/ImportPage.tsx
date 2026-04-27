@@ -653,12 +653,13 @@ const ImportPage = () => {
         }
         return updatedRow;
       });
-      // Re-run cascade matching if key fields change
-      if (['email', 'providerName', 'cpfCnpj'].includes(field)) {
+      // Re-run cascade matching + group key if key fields change
+      if (['email', 'providerName', 'cpfCnpj', 'phone'].includes(field)) {
         const reMatched = updated.map(row => {
           if (row._id !== rowId) return row;
           const result = cascadeMatch(row, existingProviders);
-          return { ...row, _matchType: result.type, _matchedProviderId: result.provider?.id, _matchedProviderName: result.provider?.name };
+          const { key, type } = computeGroupKey(row);
+          return { ...row, _matchType: result.type, _matchedProviderId: result.provider?.id, _matchedProviderName: result.provider?.name, _groupKey: key, _groupKeyType: type };
         });
         setErrors(runValidation(reMatched));
         return reMatched;
