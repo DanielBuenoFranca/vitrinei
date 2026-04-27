@@ -258,6 +258,8 @@ const ViniHome = () => {
     requestAnimationFrame(() => {
       chatScrollRef.current?.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: 'smooth' });
     });
+    // Any new bubble counts as activity — restart the 5s idle clock
+    resetIdleTimer();
   };
 
   const clearChat = () => {
@@ -265,21 +267,27 @@ const ViniHome = () => {
     try { sessionStorage.removeItem(CHAT_STORAGE_KEY); } catch {}
   };
 
-  const buildGreeting = () => {
-    const base = getGreeting();
-    const cartHint = totalCartItems > 0
-      ? ` Você tem ${totalCartItems} ${totalCartItems === 1 ? 'item' : 'itens'} no carrinho. Ok, o que mais vamos buscar?`
-      : '';
-    if (user && displayName) {
-      return `${base.replace(/^[^\s]+\s/, '')} — que bom te ver, ${displayName.split(' ')[0]}!${cartHint}`;
-    }
-    return base + cartHint;
-  };
-
+  // Wake Vini WITHOUT duplicating the welcome message: if a greeting
+  // already exists in the history, fall back to a continuity prompt.
   const wakeUp = () => {
-    if (!hasInteracted) {
-      setHasInteracted(true);
-      pushBubble({ role: 'vini', text: buildGreeting() });
+    if (hasInteracted) return;
+    setHasInteracted(true);
+    if (hasGreetingInHistory(bubbles)) {
+      pushBubble({
+        role: 'vini',
+        text: history.length > 0
+          ? `Voltei! Quer continuar a busca por "${history[history.length - 1]}" ou tentar outra coisa?`
+          : 'Voltei! Em que posso te ajudar agora?',
+      });
+    } else {
+      const name = user && displayName ? displayName.split(' ')[0] : null;
+      const cartHint = totalCartItems > 0
+        ? ` Vi que tem ${totalCartItems} ${totalCartItems === 1 ? 'item' : 'itens'} no carrinho.`
+        : '';
+      const text = name
+        ? `${getGreeting().replace(/^[^\s]+\s/, '')} ${name}!${cartHint} Em que posso te ajudar?`
+        : `${getGreeting().replace(/^[^\s]+\s/, '')} Sou o Vini.${cartHint} O que você precisa hoje?`;
+      pushBubble({ role: 'vini', text });
     }
   };
 
