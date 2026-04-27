@@ -455,9 +455,28 @@ const ViniHome = () => {
   const handlePerfil = () => navigate(user ? '/carteira' : '/auth');
   const handleDemos = () => navigate('/demos');
 
+  const handleReiniciar = () => {
+    // Limpa carrinho, conversa, radar e histórico — volta ao estado inicial
+    clearChat();
+    try { sessionStorage.removeItem(CHAT_STORAGE_KEY); } catch {}
+    setRadarActive(false);
+    setHasInteracted(false);
+    setSearchBarVisible(false);
+    setText('');
+    setHistory([]);
+    try { localStorage.removeItem('vini:search-history'); } catch {}
+    // Carrinho global
+    try { (window as any).__viniClearCart?.(); } catch {}
+    if (typeof clearCart === 'function') clearCart();
+    setTimeout(() => {
+      pushBubble({ role: 'vini', text: 'Pronto, recomeçamos do zero. Em que posso te ajudar agora?' });
+    }, 200);
+  };
+
   const gridItems: GridItem[] = [
     { key: 'home', icon: Home, label: 'Home', onClick: handleHome, active: true },
     { key: 'urgencia', icon: Radar, label: 'Urgência', onClick: handleRadar, active: radarActive, badge: totalCartItems > 0 ? totalCartItems : undefined },
+    { key: 'reiniciar', icon: RotateCcw, label: 'Reiniciar', onClick: handleReiniciar },
     { key: 'perfil', icon: UserIcon, label: 'Perfil', onClick: handlePerfil },
     { key: 'indica', icon: Gift, label: 'Indicação', onClick: handleIndicacao, highlight: 'R$ 5,00' },
   ];
