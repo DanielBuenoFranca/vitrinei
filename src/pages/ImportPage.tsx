@@ -983,6 +983,7 @@ const ImportPage = () => {
     const isWarning = cellError?.severity === 'warning';
     const isError = cellError?.severity === 'error';
     const isAi = cellError?.severity === 'ai' || isAiField;
+    const isInfo = cellError?.severity === 'info';
 
     return (
       <div
@@ -993,7 +994,9 @@ const ImportPage = () => {
               ? 'bg-purple-500/15 text-purple-700 dark:text-purple-400 ring-1 ring-purple-500/30'
               : isWarning
                 ? 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 ring-1 ring-yellow-500/30'
-                : 'hover:bg-muted/50'
+                : isInfo
+                  ? 'bg-blue-500/10 text-blue-700 dark:text-blue-400 ring-1 ring-blue-500/20'
+                  : 'hover:bg-muted/50'
         }`}
         onClick={() => setEditingCell({ rowId: row._id, field })}
         title={cellError?.message || (isAiField ? 'Gerado por IA — clique para editar' : undefined)}
@@ -1002,6 +1005,7 @@ const ImportPage = () => {
         {isError && <AlertTriangle className="w-3 h-3 shrink-0" />}
         {isAi && <Sparkles className="w-3 h-3 shrink-0" />}
         {isWarning && !isAi && <ShieldAlert className="w-3 h-3 shrink-0" />}
+        {isInfo && <Users className="w-3 h-3 shrink-0" />}
       </div>
     );
   };
