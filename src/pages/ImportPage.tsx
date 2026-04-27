@@ -734,13 +734,14 @@ const ImportPage = () => {
       let nextServiceId = ((maxSvc?.[0]?.service_id) || 2000) + 1;
       let nextProductId = ((maxProd?.[0]?.product_id) || 2000) + 1;
 
-      // Group by provider
-      const byProvider = new Map<string, ParsedRow[]>();
+      // Group by canonical key (CPF > email > phone > name) so duplicate rows
+      // in the spreadsheet are unified into a single provider with multiple items.
+      const byGroup = new Map<string, ParsedRow[]>();
       rows.forEach(row => {
-        const key = row.providerName.trim();
-        if (!key) return;
-        if (!byProvider.has(key)) byProvider.set(key, []);
-        byProvider.get(key)!.push(row);
+        const key = row._groupKey || computeGroupKey(row).key;
+        if (!row.providerName.trim() && !row.serviceName.trim() && !row.productName.trim()) return;
+        if (!byGroup.has(key)) byGroup.set(key, []);
+        byGroup.get(key)!.push(row);
       });
 
       // Reload providers for fresh data
@@ -748,19 +749,28 @@ const ImportPage = () => {
       const { data: freshProviders } = await supabase.from('providers').select('id, name, segment, phone, email, cpf_cnpj');
       const providerList = (freshProviders || []) as ExistingProvider[];
 
-      const totalProviders = byProvider.size;
+      const totalProviders = byGroup.size;
       let processedProviders = 0;
 
-      for (const [provName, provRows] of byProvider) {
+      for (const [groupKey, provRows] of byGroup) {
         processedProviders++;
         const progressPercent = 25 + Math.round((processedProviders / totalProviders) * 50);
+        // Pick the most complete provider name across the group
+        const provName = provRows.reduce((best, r) => r.providerName.trim().length > best.length ? r.providerName.trim() : best, '') || '(sem nome)';
         setImportProgress({ step: `Processando: ${provName}...`, percent: progressPercent });
 
         const firstRow = provRows[0];
         let providerId: number;
 
-        // Use cascade match result
-        const matchResult = cascadeMatch(firstRow, providerList);
+        // Honor user decision (merge vs create) if any
+        const decision = groupDecisions.get(groupKey);
+        let matchResult = cascadeMatch(firstRow, providerList);
+        if (decision?.action === 'create') {
+          matchResult = { type: 'new' };
+        } else if (decision?.action === 'merge' && decision.providerId) {
+          const target = providerList.find(p => p.id === decision.providerId);
+          if (target) matchResult = { type: 'name', provider: target };
+        }
 
         if (matchResult.type !== 'new' && matchResult.provider) {
           providerId = matchResult.provider.id;
