@@ -501,7 +501,46 @@ const AuthPage = () => {
             </div>
             <div className="space-y-2">
               <Label className="text-xs">Telefone</Label>
-              <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(11) 99999-9999" />
+              <Input value={phone} onChange={e => setPhone(maskPhone ? e.target.value : e.target.value)} placeholder="(11) 99999-9999" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs flex items-center gap-1.5">
+                CPF / CNPJ
+                <span className="text-destructive">*</span>
+              </Label>
+              <div className="relative">
+                <IdCard className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
+                <Input
+                  value={cpfCnpj}
+                  onChange={(e) => setCpfCnpj(maskCPFCNPJ(e.target.value))}
+                  placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                  className={`pl-10 pr-10 ${
+                    cpfCheckState === 'taken' || cpfCheckState === 'invalid'
+                      ? 'border-destructive focus-visible:ring-destructive'
+                      : cpfCheckState === 'ok'
+                        ? 'border-success focus-visible:ring-success'
+                        : ''
+                  }`}
+                  inputMode="numeric"
+                  maxLength={18}
+                />
+                <div className="absolute right-3 top-3">
+                  {cpfCheckState === 'checking' && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                  {cpfCheckState === 'ok' && <Check className="w-4 h-4 text-success" />}
+                  {(cpfCheckState === 'taken' || cpfCheckState === 'invalid') && <X className="w-4 h-4 text-destructive" />}
+                </div>
+              </div>
+              {cpfCheckState === 'invalid' && (
+                <p className="text-[10.5px] text-destructive">Documento inválido — confira os dígitos.</p>
+              )}
+              {cpfCheckState === 'taken' && (
+                <p className="text-[10.5px] text-destructive">Este CPF/CNPJ já possui cadastro. Use a aba Entrar.</p>
+              )}
+              {cpfCheckState === 'ok' && providerHint && (
+                <p className="text-[10.5px] text-success">
+                  ✨ Encontramos um cadastro de Prestador com este documento — vamos vinculá-lo automaticamente à sua conta.
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label className="text-xs">Email</Label>
