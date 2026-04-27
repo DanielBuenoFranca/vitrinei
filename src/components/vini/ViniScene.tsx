@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import officeBg from '@/assets/office-bg.jpg';
 import officeBgMobile from '@/assets/office-bg-mobile.jpg';
 
@@ -13,12 +13,40 @@ import officeBgMobile from '@/assets/office-bg-mobile.jpg';
  *  • Paralaxe 3D reativa ao mouse / orientação do device (3–5 graus máx),
  *    com `perspective(1200px)` no container pai, reforçando profundidade.
  *  • Vinheta interna sutil para guiar o olhar ao centro holográfico.
+ *  • A LUZ VOLUMÉTRICA é ancorada DENTRO do círculo holográfico no chão,
+ *    no ponto exato de maior brilho da imagem (não no centro do viewport).
  */
+
+// Coordenadas do "ponto mais forte de luz" dentro do círculo holográfico,
+// medidas como porcentagens da própria imagem (não do viewport).
+const FOCAL_DESKTOP = { x: 50, y: 73 }; // office-bg.jpg (1920x1024 aprox.)
+const FOCAL_MOBILE  = { x: 50, y: 67 }; // office-bg-mobile.jpg (portrait)
+
+// Proporção (aspect-ratio) das imagens — usada para calcular a "caixa pintada"
+// quando object-fit: contain letterboxa a imagem dentro da viewport.
+const ASPECT_DESKTOP = 1920 / 1024;
+const ASPECT_MOBILE  = 9 / 16; // portrait approximation (mobile asset)
+
 export function ViniScene() {
   const layerRef = useRef<HTMLDivElement>(null);
   const targetRef = useRef({ rx: 0, ry: 0 });
   const currentRef = useRef({ rx: 0, ry: 0 });
   const rafRef = useRef<number | null>(null);
+
+  // Mantemos o layout fluido — o ponto focal e o tamanho da "caixa contida"
+  // são calculados a cada resize para que a luz acompanhe exatamente a
+  // posição do brilho da imagem em qualquer viewport.
+  const [box, setBox] = useState(() => computeContainBox());
+
+  useEffect(() => {
+    const onResize = () => setBox(computeContainBox());
+    window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('orientationchange', onResize);
+    };
+  }, []);
 
   useEffect(() => {
     const MAX = 4; // graus
@@ -93,6 +121,30 @@ export function ViniScene() {
             style={{ imageRendering: 'auto' }}
           />
         </picture>
+
+        {/*
+          ─── LUZ CENTRAL VOLUMÉTRICA ───────────────────────────────────────
+          Posicionada DENTRO da caixa pintada da imagem (object-contain),
+          alinhada ao ponto mais forte de luz do círculo holográfico no chão.
+          A caixa é recalculada a cada resize/orientationchange.
+        */}
+        <div
+          className="vini-central-light absolute pointer-events-none mix-blend-screen"
+          style={{
+            left: `${box.left}px`,
+            top: `${box.top}px`,
+            width: `${box.width}px`,
+            height: `${box.height}px`,
+            // Variáveis CSS com a posição focal RELATIVA à caixa pintada.
+            ['--vcl-x' as any]: `${box.isMobile ? FOCAL_MOBILE.x : FOCAL_DESKTOP.x}%`,
+            ['--vcl-y' as any]: `${box.isMobile ? FOCAL_MOBILE.y : FOCAL_DESKTOP.y}%`,
+          }}
+        >
+          <div className="vcl-core" />
+          <div className="vcl-beam" />
+          <div className="vcl-halo" />
+          <div className="vcl-motes" />
+        </div>
       </div>
 
       {/* Vinheta sutil — direciona o olhar ao centro holográfico */}
@@ -104,32 +156,7 @@ export function ViniScene() {
         }}
       />
 
-      {/*
-        ─── LUZ CENTRAL VOLUMÉTRICA (animada, sutil) ─────────────────────
-        Três camadas sincronizadas para simular luz subindo do ponto
-        central do círculo holográfico:
-          1) Núcleo pulsante (breathing) — foco brilhante na base.
-          2) Coluna volumétrica (god-ray) — feixe vertical estreito que
-             sobe e se dissipa, com leve oscilação de intensidade.
-          3) Halo expansivo — onda concêntrica que nasce do centro e
-             se dissipa para cima/fora.
-        Tudo usa screen blend + multiply de opacidades baixas (≤0.45)
-        para preservar tons, proporções e legibilidade da cena.
-        ───────────────────────────────────────────────────────────────── */}
-      <div className="vini-central-light pointer-events-none absolute inset-0 mix-blend-screen">
-        {/* 1) Núcleo brilhante (breathing) */}
-        <div className="vcl-core" />
-        {/* 2) Feixe vertical subindo (god-ray) */}
-        <div className="vcl-beam" />
-        {/* 3) Halo concêntrico expandindo */}
-        <div className="vcl-halo" />
-        {/* 4) Partículas verticais (mote drift) */}
-        <div className="vcl-motes" />
-      </div>
-
       <style>{`
-        /* Container — ancorado no mesmo ponto central do círculo holográfico
-           (≈ 55% da altura, igual à vinheta), sem alterar nada da cena. */
         .vini-central-light { z-index: 1; }
 
         /* Reduz drasticamente animações se o usuário pediu */
@@ -137,48 +164,48 @@ export function ViniScene() {
           .vcl-core, .vcl-beam, .vcl-halo, .vcl-motes { animation: none !important; }
         }
 
-        /* 1) NÚCLEO — leve breathing no ponto exato do círculo */
+        /* 1) NÚCLEO — breathing exatamente sobre o ponto de brilho do círculo */
         .vcl-core {
           position: absolute;
-          left: 50%;
-          top: 55%;
-          width: 38vmin;
-          height: 38vmin;
+          left: var(--vcl-x);
+          top: var(--vcl-y);
+          width: 14%;
+          aspect-ratio: 1 / 1;
           transform: translate(-50%, -50%);
           border-radius: 50%;
           background: radial-gradient(
             circle at center,
-            hsl(var(--vini-glow) / 0.45) 0%,
-            hsl(var(--vini-glow) / 0.22) 22%,
-            hsl(var(--vini-glow) / 0.08) 45%,
+            hsl(var(--vini-glow) / 0.55) 0%,
+            hsl(var(--vini-glow) / 0.28) 22%,
+            hsl(var(--vini-glow) / 0.10) 45%,
             transparent 70%
           );
-          filter: blur(8px);
+          filter: blur(6px);
           animation: vcl-breath 4.2s ease-in-out infinite;
           will-change: opacity, transform;
         }
 
         @keyframes vcl-breath {
           0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(1); }
-          50%      { opacity: 0.95; transform: translate(-50%, -50%) scale(1.06); }
+          50%      { opacity: 0.95; transform: translate(-50%, -50%) scale(1.08); }
         }
 
-        /* 2) FEIXE VOLUMÉTRICO — coluna fina subindo do centro */
+        /* 2) FEIXE VOLUMÉTRICO — coluna fina subindo do centro do círculo */
         .vcl-beam {
           position: absolute;
-          left: 50%;
-          top: 55%;
-          width: 18vmin;
-          height: 70vh;
-          transform: translate(-50%, -85%);
+          left: var(--vcl-x);
+          top: var(--vcl-y);
+          width: 7%;
+          height: 55%;
+          transform: translate(-50%, -100%);
           background: linear-gradient(
             to top,
-            hsl(var(--vini-glow) / 0.30) 0%,
-            hsl(var(--vini-glow) / 0.18) 18%,
+            hsl(var(--vini-glow) / 0.35) 0%,
+            hsl(var(--vini-glow) / 0.20) 18%,
             hsl(var(--vini-glow) / 0.08) 45%,
-            transparent 85%
+            transparent 90%
           );
-          filter: blur(14px);
+          filter: blur(10px);
           mask-image: radial-gradient(ellipse 60% 100% at 50% 100%, black 0%, transparent 80%);
           -webkit-mask-image: radial-gradient(ellipse 60% 100% at 50% 100%, black 0%, transparent 80%);
           animation: vcl-beam 5.6s ease-in-out infinite;
@@ -186,23 +213,23 @@ export function ViniScene() {
         }
 
         @keyframes vcl-beam {
-          0%, 100% { opacity: 0.35; transform: translate(-50%, -85%) scaleY(0.96); }
-          50%      { opacity: 0.70; transform: translate(-50%, -88%) scaleY(1.04); }
+          0%, 100% { opacity: 0.35; transform: translate(-50%, -100%) scaleY(0.95); }
+          50%      { opacity: 0.75; transform: translate(-50%, -102%) scaleY(1.06); }
         }
 
-        /* 3) HALO — onda concêntrica que nasce e dissipa */
+        /* 3) HALO — onda concêntrica que nasce do disco e sobe */
         .vcl-halo {
           position: absolute;
-          left: 50%;
-          top: 55%;
-          width: 18vmin;
-          height: 18vmin;
+          left: var(--vcl-x);
+          top: var(--vcl-y);
+          width: 10%;
+          aspect-ratio: 1 / 1;
           transform: translate(-50%, -50%);
           border-radius: 50%;
-          border: 1px solid hsl(var(--vini-glow) / 0.45);
+          border: 1px solid hsl(var(--vini-glow) / 0.5);
           box-shadow:
-            0 0 24px hsl(var(--vini-glow) / 0.25) inset,
-            0 0 32px hsl(var(--vini-glow) / 0.18);
+            0 0 22px hsl(var(--vini-glow) / 0.28) inset,
+            0 0 28px hsl(var(--vini-glow) / 0.20);
           opacity: 0;
           animation: vcl-halo 5.2s ease-out infinite;
           will-change: opacity, transform;
@@ -210,24 +237,24 @@ export function ViniScene() {
 
         @keyframes vcl-halo {
           0%   { opacity: 0.55; transform: translate(-50%, -50%) scale(0.6); }
-          70%  { opacity: 0.10; transform: translate(-50%, -65%) scale(1.8); }
-          100% { opacity: 0;    transform: translate(-50%, -75%) scale(2.2); }
+          70%  { opacity: 0.10; transform: translate(-50%, -120%) scale(1.9); }
+          100% { opacity: 0;    transform: translate(-50%, -150%) scale(2.3); }
         }
 
-        /* 4) PARTÍCULAS — pequenos motes subindo continuamente */
+        /* 4) PARTÍCULAS — pequenos motes subindo continuamente do disco */
         .vcl-motes {
           position: absolute;
-          left: 50%;
-          top: 55%;
-          width: 22vmin;
-          height: 60vh;
-          transform: translate(-50%, -90%);
+          left: var(--vcl-x);
+          top: var(--vcl-y);
+          width: 12%;
+          height: 50%;
+          transform: translate(-50%, -100%);
           background-image:
-            radial-gradient(1.5px 1.5px at 20% 90%, hsl(var(--vini-glow) / 0.55), transparent 60%),
-            radial-gradient(1px 1px   at 60% 70%, hsl(var(--vini-glow) / 0.45), transparent 60%),
-            radial-gradient(1.5px 1.5px at 35% 50%, hsl(var(--vini-glow) / 0.35), transparent 60%),
-            radial-gradient(1px 1px   at 75% 30%, hsl(var(--vini-glow) / 0.30), transparent 60%),
-            radial-gradient(1.5px 1.5px at 45% 10%, hsl(var(--vini-glow) / 0.20), transparent 60%);
+            radial-gradient(1.5px 1.5px at 20% 90%, hsl(var(--vini-glow) / 0.6), transparent 60%),
+            radial-gradient(1px 1px   at 60% 70%, hsl(var(--vini-glow) / 0.5), transparent 60%),
+            radial-gradient(1.5px 1.5px at 35% 50%, hsl(var(--vini-glow) / 0.4), transparent 60%),
+            radial-gradient(1px 1px   at 75% 30%, hsl(var(--vini-glow) / 0.32), transparent 60%),
+            radial-gradient(1.5px 1.5px at 45% 10%, hsl(var(--vini-glow) / 0.22), transparent 60%);
           mask-image: linear-gradient(to top, black 0%, black 30%, transparent 100%);
           -webkit-mask-image: linear-gradient(to top, black 0%, black 30%, transparent 100%);
           animation: vcl-motes 7s linear infinite;
@@ -236,12 +263,36 @@ export function ViniScene() {
         }
 
         @keyframes vcl-motes {
-          0%   { transform: translate(-50%, -85%); opacity: 0.0; }
+          0%   { transform: translate(-50%, -100%); opacity: 0.0; }
           15%  { opacity: 0.7; }
           85%  { opacity: 0.5; }
-          100% { transform: translate(-50%, -110%); opacity: 0; }
+          100% { transform: translate(-50%, -130%); opacity: 0; }
         }
       `}</style>
     </div>
   );
+}
+
+// ─── Helper: caixa "pintada" da imagem com object-contain ─────────────
+function computeContainBox() {
+  if (typeof window === 'undefined') {
+    return { left: 0, top: 0, width: 0, height: 0, isMobile: false };
+  }
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const isMobile = vw <= 640;
+  const aspect = isMobile ? ASPECT_MOBILE : ASPECT_DESKTOP;
+  // object-contain: a caixa cabe inteira respeitando a proporção da imagem
+  let width: number, height: number;
+  if (vw / vh > aspect) {
+    // viewport mais larga que a imagem -> altura = vh
+    height = vh;
+    width = vh * aspect;
+  } else {
+    width = vw;
+    height = vw / aspect;
+  }
+  const left = (vw - width) / 2;
+  const top = (vh - height) / 2;
+  return { left, top, width, height, isMobile };
 }
