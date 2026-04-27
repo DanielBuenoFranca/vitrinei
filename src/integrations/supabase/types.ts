@@ -147,6 +147,7 @@ export type Database = {
           bank_name: string | null
           city: string | null
           cpf_cnpj: string | null
+          cpf_cnpj_normalized: string | null
           created_at: string
           display_name: string | null
           elite_since: string | null
@@ -169,6 +170,7 @@ export type Database = {
           bank_name?: string | null
           city?: string | null
           cpf_cnpj?: string | null
+          cpf_cnpj_normalized?: string | null
           created_at?: string
           display_name?: string | null
           elite_since?: string | null
@@ -191,6 +193,7 @@ export type Database = {
           bank_name?: string | null
           city?: string | null
           cpf_cnpj?: string | null
+          cpf_cnpj_normalized?: string | null
           created_at?: string
           display_name?: string | null
           elite_since?: string | null
@@ -614,6 +617,7 @@ export type Database = {
     }
     Functions: {
       calculate_fidelity_score: { Args: { _user_id: string }; Returns: number }
+      check_cpf_cnpj_available: { Args: { _doc: string }; Returns: Json }
       check_provider_uniqueness: {
         Args: {
           _cpf_cnpj?: string
