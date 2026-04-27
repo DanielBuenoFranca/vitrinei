@@ -273,8 +273,23 @@ const AuthPage = () => {
     if (password.length < 6) { toast.error('Senha deve ter no mínimo 6 caracteres'); return; }
     if (!selectedProfile) { toast.error('Selecione um perfil de acesso'); return; }
     if (!selectedPlan) { toast.error('Selecione um plano de assinatura'); return; }
+    const cpfDigits = unmask(cpfCnpj);
+    if (!cpfDigits) { toast.error('CPF ou CNPJ é obrigatório'); return; }
+    if (!isValidCpfCnpj(cpfDigits)) { toast.error('CPF/CNPJ inválido — confira os dígitos'); return; }
+    if (cpfCheckState === 'taken') { toast.error('Este CPF/CNPJ já possui cadastro no sistema'); return; }
 
     setLoading(true);
+
+    // Final server-side check (race-safe)
+    try {
+      const { data: chk } = await (supabase.rpc as any)('check_cpf_cnpj_available', { _doc: cpfDigits });
+      if (chk && !chk.available) {
+        toast.error(chk.reason === 'already_registered' ? 'Este CPF/CNPJ já está cadastrado' : 'CPF/CNPJ inválido');
+        setLoading(false);
+        return;
+      }
+    } catch { /* non-blocking */ }
+
     const { data, error } = await supabase.auth.signUp({
       email, password,
       options: {
@@ -283,6 +298,7 @@ const AuthPage = () => {
           selected_profile: selectedProfile,
           selected_plan: selectedPlan,
           phone: phone || null,
+          cpf_cnpj: cpfDigits,
         },
         emailRedirectTo: window.location.origin,
       },
@@ -305,29 +321,36 @@ const AuthPage = () => {
         price: plan.price,
       });
 
-      // Update profile flags based on selected profile
+      // Update profile — saving CPF/CNPJ triggers auto-link of orphan provider
       const isProvider = selectedProfile === 'provider' || selectedProfile === 'mixed';
       const isCustomer = selectedProfile === 'client' || selectedProfile === 'mixed';
       await supabase.from('profiles').update({
         is_provider: isProvider,
         is_customer: isCustomer,
         phone: phone || null,
+        cpf_cnpj: cpfDigits,
       }).eq('user_id', data.user.id);
 
-      // Auto-create provider record for provider/mixed profiles
+      // Only create a NEW provider record if profile didn't auto-link to an existing one
       if (isProvider) {
-        const providerName = name || email.split('@')[0];
-        try {
-          await supabase.from('providers').insert({
-            name: providerName,
-            segment: ['Geral'],
-            type: 'mei',
-            email: email,
-            phone: phone || '',
-            active: true,
-            storefront_config: {},
-          });
-        } catch { /* provider may already exist — ignore */ }
+        const { data: linked } = await supabase
+          .from('providers').select('id').eq('user_id', data.user.id).limit(1);
+        if (!linked || linked.length === 0) {
+          const providerName = name || email.split('@')[0];
+          try {
+            await supabase.from('providers').insert({
+              name: providerName,
+              segment: ['Geral'],
+              type: 'mei',
+              email: email,
+              phone: phone || '',
+              cpf_cnpj: cpfDigits,
+              user_id: data.user.id,
+              active: true,
+              storefront_config: {},
+            });
+          } catch { /* provider may already exist — ignore */ }
+        }
       }
 
       // Create initial debit in wallet
