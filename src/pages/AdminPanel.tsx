@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle, Megaphone, Mail, Gift, CheckCircle, KeyRound, BarChart3 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { ProviderForm } from '@/components/admin/ProviderForm';
+import { UserForm } from '@/components/admin/UserForm';
 import { ProductForm } from '@/components/admin/ProductForm';
 import { ServiceForm } from '@/components/admin/ServiceForm';
 import { SegmentForm } from '@/components/admin/SegmentForm';
@@ -69,7 +69,8 @@ const AdminPanel = () => {
   const [loading, setLoading] = useState(true);
   const [clearDialog, setClearDialog] = useState(false);
 
-  const [providerForm, setProviderForm] = useState<{ open: boolean; item: Provider | null }>({ open: false, item: null });
+  const [userForm, setUserForm] = useState<{ open: boolean; profile: any | null; role: any; email: string | null }>({ open: false, profile: null, role: null, email: null });
+  const [migratingProviders, setMigratingProviders] = useState(false);
   const [productForm, setProductForm] = useState<{ open: boolean; item: DynamicProduct | null }>({ open: false, item: null });
   const [serviceForm, setServiceForm] = useState<{ open: boolean; item: DynamicService | null }>({ open: false, item: null });
   const [segmentForm, setSegmentForm] = useState<{ open: boolean; item: Segment | null }>({ open: false, item: null });
@@ -553,9 +554,7 @@ const AdminPanel = () => {
             <TabsTrigger value="segments" className="text-xs gap-1 px-2 py-1.5">
               <Tag className="h-3 w-3" /> Segmentos
             </TabsTrigger>
-            <TabsTrigger value="providers" className="text-xs gap-1 px-2 py-1.5">
-              <Store className="h-3 w-3" /> Prestadores
-            </TabsTrigger>
+            {/* Aba "Prestadores" removida — gestão unificada em "Usuários" */}
             <TabsTrigger value="services" className="text-xs gap-1 px-2 py-1.5">
               <Wrench className="h-3 w-3" /> Serviços
             </TabsTrigger>
