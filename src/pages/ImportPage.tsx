@@ -169,6 +169,74 @@ const cascadeMatch = (
   return { type: 'new' };
 };
 
+/* ─── Entity grouping (intra-spreadsheet dedup) ───
+   Treat rows sharing the same canonical key (CPF > email > phone > normalized name)
+   as the SAME provider; their services/products are aggregated into a single record. */
+const computeGroupKey = (row: ParsedRow): { key: string; type: 'cpf' | 'email' | 'phone' | 'name' } => {
+  const cpf = row.cpfCnpj.replace(/\D/g, '').trim();
+  if (cpf && cpf.length >= 11) return { key: `cpf:${cpf}`, type: 'cpf' };
+  const email = row.email.trim().toLowerCase();
+  if (email) return { key: `email:${email}`, type: 'email' };
+  const phone = row.phone.replace(/\D/g, '').trim();
+  if (phone && phone.length >= 8) return { key: `phone:${phone.slice(-8)}`, type: 'phone' };
+  const name = row.providerName.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return { key: `name:${name}`, type: 'name' };
+};
+
+const annotateGroups = (rows: ParsedRow[]): ParsedRow[] => {
+  return rows.map(r => {
+    const { key, type } = computeGroupKey(r);
+    return { ...r, _groupKey: key, _groupKeyType: type };
+  });
+};
+
+const buildEntityGroups = (
+  rows: ParsedRow[],
+  providers: ExistingProvider[],
+  resolvedDecisions: Map<string, { action: 'merge' | 'create'; providerId?: number }>,
+): EntityGroup[] => {
+  const map = new Map<string, EntityGroup>();
+  for (const row of rows) {
+    const key = row._groupKey || computeGroupKey(row).key;
+    const keyType = row._groupKeyType || 'name';
+    if (!map.has(key)) {
+      const matchResult = cascadeMatch(row, providers);
+      map.set(key, {
+        key,
+        keyType,
+        providerName: row.providerName.trim() || '(sem nome)',
+        rows: [],
+        matchType: matchResult.type,
+        matchedProvider: matchResult.provider,
+        servicesCount: 0,
+        productsCount: 0,
+        segments: [],
+        confirmedAction: matchResult.type !== 'new' ? 'pending' : 'create',
+      });
+    }
+    const g = map.get(key)!;
+    g.rows.push(row);
+    if (row.serviceName.trim()) g.servicesCount++;
+    if (row.productName.trim()) g.productsCount++;
+    if (row.segment.trim() && !g.segments.includes(row.segment.trim())) g.segments.push(row.segment.trim());
+    if (row.providerName.trim().length > g.providerName.length) g.providerName = row.providerName.trim();
+  }
+  for (const g of map.values()) {
+    const dec = resolvedDecisions.get(g.key);
+    if (dec) {
+      g.confirmedAction = dec.action;
+      if (dec.action === 'merge' && dec.providerId) {
+        const found = providers.find(p => p.id === dec.providerId);
+        if (found) {
+          g.matchedProvider = found;
+          g.matchType = g.matchType === 'new' ? 'name' : g.matchType;
+        }
+      }
+    }
+  }
+  return [...map.values()];
+};
+
 /* ─── Validation ─── */
 const validateFormat = (rows: ParsedRow[]): RowError[] => {
   const errors: RowError[] = [];
