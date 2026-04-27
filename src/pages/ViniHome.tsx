@@ -36,6 +36,7 @@ const ViniHome = () => {
 
   const [city, setCity] = useState<string | null>(null);
   const [planLabel, setPlanLabel] = useState<string | null>(null);
+  const [storeSlug, setStoreSlug] = useState<string | null>(null);
 
   const [hasInteracted, setHasInteracted] = useState(false);
   const [sideOpen, setSideOpen] = useState(false);
