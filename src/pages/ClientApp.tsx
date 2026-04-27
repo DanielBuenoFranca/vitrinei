@@ -69,7 +69,10 @@ interface CartItem {
 const ClientApp = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState('');
+  const initialQuery = searchParams.get('q') || '';
+  const isFora = searchParams.get('fora') === '1';
+  const isUrgencia = searchParams.get('urgencia') === '1';
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedSegments, setSelectedSegments] = useState<string[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [favorites, setFavorites] = useState<number[]>([1, 20, 25]);
@@ -84,6 +87,13 @@ const ClientApp = () => {
   useEffect(() => {
     const tab = searchParams.get('tab');
     if (tab === 'services') setExpandedSegment('manutencao');
+  }, [searchParams]);
+
+  // Sync URL ?q= when it changes
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q !== null && q !== searchQuery) setSearchQuery(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   // Filter services by search & segments
