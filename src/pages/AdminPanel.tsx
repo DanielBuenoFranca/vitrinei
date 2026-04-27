@@ -549,7 +549,7 @@ const AdminPanel = () => {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="providers">
+        <Tabs defaultValue="users">
           <TabsList className="flex flex-wrap h-auto gap-1 p-1">
             <TabsTrigger value="segments" className="text-xs gap-1 px-2 py-1.5">
               <Tag className="h-3 w-3" /> Segmentos
@@ -652,82 +652,7 @@ const AdminPanel = () => {
           </TabsContent>
 
           {/* ── PROVIDERS TAB ── */}
-          <TabsContent value="providers">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="text-base">Cadastro de Prestadores (MEI / PF)</CardTitle>
-                  <CardDescription>Profissionais vinculados à plataforma com seus serviços e estoque</CardDescription>
-                </div>
-                <Button size="sm" onClick={() => setProviderForm({ open: true, item: null })}>
-                  <Plus className="h-4 w-4 mr-1" /> Novo Prestador
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {providers.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">Nenhum prestador cadastrado.</p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Nome</TableHead>
-                          <TableHead>CPF/CNPJ</TableHead>
-                          <TableHead>Tipo</TableHead>
-                          <TableHead>Segmento</TableHead>
-                          <TableHead>Cidade</TableHead>
-                          <TableHead>Distância</TableHead>
-                          <TableHead>Avaliação</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Serviços</TableHead>
-                          <TableHead>Produtos</TableHead>
-                          <TableHead></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {providers.map((prov) => {
-                          const provServices = services.filter(s => s.provider_id === prov.id || s.provider === prov.name);
-                          const provProducts = products.filter(p => p.provider_id === prov.id || p.provider === prov.name);
-                          return (
-                            <TableRow key={prov.id}>
-                              <TableCell className="font-medium">{prov.name}</TableCell>
-                              <TableCell className="text-xs text-muted-foreground font-mono">{prov.cpf_cnpj || '—'}</TableCell>
-                              <TableCell>
-                                <Badge variant={prov.type === 'mei' ? 'default' : 'secondary'}>
-                                  {prov.type === 'mei' ? 'MEI' : 'PF'}
-                                </Badge>
-                              </TableCell>
-                              <TableCell><div className="flex flex-wrap gap-1">{(prov.segment || []).map(s => <Badge key={s} variant="outline">{s}</Badge>)}</div></TableCell>
-                              <TableCell className="text-sm text-muted-foreground">{prov.city || '—'}</TableCell>
-                              <TableCell>{prov.distance}</TableCell>
-                              <TableCell>⭐ {prov.rating}</TableCell>
-                              <TableCell>
-                                <Badge variant={prov.active ? 'default' : 'secondary'} className={prov.active ? 'bg-green-500/10 text-green-600 border-green-500/20' : ''}>
-                                  {prov.active ? 'Ativo' : 'Inativo'}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-center">{provServices.length}</TableCell>
-                              <TableCell className="text-center">{provProducts.length}</TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-1">
-                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setProviderForm({ open: true, item: prov })}>
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => confirmDeleteProvider(prov)}>
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+          {/* TabsContent "providers" removida — gestão unificada em "Usuários" */}
 
           {/* ── SERVICES TAB ── */}
           <TabsContent value="services">
