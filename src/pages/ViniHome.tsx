@@ -23,7 +23,33 @@ import { semanticSearch } from '@/data/searchData';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
-type BubbleAction = { label: string; route: string };
+/**
+ * Toda sugestão do Vini pode carregar uma `action` clicável.
+ * - `route`  : navega diretamente (compatibilidade legado).
+ * - `intent` : executa uma rotina interna do Vini sem sair da tela.
+ *              Ex.: 'search' preenche a barra de busca e dispara a query
+ *              como se o usuário tivesse digitado; 'story' abre o card
+ *              "Sobre o Vini"; 'cart' abre o checkout; etc.
+ * - `payload`: dados auxiliares (ex.: termo de busca).
+ */
+type BubbleIntent =
+  | 'search'        // preenche barra e executa busca
+  | 'open-search'   // só abre a barra de busca focada
+  | 'story'         // abre card "Sobre o Vini"
+  | 'cart'          // ir ao checkout
+  | 'wallet'        // abrir carteira
+  | 'radar'         // ativar urgência/radar
+  | 'profile'       // abrir perfil
+  | 'referral'      // página de indicação
+  | 'demos'         // central de demos
+  | 'mystore';      // minha loja
+
+type BubbleAction = {
+  label: string;
+  route?: string;
+  intent?: BubbleIntent;
+  payload?: string;
+};
 type Bubble = { role: 'vini' | 'user'; text: string; id: string; ts: number; action?: BubbleAction };
 
 const CHAT_STORAGE_KEY = 'vini:chat-history';
@@ -183,22 +209,23 @@ const ViniHome = () => {
         const last = history[history.length - 1];
         variants.push({
           text: `Quer que eu retome a busca por "${last}"? Posso refinar com base na sua localização.`,
-          action: { label: `Buscar "${last}"`, route: `/buscar?q=${encodeURIComponent(last)}` },
+          action: { label: `Buscar "${last}"`, intent: 'search', payload: last },
         });
       }
       if (totalCartItems > 0) {
         variants.push({
           text: `Você tem ${totalCartItems} ${totalCartItems === 1 ? 'item' : 'itens'} no carrinho. Quer finalizar agora?`,
-          action: { label: 'Ir ao checkout', route: '/jornada-cliente' },
+          action: { label: 'Ir ao checkout', intent: 'cart' },
         });
       }
       variants.push({
-        text: 'Curioso pra conhecer minha história? Toque no avatar do Vini e veja como tudo começou. ✨',
+        text: 'Curioso pra conhecer minha história? Toque aqui e eu te conto como tudo começou. ✨',
+        action: { label: 'Sobre o Vini', intent: 'story' },
       });
       if (!lastUserBubble) {
         variants.push({
           text: 'Posso te sugerir um prestador perto de você agora — quer tentar uma busca rápida?',
-          action: { label: 'Abrir busca', route: '/buscar' },
+          action: { label: 'Abrir busca', intent: 'open-search' },
         });
       }
 
@@ -472,6 +499,60 @@ const ViniHome = () => {
     setTimeout(() => {
       pushBubble({ role: 'vini', text: 'Pronto, recomeçamos do zero. Em que posso te ajudar agora?' });
     }, 200);
+  };
+
+  /**
+   * Dispatcher central para ações de bolhas do Vini.
+   * Garante que toda sugestão clicada execute a rotina correspondente
+   * (busca real, abrir ferramenta, navegar) — sem deixar o usuário
+   * "preso" lendo um botão sem efeito.
+   */
+  const runAction = (action?: BubbleAction) => {
+    if (!action) return;
+    // 1) Intent interno tem prioridade sobre rota
+    if (action.intent) {
+      switch (action.intent) {
+        case 'search': {
+          const q = (action.payload || '').trim();
+          if (!q) { handleSideSearch(); return; }
+          // Preenche a barra como se o usuário tivesse digitado e dispara
+          setSearchBarVisible(true);
+          setText(q);
+          setTimeout(() => sendQuery(q), 80);
+          return;
+        }
+        case 'open-search':
+          handleSideSearch();
+          return;
+        case 'story':
+          handleSideStory();
+          return;
+        case 'cart':
+          navigate('/jornada-cliente');
+          return;
+        case 'wallet':
+          navigate('/carteira');
+          return;
+        case 'radar':
+          handleRadar();
+          return;
+        case 'profile':
+          handlePerfil();
+          return;
+        case 'referral':
+          handleIndicacao();
+          return;
+        case 'demos':
+          handleDemos();
+          return;
+        case 'mystore':
+          if (storeSlug) navigate(`/loja/${storeSlug}`);
+          else navigate(user ? '/mei' : '/auth');
+          return;
+      }
+    }
+    // 2) Fallback: navegação por rota
+    if (action.route) navigate(action.route);
   };
 
   const gridItems: GridItem[] = [
@@ -759,11 +840,21 @@ const ViniHome = () => {
                           </span>
                         </span>
                         <div
+                          role={b.role === 'vini' && b.action ? 'button' : undefined}
+                          tabIndex={b.role === 'vini' && b.action ? 0 : undefined}
+                          onClick={b.role === 'vini' && b.action ? () => runAction(b.action) : undefined}
+                          onKeyDown={(e) => {
+                            if (b.role === 'vini' && b.action && (e.key === 'Enter' || e.key === ' ')) {
+                              e.preventDefault();
+                              runAction(b.action);
+                            }
+                          }}
                           className={cn(
-                            'px-2.5 py-1.5 rounded-2xl text-[12px] leading-snug',
+                            'px-2.5 py-1.5 rounded-2xl text-[12px] leading-snug select-none',
                             b.role === 'user'
                               ? 'bg-primary/85 text-primary-foreground rounded-br-sm shadow-[0_0_10px_hsl(var(--primary)/0.3)]'
                               : 'bg-white/[0.08] backdrop-blur-sm text-foreground border-[0.5px] border-[hsl(var(--vini-glow)/0.35)] rounded-bl-sm',
+                            b.role === 'vini' && b.action && 'cursor-pointer hover:bg-white/[0.14] hover:border-[hsl(var(--vini-glow)/0.6)] transition-colors',
                           )}
                         >
                           {b.text}
@@ -771,7 +862,7 @@ const ViniHome = () => {
                         {b.action && (
                           <button
                             type="button"
-                            onClick={() => navigate(b.action!.route)}
+                            onClick={() => runAction(b.action)}
                             className="mt-1 self-start text-[10px] px-2 py-1 rounded-full border-[0.5px] border-[hsl(var(--vini-glow)/0.5)] bg-white/[0.05] hover:bg-white/[0.12] text-[hsl(var(--text-accent))] transition-colors"
                           >
                             {b.action.label} →
