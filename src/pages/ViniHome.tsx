@@ -840,11 +840,21 @@ const ViniHome = () => {
                           </span>
                         </span>
                         <div
+                          role={b.role === 'vini' && b.action ? 'button' : undefined}
+                          tabIndex={b.role === 'vini' && b.action ? 0 : undefined}
+                          onClick={b.role === 'vini' && b.action ? () => runAction(b.action) : undefined}
+                          onKeyDown={(e) => {
+                            if (b.role === 'vini' && b.action && (e.key === 'Enter' || e.key === ' ')) {
+                              e.preventDefault();
+                              runAction(b.action);
+                            }
+                          }}
                           className={cn(
-                            'px-2.5 py-1.5 rounded-2xl text-[12px] leading-snug',
+                            'px-2.5 py-1.5 rounded-2xl text-[12px] leading-snug select-none',
                             b.role === 'user'
                               ? 'bg-primary/85 text-primary-foreground rounded-br-sm shadow-[0_0_10px_hsl(var(--primary)/0.3)]'
                               : 'bg-white/[0.08] backdrop-blur-sm text-foreground border-[0.5px] border-[hsl(var(--vini-glow)/0.35)] rounded-bl-sm',
+                            b.role === 'vini' && b.action && 'cursor-pointer hover:bg-white/[0.14] hover:border-[hsl(var(--vini-glow)/0.6)] transition-colors',
                           )}
                         >
                           {b.text}
@@ -852,7 +862,7 @@ const ViniHome = () => {
                         {b.action && (
                           <button
                             type="button"
-                            onClick={() => navigate(b.action!.route)}
+                            onClick={() => runAction(b.action)}
                             className="mt-1 self-start text-[10px] px-2 py-1 rounded-full border-[0.5px] border-[hsl(var(--vini-glow)/0.5)] bg-white/[0.05] hover:bg-white/[0.12] text-[hsl(var(--text-accent))] transition-colors"
                           >
                             {b.action.label} →
