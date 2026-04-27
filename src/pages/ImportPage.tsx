@@ -1158,6 +1158,139 @@ const ImportPage = () => {
           </div>
         )}
 
+        {/* Cadastros Consolidados (entity groups) */}
+        {rows.length > 0 && !result && (
+          <motion.div id="entity-groups-panel" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+            <Card className={groupsNeedingDecision.length > 0 ? 'border-amber-500/40 bg-amber-500/5' : 'border-blue-500/30 bg-blue-500/5'}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Users className="w-4 h-4 text-primary" />
+                  Cadastros detectados — {groups.length} prestador(es) único(s)
+                  {groupsWithIntraDup.length > 0 && (
+                    <Badge variant="secondary" className="text-[10px] bg-blue-500/20 text-blue-700 dark:text-blue-400">
+                      {groupsWithIntraDup.length} unificado(s) da planilha
+                    </Badge>
+                  )}
+                  {groupsNeedingDecision.length > 0 && (
+                    <Badge variant="secondary" className="text-[10px] bg-amber-500/20 text-amber-700 dark:text-amber-400">
+                      {groupsNeedingDecision.length} aguardando decisão
+                    </Badge>
+                  )}
+                </CardTitle>
+                <p className="text-[10px] text-muted-foreground">
+                  Linhas com mesmo CPF, e-mail ou telefone foram agrupadas como o mesmo prestador. Itens (serviços/produtos) serão somados ao seu estoque.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-[40vh] overflow-y-auto">
+                  {groups.map(g => {
+                    const keyTypeLabel = { cpf: 'CPF/CNPJ', email: 'E-mail', phone: 'Telefone', name: 'Nome' }[g.keyType];
+                    const isMergeBase = g.matchType !== 'new' && !!g.matchedProvider;
+                    const needsDecision = isMergeBase && g.confirmedAction === 'pending';
+                    return (
+                      <div
+                        key={g.key}
+                        className={`p-2.5 rounded-lg border ${
+                          needsDecision
+                            ? 'border-amber-500/40 bg-amber-500/5'
+                            : g.confirmedAction === 'merge' || (isMergeBase && g.confirmedAction !== 'create')
+                              ? 'border-blue-500/30 bg-blue-500/5'
+                              : 'border-border bg-background'
+                        }`}
+                      >
+                        <div className="flex flex-wrap items-start gap-2 justify-between">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-xs font-semibold text-foreground truncate">{g.providerName}</span>
+                              <Badge variant="outline" className="text-[9px] h-4">
+                                {g.rows.length} linha{g.rows.length > 1 ? 's' : ''}
+                              </Badge>
+                              <Badge variant="outline" className="text-[9px] h-4 border-blue-500/40 text-blue-600 dark:text-blue-400">
+                                chave: {keyTypeLabel}
+                              </Badge>
+                              {g.servicesCount > 0 && (
+                                <Badge variant="secondary" className="text-[9px] h-4">
+                                  {g.servicesCount} serviço{g.servicesCount > 1 ? 's' : ''}
+                                </Badge>
+                              )}
+                              {g.productsCount > 0 && (
+                                <Badge variant="secondary" className="text-[9px] h-4">
+                                  {g.productsCount} produto{g.productsCount > 1 ? 's' : ''}
+                                </Badge>
+                              )}
+                              {g.segments.length > 0 && (
+                                <span className="text-[9px] text-muted-foreground">· {g.segments.join(', ')}</span>
+                              )}
+                            </div>
+                            {isMergeBase && g.matchedProvider && (
+                              <p className="text-[10px] text-muted-foreground mt-1">
+                                ↳ Coincide com cadastro existente: <span className="font-medium text-foreground">{g.matchedProvider.name}</span>
+                                {g.matchedProvider.email && <> · {g.matchedProvider.email}</>}
+                                {g.matchedProvider.cpf_cnpj && <> · {g.matchedProvider.cpf_cnpj}</>}
+                              </p>
+                            )}
+                            {!isMergeBase && (
+                              <p className="text-[10px] text-muted-foreground mt-1">
+                                ↳ Não encontrado na base — será criado como novo prestador
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {isMergeBase ? (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant={g.confirmedAction === 'merge' || (g.confirmedAction === 'pending' && false) ? 'default' : 'outline'}
+                                  className="h-7 text-[10px]"
+                                  onClick={() => setGroupDecisions(prev => {
+                                    const next = new Map(prev);
+                                    next.set(g.key, { action: 'merge', providerId: g.matchedProvider!.id });
+                                    return next;
+                                  })}
+                                >
+                                  {g.confirmedAction === 'merge' ? '✓ Vincular' : 'Vincular ao existente'}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant={g.confirmedAction === 'create' ? 'default' : 'outline'}
+                                  className="h-7 text-[10px]"
+                                  onClick={() => setGroupDecisions(prev => {
+                                    const next = new Map(prev);
+                                    next.set(g.key, { action: 'create' });
+                                    return next;
+                                  })}
+                                >
+                                  {g.confirmedAction === 'create' ? '✓ Criar novo' : 'Criar novo'}
+                                </Button>
+                              </>
+                            ) : (
+                              <Badge variant="outline" className="text-[9px] h-5 border-primary/40 text-primary">NOVO CADASTRO</Badge>
+                            )}
+                          </div>
+                        </div>
+                        {g.rows.length > 1 && (
+                          <details className="mt-2">
+                            <summary className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground">
+                              Ver {g.rows.length} linhas agrupadas
+                            </summary>
+                            <div className="mt-1 space-y-0.5 pl-3 border-l border-border">
+                              {g.rows.map(r => (
+                                <p key={r._id} className="text-[10px] text-muted-foreground">
+                                  Linha {r._id}: {r.serviceName && <>🔧 {r.serviceName}</>}{r.serviceName && r.productName ? ' + ' : ''}{r.productName && <>📦 {r.productName}</>}
+                                </p>
+                              ))}
+                            </div>
+                          </details>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
         {/* Error/Warning summaries */}
         <AnimatePresence>
           {rows.length > 0 && hasCriticalErrors && !result && (
