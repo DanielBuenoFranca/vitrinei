@@ -40,6 +40,22 @@ interface ParsedRow {
   _matchedProviderName?: string;
   // AI enrichment tracking
   _aiFields?: Set<string>;
+  // Grouping (intra-spreadsheet dedup)
+  _groupKey?: string;
+  _groupKeyType?: 'cpf' | 'email' | 'phone' | 'name';
+}
+
+interface EntityGroup {
+  key: string;
+  keyType: 'cpf' | 'email' | 'phone' | 'name';
+  providerName: string;
+  rows: ParsedRow[];
+  matchType: 'email' | 'name' | 'cpf' | 'new';
+  matchedProvider?: ExistingProvider;
+  servicesCount: number;
+  productsCount: number;
+  segments: string[];
+  confirmedAction: 'merge' | 'create' | 'pending';
 }
 
 interface RowError {
