@@ -148,14 +148,105 @@ const ViniHome = () => {
     })();
   }, [user]);
 
-  // Welcome back if user came back to home with cart items
+  // ─── Greeting + idle logic helpers ───
+  const hasGreetingInHistory = (list: Bubble[]) =>
+    list.some(
+      (b) =>
+        b.role === 'vini' &&
+        /(bom dia|boa tarde|boa noite|olá|oi|que bom te ver|bem-?vindo)/i.test(b.text),
+    );
+
+  const resetIdleTimer = () => {
+    lastInteractionRef.current = Date.now();
+    if (idleTimerRef.current) window.clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = window.setTimeout(() => {
+      // Only fire if user is still on Home and hasn't typed/clicked since
+      if (Date.now() - lastInteractionRef.current < 4900) return;
+      const lastUserBubble = [...bubbles].reverse().find((b) => b.role === 'user');
+      const variants: { text: string; action?: BubbleAction }[] = [];
+
+      if (history.length > 0) {
+        const last = history[history.length - 1];
+        variants.push({
+          text: `Quer que eu retome a busca por "${last}"? Posso refinar com base na sua localização.`,
+          action: { label: `Buscar "${last}"`, route: `/buscar?q=${encodeURIComponent(last)}` },
+        });
+      }
+      if (totalCartItems > 0) {
+        variants.push({
+          text: `Você tem ${totalCartItems} ${totalCartItems === 1 ? 'item' : 'itens'} no carrinho. Quer finalizar agora?`,
+          action: { label: 'Ir ao checkout', route: '/jornada-cliente' },
+        });
+      }
+      variants.push({
+        text: 'Curioso pra conhecer minha história? Toque no avatar do Vini e veja como tudo começou. ✨',
+      });
+      if (!lastUserBubble) {
+        variants.push({
+          text: 'Posso te sugerir um prestador perto de você agora — quer tentar uma busca rápida?',
+          action: { label: 'Abrir busca', route: '/buscar' },
+        });
+      }
+
+      const pick = variants[Math.floor(Math.random() * variants.length)];
+      pushBubble({ role: 'vini', text: pick.text, action: pick.action });
+    }, 5000);
+  };
+
+  // Personalized greeting on login (fires only once per user per session)
   useEffect(() => {
-    if (hasInteracted && totalCartItems > 0 && bubbles.length > 0) {
-      const last = bubbles[bubbles.length - 1];
-      if (last.role !== 'vini' || !last.text.includes('carrinho')) return;
+    if (!user) {
+      lastGreetedUserRef.current = null;
+      return;
     }
+    if (lastGreetedUserRef.current === user.id) return;
+    lastGreetedUserRef.current = user.id;
+
+    const name = displayName?.split(' ')[0] || 'amigo';
+    const role = profileLabel || 'usuário';
+    setBubbles((prev) => {
+      const alreadyGreeted = hasGreetingInHistory(prev);
+      const text = alreadyGreeted
+        ? `De volta, ${name}! Quer continuar de onde parou?`
+        : `${getGreeting().replace(/^[^\s]+\s/, '')} ${name}! Você está logado como ${role}. ${
+            totalCartItems > 0 ? `Vi que tem ${totalCartItems} ${totalCartItems === 1 ? 'item' : 'itens'} no carrinho.` : 'Em que posso te ajudar hoje?'
+          }`;
+      const next = [...prev, { role: 'vini' as const, text, id: `${Date.now()}-greet`, ts: Date.now() }];
+      try { sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+    setHasInteracted(true);
+    setChatExpanded(true);
+    resetIdleTimer();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, displayName, profileLabel]);
+
+  // Generic greeting for visitors when they open Home (only once per session)
+  useEffect(() => {
+    if (user) return; // logged-in path handled above
+    if (hasGreetingInHistory(bubbles)) return;
+    const t = window.setTimeout(() => {
+      pushBubble({
+        role: 'vini',
+        text: `${getGreeting().replace(/^[^\s]+\s/, '')} Sou o Vini, seu assistente do Vitrinei. Pode falar comigo ou tocar no microfone — te ajudo a achar o que precisa. 👋`,
+      });
+      setHasInteracted(true);
+      resetIdleTimer();
+    }, 800);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  // Persist search history across sessions
+  useEffect(() => {
+    try { localStorage.setItem('vini:search-history', JSON.stringify(history.slice(-20))); } catch {}
+  }, [history]);
+
+  // Cleanup idle timer on unmount
+  useEffect(() => {
+    return () => { if (idleTimerRef.current) window.clearTimeout(idleTimerRef.current); };
   }, []);
+
 
   const pushBubble = (b: Omit<Bubble, 'id' | 'ts'>) => {
     setBubbles((prev) => {
