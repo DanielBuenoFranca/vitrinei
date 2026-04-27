@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +19,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { reloadDynamicEntries } from '@/data/searchData';
 
 /* ─── Types ─── */
+interface ExistingProvider {
+  id: number;
+  name: string;
+  segment: string[];
+  phone: string | null;
+  email: string | null;
+  cpf_cnpj: string | null;
+}
+
 interface ParsedRow {
   _id: number;
   providerName: string;
@@ -34,19 +43,32 @@ interface ParsedRow {
   email: string;
   city: string;
   cpfCnpj: string;
-  // Cascade match result
   _matchType?: 'email' | 'name' | 'cpf' | 'new';
   _matchedProviderId?: number;
   _matchedProviderName?: string;
-  // AI enrichment tracking
   _aiFields?: Set<string>;
+  _groupKey?: string;
+  _groupKeyType?: 'cpf' | 'email' | 'phone' | 'name';
+}
+
+interface EntityGroup {
+  key: string;
+  keyType: 'cpf' | 'email' | 'phone' | 'name';
+  providerName: string;
+  rows: ParsedRow[];
+  matchType: 'email' | 'name' | 'cpf' | 'new';
+  matchedProvider?: ExistingProvider;
+  servicesCount: number;
+  productsCount: number;
+  segments: string[];
+  confirmedAction: 'merge' | 'create' | 'pending';
 }
 
 interface RowError {
   rowId: number;
   field: string;
   message: string;
-  severity: 'error' | 'warning' | 'ai';
+  severity: 'error' | 'warning' | 'ai' | 'info';
 }
 
 interface AutoFix {
@@ -62,15 +84,6 @@ interface ImportResult {
   segmentsCreated: number;
   errors: { line: number; message: string }[];
   fixes: AutoFix[];
-}
-
-interface ExistingProvider {
-  id: number;
-  name: string;
-  segment: string[];
-  phone: string | null;
-  email: string | null;
-  cpf_cnpj: string | null;
 }
 
 const STOCK_TYPES = ['fisico', 'drop'];
@@ -156,6 +169,74 @@ const cascadeMatch = (
   return { type: 'new' };
 };
 
+/* ─── Entity grouping (intra-spreadsheet dedup) ───
+   Treat rows sharing the same canonical key (CPF > email > phone > normalized name)
+   as the SAME provider; their services/products are aggregated into a single record. */
+const computeGroupKey = (row: ParsedRow): { key: string; type: 'cpf' | 'email' | 'phone' | 'name' } => {
+  const cpf = row.cpfCnpj.replace(/\D/g, '').trim();
+  if (cpf && cpf.length >= 11) return { key: `cpf:${cpf}`, type: 'cpf' };
+  const email = row.email.trim().toLowerCase();
+  if (email) return { key: `email:${email}`, type: 'email' };
+  const phone = row.phone.replace(/\D/g, '').trim();
+  if (phone && phone.length >= 8) return { key: `phone:${phone.slice(-8)}`, type: 'phone' };
+  const name = row.providerName.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return { key: `name:${name}`, type: 'name' };
+};
+
+const annotateGroups = (rows: ParsedRow[]): ParsedRow[] => {
+  return rows.map(r => {
+    const { key, type } = computeGroupKey(r);
+    return { ...r, _groupKey: key, _groupKeyType: type };
+  });
+};
+
+const buildEntityGroups = (
+  rows: ParsedRow[],
+  providers: ExistingProvider[],
+  resolvedDecisions: Map<string, { action: 'merge' | 'create'; providerId?: number }>,
+): EntityGroup[] => {
+  const map = new Map<string, EntityGroup>();
+  for (const row of rows) {
+    const key = row._groupKey || computeGroupKey(row).key;
+    const keyType = row._groupKeyType || 'name';
+    if (!map.has(key)) {
+      const matchResult = cascadeMatch(row, providers);
+      map.set(key, {
+        key,
+        keyType,
+        providerName: row.providerName.trim() || '(sem nome)',
+        rows: [],
+        matchType: matchResult.type,
+        matchedProvider: matchResult.provider,
+        servicesCount: 0,
+        productsCount: 0,
+        segments: [],
+        confirmedAction: matchResult.type !== 'new' ? 'pending' : 'create',
+      });
+    }
+    const g = map.get(key)!;
+    g.rows.push(row);
+    if (row.serviceName.trim()) g.servicesCount++;
+    if (row.productName.trim()) g.productsCount++;
+    if (row.segment.trim() && !g.segments.includes(row.segment.trim())) g.segments.push(row.segment.trim());
+    if (row.providerName.trim().length > g.providerName.length) g.providerName = row.providerName.trim();
+  }
+  for (const g of map.values()) {
+    const dec = resolvedDecisions.get(g.key);
+    if (dec) {
+      g.confirmedAction = dec.action;
+      if (dec.action === 'merge' && dec.providerId) {
+        const found = providers.find(p => p.id === dec.providerId);
+        if (found) {
+          g.matchedProvider = found;
+          g.matchType = g.matchType === 'new' ? 'name' : g.matchType;
+        }
+      }
+    }
+  }
+  return [...map.values()];
+};
+
 /* ─── Validation ─── */
 const validateFormat = (rows: ParsedRow[]): RowError[] => {
   const errors: RowError[] = [];
@@ -192,27 +273,28 @@ const validateBusinessRules = (
   existingSegments: Set<string>,
 ): RowError[] => {
   const errors: RowError[] = [];
-  
-  // Cross-row uniqueness check within the import itself
+
+  // Intra-spreadsheet duplicates are NOT errors anymore — they form an entity group.
+  // We surface them as informational hints so the user understands the merge.
   const cpfMap = new Map<string, number>();
   const emailMap = new Map<string, number>();
   const phoneMap = new Map<string, number>();
-  
+
   rows.forEach(row => {
     const cpf = row.cpfCnpj.replace(/\D/g, '').trim();
     const email = row.email.trim().toLowerCase();
     const phone = row.phone.replace(/\D/g, '').trim();
-    
+
     if (cpf && cpf.length >= 11) {
       if (cpfMap.has(cpf)) {
-        errors.push({ rowId: row._id, field: 'cpfCnpj', message: `CPF/CNPJ duplicado na planilha (linha ${cpfMap.get(cpf)})`, severity: 'error' });
+        errors.push({ rowId: row._id, field: 'cpfCnpj', message: `Mesmo CPF/CNPJ da linha ${cpfMap.get(cpf)} — itens serão unificados`, severity: 'info' });
       } else {
         cpfMap.set(cpf, row._id);
       }
     }
     if (email) {
       if (emailMap.has(email)) {
-        errors.push({ rowId: row._id, field: 'email', message: `E-mail duplicado na planilha (linha ${emailMap.get(email)})`, severity: 'error' });
+        errors.push({ rowId: row._id, field: 'email', message: `Mesmo e-mail da linha ${emailMap.get(email)} — itens serão unificados`, severity: 'info' });
       } else {
         emailMap.set(email, row._id);
       }
@@ -220,7 +302,7 @@ const validateBusinessRules = (
     if (phone && phone.length >= 8) {
       const phoneKey = phone.slice(-8);
       if (phoneMap.has(phoneKey)) {
-        errors.push({ rowId: row._id, field: 'phone', message: `Telefone duplicado na planilha (linha ${phoneMap.get(phoneKey)})`, severity: 'error' });
+        errors.push({ rowId: row._id, field: 'phone', message: `Mesmo telefone da linha ${phoneMap.get(phoneKey)} — itens serão unificados`, severity: 'info' });
       } else {
         phoneMap.set(phoneKey, row._id);
       }
@@ -284,6 +366,8 @@ const ImportPage = () => {
     resolved: boolean;
   }[]>([]);
   const [showDedupModal, setShowDedupModal] = useState(false);
+  // Group decisions: groupKey -> { action, providerId? }
+  const [groupDecisions, setGroupDecisions] = useState<Map<string, { action: 'merge' | 'create'; providerId?: number }>>(new Map());
 
   useEffect(() => {
     const load = async () => {
@@ -314,7 +398,8 @@ const ImportPage = () => {
 
   /* ─── Cascade matching after parse ─── */
   const applyCascadeMatching = useCallback((parsed: ParsedRow[]): ParsedRow[] => {
-    return parsed.map(row => {
+    const annotated = annotateGroups(parsed);
+    return annotated.map(row => {
       const result = cascadeMatch(row, existingProviders);
       return {
         ...row,
@@ -325,7 +410,15 @@ const ImportPage = () => {
     });
   }, [existingProviders]);
 
-  /* ─── File hash for duplicate prevention ─── */
+  /* ─── Derived: entity groups (mesmo prestador = mesmas chaves) ─── */
+  const groups = useMemo<EntityGroup[]>(() => {
+    if (rows.length === 0) return [];
+    return buildEntityGroups(rows, existingProviders, groupDecisions);
+  }, [rows, existingProviders, groupDecisions]);
+
+  const groupsNeedingDecision = groups.filter(g => g.matchType !== 'new' && g.confirmedAction === 'pending');
+  const groupsWithIntraDup = groups.filter(g => g.rows.length > 1);
+
   const computeFileHash = async (file: File): Promise<string> => {
     const buffer = await file.arrayBuffer();
     const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
@@ -560,12 +653,13 @@ const ImportPage = () => {
         }
         return updatedRow;
       });
-      // Re-run cascade matching if key fields change
-      if (['email', 'providerName', 'cpfCnpj'].includes(field)) {
+      // Re-run cascade matching + group key if key fields change
+      if (['email', 'providerName', 'cpfCnpj', 'phone'].includes(field)) {
         const reMatched = updated.map(row => {
           if (row._id !== rowId) return row;
           const result = cascadeMatch(row, existingProviders);
-          return { ...row, _matchType: result.type, _matchedProviderId: result.provider?.id, _matchedProviderName: result.provider?.name };
+          const { key, type } = computeGroupKey(row);
+          return { ...row, _matchType: result.type, _matchedProviderId: result.provider?.id, _matchedProviderName: result.provider?.name, _groupKey: key, _groupKeyType: type };
         });
         setErrors(runValidation(reMatched));
         return reMatched;
@@ -589,6 +683,7 @@ const ImportPage = () => {
   const criticalErrors = errors.filter(e => e.severity === 'error');
   const warnings = errors.filter(e => e.severity === 'warning');
   const aiMarkers = errors.filter(e => e.severity === 'ai');
+  const infoMarkers = errors.filter(e => e.severity === 'info');
   const hasCriticalErrors = criticalErrors.length > 0;
   const hasWarnings = warnings.length > 0;
   const hasAiData = aiMarkers.length > 0;
@@ -597,10 +692,11 @@ const ImportPage = () => {
   /* ─── Import (atomic) with progress tracking ─── */
   const executeImport = async () => {
     if (rows.length === 0 || hasCriticalErrors) return;
-    // Block if unresolved dedup items
-    if (dedupPending.some(d => !d.resolved)) {
-      setShowDedupModal(true);
-      toast.error('Resolva as coincidências de prestador antes de importar.');
+    // Block if any group with existing-base coincidence is still pending decision
+    if (groupsNeedingDecision.length > 0) {
+      toast.error(`${groupsNeedingDecision.length} cadastro(s) aguardando confirmação (Vincular ou Criar novo).`);
+      const el = document.getElementById('entity-groups-panel');
+      el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
 
@@ -641,13 +737,14 @@ const ImportPage = () => {
       let nextServiceId = ((maxSvc?.[0]?.service_id) || 2000) + 1;
       let nextProductId = ((maxProd?.[0]?.product_id) || 2000) + 1;
 
-      // Group by provider
-      const byProvider = new Map<string, ParsedRow[]>();
+      // Group by canonical key (CPF > email > phone > name) so duplicate rows
+      // in the spreadsheet are unified into a single provider with multiple items.
+      const byGroup = new Map<string, ParsedRow[]>();
       rows.forEach(row => {
-        const key = row.providerName.trim();
-        if (!key) return;
-        if (!byProvider.has(key)) byProvider.set(key, []);
-        byProvider.get(key)!.push(row);
+        const key = row._groupKey || computeGroupKey(row).key;
+        if (!row.providerName.trim() && !row.serviceName.trim() && !row.productName.trim()) return;
+        if (!byGroup.has(key)) byGroup.set(key, []);
+        byGroup.get(key)!.push(row);
       });
 
       // Reload providers for fresh data
@@ -655,19 +752,28 @@ const ImportPage = () => {
       const { data: freshProviders } = await supabase.from('providers').select('id, name, segment, phone, email, cpf_cnpj');
       const providerList = (freshProviders || []) as ExistingProvider[];
 
-      const totalProviders = byProvider.size;
+      const totalProviders = byGroup.size;
       let processedProviders = 0;
 
-      for (const [provName, provRows] of byProvider) {
+      for (const [groupKey, provRows] of byGroup) {
         processedProviders++;
         const progressPercent = 25 + Math.round((processedProviders / totalProviders) * 50);
+        // Pick the most complete provider name across the group
+        const provName = provRows.reduce((best, r) => r.providerName.trim().length > best.length ? r.providerName.trim() : best, '') || '(sem nome)';
         setImportProgress({ step: `Processando: ${provName}...`, percent: progressPercent });
 
         const firstRow = provRows[0];
         let providerId: number;
 
-        // Use cascade match result
-        const matchResult = cascadeMatch(firstRow, providerList);
+        // Honor user decision (merge vs create) if any
+        const decision = groupDecisions.get(groupKey);
+        let matchResult = cascadeMatch(firstRow, providerList);
+        if (decision?.action === 'create') {
+          matchResult = { type: 'new' };
+        } else if (decision?.action === 'merge' && decision.providerId) {
+          const target = providerList.find(p => p.id === decision.providerId);
+          if (target) matchResult = { type: 'name', provider: target };
+        }
 
         if (matchResult.type !== 'new' && matchResult.provider) {
           providerId = matchResult.provider.id;
@@ -877,6 +983,7 @@ const ImportPage = () => {
     const isWarning = cellError?.severity === 'warning';
     const isError = cellError?.severity === 'error';
     const isAi = cellError?.severity === 'ai' || isAiField;
+    const isInfo = cellError?.severity === 'info';
 
     return (
       <div
@@ -887,7 +994,9 @@ const ImportPage = () => {
               ? 'bg-purple-500/15 text-purple-700 dark:text-purple-400 ring-1 ring-purple-500/30'
               : isWarning
                 ? 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 ring-1 ring-yellow-500/30'
-                : 'hover:bg-muted/50'
+                : isInfo
+                  ? 'bg-blue-500/10 text-blue-700 dark:text-blue-400 ring-1 ring-blue-500/20'
+                  : 'hover:bg-muted/50'
         }`}
         onClick={() => setEditingCell({ rowId: row._id, field })}
         title={cellError?.message || (isAiField ? 'Gerado por IA — clique para editar' : undefined)}
@@ -896,6 +1005,7 @@ const ImportPage = () => {
         {isError && <AlertTriangle className="w-3 h-3 shrink-0" />}
         {isAi && <Sparkles className="w-3 h-3 shrink-0" />}
         {isWarning && !isAi && <ShieldAlert className="w-3 h-3 shrink-0" />}
+        {isInfo && <Users className="w-3 h-3 shrink-0" />}
       </div>
     );
   };
@@ -1046,6 +1156,139 @@ const ImportPage = () => {
               <span className="text-muted-foreground">Será vinculado a existente</span>
             </div>
           </div>
+        )}
+
+        {/* Cadastros Consolidados (entity groups) */}
+        {rows.length > 0 && !result && (
+          <motion.div id="entity-groups-panel" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+            <Card className={groupsNeedingDecision.length > 0 ? 'border-amber-500/40 bg-amber-500/5' : 'border-blue-500/30 bg-blue-500/5'}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Users className="w-4 h-4 text-primary" />
+                  Cadastros detectados — {groups.length} prestador(es) único(s)
+                  {groupsWithIntraDup.length > 0 && (
+                    <Badge variant="secondary" className="text-[10px] bg-blue-500/20 text-blue-700 dark:text-blue-400">
+                      {groupsWithIntraDup.length} unificado(s) da planilha
+                    </Badge>
+                  )}
+                  {groupsNeedingDecision.length > 0 && (
+                    <Badge variant="secondary" className="text-[10px] bg-amber-500/20 text-amber-700 dark:text-amber-400">
+                      {groupsNeedingDecision.length} aguardando decisão
+                    </Badge>
+                  )}
+                </CardTitle>
+                <p className="text-[10px] text-muted-foreground">
+                  Linhas com mesmo CPF, e-mail ou telefone foram agrupadas como o mesmo prestador. Itens (serviços/produtos) serão somados ao seu estoque.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-[40vh] overflow-y-auto">
+                  {groups.map(g => {
+                    const keyTypeLabel = { cpf: 'CPF/CNPJ', email: 'E-mail', phone: 'Telefone', name: 'Nome' }[g.keyType];
+                    const isMergeBase = g.matchType !== 'new' && !!g.matchedProvider;
+                    const needsDecision = isMergeBase && g.confirmedAction === 'pending';
+                    return (
+                      <div
+                        key={g.key}
+                        className={`p-2.5 rounded-lg border ${
+                          needsDecision
+                            ? 'border-amber-500/40 bg-amber-500/5'
+                            : g.confirmedAction === 'merge' || (isMergeBase && g.confirmedAction !== 'create')
+                              ? 'border-blue-500/30 bg-blue-500/5'
+                              : 'border-border bg-background'
+                        }`}
+                      >
+                        <div className="flex flex-wrap items-start gap-2 justify-between">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-xs font-semibold text-foreground truncate">{g.providerName}</span>
+                              <Badge variant="outline" className="text-[9px] h-4">
+                                {g.rows.length} linha{g.rows.length > 1 ? 's' : ''}
+                              </Badge>
+                              <Badge variant="outline" className="text-[9px] h-4 border-blue-500/40 text-blue-600 dark:text-blue-400">
+                                chave: {keyTypeLabel}
+                              </Badge>
+                              {g.servicesCount > 0 && (
+                                <Badge variant="secondary" className="text-[9px] h-4">
+                                  {g.servicesCount} serviço{g.servicesCount > 1 ? 's' : ''}
+                                </Badge>
+                              )}
+                              {g.productsCount > 0 && (
+                                <Badge variant="secondary" className="text-[9px] h-4">
+                                  {g.productsCount} produto{g.productsCount > 1 ? 's' : ''}
+                                </Badge>
+                              )}
+                              {g.segments.length > 0 && (
+                                <span className="text-[9px] text-muted-foreground">· {g.segments.join(', ')}</span>
+                              )}
+                            </div>
+                            {isMergeBase && g.matchedProvider && (
+                              <p className="text-[10px] text-muted-foreground mt-1">
+                                ↳ Coincide com cadastro existente: <span className="font-medium text-foreground">{g.matchedProvider.name}</span>
+                                {g.matchedProvider.email && <> · {g.matchedProvider.email}</>}
+                                {g.matchedProvider.cpf_cnpj && <> · {g.matchedProvider.cpf_cnpj}</>}
+                              </p>
+                            )}
+                            {!isMergeBase && (
+                              <p className="text-[10px] text-muted-foreground mt-1">
+                                ↳ Não encontrado na base — será criado como novo prestador
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {isMergeBase ? (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant={g.confirmedAction === 'merge' || (g.confirmedAction === 'pending' && false) ? 'default' : 'outline'}
+                                  className="h-7 text-[10px]"
+                                  onClick={() => setGroupDecisions(prev => {
+                                    const next = new Map(prev);
+                                    next.set(g.key, { action: 'merge', providerId: g.matchedProvider!.id });
+                                    return next;
+                                  })}
+                                >
+                                  {g.confirmedAction === 'merge' ? '✓ Vincular' : 'Vincular ao existente'}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant={g.confirmedAction === 'create' ? 'default' : 'outline'}
+                                  className="h-7 text-[10px]"
+                                  onClick={() => setGroupDecisions(prev => {
+                                    const next = new Map(prev);
+                                    next.set(g.key, { action: 'create' });
+                                    return next;
+                                  })}
+                                >
+                                  {g.confirmedAction === 'create' ? '✓ Criar novo' : 'Criar novo'}
+                                </Button>
+                              </>
+                            ) : (
+                              <Badge variant="outline" className="text-[9px] h-5 border-primary/40 text-primary">NOVO CADASTRO</Badge>
+                            )}
+                          </div>
+                        </div>
+                        {g.rows.length > 1 && (
+                          <details className="mt-2">
+                            <summary className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground">
+                              Ver {g.rows.length} linhas agrupadas
+                            </summary>
+                            <div className="mt-1 space-y-0.5 pl-3 border-l border-border">
+                              {g.rows.map(r => (
+                                <p key={r._id} className="text-[10px] text-muted-foreground">
+                                  Linha {r._id}: {r.serviceName && <>🔧 {r.serviceName}</>}{r.serviceName && r.productName ? ' + ' : ''}{r.productName && <>📦 {r.productName}</>}
+                                </p>
+                              ))}
+                            </div>
+                          </details>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         )}
 
         {/* Error/Warning summaries */}
