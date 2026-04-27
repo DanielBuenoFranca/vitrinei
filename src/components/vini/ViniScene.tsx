@@ -26,12 +26,12 @@ export function ViniScene() {
     const tick = () => {
       const t = targetRef.current;
       const c = currentRef.current;
-      // lerp suave
-      c.rx += (t.rx - c.rx) * 0.08;
+      // lerp suave — apenas eixo Y (horizontal). rx fica travado em 0.
       c.ry += (t.ry - c.ry) * 0.08;
+      c.rx = 0;
       if (layerRef.current) {
         layerRef.current.style.transform =
-          `rotateX(${c.rx.toFixed(3)}deg) rotateY(${c.ry.toFixed(3)}deg) scale(1.02)`;
+          `rotateY(${c.ry.toFixed(3)}deg) scale(1.02)`;
       }
       rafRef.current = requestAnimationFrame(tick);
     };
@@ -39,20 +39,16 @@ export function ViniScene() {
 
     const onMove = (e: MouseEvent) => {
       const w = window.innerWidth;
-      const h = window.innerHeight;
       const dx = (e.clientX / w) * 2 - 1; // -1..1
-      const dy = (e.clientY / h) * 2 - 1;
       targetRef.current.ry = dx * MAX;
-      targetRef.current.rx = -dy * MAX;
+      // rx permanece 0 — sem movimento vertical
     };
 
     const onOrient = (e: DeviceOrientationEvent) => {
-      // gamma: ~ -90..90 (esq/dir), beta: ~ -180..180 (frente/trás)
-      if (e.gamma == null || e.beta == null) return;
+      // gamma: ~ -90..90 (esq/dir) — apenas inclinação horizontal
+      if (e.gamma == null) return;
       const gx = Math.max(-MAX, Math.min(MAX, e.gamma / 12));
-      const gy = Math.max(-MAX, Math.min(MAX, (e.beta - 45) / 12));
       targetRef.current.ry = gx;
-      targetRef.current.rx = -gy;
     };
 
     window.addEventListener('mousemove', onMove, { passive: true });
@@ -81,10 +77,10 @@ export function ViniScene() {
         style={{ transformStyle: 'preserve-3d', transition: 'transform 0.05s linear' }}
       >
         {/*
-          Mobile (≤640px): a imagem mobile é vertical (846×1504) — usa object-cover
-          posicionado no centro-baixo para mostrar todo o escritório sem cortar a parte
-          principal do mascote/cenário. É a experiência principal do produto.
-          Desktop (>640px): mantém object-contain para nunca cortar bordas.
+          Em qualquer breakpoint a imagem é exibida POR INTEIRO (object-contain),
+          centralizada — nunca corta as bordas, mesmo na vertical do mobile.
+          As áreas vazias ao redor são preenchidas pelo gradiente radial do
+          container pai, mantendo a continuidade visual do escritório escuro.
         */}
         <picture>
           <source media="(max-width: 640px)" srcSet={officeBgMobile} />
@@ -93,7 +89,7 @@ export function ViniScene() {
             alt=""
             aria-hidden="true"
             draggable={false}
-            className="absolute inset-0 w-full h-full object-cover sm:object-contain object-center"
+            className="absolute inset-0 w-full h-full object-contain object-center"
             style={{ imageRendering: 'auto' }}
           />
         </picture>
