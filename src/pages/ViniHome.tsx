@@ -175,7 +175,7 @@ const ViniHome = () => {
     if (idleTimerRef.current) window.clearTimeout(idleTimerRef.current);
     idleTimerRef.current = window.setTimeout(() => {
       // Only fire if user is still on Home and hasn't typed/clicked since
-      if (Date.now() - lastInteractionRef.current < 4900) return;
+      if (Date.now() - lastInteractionRef.current < 59900) return;
       const lastUserBubble = [...bubbles].reverse().find((b) => b.role === 'user');
       const variants: { text: string; action?: BubbleAction }[] = [];
 
@@ -204,7 +204,7 @@ const ViniHome = () => {
 
       const pick = variants[Math.floor(Math.random() * variants.length)];
       pushBubble({ role: 'vini', text: pick.text, action: pick.action });
-    }, 5000);
+    }, 60000);
   };
 
   // Personalized greeting on login (fires only once per user per session)
