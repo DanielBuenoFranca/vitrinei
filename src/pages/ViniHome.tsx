@@ -501,7 +501,60 @@ const ViniHome = () => {
     }, 200);
   };
 
-  const gridItems: GridItem[] = [
+  /**
+   * Dispatcher central para ações de bolhas do Vini.
+   * Garante que toda sugestão clicada execute a rotina correspondente
+   * (busca real, abrir ferramenta, navegar) — sem deixar o usuário
+   * "preso" lendo um botão sem efeito.
+   */
+  const runAction = (action?: BubbleAction) => {
+    if (!action) return;
+    // 1) Intent interno tem prioridade sobre rota
+    if (action.intent) {
+      switch (action.intent) {
+        case 'search': {
+          const q = (action.payload || '').trim();
+          if (!q) { handleSideSearch(); return; }
+          // Preenche a barra como se o usuário tivesse digitado e dispara
+          setSearchBarVisible(true);
+          setText(q);
+          setTimeout(() => sendQuery(q), 80);
+          return;
+        }
+        case 'open-search':
+          handleSideSearch();
+          return;
+        case 'story':
+          handleSideStory();
+          return;
+        case 'cart':
+          navigate('/jornada-cliente');
+          return;
+        case 'wallet':
+          navigate('/carteira');
+          return;
+        case 'radar':
+          handleRadar();
+          return;
+        case 'profile':
+          handlePerfil();
+          return;
+        case 'referral':
+          handleIndicacao();
+          return;
+        case 'demos':
+          handleDemos();
+          return;
+        case 'mystore':
+          if (storeSlug) navigate(`/loja/${storeSlug}`);
+          else navigate(user ? '/mei' : '/auth');
+          return;
+      }
+    }
+    // 2) Fallback: navegação por rota
+    if (action.route) navigate(action.route);
+  };
+
     { key: 'home', icon: Home, label: 'Home', onClick: handleHome, active: true },
     { key: 'urgencia', icon: Radar, label: 'Urgência', onClick: handleRadar, active: radarActive, badge: totalCartItems > 0 ? totalCartItems : undefined },
     { key: 'reiniciar', icon: RotateCcw, label: 'Reiniciar', onClick: handleReiniciar },
