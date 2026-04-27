@@ -9,7 +9,38 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import { toast } from 'sonner';
-import { Zap, Mail, Lock, User, ArrowLeft, Gift, ShoppingCart, Wrench, Shuffle, Crown, Check, KeyRound, CheckCircle } from 'lucide-react';
+import { Zap, Mail, Lock, User, ArrowLeft, Gift, ShoppingCart, Wrench, Shuffle, Crown, Check, KeyRound, CheckCircle, IdCard, Loader2 } from 'lucide-react';
+import { maskCPFCNPJ, unmask } from '@/lib/masks';
+
+// CPF/CNPJ digit-check validator (Brazilian standard)
+function isValidCpfCnpj(raw: string): boolean {
+  const d = raw.replace(/\D/g, '');
+  if (d.length === 11) {
+    if (/^(\d)\1+$/.test(d)) return false;
+    let sum = 0;
+    for (let i = 0; i < 9; i++) sum += parseInt(d[i]) * (10 - i);
+    let r = (sum * 10) % 11;
+    if (r === 10) r = 0;
+    if (r !== parseInt(d[9])) return false;
+    sum = 0;
+    for (let i = 0; i < 10; i++) sum += parseInt(d[i]) * (11 - i);
+    r = (sum * 10) % 11;
+    if (r === 10) r = 0;
+    return r === parseInt(d[10]);
+  }
+  if (d.length === 14) {
+    if (/^(\d)\1+$/.test(d)) return false;
+    const calc = (len: number) => {
+      const w = len === 12 ? [5,4,3,2,9,8,7,6,5,4,3,2] : [6,5,4,3,2,9,8,7,6,5,4,3,2];
+      let s = 0;
+      for (let i = 0; i < len; i++) s += parseInt(d[i]) * w[i];
+      const m = s % 11;
+      return m < 2 ? 0 : 11 - m;
+    };
+    return calc(12) === parseInt(d[12]) && calc(13) === parseInt(d[13]);
+  }
+  return false;
+}
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import {
