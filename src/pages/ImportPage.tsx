@@ -507,6 +507,21 @@ const ImportPage = () => {
   const [dbLoaded, setDbLoaded] = useState(false);
   const [importedFileHashes, setImportedFileHashes] = useState<Set<string>>(new Set());
   const [importProgress, setImportProgress] = useState<{ step: string; percent: number } | null>(null);
+  const [templateProgress, setTemplateProgress] = useState<{ step: string; percent: number } | null>(null);
+  const [generatingTemplate, setGeneratingTemplate] = useState(false);
+
+  const handleGenerateTemplate = useCallback(async () => {
+    setGeneratingTemplate(true);
+    setTemplateProgress({ step: 'Iniciando...', percent: 0 });
+    try {
+      await generateTemplate((step, percent) => setTemplateProgress({ step, percent }));
+    } catch (e: any) {
+      toast.error('Erro ao gerar modelo: ' + (e?.message || 'erro desconhecido'));
+    } finally {
+      setGeneratingTemplate(false);
+      setTimeout(() => setTemplateProgress(null), 1800);
+    }
+  }, []);
   // Provider dedup confirmation
   const [dedupPending, setDedupPending] = useState<{
     rowId: number;
