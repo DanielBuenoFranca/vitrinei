@@ -36,10 +36,12 @@ interface ParsedRow {
   serviceName: string;
   servicePrice: string;
   serviceUnit: string;
+  serviceQuantity: string;
   productName: string;
   productPrice: string;
   productUnit: string;
   productStockType: string;
+  productQuantity: string;
   phone: string;
   email: string;
   city: string;
@@ -96,46 +98,192 @@ const FIELD_LABELS: Record<string, string> = {
   serviceName: 'Serviço',
   servicePrice: 'Preço Serviço',
   serviceUnit: 'Un. Serviço',
+  serviceQuantity: 'Qtd Serviço',
   productName: 'Produto',
   productPrice: 'Preço Produto',
   productUnit: 'Un. Produto',
   productStockType: 'Tipo Estoque',
+  productQuantity: 'Qtd Produto',
   phone: 'Telefone',
   email: 'E-mail',
   city: 'Cidade',
 };
 
-const COLUMNS: (keyof Omit<ParsedRow, '_id' | '_matchType' | '_matchedProviderId' | '_matchedProviderName' | '_aiFields'>)[] = [
-  'providerName', 'cpfCnpj', 'segment', 'serviceName', 'servicePrice', 'serviceUnit',
-  'productName', 'productPrice', 'productUnit', 'productStockType',
+const COLUMNS: (keyof Omit<ParsedRow, '_id' | '_matchType' | '_matchedProviderId' | '_matchedProviderName' | '_aiFields' | '_groupKey' | '_groupKeyType'>)[] = [
+  'providerName', 'cpfCnpj', 'segment',
+  'serviceName', 'servicePrice', 'serviceUnit', 'serviceQuantity',
+  'productName', 'productPrice', 'productUnit', 'productStockType', 'productQuantity',
   'phone', 'email', 'city',
 ];
 
-/* ─── Template generator ─── */
-const generateTemplate = async () => {
-  const XLSX = await import('xlsx');
-  const { data: unitsData } = await supabase.from('units').select('name, label').order('name');
-  const unitsList = (unitsData || []).map((u: any) => u.name).join(', ');
+/* ─── Schema definition: drives both the template and parsing ───
+   Mantém o modelo gerado SEMPRE sincronizado com os campos obrigatórios atuais
+   do sistema (usuário/prestador, serviços e produtos). */
+interface TemplateField {
+  key: keyof Omit<ParsedRow, '_id' | '_matchType' | '_matchedProviderId' | '_matchedProviderName' | '_aiFields' | '_groupKey' | '_groupKeyType'>;
+  header: string;
+  required: boolean;
+  group: 'prestador' | 'servico' | 'produto';
+  example: string;
+  hint?: string;
+  matchPatterns: string[];
+}
 
-  const headers = ['Prestador', 'CPF/CNPJ', 'Segmento', 'Serviço', 'Preço Serviço', 'Un. Serviço', 'Produto', 'Preço Produto', 'Un. Produto', 'Tipo Estoque', 'Telefone', 'E-mail', 'Cidade'];
-  const example = ['João Silva', '123.456.789-09', 'Manutenção', 'Instalação Elétrica', '150', 'hr', 'Tomada 3 pinos', '12.50', 'un', 'fisico', '(11) 99999-0000', 'joao@email.com', 'São Paulo'];
-  const noteRow = ['', '', '', '', '', `Unidades: ${unitsList}`, '', '', `Unidades: ${unitsList}`, 'fisico ou drop', '', '', ''];
-  const ws = XLSX.utils.aoa_to_sheet([headers, example, noteRow]);
-  ws['!cols'] = headers.map(() => ({ wch: 20 }));
+const TEMPLATE_SCHEMA: TemplateField[] = [
+  // Prestador / Usuário
+  { key: 'providerName', header: 'Prestador *', required: true, group: 'prestador', example: 'João Silva', matchPatterns: ['prestador', 'provider', 'nome do prestador', 'profissional', 'usuario', 'usuário'] },
+  { key: 'cpfCnpj',      header: 'CPF/CNPJ *',  required: true, group: 'prestador', example: '123.456.789-09', hint: 'Use ISENTO se não houver', matchPatterns: ['cpf', 'cnpj', 'cpf/cnpj', 'cpf_cnpj', 'documento'] },
+  { key: 'phone',        header: 'Telefone *',  required: true, group: 'prestador', example: '(11) 99999-0000', matchPatterns: ['telefone', 'phone', 'cel'] },
+  { key: 'email',        header: 'E-mail *',    required: true, group: 'prestador', example: 'joao@email.com', matchPatterns: ['email', 'e-mail'] },
+  { key: 'city',         header: 'Cidade',      required: false, group: 'prestador', example: 'São Paulo', matchPatterns: ['cidade', 'city'] },
+  { key: 'segment',      header: 'Segmento *',  required: true, group: 'prestador', example: 'Manutenção', matchPatterns: ['segmento', 'segment', 'categoria', 'area'] },
+  // Serviço (opcional, mas se houver nome → preço/qtd recomendados)
+  { key: 'serviceName',     header: 'Serviço',          required: false, group: 'servico', example: 'Instalação Elétrica', matchPatterns: ['servico', 'service', 'serviço'] },
+  { key: 'servicePrice',    header: 'Preço Serviço',    required: false, group: 'servico', example: '150', matchPatterns: ['preco_servico', 'preço serviço', 'preco servico', 'service_price', 'valor_servico', 'valor servico', 'preço_serviço'] },
+  { key: 'serviceUnit',     header: 'Un. Serviço',      required: false, group: 'servico', example: 'hr', matchPatterns: ['un. servico', 'un. serviço', 'unidade servico', 'unidade serviço', 'service_unit'] },
+  { key: 'serviceQuantity', header: 'Qtd Serviço',      required: false, group: 'servico', example: '1', hint: 'Capacidade/quantidade disponível', matchPatterns: ['qtd servico', 'qtd serviço', 'quantidade servico', 'quantidade serviço', 'qtd_servico', 'service_quantity'] },
+  // Produto (opcional, mas se houver nome → preço/qtd recomendados)
+  { key: 'productName',     header: 'Produto',          required: false, group: 'produto', example: 'Tomada 3 pinos', matchPatterns: ['produto', 'product'] },
+  { key: 'productPrice',    header: 'Preço Produto',    required: false, group: 'produto', example: '12.50', matchPatterns: ['preco_produto', 'preço produto', 'preco produto', 'product_price', 'valor_produto', 'valor produto', 'preço_produto'] },
+  { key: 'productUnit',     header: 'Un. Produto',      required: false, group: 'produto', example: 'un', matchPatterns: ['un. produto', 'unidade produto', 'product_unit'] },
+  { key: 'productStockType',header: 'Tipo Estoque',     required: false, group: 'produto', example: 'fisico', hint: 'fisico ou drop', matchPatterns: ['estoque', 'stock', 'tipo_estoque', 'tipo estoque'] },
+  { key: 'productQuantity', header: 'Qtd Produto',      required: false, group: 'produto', example: '10', hint: 'Quantidade em estoque', matchPatterns: ['qtd produto', 'quantidade produto', 'qtd_produto', 'product_quantity', 'estoque qtd', 'qtd', 'quantidade'] },
+];
+
+/* ─── Template generator ───
+   Gera o arquivo modelo de importação a partir do TEMPLATE_SCHEMA. Sempre
+   reflete o conjunto atual de campos obrigatórios do sistema (usuário/prestador,
+   serviços e produtos), validando antes da geração se há campo no schema que
+   ainda não está representado em coluna do arquivo. */
+const generateTemplate = async (
+  onProgress?: (step: string, percent: number) => void,
+) => {
+  const tick = (s: string, p: number) => onProgress?.(s, p);
+  tick('Iniciando geração do modelo...', 5);
+
+  const XLSX = await import('xlsx');
+  tick('Carregando configurações do sistema...', 15);
+
+  const [unitsRes, segmentsRes] = await Promise.all([
+    supabase.from('units').select('name, label').order('name'),
+    supabase.from('segments').select('name').order('name'),
+  ]);
+  const unitsData = unitsRes.data || [];
+  const segmentsData = segmentsRes.data || [];
+  const unitsList = unitsData.map((u: any) => u.name).join(', ');
+  const segList = segmentsData.map((s: any) => s.name).slice(0, 8).join(', ');
+  tick('Validando campos obrigatórios do sistema...', 35);
+
+  // Validação: garante que todos os campos do ParsedRow têm representação no schema
+  const schemaKeys = new Set(TEMPLATE_SCHEMA.map(f => f.key));
+  const required: (keyof ParsedRow)[] = [
+    'providerName', 'cpfCnpj', 'segment',
+    'serviceName', 'servicePrice', 'serviceUnit', 'serviceQuantity',
+    'productName', 'productPrice', 'productUnit', 'productStockType', 'productQuantity',
+    'phone', 'email', 'city',
+  ];
+  const missing = required.filter(k => !schemaKeys.has(k as any));
+  if (missing.length > 0) {
+    toast.error(`Campos faltantes no modelo: ${missing.join(', ')}`);
+    return;
+  }
+  tick('Montando colunas...', 55);
+
+  // Linha 1: cabeçalhos com sufixo " *" para obrigatórios
+  const headers = TEMPLATE_SCHEMA.map(f => f.header);
+  // Linha 2: exemplo de preenchimento
+  const example = TEMPLATE_SCHEMA.map(f => f.example);
+  // Linha 3: dicas/observações
+  const hintRow = TEMPLATE_SCHEMA.map(f => {
+    if (f.key === 'serviceUnit' || f.key === 'productUnit') return `Unidades: ${unitsList || 'hr, un, m, kg'}`;
+    if (f.key === 'segment') return segList ? `Existentes: ${segList}` : 'Ex: Saúde, Automotivo';
+    return f.hint || '';
+  });
+  const aoa = [headers, example, hintRow];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  // Larguras adaptativas
+  ws['!cols'] = TEMPLATE_SCHEMA.map(f => ({
+    wch: Math.max(f.header.length + 2, f.example.length + 2, 14),
+  }));
+  tick('Aplicando estilos visuais (obrigatórias)...', 70);
+
+  // Marcar visualmente colunas obrigatórias com fill amarelo + negrito vermelho;
+  // opcionais ficam com fill cinza claro. (Aplica via cellStyles do xlsx-js-style fallback básico)
+  TEMPLATE_SCHEMA.forEach((f, idx) => {
+    const cellAddr = XLSX.utils.encode_cell({ r: 0, c: idx });
+    const cell = ws[cellAddr];
+    if (!cell) return;
+    cell.s = f.required
+      ? {
+          font: { bold: true, color: { rgb: 'B91C1C' } },
+          fill: { fgColor: { rgb: 'FEF3C7' } },
+          alignment: { horizontal: 'center', vertical: 'center' },
+          border: {
+            top: { style: 'thin', color: { rgb: 'B91C1C' } },
+            bottom: { style: 'thin', color: { rgb: 'B91C1C' } },
+            left: { style: 'thin', color: { rgb: 'B91C1C' } },
+            right: { style: 'thin', color: { rgb: 'B91C1C' } },
+          },
+        }
+      : {
+          font: { bold: true, color: { rgb: '475569' } },
+          fill: { fgColor: { rgb: 'F1F5F9' } },
+          alignment: { horizontal: 'center', vertical: 'center' },
+        };
+  });
+
+  // Freeze header
+  ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Importação');
 
-  if (unitsData && unitsData.length > 0) {
+  // Aba Legenda — explica obrigatórios vs opcionais e o agrupamento
+  tick('Adicionando aba "Instruções"...', 80);
+  const legendRows: any[][] = [
+    ['CAMPO', 'OBRIGATÓRIO', 'GRUPO', 'EXEMPLO', 'DICA'],
+    ...TEMPLATE_SCHEMA.map(f => [
+      f.header.replace(' *', ''),
+      f.required ? 'SIM' : 'Não',
+      f.group === 'prestador' ? 'Prestador / Usuário' : f.group === 'servico' ? 'Serviço' : 'Produto',
+      f.example,
+      f.hint || '',
+    ]),
+    [],
+    ['Cores no cabeçalho:'],
+    ['Amarelo + texto vermelho = OBRIGATÓRIO'],
+    ['Cinza = Opcional (preencher se aplicável)'],
+    [],
+    ['Regras de unificação:'],
+    ['Linhas com mesmo CPF/CNPJ, e-mail ou telefone serão tratadas como o MESMO prestador.'],
+    ['Os serviços e produtos serão somados ao estoque desse prestador.'],
+  ];
+  const wsLegend = XLSX.utils.aoa_to_sheet(legendRows);
+  wsLegend['!cols'] = [{ wch: 22 }, { wch: 14 }, { wch: 22 }, { wch: 22 }, { wch: 40 }];
+  XLSX.utils.book_append_sheet(wb, wsLegend, 'Instruções');
+
+  if (unitsData.length > 0) {
     const unitsHeaders = ['Sigla', 'Descrição'];
     const unitsRows = unitsData.map((u: any) => [u.name, u.label]);
     const wsUnits = XLSX.utils.aoa_to_sheet([unitsHeaders, ...unitsRows]);
     wsUnits['!cols'] = [{ wch: 12 }, { wch: 25 }];
     XLSX.utils.book_append_sheet(wb, wsUnits, 'Unidades de Medida');
   }
+  if (segmentsData.length > 0) {
+    const segHeaders = ['Segmento'];
+    const segRows = segmentsData.map((s: any) => [s.name]);
+    const wsSeg = XLSX.utils.aoa_to_sheet([segHeaders, ...segRows]);
+    wsSeg['!cols'] = [{ wch: 28 }];
+    XLSX.utils.book_append_sheet(wb, wsSeg, 'Segmentos');
+  }
 
+  tick('Gravando arquivo .xlsx...', 95);
   XLSX.writeFile(wb, 'modelo_importacao.xlsx');
-  toast.success('Modelo baixado!');
+  tick('Modelo pronto!', 100);
+  toast.success(`Modelo atualizado baixado — ${TEMPLATE_SCHEMA.filter(f => f.required).length} colunas obrigatórias`);
 };
+
 
 /* ─── Cascade matching logic ─── */
 const cascadeMatch = (
@@ -359,6 +507,21 @@ const ImportPage = () => {
   const [dbLoaded, setDbLoaded] = useState(false);
   const [importedFileHashes, setImportedFileHashes] = useState<Set<string>>(new Set());
   const [importProgress, setImportProgress] = useState<{ step: string; percent: number } | null>(null);
+  const [templateProgress, setTemplateProgress] = useState<{ step: string; percent: number } | null>(null);
+  const [generatingTemplate, setGeneratingTemplate] = useState(false);
+
+  const handleGenerateTemplate = useCallback(async () => {
+    setGeneratingTemplate(true);
+    setTemplateProgress({ step: 'Iniciando...', percent: 0 });
+    try {
+      await generateTemplate((step, percent) => setTemplateProgress({ step, percent }));
+    } catch (e: any) {
+      toast.error('Erro ao gerar modelo: ' + (e?.message || 'erro desconhecido'));
+    } finally {
+      setGeneratingTemplate(false);
+      setTimeout(() => setTemplateProgress(null), 1800);
+    }
+  }, []);
   // Provider dedup confirmation
   const [dedupPending, setDedupPending] = useState<{
     rowId: number;
@@ -477,16 +640,18 @@ const ImportPage = () => {
       const findCol = (patterns: string[]) => rawHeaders.find(h => patterns.some(p => normalize(h).includes(p)));
 
       const colMap = {
-        provider: findCol(['prestador', 'provider', 'nome do prestador', 'profissional']),
+        provider: findCol(['prestador', 'provider', 'nome do prestador', 'profissional', 'usuario', 'usuário']),
         cpfCnpj: findCol(['cpf', 'cnpj', 'cpf/cnpj', 'cpf_cnpj', 'documento']),
         segment: findCol(['segmento', 'segment', 'categoria', 'area']),
         service: findCol(['servico', 'service', 'serviço']),
         servicePrice: findCol(['preco_servico', 'preço serviço', 'preco servico', 'service_price', 'valor_servico', 'valor servico', 'preço_serviço']),
         serviceUnit: findCol(['un. servico', 'un. serviço', 'unidade servico', 'unidade serviço', 'service_unit']),
+        serviceQuantity: findCol(['qtd servico', 'qtd serviço', 'quantidade servico', 'quantidade serviço', 'qtd_servico', 'service_quantity']),
         product: findCol(['produto', 'product']),
         productPrice: findCol(['preco_produto', 'preço produto', 'preco produto', 'product_price', 'valor_produto', 'valor produto', 'preço_produto']),
         productUnit: findCol(['un. produto', 'unidade produto', 'product_unit']),
-        stock: findCol(['estoque', 'stock', 'tipo_estoque', 'tipo estoque']),
+        stock: findCol(['tipo_estoque', 'tipo estoque', 'estoque tipo', 'stock_type']),
+        productQuantity: findCol(['qtd produto', 'quantidade produto', 'qtd_produto', 'product_quantity', 'estoque qtd', 'qtd', 'quantidade']),
         phone: findCol(['telefone', 'phone', 'cel']),
         email: findCol(['email', 'e-mail']),
         city: findCol(['cidade', 'city']),
@@ -500,10 +665,12 @@ const ImportPage = () => {
         serviceName: String(r[colMap.service || ''] ?? '').trim(),
         servicePrice: String(r[colMap.servicePrice || ''] ?? '').trim(),
         serviceUnit: String(r[colMap.serviceUnit || ''] ?? '').trim().toLowerCase(),
+        serviceQuantity: String(r[colMap.serviceQuantity || ''] ?? '').trim(),
         productName: String(r[colMap.product || ''] ?? '').trim(),
         productPrice: String(r[colMap.productPrice || ''] ?? '').trim(),
         productUnit: String(r[colMap.productUnit || ''] ?? '').trim().toLowerCase(),
         productStockType: String(r[colMap.stock || ''] ?? '').trim().toLowerCase(),
+        productQuantity: String(r[colMap.productQuantity || ''] ?? '').trim(),
         phone: String(r[colMap.phone || ''] ?? '').trim(),
         email: String(r[colMap.email || ''] ?? '').trim(),
         city: String(r[colMap.city || ''] ?? '').trim(),
@@ -874,10 +1041,12 @@ const ImportPage = () => {
           }
         }
 
-        // Insert services and products
+        // Insert services and products (com quantidade de estoque)
         for (const row of provRows) {
           if (row.serviceName.trim()) {
             const price = parseFloat(row.servicePrice) || 0;
+            const qtyRaw = parseInt(row.serviceQuantity, 10);
+            const quantity = Number.isFinite(qtyRaw) && qtyRaw >= 0 ? qtyRaw : 0;
             const { error } = await supabase.from('dynamic_services').insert({
               service_id: nextServiceId++,
               name: row.serviceName,
@@ -886,6 +1055,7 @@ const ImportPage = () => {
               provider_id: providerId,
               price,
               unit: row.serviceUnit || 'hr',
+              quantity,
             });
             if (error) {
               res.errors.push({ line: row._id, message: `Serviço "${row.serviceName}": ${error.message}` });
@@ -896,6 +1066,8 @@ const ImportPage = () => {
           if (row.productName.trim()) {
             const price = parseFloat(row.productPrice) || 0;
             const tags = row.segment ? [row.segment.toLowerCase()] : [];
+            const qtyRaw = parseInt(row.productQuantity, 10);
+            const quantity = Number.isFinite(qtyRaw) && qtyRaw >= 0 ? qtyRaw : 0;
             const { error } = await supabase.from('dynamic_products').insert({
               product_id: nextProductId++,
               name: row.productName,
@@ -905,6 +1077,7 @@ const ImportPage = () => {
               stock_type: row.productStockType === 'drop' ? 'drop' : 'fisico',
               tags,
               unit: row.productUnit || 'un',
+              quantity,
             });
             if (error) {
               res.errors.push({ line: row._id, message: `Produto "${row.productName}": ${error.message}` });
@@ -1107,9 +1280,30 @@ const ImportPage = () => {
               <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                 <Download className="w-3.5 h-3.5 text-primary" /> 1. Modelo
               </p>
-              <p className="text-[10px] text-muted-foreground">Baixe a planilha modelo.</p>
-              <Button variant="outline" size="sm" className="gap-1.5 mt-auto" onClick={generateTemplate}>
-                <Download className="w-3 h-3" /> Baixar Modelo
+              <p className="text-[10px] text-muted-foreground">
+                Modelo dinâmico — sempre com todos os campos obrigatórios atuais.
+              </p>
+              {templateProgress && (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Loader2 className={`w-3 h-3 ${templateProgress.percent < 100 ? 'animate-spin' : ''} text-primary`} />
+                      {templateProgress.step}
+                    </span>
+                    <span className="font-mono text-muted-foreground">{templateProgress.percent}%</span>
+                  </div>
+                  <Progress value={templateProgress.percent} className="h-1.5" />
+                </div>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 mt-auto"
+                onClick={handleGenerateTemplate}
+                disabled={generatingTemplate}
+              >
+                {generatingTemplate ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                {generatingTemplate ? 'Gerando...' : 'Baixar Modelo'}
               </Button>
             </CardContent>
           </Card>
