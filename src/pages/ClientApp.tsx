@@ -290,7 +290,54 @@ const ClientApp = () => {
         </div>
       </div>
 
-      {/* Cart Drawer */}
+      {/* ─── Quick Access Cards (Urgência / Home / Agenda) ─── */}
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.1, delayChildren: 0.1 } } }}
+        className="px-3 pt-3 grid grid-cols-3 gap-2 sm:gap-3"
+      >
+        {[
+          { key: 'urgencia', icon: '⚡', label: 'Urgência', desc: 'Atendimento imediato', tone: 'from-destructive/15 to-orange-500/10 border-destructive/30', onClick: () => navigate('/jornada-cliente?urgencia=1'), badge: isUrgencia ? 'Ativo' : null },
+          { key: 'home', icon: '🏠', label: 'Home', desc: 'Voltar ao início', tone: 'from-primary/15 to-accent/10 border-primary/30', onClick: () => navigate('/'), badge: null },
+          { key: 'agenda', icon: '📅', label: 'Agenda', desc: 'Ver agendamentos', tone: 'from-emerald-500/15 to-cyan-500/10 border-emerald-500/30', onClick: () => navigate('/jornada-cliente?tab=agenda'), badge: cart.filter(c => c.scheduledDate).length > 0 ? String(cart.filter(c => c.scheduledDate).length) : null },
+        ].map((card) => (
+          <motion.button
+            key={card.key}
+            type="button"
+            onClick={card.onClick}
+            variants={{ hidden: { opacity: 0, y: 14, scale: 0.94 }, visible: { opacity: 1, y: 0, scale: 1 } }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.96 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 22 }}
+            className={`relative rounded-2xl p-2.5 text-left bg-gradient-to-br ${card.tone} backdrop-blur-xl border shadow-sm hover:shadow-md transition-shadow`}
+          >
+            <div className="flex items-start justify-between">
+              <span className="text-lg">{card.icon}</span>
+              {card.badge && (
+                <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-foreground/80 text-background">
+                  {card.badge}
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-[11px] font-bold text-foreground">{card.label}</p>
+            <p className="text-[9px] text-muted-foreground leading-tight">{card.desc}</p>
+          </motion.button>
+        ))}
+      </motion.div>
+
+      {/* Fallback notice when search yielded 0 results */}
+      {noResultsFallback && (
+        <div className="px-3 pt-2">
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[10.5px] text-foreground flex items-start gap-2">
+            <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+            <p>
+              Não encontrei <span className="font-semibold">"{searchQuery}"</span> no estoque local. Mostrando o catálogo completo para você explorar
+              {isFora && <> — incluindo opções de fora da sua região</>}.
+            </p>
+          </div>
+        </div>
+      )}
       <AnimatePresence>
         {showCart && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/40" onClick={() => setShowCart(false)}>
