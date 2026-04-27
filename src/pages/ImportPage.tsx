@@ -1026,10 +1026,12 @@ const ImportPage = () => {
           }
         }
 
-        // Insert services and products
+        // Insert services and products (com quantidade de estoque)
         for (const row of provRows) {
           if (row.serviceName.trim()) {
             const price = parseFloat(row.servicePrice) || 0;
+            const qtyRaw = parseInt(row.serviceQuantity, 10);
+            const quantity = Number.isFinite(qtyRaw) && qtyRaw >= 0 ? qtyRaw : 0;
             const { error } = await supabase.from('dynamic_services').insert({
               service_id: nextServiceId++,
               name: row.serviceName,
@@ -1038,6 +1040,7 @@ const ImportPage = () => {
               provider_id: providerId,
               price,
               unit: row.serviceUnit || 'hr',
+              quantity,
             });
             if (error) {
               res.errors.push({ line: row._id, message: `Serviço "${row.serviceName}": ${error.message}` });
@@ -1048,6 +1051,8 @@ const ImportPage = () => {
           if (row.productName.trim()) {
             const price = parseFloat(row.productPrice) || 0;
             const tags = row.segment ? [row.segment.toLowerCase()] : [];
+            const qtyRaw = parseInt(row.productQuantity, 10);
+            const quantity = Number.isFinite(qtyRaw) && qtyRaw >= 0 ? qtyRaw : 0;
             const { error } = await supabase.from('dynamic_products').insert({
               product_id: nextProductId++,
               name: row.productName,
@@ -1057,6 +1062,7 @@ const ImportPage = () => {
               stock_type: row.productStockType === 'drop' ? 'drop' : 'fisico',
               tags,
               unit: row.productUnit || 'un',
+              quantity,
             });
             if (error) {
               res.errors.push({ line: row._id, message: `Produto "${row.productName}": ${error.message}` });
