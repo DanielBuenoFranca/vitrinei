@@ -398,7 +398,8 @@ const ImportPage = () => {
 
   /* ─── Cascade matching after parse ─── */
   const applyCascadeMatching = useCallback((parsed: ParsedRow[]): ParsedRow[] => {
-    return parsed.map(row => {
+    const annotated = annotateGroups(parsed);
+    return annotated.map(row => {
       const result = cascadeMatch(row, existingProviders);
       return {
         ...row,
