@@ -96,21 +96,28 @@ const ClientApp = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // Filter services by search & segments
+  // Filter services by search & segments. If search/segment yields 0 results,
+  // fall back to the full inventory so the user can still browse.
+  const [noResultsFallback, setNoResultsFallback] = useState(false);
   const filteredServices = useMemo(() => {
     let svcs = clientServices;
+    let didFilter = false;
     if (searchQuery.length >= 2) {
       const q = searchQuery.toLowerCase();
-      svcs = svcs.filter(s =>
+      const filtered = svcs.filter(s =>
         s.name.toLowerCase().includes(q) ||
         s.category.toLowerCase().includes(q) ||
         s.provider.toLowerCase().includes(q)
       );
+      if (filtered.length > 0) { svcs = filtered; didFilter = true; }
     }
     if (selectedSegments.length > 0) {
       const cats = selectedSegments.map(id => segments.find(s => s.id === id)?.category).filter(Boolean);
-      svcs = svcs.filter(s => cats.includes(s.category));
+      const filtered = svcs.filter(s => cats.includes(s.category));
+      if (filtered.length > 0) { svcs = filtered; didFilter = true; }
     }
+    // Detect: searched something but original filter returned 0 → we're using fallback
+    setNoResultsFallback(searchQuery.length >= 2 && !didFilter);
     return svcs;
   }, [searchQuery, selectedSegments]);
 
