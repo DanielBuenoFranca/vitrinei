@@ -670,6 +670,37 @@ const ImportPage = () => {
     });
   }, [runValidation, existingProviders]);
 
+  /* Apply a field change to ALL rows of an entity group (provider-level fields) */
+  const updateGroupField = useCallback((groupKey: string, field: keyof ParsedRow, value: string) => {
+    setRows(prev => {
+      const updated = prev.map(r => {
+        const rk = r._groupKey || computeGroupKey(r).key;
+        if (rk !== groupKey) return r;
+        const next: ParsedRow = { ...r, [field]: value } as ParsedRow;
+        if (r._aiFields?.has(field as string)) {
+          const newAi = new Set(r._aiFields);
+          newAi.delete(field as string);
+          next._aiFields = newAi;
+        }
+        return next;
+      });
+      // Recompute matching/groupKey when key fields change
+      if (['email', 'providerName', 'cpfCnpj', 'phone'].includes(field as string)) {
+        const reMatched = updated.map(row => {
+          const rk0 = row._groupKey || '';
+          if (rk0 !== groupKey) return row;
+          const result = cascadeMatch(row, existingProviders);
+          const { key, type } = computeGroupKey(row);
+          return { ...row, _matchType: result.type, _matchedProviderId: result.provider?.id, _matchedProviderName: result.provider?.name, _groupKey: key, _groupKeyType: type };
+        });
+        setErrors(runValidation(reMatched));
+        return reMatched;
+      }
+      setErrors(runValidation(updated));
+      return updated;
+    });
+  }, [runValidation, existingProviders]);
+
   const removeRow = useCallback((rowId: number) => {
     setRows(prev => {
       const updated = prev.filter(r => r._id !== rowId);
