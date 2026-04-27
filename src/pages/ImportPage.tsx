@@ -366,6 +366,8 @@ const ImportPage = () => {
     resolved: boolean;
   }[]>([]);
   const [showDedupModal, setShowDedupModal] = useState(false);
+  // Group decisions: groupKey -> { action, providerId? }
+  const [groupDecisions, setGroupDecisions] = useState<Map<string, { action: 'merge' | 'create'; providerId?: number }>>(new Map());
 
   useEffect(() => {
     const load = async () => {
