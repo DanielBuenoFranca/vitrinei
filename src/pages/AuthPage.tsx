@@ -102,6 +102,30 @@ const AuthPage = () => {
     }
   }, [searchParams]);
 
+  // Debounced uniqueness check via RPC
+  useEffect(() => {
+    const digits = unmask(cpfCnpj);
+    setProviderHint(false);
+    if (digits.length === 0) { setCpfCheckState('idle'); return; }
+    if (digits.length !== 11 && digits.length !== 14) { setCpfCheckState('idle'); return; }
+    if (!isValidCpfCnpj(digits)) { setCpfCheckState('invalid'); return; }
+    setCpfCheckState('checking');
+    const t = setTimeout(async () => {
+      try {
+        const { data, error } = await (supabase.rpc as any)('check_cpf_cnpj_available', { _doc: digits });
+        if (error) { setCpfCheckState('idle'); return; }
+        const r = data as { available: boolean; reason?: string; has_existing_provider?: boolean };
+        if (r?.available) {
+          setCpfCheckState('ok');
+          setProviderHint(!!r.has_existing_provider);
+        } else {
+          setCpfCheckState(r?.reason === 'invalid_format' ? 'invalid' : 'taken');
+        }
+      } catch { setCpfCheckState('idle'); }
+    }, 450);
+    return () => clearTimeout(t);
+  }, [cpfCnpj]);
+
   if (user) {
     navigate('/');
     return null;
