@@ -31,7 +31,7 @@ const ViniHome = () => {
   const navigate = useNavigate();
   const { user, signOut, displayName } = useAuth();
   const { profileLabel } = usePermissions();
-  const { totalCartItems, totalCartValue, productCart, serviceCart } = useCart();
+  const { totalCartItems, totalCartValue, productCart, serviceCart, clearCart } = useCart();
   const { supported, listening, transcript, start, stop } = useSpeechRecognition();
 
   const [city, setCity] = useState<string | null>(null);
