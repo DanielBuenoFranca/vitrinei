@@ -209,22 +209,23 @@ const ViniHome = () => {
         const last = history[history.length - 1];
         variants.push({
           text: `Quer que eu retome a busca por "${last}"? Posso refinar com base na sua localização.`,
-          action: { label: `Buscar "${last}"`, route: `/buscar?q=${encodeURIComponent(last)}` },
+          action: { label: `Buscar "${last}"`, intent: 'search', payload: last },
         });
       }
       if (totalCartItems > 0) {
         variants.push({
           text: `Você tem ${totalCartItems} ${totalCartItems === 1 ? 'item' : 'itens'} no carrinho. Quer finalizar agora?`,
-          action: { label: 'Ir ao checkout', route: '/jornada-cliente' },
+          action: { label: 'Ir ao checkout', intent: 'cart' },
         });
       }
       variants.push({
-        text: 'Curioso pra conhecer minha história? Toque no avatar do Vini e veja como tudo começou. ✨',
+        text: 'Curioso pra conhecer minha história? Toque aqui e eu te conto como tudo começou. ✨',
+        action: { label: 'Sobre o Vini', intent: 'story' },
       });
       if (!lastUserBubble) {
         variants.push({
           text: 'Posso te sugerir um prestador perto de você agora — quer tentar uma busca rápida?',
-          action: { label: 'Abrir busca', route: '/buscar' },
+          action: { label: 'Abrir busca', intent: 'open-search' },
         });
       }
 
