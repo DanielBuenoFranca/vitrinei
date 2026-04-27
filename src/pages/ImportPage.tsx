@@ -1280,9 +1280,30 @@ const ImportPage = () => {
               <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                 <Download className="w-3.5 h-3.5 text-primary" /> 1. Modelo
               </p>
-              <p className="text-[10px] text-muted-foreground">Baixe a planilha modelo.</p>
-              <Button variant="outline" size="sm" className="gap-1.5 mt-auto" onClick={generateTemplate}>
-                <Download className="w-3 h-3" /> Baixar Modelo
+              <p className="text-[10px] text-muted-foreground">
+                Modelo dinâmico — sempre com todos os campos obrigatórios atuais.
+              </p>
+              {templateProgress && (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Loader2 className={`w-3 h-3 ${templateProgress.percent < 100 ? 'animate-spin' : ''} text-primary`} />
+                      {templateProgress.step}
+                    </span>
+                    <span className="font-mono text-muted-foreground">{templateProgress.percent}%</span>
+                  </div>
+                  <Progress value={templateProgress.percent} className="h-1.5" />
+                </div>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 mt-auto"
+                onClick={handleGenerateTemplate}
+                disabled={generatingTemplate}
+              >
+                {generatingTemplate ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                {generatingTemplate ? 'Gerando...' : 'Baixar Modelo'}
               </Button>
             </CardContent>
           </Card>
