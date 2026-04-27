@@ -485,6 +485,7 @@ const ViniHome = () => {
   return (
     <div className="fixed inset-0 overflow-hidden bg-background text-foreground">
       <ViniScene />
+      <RadarPulse active={radarActive} city={city} itemCount={totalCartItems} />
 
       {/* light gradient overlays for legibility */}
       <div className="absolute inset-x-0 top-0 h-24 pointer-events-none z-10 bg-gradient-to-b from-background/40 to-transparent" />
