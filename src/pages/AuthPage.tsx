@@ -9,7 +9,38 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import { toast } from 'sonner';
-import { Zap, Mail, Lock, User, ArrowLeft, Gift, ShoppingCart, Wrench, Shuffle, Crown, Check, KeyRound, CheckCircle } from 'lucide-react';
+import { Zap, Mail, Lock, User, ArrowLeft, Gift, ShoppingCart, Wrench, Shuffle, Crown, Check, KeyRound, CheckCircle, IdCard, Loader2, X } from 'lucide-react';
+import { maskCPFCNPJ, unmask } from '@/lib/masks';
+
+// CPF/CNPJ digit-check validator (Brazilian standard)
+function isValidCpfCnpj(raw: string): boolean {
+  const d = raw.replace(/\D/g, '');
+  if (d.length === 11) {
+    if (/^(\d)\1+$/.test(d)) return false;
+    let sum = 0;
+    for (let i = 0; i < 9; i++) sum += parseInt(d[i]) * (10 - i);
+    let r = (sum * 10) % 11;
+    if (r === 10) r = 0;
+    if (r !== parseInt(d[9])) return false;
+    sum = 0;
+    for (let i = 0; i < 10; i++) sum += parseInt(d[i]) * (11 - i);
+    r = (sum * 10) % 11;
+    if (r === 10) r = 0;
+    return r === parseInt(d[10]);
+  }
+  if (d.length === 14) {
+    if (/^(\d)\1+$/.test(d)) return false;
+    const calc = (len: number) => {
+      const w = len === 12 ? [5,4,3,2,9,8,7,6,5,4,3,2] : [6,5,4,3,2,9,8,7,6,5,4,3,2];
+      let s = 0;
+      for (let i = 0; i < len; i++) s += parseInt(d[i]) * w[i];
+      const m = s % 11;
+      return m < 2 ? 0 : 11 - m;
+    };
+    return calc(12) === parseInt(d[12]) && calc(13) === parseInt(d[13]);
+  }
+  return false;
+}
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -47,6 +78,9 @@ const AuthPage = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [cpfCnpj, setCpfCnpj] = useState('');
+  const [cpfCheckState, setCpfCheckState] = useState<'idle' | 'checking' | 'ok' | 'taken' | 'invalid'>('idle');
+  const [providerHint, setProviderHint] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resetMode, setResetMode] = useState(false);
   const [refCode, setRefCode] = useState('');
@@ -67,6 +101,30 @@ const AuthPage = () => {
       localStorage.setItem('ecomei_ref', code);
     }
   }, [searchParams]);
+
+  // Debounced uniqueness check via RPC
+  useEffect(() => {
+    const digits = unmask(cpfCnpj);
+    setProviderHint(false);
+    if (digits.length === 0) { setCpfCheckState('idle'); return; }
+    if (digits.length !== 11 && digits.length !== 14) { setCpfCheckState('idle'); return; }
+    if (!isValidCpfCnpj(digits)) { setCpfCheckState('invalid'); return; }
+    setCpfCheckState('checking');
+    const t = setTimeout(async () => {
+      try {
+        const { data, error } = await (supabase.rpc as any)('check_cpf_cnpj_available', { _doc: digits });
+        if (error) { setCpfCheckState('idle'); return; }
+        const r = data as { available: boolean; reason?: string; has_existing_provider?: boolean };
+        if (r?.available) {
+          setCpfCheckState('ok');
+          setProviderHint(!!r.has_existing_provider);
+        } else {
+          setCpfCheckState(r?.reason === 'invalid_format' ? 'invalid' : 'taken');
+        }
+      } catch { setCpfCheckState('idle'); }
+    }, 450);
+    return () => clearTimeout(t);
+  }, [cpfCnpj]);
 
   if (user) {
     navigate('/');
@@ -215,8 +273,23 @@ const AuthPage = () => {
     if (password.length < 6) { toast.error('Senha deve ter no mínimo 6 caracteres'); return; }
     if (!selectedProfile) { toast.error('Selecione um perfil de acesso'); return; }
     if (!selectedPlan) { toast.error('Selecione um plano de assinatura'); return; }
+    const cpfDigits = unmask(cpfCnpj);
+    if (!cpfDigits) { toast.error('CPF ou CNPJ é obrigatório'); return; }
+    if (!isValidCpfCnpj(cpfDigits)) { toast.error('CPF/CNPJ inválido — confira os dígitos'); return; }
+    if (cpfCheckState === 'taken') { toast.error('Este CPF/CNPJ já possui cadastro no sistema'); return; }
 
     setLoading(true);
+
+    // Final server-side check (race-safe)
+    try {
+      const { data: chk } = await (supabase.rpc as any)('check_cpf_cnpj_available', { _doc: cpfDigits });
+      if (chk && !chk.available) {
+        toast.error(chk.reason === 'already_registered' ? 'Este CPF/CNPJ já está cadastrado' : 'CPF/CNPJ inválido');
+        setLoading(false);
+        return;
+      }
+    } catch { /* non-blocking */ }
+
     const { data, error } = await supabase.auth.signUp({
       email, password,
       options: {
@@ -225,6 +298,7 @@ const AuthPage = () => {
           selected_profile: selectedProfile,
           selected_plan: selectedPlan,
           phone: phone || null,
+          cpf_cnpj: cpfDigits,
         },
         emailRedirectTo: window.location.origin,
       },
@@ -247,29 +321,36 @@ const AuthPage = () => {
         price: plan.price,
       });
 
-      // Update profile flags based on selected profile
+      // Update profile — saving CPF/CNPJ triggers auto-link of orphan provider
       const isProvider = selectedProfile === 'provider' || selectedProfile === 'mixed';
       const isCustomer = selectedProfile === 'client' || selectedProfile === 'mixed';
       await supabase.from('profiles').update({
         is_provider: isProvider,
         is_customer: isCustomer,
         phone: phone || null,
+        cpf_cnpj: cpfDigits,
       }).eq('user_id', data.user.id);
 
-      // Auto-create provider record for provider/mixed profiles
+      // Only create a NEW provider record if profile didn't auto-link to an existing one
       if (isProvider) {
-        const providerName = name || email.split('@')[0];
-        try {
-          await supabase.from('providers').insert({
-            name: providerName,
-            segment: ['Geral'],
-            type: 'mei',
-            email: email,
-            phone: phone || '',
-            active: true,
-            storefront_config: {},
-          });
-        } catch { /* provider may already exist — ignore */ }
+        const { data: linked } = await supabase
+          .from('providers').select('id').eq('user_id', data.user.id).limit(1);
+        if (!linked || linked.length === 0) {
+          const providerName = name || email.split('@')[0];
+          try {
+            await supabase.from('providers').insert({
+              name: providerName,
+              segment: ['Geral'],
+              type: 'mei',
+              email: email,
+              phone: phone || '',
+              cpf_cnpj: cpfDigits,
+              user_id: data.user.id,
+              active: true,
+              storefront_config: {},
+            });
+          } catch { /* provider may already exist — ignore */ }
+        }
       }
 
       // Create initial debit in wallet
@@ -421,6 +502,45 @@ const AuthPage = () => {
             <div className="space-y-2">
               <Label className="text-xs">Telefone</Label>
               <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(11) 99999-9999" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs flex items-center gap-1.5">
+                CPF / CNPJ
+                <span className="text-destructive">*</span>
+              </Label>
+              <div className="relative">
+                <IdCard className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
+                <Input
+                  value={cpfCnpj}
+                  onChange={(e) => setCpfCnpj(maskCPFCNPJ(e.target.value))}
+                  placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                  className={`pl-10 pr-10 ${
+                    cpfCheckState === 'taken' || cpfCheckState === 'invalid'
+                      ? 'border-destructive focus-visible:ring-destructive'
+                      : cpfCheckState === 'ok'
+                        ? 'border-success focus-visible:ring-success'
+                        : ''
+                  }`}
+                  inputMode="numeric"
+                  maxLength={18}
+                />
+                <div className="absolute right-3 top-3">
+                  {cpfCheckState === 'checking' && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                  {cpfCheckState === 'ok' && <Check className="w-4 h-4 text-success" />}
+                  {(cpfCheckState === 'taken' || cpfCheckState === 'invalid') && <X className="w-4 h-4 text-destructive" />}
+                </div>
+              </div>
+              {cpfCheckState === 'invalid' && (
+                <p className="text-[10.5px] text-destructive">Documento inválido — confira os dígitos.</p>
+              )}
+              {cpfCheckState === 'taken' && (
+                <p className="text-[10.5px] text-destructive">Este CPF/CNPJ já possui cadastro. Use a aba Entrar.</p>
+              )}
+              {cpfCheckState === 'ok' && providerHint && (
+                <p className="text-[10.5px] text-success">
+                  ✨ Encontramos um cadastro de Prestador com este documento — vamos vinculá-lo automaticamente à sua conta.
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label className="text-xs">Email</Label>

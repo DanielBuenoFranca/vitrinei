@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, Wallet, User as UserIcon, Sparkles, Mic, Plus,
-  Bot, LogIn, Settings, X, Send, Radar, Gift, MapPin, ShoppingBag,
+  Bot, LogIn, Settings, X, Send, Radar, Gift, MapPin, ShoppingBag, Store, RotateCcw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +36,7 @@ const ViniHome = () => {
 
   const [city, setCity] = useState<string | null>(null);
   const [planLabel, setPlanLabel] = useState<string | null>(null);
+  const [storeSlug, setStoreSlug] = useState<string | null>(null);
 
   const [hasInteracted, setHasInteracted] = useState(false);
   const [sideOpen, setSideOpen] = useState(false);
@@ -144,6 +145,18 @@ const ViniHome = () => {
         const p = String(sub.plan).toLowerCase();
         const label = p === 'ouro' ? '🥇 Ouro' : p === 'prata' ? '🥈 Prata' : p === 'bronze' ? '🥉 Bronze' : sub.plan;
         setPlanLabel(label);
+      }
+      // Detect provider storefront for header shortcut
+      const { data: provs } = await supabase
+        .from('providers')
+        .select('id,name')
+        .eq('user_id', user.id)
+        .limit(1);
+      if (provs && provs.length > 0) {
+        const slug = String(provs[0].name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        setStoreSlug(slug || String(provs[0].id));
+      } else {
+        setStoreSlug(null);
       }
     })();
   }, [user]);
@@ -442,9 +455,28 @@ const ViniHome = () => {
   const handlePerfil = () => navigate(user ? '/carteira' : '/auth');
   const handleDemos = () => navigate('/demos');
 
+  const handleReiniciar = () => {
+    // Limpa carrinho, conversa, radar e histórico — volta ao estado inicial
+    clearChat();
+    try { sessionStorage.removeItem(CHAT_STORAGE_KEY); } catch {}
+    setRadarActive(false);
+    setHasInteracted(false);
+    setSearchBarVisible(false);
+    setText('');
+    setHistory([]);
+    try { localStorage.removeItem('vini:search-history'); } catch {}
+    // Carrinho global
+    try { (window as any).__viniClearCart?.(); } catch {}
+    if (typeof clearCart === 'function') clearCart();
+    setTimeout(() => {
+      pushBubble({ role: 'vini', text: 'Pronto, recomeçamos do zero. Em que posso te ajudar agora?' });
+    }, 200);
+  };
+
   const gridItems: GridItem[] = [
     { key: 'home', icon: Home, label: 'Home', onClick: handleHome, active: true },
     { key: 'urgencia', icon: Radar, label: 'Urgência', onClick: handleRadar, active: radarActive, badge: totalCartItems > 0 ? totalCartItems : undefined },
+    { key: 'reiniciar', icon: RotateCcw, label: 'Reiniciar', onClick: handleReiniciar },
     { key: 'perfil', icon: UserIcon, label: 'Perfil', onClick: handlePerfil },
     { key: 'indica', icon: Gift, label: 'Indicação', onClick: handleIndicacao, highlight: 'R$ 5,00' },
   ];
