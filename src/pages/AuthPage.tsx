@@ -78,6 +78,9 @@ const AuthPage = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [cpfCnpj, setCpfCnpj] = useState('');
+  const [cpfCheckState, setCpfCheckState] = useState<'idle' | 'checking' | 'ok' | 'taken' | 'invalid'>('idle');
+  const [providerHint, setProviderHint] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resetMode, setResetMode] = useState(false);
   const [refCode, setRefCode] = useState('');
