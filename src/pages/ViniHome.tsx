@@ -12,6 +12,7 @@ import { ViniScene } from '@/components/vini/ViniScene';
 import { ViniSideButtons } from '@/components/vini/ViniSideButtons';
 import { ViniBottomGrid, type GridItem } from '@/components/vini/ViniBottomGrid';
 import { ViniStoryCard } from '@/components/vini/ViniStoryCard';
+import { RadarPulse } from '@/components/vini/RadarPulse';
 import { ViniConversationModal } from '@/components/vini/ViniConversationModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -31,7 +32,7 @@ const ViniHome = () => {
   const navigate = useNavigate();
   const { user, signOut, displayName } = useAuth();
   const { profileLabel } = usePermissions();
-  const { totalCartItems, totalCartValue, productCart, serviceCart } = useCart();
+  const { totalCartItems, totalCartValue, productCart, serviceCart, clearCart } = useCart();
   const { supported, listening, transcript, start, stop } = useSpeechRecognition();
 
   const [city, setCity] = useState<string | null>(null);
@@ -484,6 +485,7 @@ const ViniHome = () => {
   return (
     <div className="fixed inset-0 overflow-hidden bg-background text-foreground">
       <ViniScene />
+      <RadarPulse active={radarActive} city={city} itemCount={totalCartItems} />
 
       {/* light gradient overlays for legibility */}
       <div className="absolute inset-x-0 top-0 h-24 pointer-events-none z-10 bg-gradient-to-b from-background/40 to-transparent" />
@@ -525,6 +527,18 @@ const ViniHome = () => {
           </div>
 
           <div className="flex items-center gap-1 shrink-0">
+            {storeSlug && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 w-7 p-0 glass"
+                onClick={() => navigate(`/loja/${storeSlug}`)}
+                aria-label="Minha loja"
+                title="Abrir minha loja"
+              >
+                <Store className="w-3.5 h-3.5" />
+              </Button>
+            )}
             <ThemeSwitcher />
             {user ? (
               <Button variant="outline" size="sm" className="h-7 text-[10.5px] px-2 gap-1 glass" onClick={signOut}>
