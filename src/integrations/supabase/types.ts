@@ -141,6 +141,7 @@ export type Database = {
       profiles: {
         Row: {
           address: string | null
+          auth_split_5x: boolean | null
           avatar_url: string | null
           bank_account: string | null
           bank_agency: string | null
@@ -150,20 +151,28 @@ export type Database = {
           cpf_cnpj_normalized: string | null
           created_at: string
           display_name: string | null
+          distance: string | null
           elite_since: string | null
           fidelity_score: number
           id: string
           is_customer: boolean
           is_provider: boolean
           latitude: number | null
+          logo_url: string | null
           longitude: number | null
           phone: string | null
           pix_key: string | null
+          provider_active: boolean | null
+          provider_segments: string[] | null
+          provider_type: string | null
+          rating: number | null
+          storefront_config: Json | null
           updated_at: string
           user_id: string
         }
         Insert: {
           address?: string | null
+          auth_split_5x?: boolean | null
           avatar_url?: string | null
           bank_account?: string | null
           bank_agency?: string | null
@@ -173,20 +182,28 @@ export type Database = {
           cpf_cnpj_normalized?: string | null
           created_at?: string
           display_name?: string | null
+          distance?: string | null
           elite_since?: string | null
           fidelity_score?: number
           id?: string
           is_customer?: boolean
           is_provider?: boolean
           latitude?: number | null
+          logo_url?: string | null
           longitude?: number | null
           phone?: string | null
           pix_key?: string | null
+          provider_active?: boolean | null
+          provider_segments?: string[] | null
+          provider_type?: string | null
+          rating?: number | null
+          storefront_config?: Json | null
           updated_at?: string
           user_id: string
         }
         Update: {
           address?: string | null
+          auth_split_5x?: boolean | null
           avatar_url?: string | null
           bank_account?: string | null
           bank_agency?: string | null
@@ -196,15 +213,22 @@ export type Database = {
           cpf_cnpj_normalized?: string | null
           created_at?: string
           display_name?: string | null
+          distance?: string | null
           elite_since?: string | null
           fidelity_score?: number
           id?: string
           is_customer?: boolean
           is_provider?: boolean
           latitude?: number | null
+          logo_url?: string | null
           longitude?: number | null
           phone?: string | null
           pix_key?: string | null
+          provider_active?: boolean | null
+          provider_segments?: string[] | null
+          provider_type?: string | null
+          rating?: number | null
+          storefront_config?: Json | null
           updated_at?: string
           user_id?: string
         }

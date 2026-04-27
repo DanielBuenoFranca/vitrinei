@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle, Megaphone, Mail, Gift, CheckCircle, KeyRound, BarChart3 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { ProviderForm } from '@/components/admin/ProviderForm';
+import { UserForm } from '@/components/admin/UserForm';
 import { ProductForm } from '@/components/admin/ProductForm';
 import { ServiceForm } from '@/components/admin/ServiceForm';
 import { SegmentForm } from '@/components/admin/SegmentForm';
@@ -69,7 +69,8 @@ const AdminPanel = () => {
   const [loading, setLoading] = useState(true);
   const [clearDialog, setClearDialog] = useState(false);
 
-  const [providerForm, setProviderForm] = useState<{ open: boolean; item: Provider | null }>({ open: false, item: null });
+  const [userForm, setUserForm] = useState<{ open: boolean; profile: any | null; role: any; email: string | null }>({ open: false, profile: null, role: null, email: null });
+  const [migratingProviders, setMigratingProviders] = useState(false);
   const [productForm, setProductForm] = useState<{ open: boolean; item: DynamicProduct | null }>({ open: false, item: null });
   const [serviceForm, setServiceForm] = useState<{ open: boolean; item: DynamicService | null }>({ open: false, item: null });
   const [segmentForm, setSegmentForm] = useState<{ open: boolean; item: Segment | null }>({ open: false, item: null });
@@ -548,14 +549,12 @@ const AdminPanel = () => {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="providers">
+        <Tabs defaultValue="users">
           <TabsList className="flex flex-wrap h-auto gap-1 p-1">
             <TabsTrigger value="segments" className="text-xs gap-1 px-2 py-1.5">
               <Tag className="h-3 w-3" /> Segmentos
             </TabsTrigger>
-            <TabsTrigger value="providers" className="text-xs gap-1 px-2 py-1.5">
-              <Store className="h-3 w-3" /> Prestadores
-            </TabsTrigger>
+            {/* Aba "Prestadores" removida — gestão unificada em "Usuários" */}
             <TabsTrigger value="services" className="text-xs gap-1 px-2 py-1.5">
               <Wrench className="h-3 w-3" /> Serviços
             </TabsTrigger>
@@ -653,82 +652,7 @@ const AdminPanel = () => {
           </TabsContent>
 
           {/* ── PROVIDERS TAB ── */}
-          <TabsContent value="providers">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="text-base">Cadastro de Prestadores (MEI / PF)</CardTitle>
-                  <CardDescription>Profissionais vinculados à plataforma com seus serviços e estoque</CardDescription>
-                </div>
-                <Button size="sm" onClick={() => setProviderForm({ open: true, item: null })}>
-                  <Plus className="h-4 w-4 mr-1" /> Novo Prestador
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {providers.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">Nenhum prestador cadastrado.</p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Nome</TableHead>
-                          <TableHead>CPF/CNPJ</TableHead>
-                          <TableHead>Tipo</TableHead>
-                          <TableHead>Segmento</TableHead>
-                          <TableHead>Cidade</TableHead>
-                          <TableHead>Distância</TableHead>
-                          <TableHead>Avaliação</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Serviços</TableHead>
-                          <TableHead>Produtos</TableHead>
-                          <TableHead></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {providers.map((prov) => {
-                          const provServices = services.filter(s => s.provider_id === prov.id || s.provider === prov.name);
-                          const provProducts = products.filter(p => p.provider_id === prov.id || p.provider === prov.name);
-                          return (
-                            <TableRow key={prov.id}>
-                              <TableCell className="font-medium">{prov.name}</TableCell>
-                              <TableCell className="text-xs text-muted-foreground font-mono">{prov.cpf_cnpj || '—'}</TableCell>
-                              <TableCell>
-                                <Badge variant={prov.type === 'mei' ? 'default' : 'secondary'}>
-                                  {prov.type === 'mei' ? 'MEI' : 'PF'}
-                                </Badge>
-                              </TableCell>
-                              <TableCell><div className="flex flex-wrap gap-1">{(prov.segment || []).map(s => <Badge key={s} variant="outline">{s}</Badge>)}</div></TableCell>
-                              <TableCell className="text-sm text-muted-foreground">{prov.city || '—'}</TableCell>
-                              <TableCell>{prov.distance}</TableCell>
-                              <TableCell>⭐ {prov.rating}</TableCell>
-                              <TableCell>
-                                <Badge variant={prov.active ? 'default' : 'secondary'} className={prov.active ? 'bg-green-500/10 text-green-600 border-green-500/20' : ''}>
-                                  {prov.active ? 'Ativo' : 'Inativo'}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-center">{provServices.length}</TableCell>
-                              <TableCell className="text-center">{provProducts.length}</TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-1">
-                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setProviderForm({ open: true, item: prov })}>
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => confirmDeleteProvider(prov)}>
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+          {/* TabsContent "providers" removida — gestão unificada em "Usuários" */}
 
           {/* ── SERVICES TAB ── */}
           <TabsContent value="services">
@@ -945,7 +869,16 @@ const AdminPanel = () => {
               services={services}
               products={products}
               segments={segments}
-              onEditProvider={(p) => setProviderForm({ open: true, item: p })}
+              onEditProvider={(p) => {
+                // Tenta abrir o usuário vinculado ao prestador
+                const prof = userProfiles.find(u => (u as any).cpf_cnpj === p.cpf_cnpj || u.display_name === p.name);
+                if (prof) {
+                  const r = userRoles.find((x: any) => x.user_id === prof.user_id && ['provider','mixed'].includes(x.role));
+                  setUserForm({ open: true, profile: prof, role: r?.role || 'provider', email: authUserEmails[prof.user_id] || null });
+                } else {
+                  toast.info('Prestador legado sem usuário vinculado. Use "Migrar Prestadores Legados" na aba Usuários.');
+                }
+              }}
               onEditService={(s) => setServiceForm({ open: true, item: s })}
               onEditProduct={(p) => setProductForm({ open: true, item: p })}
               onDeleteService={deleteService}
@@ -961,9 +894,23 @@ const AdminPanel = () => {
                   <CardTitle className="text-base flex items-center gap-2"><UserCog className="w-4 h-4" /> Gestão de Usuários</CardTitle>
                   <CardDescription>Usuários cadastrados no sistema — dados completos e edição de perfil</CardDescription>
                 </div>
-                <Button size="sm" onClick={() => setNewUserDialog(true)}>
-                  <Plus className="h-4 w-4 mr-1" /> Novo Usuário
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="outline" disabled={migratingProviders} onClick={async () => {
+                    setMigratingProviders(true);
+                    try {
+                      const { data, error } = await supabase.functions.invoke('migrate-orphan-providers');
+                      if (error || data?.error) toast.error('Erro: ' + (data?.error || error?.message));
+                      else { toast.success(`Migrados: ${data.migrated}, vinculados: ${data.skipped}, erros: ${data.errors?.length || 0}`); fetchUsers(); fetchData(); }
+                    } catch (e: any) { toast.error('Erro: ' + e.message); }
+                    setMigratingProviders(false);
+                  }}>
+                    {migratingProviders ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Shuffle className="h-4 w-4 mr-1" />}
+                    Migrar Prestadores Legados
+                  </Button>
+                  <Button size="sm" onClick={() => setUserForm({ open: true, profile: null, role: null, email: null })}>
+                    <Plus className="h-4 w-4 mr-1" /> Novo Usuário
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="flex-1 overflow-y-auto max-h-[60vh]">
                 {userProfiles.length === 0 ? (
@@ -1111,7 +1058,10 @@ const AdminPanel = () => {
                                       Ativar + Venda
                                     </Button>
                                   )}
-                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditUser(profile)}>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+                                    const r = userRoles.find((x: any) => x.user_id === profile.user_id && ['provider','mixed','client','admin','master'].includes(x.role));
+                                    setUserForm({ open: true, profile, role: r?.role || 'client', email: authUserEmails[profile.user_id] || null });
+                                  }}>
                                     <Pencil className="h-4 w-4" />
                                   </Button>
                                   <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-600 hover:text-amber-700" title="Redefinir senha"
@@ -1333,7 +1283,15 @@ const AdminPanel = () => {
       </main>
 
       {/* Dialogs */}
-      <ProviderForm open={providerForm.open} onClose={() => setProviderForm({ open: false, item: null })} onSaved={() => { reloadDynamicEntries(); fetchData(); }} provider={providerForm.item} segments={segmentList} />
+      <UserForm
+        open={userForm.open}
+        onClose={() => setUserForm({ open: false, profile: null, role: null, email: null })}
+        onSaved={() => { fetchUsers(); fetchData(); reloadDynamicEntries(); }}
+        profile={userForm.profile}
+        currentRole={userForm.role}
+        currentEmail={userForm.email}
+        segments={segmentList}
+      />
       <ProductForm open={productForm.open} onClose={() => setProductForm({ open: false, item: null })} onSaved={() => { reloadDynamicEntries(); fetchData(); }} product={productForm.item} providers={providerList} segments={segmentList} />
       <ServiceForm open={serviceForm.open} onClose={() => setServiceForm({ open: false, item: null })} onSaved={() => { reloadDynamicEntries(); fetchData(); }} service={serviceForm.item} providers={providerList} segments={segmentList} />
       <SegmentForm open={segmentForm.open} onClose={() => setSegmentForm({ open: false, item: null })} onSaved={fetchData} segment={segmentForm.item} />
