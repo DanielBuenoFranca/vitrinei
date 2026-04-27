@@ -13,7 +13,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import {
   ArrowLeft, Upload, FileSpreadsheet, CheckCircle2, AlertTriangle,
-  Loader2, Download, Pencil, Trash2, X, Save, ShieldAlert, Sparkles, Search, Users
+  Loader2, Download, Pencil, Trash2, X, Save, ShieldAlert, Sparkles, Search, Users,
+  UserCheck, UserPlus, Wrench, Package, ChevronDown, ChevronRight, Link2, Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { reloadDynamicEntries } from '@/data/searchData';
@@ -368,6 +369,7 @@ const ImportPage = () => {
   const [showDedupModal, setShowDedupModal] = useState(false);
   // Group decisions: groupKey -> { action, providerId? }
   const [groupDecisions, setGroupDecisions] = useState<Map<string, { action: 'merge' | 'create'; providerId?: number }>>(new Map());
+  const [expandedGroupKeys, setExpandedGroupKeys] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const load = async () => {
@@ -657,6 +659,37 @@ const ImportPage = () => {
       if (['email', 'providerName', 'cpfCnpj', 'phone'].includes(field)) {
         const reMatched = updated.map(row => {
           if (row._id !== rowId) return row;
+          const result = cascadeMatch(row, existingProviders);
+          const { key, type } = computeGroupKey(row);
+          return { ...row, _matchType: result.type, _matchedProviderId: result.provider?.id, _matchedProviderName: result.provider?.name, _groupKey: key, _groupKeyType: type };
+        });
+        setErrors(runValidation(reMatched));
+        return reMatched;
+      }
+      setErrors(runValidation(updated));
+      return updated;
+    });
+  }, [runValidation, existingProviders]);
+
+  /* Apply a field change to ALL rows of an entity group (provider-level fields) */
+  const updateGroupField = useCallback((groupKey: string, field: keyof ParsedRow, value: string) => {
+    setRows(prev => {
+      const updated = prev.map(r => {
+        const rk = r._groupKey || computeGroupKey(r).key;
+        if (rk !== groupKey) return r;
+        const next: ParsedRow = { ...r, [field]: value } as ParsedRow;
+        if (r._aiFields?.has(field as string)) {
+          const newAi = new Set(r._aiFields);
+          newAi.delete(field as string);
+          next._aiFields = newAi;
+        }
+        return next;
+      });
+      // Recompute matching/groupKey when key fields change
+      if (['email', 'providerName', 'cpfCnpj', 'phone'].includes(field as string)) {
+        const reMatched = updated.map(row => {
+          const rk0 = row._groupKey || '';
+          if (rk0 !== groupKey) return row;
           const result = cascadeMatch(row, existingProviders);
           const { key, type } = computeGroupKey(row);
           return { ...row, _matchType: result.type, _matchedProviderId: result.provider?.id, _matchedProviderName: result.provider?.name, _groupKey: key, _groupKeyType: type };
@@ -1158,138 +1191,287 @@ const ImportPage = () => {
           </div>
         )}
 
-        {/* Cadastros Consolidados (entity groups) */}
-        {rows.length > 0 && !result && (
-          <motion.div id="entity-groups-panel" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-            <Card className={groupsNeedingDecision.length > 0 ? 'border-amber-500/40 bg-amber-500/5' : 'border-blue-500/30 bg-blue-500/5'}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Users className="w-4 h-4 text-primary" />
-                  Cadastros detectados — {groups.length} prestador(es) único(s)
-                  {groupsWithIntraDup.length > 0 && (
-                    <Badge variant="secondary" className="text-[10px] bg-blue-500/20 text-blue-700 dark:text-blue-400">
-                      {groupsWithIntraDup.length} unificado(s) da planilha
-                    </Badge>
-                  )}
-                  {groupsNeedingDecision.length > 0 && (
-                    <Badge variant="secondary" className="text-[10px] bg-amber-500/20 text-amber-700 dark:text-amber-400">
-                      {groupsNeedingDecision.length} aguardando decisão
-                    </Badge>
-                  )}
-                </CardTitle>
-                <p className="text-[10px] text-muted-foreground">
-                  Linhas com mesmo CPF, e-mail ou telefone foram agrupadas como o mesmo prestador. Itens (serviços/produtos) serão somados ao seu estoque.
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 max-h-[40vh] overflow-y-auto">
-                  {groups.map(g => {
-                    const keyTypeLabel = { cpf: 'CPF/CNPJ', email: 'E-mail', phone: 'Telefone', name: 'Nome' }[g.keyType];
-                    const isMergeBase = g.matchType !== 'new' && !!g.matchedProvider;
-                    const needsDecision = isMergeBase && g.confirmedAction === 'pending';
+        {/* Cadastros Consolidados (entity groups) — Painel principal de revisão */}
+        {rows.length > 0 && !result && (() => {
+          const pendingGroups = groups.filter(g => g.matchType !== 'new' && g.confirmedAction === 'pending');
+          const mergeGroups = groups.filter(g => (g.matchType !== 'new' && g.confirmedAction === 'merge'));
+          const newGroups = groups.filter(g => g.matchType === 'new' || g.confirmedAction === 'create');
+
+          const sectionMeta = [
+            { key: 'pending', label: 'Aguardando sua decisão', icon: AlertTriangle, items: pendingGroups, tone: 'amber' },
+            { key: 'merge',   label: 'Vincular a cadastros existentes', icon: Link2, items: mergeGroups, tone: 'blue' },
+            { key: 'new',     label: 'Novos cadastros que serão criados', icon: UserPlus, items: newGroups, tone: 'emerald' },
+          ] as const;
+
+          return (
+            <motion.div id="entity-groups-panel" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+              <Card className={pendingGroups.length > 0 ? 'border-amber-500/40 bg-amber-500/5' : 'border-blue-500/30 bg-blue-500/5'}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2 flex-wrap">
+                    <Users className="w-4 h-4 text-primary" />
+                    Cadastros detectados — {groups.length} prestador(es) único(s)
+                    {mergeGroups.length > 0 && (
+                      <Badge variant="secondary" className="text-[10px] bg-blue-500/20 text-blue-700 dark:text-blue-400">
+                        <Link2 className="w-3 h-3 mr-1" />{mergeGroups.length} a vincular
+                      </Badge>
+                    )}
+                    {newGroups.length > 0 && (
+                      <Badge variant="secondary" className="text-[10px] bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
+                        <UserPlus className="w-3 h-3 mr-1" />{newGroups.length} a criar
+                      </Badge>
+                    )}
+                    {pendingGroups.length > 0 && (
+                      <Badge variant="secondary" className="text-[10px] bg-amber-500/20 text-amber-700 dark:text-amber-400">
+                        {pendingGroups.length} aguardando decisão
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  <p className="text-[10px] text-muted-foreground">
+                    Revise cada prestador. Os <strong>dados do cadastro</strong> ficam no topo (editáveis) e os <strong>itens</strong> (serviços e produtos) no rodapé. Edições no topo se aplicam a todas as linhas do mesmo prestador.
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {sectionMeta.filter(s => s.items.length > 0).map(section => {
+                    const Icon = section.icon;
+                    const toneClasses = {
+                      amber: { ring: 'ring-amber-500/40', bg: 'bg-amber-500/10', text: 'text-amber-700 dark:text-amber-400' },
+                      blue: { ring: 'ring-blue-500/40', bg: 'bg-blue-500/10', text: 'text-blue-700 dark:text-blue-400' },
+                      emerald: { ring: 'ring-emerald-500/40', bg: 'bg-emerald-500/10', text: 'text-emerald-700 dark:text-emerald-400' },
+                    }[section.tone];
                     return (
-                      <div
-                        key={g.key}
-                        className={`p-2.5 rounded-lg border ${
-                          needsDecision
-                            ? 'border-amber-500/40 bg-amber-500/5'
-                            : g.confirmedAction === 'merge' || (isMergeBase && g.confirmedAction !== 'create')
-                              ? 'border-blue-500/30 bg-blue-500/5'
-                              : 'border-border bg-background'
-                        }`}
-                      >
-                        <div className="flex flex-wrap items-start gap-2 justify-between">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="text-xs font-semibold text-foreground truncate">{g.providerName}</span>
-                              <Badge variant="outline" className="text-[9px] h-4">
-                                {g.rows.length} linha{g.rows.length > 1 ? 's' : ''}
-                              </Badge>
-                              <Badge variant="outline" className="text-[9px] h-4 border-blue-500/40 text-blue-600 dark:text-blue-400">
-                                chave: {keyTypeLabel}
-                              </Badge>
-                              {g.servicesCount > 0 && (
-                                <Badge variant="secondary" className="text-[9px] h-4">
-                                  {g.servicesCount} serviço{g.servicesCount > 1 ? 's' : ''}
-                                </Badge>
-                              )}
-                              {g.productsCount > 0 && (
-                                <Badge variant="secondary" className="text-[9px] h-4">
-                                  {g.productsCount} produto{g.productsCount > 1 ? 's' : ''}
-                                </Badge>
-                              )}
-                              {g.segments.length > 0 && (
-                                <span className="text-[9px] text-muted-foreground">· {g.segments.join(', ')}</span>
-                              )}
-                            </div>
-                            {isMergeBase && g.matchedProvider && (
-                              <p className="text-[10px] text-muted-foreground mt-1">
-                                ↳ Coincide com cadastro existente: <span className="font-medium text-foreground">{g.matchedProvider.name}</span>
-                                {g.matchedProvider.email && <> · {g.matchedProvider.email}</>}
-                                {g.matchedProvider.cpf_cnpj && <> · {g.matchedProvider.cpf_cnpj}</>}
-                              </p>
-                            )}
-                            {!isMergeBase && (
-                              <p className="text-[10px] text-muted-foreground mt-1">
-                                ↳ Não encontrado na base — será criado como novo prestador
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            {isMergeBase ? (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant={g.confirmedAction === 'merge' || (g.confirmedAction === 'pending' && false) ? 'default' : 'outline'}
-                                  className="h-7 text-[10px]"
-                                  onClick={() => setGroupDecisions(prev => {
-                                    const next = new Map(prev);
-                                    next.set(g.key, { action: 'merge', providerId: g.matchedProvider!.id });
-                                    return next;
-                                  })}
-                                >
-                                  {g.confirmedAction === 'merge' ? '✓ Vincular' : 'Vincular ao existente'}
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant={g.confirmedAction === 'create' ? 'default' : 'outline'}
-                                  className="h-7 text-[10px]"
-                                  onClick={() => setGroupDecisions(prev => {
-                                    const next = new Map(prev);
-                                    next.set(g.key, { action: 'create' });
-                                    return next;
-                                  })}
-                                >
-                                  {g.confirmedAction === 'create' ? '✓ Criar novo' : 'Criar novo'}
-                                </Button>
-                              </>
-                            ) : (
-                              <Badge variant="outline" className="text-[9px] h-5 border-primary/40 text-primary">NOVO CADASTRO</Badge>
-                            )}
-                          </div>
+                      <div key={section.key}>
+                        <div className={`flex items-center gap-2 mb-2 px-2 py-1 rounded ${toneClasses.bg} ring-1 ${toneClasses.ring}`}>
+                          <Icon className={`w-3.5 h-3.5 ${toneClasses.text}`} />
+                          <span className={`text-[11px] font-semibold ${toneClasses.text}`}>
+                            {section.label} · {section.items.length}
+                          </span>
                         </div>
-                        {g.rows.length > 1 && (
-                          <details className="mt-2">
-                            <summary className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground">
-                              Ver {g.rows.length} linhas agrupadas
-                            </summary>
-                            <div className="mt-1 space-y-0.5 pl-3 border-l border-border">
-                              {g.rows.map(r => (
-                                <p key={r._id} className="text-[10px] text-muted-foreground">
-                                  Linha {r._id}: {r.serviceName && <>🔧 {r.serviceName}</>}{r.serviceName && r.productName ? ' + ' : ''}{r.productName && <>📦 {r.productName}</>}
-                                </p>
-                              ))}
-                            </div>
-                          </details>
-                        )}
+                        <div className="space-y-2">
+                          {section.items.map(g => {
+                            const keyTypeLabel = { cpf: 'CPF/CNPJ', email: 'E-mail', phone: 'Telefone', name: 'Nome' }[g.keyType];
+                            const isMergeBase = g.matchType !== 'new' && !!g.matchedProvider;
+                            const needsDecision = isMergeBase && g.confirmedAction === 'pending';
+                            const isExpanded = expandedGroupKeys.has(g.key);
+                            // Take first row as the canonical provider data source
+                            const headRow = g.rows[0];
+                            return (
+                              <div
+                                key={g.key}
+                                className={`rounded-lg border ${
+                                  needsDecision
+                                    ? 'border-amber-500/40 bg-amber-500/5'
+                                    : g.confirmedAction === 'merge'
+                                      ? 'border-blue-500/30 bg-blue-500/5'
+                                      : 'border-emerald-500/30 bg-emerald-500/5'
+                                }`}
+                              >
+                                {/* HEADER: provider info + decision buttons */}
+                                <div className="p-3 border-b border-border/50">
+                                  <div className="flex flex-wrap items-start gap-2 justify-between mb-2">
+                                    <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                                      {isMergeBase ? (
+                                        <UserCheck className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                                      ) : (
+                                        <UserPlus className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                      )}
+                                      <span className="text-xs font-bold text-foreground truncate max-w-[260px]">{g.providerName}</span>
+                                      <Badge variant="outline" className="text-[9px] h-4">
+                                        {g.rows.length} linha{g.rows.length > 1 ? 's' : ''}
+                                      </Badge>
+                                      <Badge variant="outline" className="text-[9px] h-4 border-blue-500/40 text-blue-600 dark:text-blue-400">
+                                        chave: {keyTypeLabel}
+                                      </Badge>
+                                      {g.servicesCount > 0 && (
+                                        <Badge variant="secondary" className="text-[9px] h-4">
+                                          <Wrench className="w-2.5 h-2.5 mr-0.5" />{g.servicesCount}
+                                        </Badge>
+                                      )}
+                                      {g.productsCount > 0 && (
+                                        <Badge variant="secondary" className="text-[9px] h-4">
+                                          <Package className="w-2.5 h-2.5 mr-0.5" />{g.productsCount}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      {isMergeBase ? (
+                                        <>
+                                          <Button
+                                            size="sm"
+                                            variant={g.confirmedAction === 'merge' ? 'default' : 'outline'}
+                                            className="h-7 text-[10px]"
+                                            onClick={() => setGroupDecisions(prev => {
+                                              const next = new Map(prev);
+                                              next.set(g.key, { action: 'merge', providerId: g.matchedProvider!.id });
+                                              return next;
+                                            })}
+                                          >
+                                            <Link2 className="w-3 h-3 mr-1" />
+                                            {g.confirmedAction === 'merge' ? '✓ Vincular' : 'Vincular ao existente'}
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            variant={g.confirmedAction === 'create' ? 'default' : 'outline'}
+                                            className="h-7 text-[10px]"
+                                            onClick={() => setGroupDecisions(prev => {
+                                              const next = new Map(prev);
+                                              next.set(g.key, { action: 'create' });
+                                              return next;
+                                            })}
+                                          >
+                                            <UserPlus className="w-3 h-3 mr-1" />
+                                            {g.confirmedAction === 'create' ? '✓ Criar novo' : 'Criar novo'}
+                                          </Button>
+                                        </>
+                                      ) : (
+                                        <Badge variant="outline" className="text-[9px] h-5 border-emerald-500/40 text-emerald-600 dark:text-emerald-400">NOVO CADASTRO</Badge>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {isMergeBase && g.matchedProvider && (
+                                    <div className="text-[10px] text-muted-foreground mb-2 px-2 py-1 rounded bg-blue-500/5 border border-blue-500/20">
+                                      ↳ Coincide com cadastro existente: <span className="font-medium text-foreground">{g.matchedProvider.name}</span>
+                                      {g.matchedProvider.email && <> · {g.matchedProvider.email}</>}
+                                      {g.matchedProvider.cpf_cnpj && <> · {g.matchedProvider.cpf_cnpj}</>}
+                                    </div>
+                                  )}
+
+                                  {/* Editable provider fields (apply to ALL rows of this group) */}
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                    <div>
+                                      <label className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">Nome do prestador</label>
+                                      <Input
+                                        value={headRow.providerName}
+                                        onChange={(e) => updateGroupField(g.key, 'providerName', e.target.value)}
+                                        className="h-7 text-xs"
+                                        placeholder="Nome"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">CPF / CNPJ</label>
+                                      <Input
+                                        value={headRow.cpfCnpj}
+                                        onChange={(e) => updateGroupField(g.key, 'cpfCnpj', e.target.value)}
+                                        className="h-7 text-xs"
+                                        placeholder="000.000.000-00 ou ISENTO"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">E-mail</label>
+                                      <Input
+                                        value={headRow.email}
+                                        onChange={(e) => updateGroupField(g.key, 'email', e.target.value)}
+                                        className="h-7 text-xs"
+                                        placeholder="contato@exemplo.com"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">Telefone</label>
+                                      <Input
+                                        value={headRow.phone}
+                                        onChange={(e) => updateGroupField(g.key, 'phone', e.target.value)}
+                                        className="h-7 text-xs"
+                                        placeholder="(00) 00000-0000"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">Cidade</label>
+                                      <Input
+                                        value={headRow.city}
+                                        onChange={(e) => updateGroupField(g.key, 'city', e.target.value)}
+                                        className="h-7 text-xs"
+                                        placeholder="Cidade"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">Segmento principal</label>
+                                      <Input
+                                        value={headRow.segment}
+                                        onChange={(e) => updateGroupField(g.key, 'segment', e.target.value)}
+                                        className="h-7 text-xs"
+                                        placeholder="Ex: Saúde, Automotivo"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* FOOTER: items (services + products) per row, editable */}
+                                <div className="p-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedGroupKeys(prev => {
+                                      const next = new Set(prev);
+                                      if (next.has(g.key)) next.delete(g.key); else next.add(g.key);
+                                      return next;
+                                    })}
+                                    className="w-full flex items-center gap-1 text-[10px] font-semibold text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted/50 transition-colors"
+                                  >
+                                    {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                                    Itens do estoque ({g.servicesCount} serviço{g.servicesCount !== 1 ? 's' : ''} + {g.productsCount} produto{g.productsCount !== 1 ? 's' : ''})
+                                  </button>
+
+                                  {isExpanded && (
+                                    <div className="mt-2 space-y-1.5">
+                                      {g.rows.map((r, idx) => (
+                                        <div key={r._id} className="grid grid-cols-12 gap-1 items-center px-2 py-1 rounded bg-background/50 border border-border/40">
+                                          <span className="col-span-1 text-[9px] text-muted-foreground">L{r._id}</span>
+                                          {/* Service */}
+                                          <div className="col-span-5 flex items-center gap-1">
+                                            <Wrench className="w-3 h-3 text-blue-500 shrink-0" />
+                                            <Input
+                                              value={r.serviceName}
+                                              onChange={(e) => updateCell(r._id, 'serviceName', e.target.value)}
+                                              className="h-6 text-[10px] flex-1"
+                                              placeholder="Serviço"
+                                            />
+                                            <Input
+                                              value={r.servicePrice}
+                                              onChange={(e) => updateCell(r._id, 'servicePrice', e.target.value)}
+                                              className="h-6 text-[10px] w-16"
+                                              placeholder="R$"
+                                            />
+                                          </div>
+                                          {/* Product */}
+                                          <div className="col-span-5 flex items-center gap-1">
+                                            <Package className="w-3 h-3 text-amber-500 shrink-0" />
+                                            <Input
+                                              value={r.productName}
+                                              onChange={(e) => updateCell(r._id, 'productName', e.target.value)}
+                                              className="h-6 text-[10px] flex-1"
+                                              placeholder="Produto"
+                                            />
+                                            <Input
+                                              value={r.productPrice}
+                                              onChange={(e) => updateCell(r._id, 'productPrice', e.target.value)}
+                                              className="h-6 text-[10px] w-16"
+                                              placeholder="R$"
+                                            />
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={() => removeRow(r._id)}
+                                            className="col-span-1 h-6 w-6 rounded hover:bg-destructive/10 text-destructive flex items-center justify-center"
+                                            title="Remover linha"
+                                          >
+                                            <Trash2 className="w-3 h-3" />
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     );
                   })}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          );
+        })()}
 
         {/* Error/Warning summaries */}
         <AnimatePresence>
