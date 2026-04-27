@@ -150,31 +150,140 @@ const TEMPLATE_SCHEMA: TemplateField[] = [
   { key: 'productQuantity', header: 'Qtd Produto',      required: false, group: 'produto', example: '10', hint: 'Quantidade em estoque', matchPatterns: ['qtd produto', 'quantidade produto', 'qtd_produto', 'product_quantity', 'estoque qtd', 'qtd', 'quantidade'] },
 ];
 
-/* ─── Template generator ─── */
-const generateTemplate = async () => {
-  const XLSX = await import('xlsx');
-  const { data: unitsData } = await supabase.from('units').select('name, label').order('name');
-  const unitsList = (unitsData || []).map((u: any) => u.name).join(', ');
+/* ─── Template generator ───
+   Gera o arquivo modelo de importação a partir do TEMPLATE_SCHEMA. Sempre
+   reflete o conjunto atual de campos obrigatórios do sistema (usuário/prestador,
+   serviços e produtos), validando antes da geração se há campo no schema que
+   ainda não está representado em coluna do arquivo. */
+const generateTemplate = async (
+  onProgress?: (step: string, percent: number) => void,
+) => {
+  const tick = (s: string, p: number) => onProgress?.(s, p);
+  tick('Iniciando geração do modelo...', 5);
 
-  const headers = ['Prestador', 'CPF/CNPJ', 'Segmento', 'Serviço', 'Preço Serviço', 'Un. Serviço', 'Produto', 'Preço Produto', 'Un. Produto', 'Tipo Estoque', 'Telefone', 'E-mail', 'Cidade'];
-  const example = ['João Silva', '123.456.789-09', 'Manutenção', 'Instalação Elétrica', '150', 'hr', 'Tomada 3 pinos', '12.50', 'un', 'fisico', '(11) 99999-0000', 'joao@email.com', 'São Paulo'];
-  const noteRow = ['', '', '', '', '', `Unidades: ${unitsList}`, '', '', `Unidades: ${unitsList}`, 'fisico ou drop', '', '', ''];
-  const ws = XLSX.utils.aoa_to_sheet([headers, example, noteRow]);
-  ws['!cols'] = headers.map(() => ({ wch: 20 }));
+  const XLSX = await import('xlsx');
+  tick('Carregando configurações do sistema...', 15);
+
+  const [unitsRes, segmentsRes] = await Promise.all([
+    supabase.from('units').select('name, label').order('name'),
+    supabase.from('segments').select('name').order('name'),
+  ]);
+  const unitsData = unitsRes.data || [];
+  const segmentsData = segmentsRes.data || [];
+  const unitsList = unitsData.map((u: any) => u.name).join(', ');
+  const segList = segmentsData.map((s: any) => s.name).slice(0, 8).join(', ');
+  tick('Validando campos obrigatórios do sistema...', 35);
+
+  // Validação: garante que todos os campos do ParsedRow têm representação no schema
+  const schemaKeys = new Set(TEMPLATE_SCHEMA.map(f => f.key));
+  const required: (keyof ParsedRow)[] = [
+    'providerName', 'cpfCnpj', 'segment',
+    'serviceName', 'servicePrice', 'serviceUnit', 'serviceQuantity',
+    'productName', 'productPrice', 'productUnit', 'productStockType', 'productQuantity',
+    'phone', 'email', 'city',
+  ];
+  const missing = required.filter(k => !schemaKeys.has(k as any));
+  if (missing.length > 0) {
+    toast.error(`Campos faltantes no modelo: ${missing.join(', ')}`);
+    return;
+  }
+  tick('Montando colunas...', 55);
+
+  // Linha 1: cabeçalhos com sufixo " *" para obrigatórios
+  const headers = TEMPLATE_SCHEMA.map(f => f.header);
+  // Linha 2: exemplo de preenchimento
+  const example = TEMPLATE_SCHEMA.map(f => f.example);
+  // Linha 3: dicas/observações
+  const hintRow = TEMPLATE_SCHEMA.map(f => {
+    if (f.key === 'serviceUnit' || f.key === 'productUnit') return `Unidades: ${unitsList || 'hr, un, m, kg'}`;
+    if (f.key === 'segment') return segList ? `Existentes: ${segList}` : 'Ex: Saúde, Automotivo';
+    return f.hint || '';
+  });
+  const aoa = [headers, example, hintRow];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  // Larguras adaptativas
+  ws['!cols'] = TEMPLATE_SCHEMA.map(f => ({
+    wch: Math.max(f.header.length + 2, f.example.length + 2, 14),
+  }));
+  tick('Aplicando estilos visuais (obrigatórias)...', 70);
+
+  // Marcar visualmente colunas obrigatórias com fill amarelo + negrito vermelho;
+  // opcionais ficam com fill cinza claro. (Aplica via cellStyles do xlsx-js-style fallback básico)
+  TEMPLATE_SCHEMA.forEach((f, idx) => {
+    const cellAddr = XLSX.utils.encode_cell({ r: 0, c: idx });
+    const cell = ws[cellAddr];
+    if (!cell) return;
+    cell.s = f.required
+      ? {
+          font: { bold: true, color: { rgb: 'B91C1C' } },
+          fill: { fgColor: { rgb: 'FEF3C7' } },
+          alignment: { horizontal: 'center', vertical: 'center' },
+          border: {
+            top: { style: 'thin', color: { rgb: 'B91C1C' } },
+            bottom: { style: 'thin', color: { rgb: 'B91C1C' } },
+            left: { style: 'thin', color: { rgb: 'B91C1C' } },
+            right: { style: 'thin', color: { rgb: 'B91C1C' } },
+          },
+        }
+      : {
+          font: { bold: true, color: { rgb: '475569' } },
+          fill: { fgColor: { rgb: 'F1F5F9' } },
+          alignment: { horizontal: 'center', vertical: 'center' },
+        };
+  });
+
+  // Freeze header
+  ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Importação');
 
-  if (unitsData && unitsData.length > 0) {
+  // Aba Legenda — explica obrigatórios vs opcionais e o agrupamento
+  tick('Adicionando aba "Instruções"...', 80);
+  const legendRows: any[][] = [
+    ['CAMPO', 'OBRIGATÓRIO', 'GRUPO', 'EXEMPLO', 'DICA'],
+    ...TEMPLATE_SCHEMA.map(f => [
+      f.header.replace(' *', ''),
+      f.required ? 'SIM' : 'Não',
+      f.group === 'prestador' ? 'Prestador / Usuário' : f.group === 'servico' ? 'Serviço' : 'Produto',
+      f.example,
+      f.hint || '',
+    ]),
+    [],
+    ['Cores no cabeçalho:'],
+    ['Amarelo + texto vermelho = OBRIGATÓRIO'],
+    ['Cinza = Opcional (preencher se aplicável)'],
+    [],
+    ['Regras de unificação:'],
+    ['Linhas com mesmo CPF/CNPJ, e-mail ou telefone serão tratadas como o MESMO prestador.'],
+    ['Os serviços e produtos serão somados ao estoque desse prestador.'],
+  ];
+  const wsLegend = XLSX.utils.aoa_to_sheet(legendRows);
+  wsLegend['!cols'] = [{ wch: 22 }, { wch: 14 }, { wch: 22 }, { wch: 22 }, { wch: 40 }];
+  XLSX.utils.book_append_sheet(wb, wsLegend, 'Instruções');
+
+  if (unitsData.length > 0) {
     const unitsHeaders = ['Sigla', 'Descrição'];
     const unitsRows = unitsData.map((u: any) => [u.name, u.label]);
     const wsUnits = XLSX.utils.aoa_to_sheet([unitsHeaders, ...unitsRows]);
     wsUnits['!cols'] = [{ wch: 12 }, { wch: 25 }];
     XLSX.utils.book_append_sheet(wb, wsUnits, 'Unidades de Medida');
   }
+  if (segmentsData.length > 0) {
+    const segHeaders = ['Segmento'];
+    const segRows = segmentsData.map((s: any) => [s.name]);
+    const wsSeg = XLSX.utils.aoa_to_sheet([segHeaders, ...segRows]);
+    wsSeg['!cols'] = [{ wch: 28 }];
+    XLSX.utils.book_append_sheet(wb, wsSeg, 'Segmentos');
+  }
 
+  tick('Gravando arquivo .xlsx...', 95);
   XLSX.writeFile(wb, 'modelo_importacao.xlsx');
-  toast.success('Modelo baixado!');
+  tick('Modelo pronto!', 100);
+  toast.success(`Modelo atualizado baixado — ${TEMPLATE_SCHEMA.filter(f => f.required).length} colunas obrigatórias`);
 };
+
 
 /* ─── Cascade matching logic ─── */
 const cascadeMatch = (
