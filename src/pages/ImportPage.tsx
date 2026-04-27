@@ -19,6 +19,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { reloadDynamicEntries } from '@/data/searchData';
 
 /* ─── Types ─── */
+interface ExistingProvider {
+  id: number;
+  name: string;
+  segment: string[];
+  phone: string | null;
+  email: string | null;
+  cpf_cnpj: string | null;
+}
+
 interface ParsedRow {
   _id: number;
   providerName: string;
@@ -34,13 +43,10 @@ interface ParsedRow {
   email: string;
   city: string;
   cpfCnpj: string;
-  // Cascade match result
   _matchType?: 'email' | 'name' | 'cpf' | 'new';
   _matchedProviderId?: number;
   _matchedProviderName?: string;
-  // AI enrichment tracking
   _aiFields?: Set<string>;
-  // Grouping (intra-spreadsheet dedup)
   _groupKey?: string;
   _groupKeyType?: 'cpf' | 'email' | 'phone' | 'name';
 }
@@ -62,7 +68,7 @@ interface RowError {
   rowId: number;
   field: string;
   message: string;
-  severity: 'error' | 'warning' | 'ai';
+  severity: 'error' | 'warning' | 'ai' | 'info';
 }
 
 interface AutoFix {
@@ -78,15 +84,6 @@ interface ImportResult {
   segmentsCreated: number;
   errors: { line: number; message: string }[];
   fixes: AutoFix[];
-}
-
-interface ExistingProvider {
-  id: number;
-  name: string;
-  segment: string[];
-  phone: string | null;
-  email: string | null;
-  cpf_cnpj: string | null;
 }
 
 const STOCK_TYPES = ['fisico', 'drop'];
