@@ -13,7 +13,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import {
   ArrowLeft, Upload, FileSpreadsheet, CheckCircle2, AlertTriangle,
-  Loader2, Download, Pencil, Trash2, X, Save, ShieldAlert, Sparkles, Search, Users
+  Loader2, Download, Pencil, Trash2, X, Save, ShieldAlert, Sparkles, Search, Users,
+  UserCheck, UserPlus, Wrench, Package, ChevronDown, ChevronRight, Link2, Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { reloadDynamicEntries } from '@/data/searchData';
