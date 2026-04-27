@@ -205,27 +205,28 @@ const validateBusinessRules = (
   existingSegments: Set<string>,
 ): RowError[] => {
   const errors: RowError[] = [];
-  
-  // Cross-row uniqueness check within the import itself
+
+  // Intra-spreadsheet duplicates are NOT errors anymore — they form an entity group.
+  // We surface them as informational hints so the user understands the merge.
   const cpfMap = new Map<string, number>();
   const emailMap = new Map<string, number>();
   const phoneMap = new Map<string, number>();
-  
+
   rows.forEach(row => {
     const cpf = row.cpfCnpj.replace(/\D/g, '').trim();
     const email = row.email.trim().toLowerCase();
     const phone = row.phone.replace(/\D/g, '').trim();
-    
+
     if (cpf && cpf.length >= 11) {
       if (cpfMap.has(cpf)) {
-        errors.push({ rowId: row._id, field: 'cpfCnpj', message: `CPF/CNPJ duplicado na planilha (linha ${cpfMap.get(cpf)})`, severity: 'error' });
+        errors.push({ rowId: row._id, field: 'cpfCnpj', message: `Mesmo CPF/CNPJ da linha ${cpfMap.get(cpf)} — itens serão unificados`, severity: 'info' });
       } else {
         cpfMap.set(cpf, row._id);
       }
     }
     if (email) {
       if (emailMap.has(email)) {
-        errors.push({ rowId: row._id, field: 'email', message: `E-mail duplicado na planilha (linha ${emailMap.get(email)})`, severity: 'error' });
+        errors.push({ rowId: row._id, field: 'email', message: `Mesmo e-mail da linha ${emailMap.get(email)} — itens serão unificados`, severity: 'info' });
       } else {
         emailMap.set(email, row._id);
       }
@@ -233,7 +234,7 @@ const validateBusinessRules = (
     if (phone && phone.length >= 8) {
       const phoneKey = phone.slice(-8);
       if (phoneMap.has(phoneKey)) {
-        errors.push({ rowId: row._id, field: 'phone', message: `Telefone duplicado na planilha (linha ${phoneMap.get(phoneKey)})`, severity: 'error' });
+        errors.push({ rowId: row._id, field: 'phone', message: `Mesmo telefone da linha ${phoneMap.get(phoneKey)} — itens serão unificados`, severity: 'info' });
       } else {
         phoneMap.set(phoneKey, row._id);
       }
