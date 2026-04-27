@@ -36,10 +36,12 @@ interface ParsedRow {
   serviceName: string;
   servicePrice: string;
   serviceUnit: string;
+  serviceQuantity: string;
   productName: string;
   productPrice: string;
   productUnit: string;
   productStockType: string;
+  productQuantity: string;
   phone: string;
   email: string;
   city: string;
