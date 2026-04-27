@@ -98,19 +98,56 @@ const FIELD_LABELS: Record<string, string> = {
   serviceName: 'Serviço',
   servicePrice: 'Preço Serviço',
   serviceUnit: 'Un. Serviço',
+  serviceQuantity: 'Qtd Serviço',
   productName: 'Produto',
   productPrice: 'Preço Produto',
   productUnit: 'Un. Produto',
   productStockType: 'Tipo Estoque',
+  productQuantity: 'Qtd Produto',
   phone: 'Telefone',
   email: 'E-mail',
   city: 'Cidade',
 };
 
-const COLUMNS: (keyof Omit<ParsedRow, '_id' | '_matchType' | '_matchedProviderId' | '_matchedProviderName' | '_aiFields'>)[] = [
-  'providerName', 'cpfCnpj', 'segment', 'serviceName', 'servicePrice', 'serviceUnit',
-  'productName', 'productPrice', 'productUnit', 'productStockType',
+const COLUMNS: (keyof Omit<ParsedRow, '_id' | '_matchType' | '_matchedProviderId' | '_matchedProviderName' | '_aiFields' | '_groupKey' | '_groupKeyType'>)[] = [
+  'providerName', 'cpfCnpj', 'segment',
+  'serviceName', 'servicePrice', 'serviceUnit', 'serviceQuantity',
+  'productName', 'productPrice', 'productUnit', 'productStockType', 'productQuantity',
   'phone', 'email', 'city',
+];
+
+/* ─── Schema definition: drives both the template and parsing ───
+   Mantém o modelo gerado SEMPRE sincronizado com os campos obrigatórios atuais
+   do sistema (usuário/prestador, serviços e produtos). */
+interface TemplateField {
+  key: keyof Omit<ParsedRow, '_id' | '_matchType' | '_matchedProviderId' | '_matchedProviderName' | '_aiFields' | '_groupKey' | '_groupKeyType'>;
+  header: string;
+  required: boolean;
+  group: 'prestador' | 'servico' | 'produto';
+  example: string;
+  hint?: string;
+  matchPatterns: string[];
+}
+
+const TEMPLATE_SCHEMA: TemplateField[] = [
+  // Prestador / Usuário
+  { key: 'providerName', header: 'Prestador *', required: true, group: 'prestador', example: 'João Silva', matchPatterns: ['prestador', 'provider', 'nome do prestador', 'profissional', 'usuario', 'usuário'] },
+  { key: 'cpfCnpj',      header: 'CPF/CNPJ *',  required: true, group: 'prestador', example: '123.456.789-09', hint: 'Use ISENTO se não houver', matchPatterns: ['cpf', 'cnpj', 'cpf/cnpj', 'cpf_cnpj', 'documento'] },
+  { key: 'phone',        header: 'Telefone *',  required: true, group: 'prestador', example: '(11) 99999-0000', matchPatterns: ['telefone', 'phone', 'cel'] },
+  { key: 'email',        header: 'E-mail *',    required: true, group: 'prestador', example: 'joao@email.com', matchPatterns: ['email', 'e-mail'] },
+  { key: 'city',         header: 'Cidade',      required: false, group: 'prestador', example: 'São Paulo', matchPatterns: ['cidade', 'city'] },
+  { key: 'segment',      header: 'Segmento *',  required: true, group: 'prestador', example: 'Manutenção', matchPatterns: ['segmento', 'segment', 'categoria', 'area'] },
+  // Serviço (opcional, mas se houver nome → preço/qtd recomendados)
+  { key: 'serviceName',     header: 'Serviço',          required: false, group: 'servico', example: 'Instalação Elétrica', matchPatterns: ['servico', 'service', 'serviço'] },
+  { key: 'servicePrice',    header: 'Preço Serviço',    required: false, group: 'servico', example: '150', matchPatterns: ['preco_servico', 'preço serviço', 'preco servico', 'service_price', 'valor_servico', 'valor servico', 'preço_serviço'] },
+  { key: 'serviceUnit',     header: 'Un. Serviço',      required: false, group: 'servico', example: 'hr', matchPatterns: ['un. servico', 'un. serviço', 'unidade servico', 'unidade serviço', 'service_unit'] },
+  { key: 'serviceQuantity', header: 'Qtd Serviço',      required: false, group: 'servico', example: '1', hint: 'Capacidade/quantidade disponível', matchPatterns: ['qtd servico', 'qtd serviço', 'quantidade servico', 'quantidade serviço', 'qtd_servico', 'service_quantity'] },
+  // Produto (opcional, mas se houver nome → preço/qtd recomendados)
+  { key: 'productName',     header: 'Produto',          required: false, group: 'produto', example: 'Tomada 3 pinos', matchPatterns: ['produto', 'product'] },
+  { key: 'productPrice',    header: 'Preço Produto',    required: false, group: 'produto', example: '12.50', matchPatterns: ['preco_produto', 'preço produto', 'preco produto', 'product_price', 'valor_produto', 'valor produto', 'preço_produto'] },
+  { key: 'productUnit',     header: 'Un. Produto',      required: false, group: 'produto', example: 'un', matchPatterns: ['un. produto', 'unidade produto', 'product_unit'] },
+  { key: 'productStockType',header: 'Tipo Estoque',     required: false, group: 'produto', example: 'fisico', hint: 'fisico ou drop', matchPatterns: ['estoque', 'stock', 'tipo_estoque', 'tipo estoque'] },
+  { key: 'productQuantity', header: 'Qtd Produto',      required: false, group: 'produto', example: '10', hint: 'Quantidade em estoque', matchPatterns: ['qtd produto', 'quantidade produto', 'qtd_produto', 'product_quantity', 'estoque qtd', 'qtd', 'quantidade'] },
 ];
 
 /* ─── Template generator ─── */
