@@ -683,6 +683,7 @@ const ImportPage = () => {
   const criticalErrors = errors.filter(e => e.severity === 'error');
   const warnings = errors.filter(e => e.severity === 'warning');
   const aiMarkers = errors.filter(e => e.severity === 'ai');
+  const infoMarkers = errors.filter(e => e.severity === 'info');
   const hasCriticalErrors = criticalErrors.length > 0;
   const hasWarnings = warnings.length > 0;
   const hasAiData = aiMarkers.length > 0;
