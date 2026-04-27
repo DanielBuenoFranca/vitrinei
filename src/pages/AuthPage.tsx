@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import { toast } from 'sonner';
-import { Zap, Mail, Lock, User, ArrowLeft, Gift, ShoppingCart, Wrench, Shuffle, Crown, Check, KeyRound, CheckCircle, IdCard, Loader2 } from 'lucide-react';
+import { Zap, Mail, Lock, User, ArrowLeft, Gift, ShoppingCart, Wrench, Shuffle, Crown, Check, KeyRound, CheckCircle, IdCard, Loader2, X } from 'lucide-react';
 import { maskCPFCNPJ, unmask } from '@/lib/masks';
 
 // CPF/CNPJ digit-check validator (Brazilian standard)
