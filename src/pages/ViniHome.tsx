@@ -525,6 +525,18 @@ const ViniHome = () => {
           </div>
 
           <div className="flex items-center gap-1 shrink-0">
+            {storeSlug && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 w-7 p-0 glass"
+                onClick={() => navigate(`/loja/${storeSlug}`)}
+                aria-label="Minha loja"
+                title="Abrir minha loja"
+              >
+                <Store className="w-3.5 h-3.5" />
+              </Button>
+            )}
             <ThemeSwitcher />
             {user ? (
               <Button variant="outline" size="sm" className="h-7 text-[10.5px] px-2 gap-1 glass" onClick={signOut}>
