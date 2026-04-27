@@ -26,12 +26,12 @@ export function ViniScene() {
     const tick = () => {
       const t = targetRef.current;
       const c = currentRef.current;
-      // lerp suave
-      c.rx += (t.rx - c.rx) * 0.08;
+      // lerp suave — apenas eixo Y (horizontal). rx fica travado em 0.
       c.ry += (t.ry - c.ry) * 0.08;
+      c.rx = 0;
       if (layerRef.current) {
         layerRef.current.style.transform =
-          `rotateX(${c.rx.toFixed(3)}deg) rotateY(${c.ry.toFixed(3)}deg) scale(1.02)`;
+          `rotateY(${c.ry.toFixed(3)}deg) scale(1.02)`;
       }
       rafRef.current = requestAnimationFrame(tick);
     };
@@ -39,20 +39,16 @@ export function ViniScene() {
 
     const onMove = (e: MouseEvent) => {
       const w = window.innerWidth;
-      const h = window.innerHeight;
       const dx = (e.clientX / w) * 2 - 1; // -1..1
-      const dy = (e.clientY / h) * 2 - 1;
       targetRef.current.ry = dx * MAX;
-      targetRef.current.rx = -dy * MAX;
+      // rx permanece 0 — sem movimento vertical
     };
 
     const onOrient = (e: DeviceOrientationEvent) => {
-      // gamma: ~ -90..90 (esq/dir), beta: ~ -180..180 (frente/trás)
-      if (e.gamma == null || e.beta == null) return;
+      // gamma: ~ -90..90 (esq/dir) — apenas inclinação horizontal
+      if (e.gamma == null) return;
       const gx = Math.max(-MAX, Math.min(MAX, e.gamma / 12));
-      const gy = Math.max(-MAX, Math.min(MAX, (e.beta - 45) / 12));
       targetRef.current.ry = gx;
-      targetRef.current.rx = -gy;
     };
 
     window.addEventListener('mousemove', onMove, { passive: true });
