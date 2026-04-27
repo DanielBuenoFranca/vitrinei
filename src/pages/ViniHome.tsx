@@ -146,6 +146,18 @@ const ViniHome = () => {
         const label = p === 'ouro' ? '🥇 Ouro' : p === 'prata' ? '🥈 Prata' : p === 'bronze' ? '🥉 Bronze' : sub.plan;
         setPlanLabel(label);
       }
+      // Detect provider storefront for header shortcut
+      const { data: provs } = await supabase
+        .from('providers')
+        .select('id,name')
+        .eq('user_id', user.id)
+        .limit(1);
+      if (provs && provs.length > 0) {
+        const slug = String(provs[0].name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        setStoreSlug(slug || String(provs[0].id));
+      } else {
+        setStoreSlug(null);
+      }
     })();
   }, [user]);
 
