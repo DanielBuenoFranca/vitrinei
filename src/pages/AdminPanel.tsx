@@ -869,7 +869,16 @@ const AdminPanel = () => {
               services={services}
               products={products}
               segments={segments}
-              onEditProvider={(p) => setProviderForm({ open: true, item: p })}
+              onEditProvider={(p) => {
+                // Tenta abrir o usuário vinculado ao prestador
+                const prof = userProfiles.find(u => (u as any).cpf_cnpj === p.cpf_cnpj || u.display_name === p.name);
+                if (prof) {
+                  const r = userRoles.find((x: any) => x.user_id === prof.user_id && ['provider','mixed'].includes(x.role));
+                  setUserForm({ open: true, profile: prof, role: r?.role || 'provider', email: authUserEmails[prof.user_id] || null });
+                } else {
+                  toast.info('Prestador legado sem usuário vinculado. Use "Migrar Prestadores Legados" na aba Usuários.');
+                }
+              }}
               onEditService={(s) => setServiceForm({ open: true, item: s })}
               onEditProduct={(p) => setProductForm({ open: true, item: p })}
               onDeleteService={deleteService}
@@ -1257,7 +1266,15 @@ const AdminPanel = () => {
       </main>
 
       {/* Dialogs */}
-      <ProviderForm open={providerForm.open} onClose={() => setProviderForm({ open: false, item: null })} onSaved={() => { reloadDynamicEntries(); fetchData(); }} provider={providerForm.item} segments={segmentList} />
+      <UserForm
+        open={userForm.open}
+        onClose={() => setUserForm({ open: false, profile: null, role: null, email: null })}
+        onSaved={() => { fetchUsers(); fetchData(); reloadDynamicEntries(); }}
+        profile={userForm.profile}
+        currentRole={userForm.role}
+        currentEmail={userForm.email}
+        segments={segmentList}
+      />
       <ProductForm open={productForm.open} onClose={() => setProductForm({ open: false, item: null })} onSaved={() => { reloadDynamicEntries(); fetchData(); }} product={productForm.item} providers={providerList} segments={segmentList} />
       <ServiceForm open={serviceForm.open} onClose={() => setServiceForm({ open: false, item: null })} onSaved={() => { reloadDynamicEntries(); fetchData(); }} service={serviceForm.item} providers={providerList} segments={segmentList} />
       <SegmentForm open={segmentForm.open} onClose={() => setSegmentForm({ open: false, item: null })} onSaved={fetchData} segment={segmentForm.item} />
