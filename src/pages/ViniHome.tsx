@@ -555,6 +555,7 @@ const ViniHome = () => {
     if (action.route) navigate(action.route);
   };
 
+  const gridItems: GridItem[] = [
     { key: 'home', icon: Home, label: 'Home', onClick: handleHome, active: true },
     { key: 'urgencia', icon: Radar, label: 'Urgência', onClick: handleRadar, active: radarActive, badge: totalCartItems > 0 ? totalCartItems : undefined },
     { key: 'reiniciar', icon: RotateCcw, label: 'Reiniciar', onClick: handleReiniciar },
