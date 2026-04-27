@@ -23,7 +23,33 @@ import { semanticSearch } from '@/data/searchData';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
-type BubbleAction = { label: string; route: string };
+/**
+ * Toda sugestão do Vini pode carregar uma `action` clicável.
+ * - `route`  : navega diretamente (compatibilidade legado).
+ * - `intent` : executa uma rotina interna do Vini sem sair da tela.
+ *              Ex.: 'search' preenche a barra de busca e dispara a query
+ *              como se o usuário tivesse digitado; 'story' abre o card
+ *              "Sobre o Vini"; 'cart' abre o checkout; etc.
+ * - `payload`: dados auxiliares (ex.: termo de busca).
+ */
+type BubbleIntent =
+  | 'search'        // preenche barra e executa busca
+  | 'open-search'   // só abre a barra de busca focada
+  | 'story'         // abre card "Sobre o Vini"
+  | 'cart'          // ir ao checkout
+  | 'wallet'        // abrir carteira
+  | 'radar'         // ativar urgência/radar
+  | 'profile'       // abrir perfil
+  | 'referral'      // página de indicação
+  | 'demos'         // central de demos
+  | 'mystore';      // minha loja
+
+type BubbleAction = {
+  label: string;
+  route?: string;
+  intent?: BubbleIntent;
+  payload?: string;
+};
 type Bubble = { role: 'vini' | 'user'; text: string; id: string; ts: number; action?: BubbleAction };
 
 const CHAT_STORAGE_KEY = 'vini:chat-history';
