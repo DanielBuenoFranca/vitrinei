@@ -501,7 +501,7 @@ const AuthPage = () => {
             </div>
             <div className="space-y-2">
               <Label className="text-xs">Telefone</Label>
-              <Input value={phone} onChange={e => setPhone(maskPhone ? e.target.value : e.target.value)} placeholder="(11) 99999-9999" />
+              <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(11) 99999-9999" />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs flex items-center gap-1.5">
