@@ -410,7 +410,15 @@ const ImportPage = () => {
     });
   }, [existingProviders]);
 
-  /* ─── File hash for duplicate prevention ─── */
+  /* ─── Derived: entity groups (mesmo prestador = mesmas chaves) ─── */
+  const groups = useMemo<EntityGroup[]>(() => {
+    if (rows.length === 0) return [];
+    return buildEntityGroups(rows, existingProviders, groupDecisions);
+  }, [rows, existingProviders, groupDecisions]);
+
+  const groupsNeedingDecision = groups.filter(g => g.matchType !== 'new' && g.confirmedAction === 'pending');
+  const groupsWithIntraDup = groups.filter(g => g.rows.length > 1);
+
   const computeFileHash = async (file: File): Promise<string> => {
     const buffer = await file.arrayBuffer();
     const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
