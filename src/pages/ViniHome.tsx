@@ -46,8 +46,17 @@ const ViniHome = () => {
       return raw ? (JSON.parse(raw) as Bubble[]) : [];
     } catch { return []; }
   });
-  const [history, setHistory] = useState<string[]>([]);
+  const [history, setHistory] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = localStorage.getItem('vini:search-history');
+      return raw ? (JSON.parse(raw) as string[]) : [];
+    } catch { return []; }
+  });
   const [text, setText] = useState('');
+  const lastInteractionRef = useRef<number>(Date.now());
+  const idleTimerRef = useRef<number | null>(null);
+  const lastGreetedUserRef = useRef<string | null>(null);
   const [showPlusMenu, setShowPlusMenu] = useState(false);
   const [showDemoSubmenu, setShowDemoSubmenu] = useState(false);
   const [chatExpanded, setChatExpanded] = useState(false);
