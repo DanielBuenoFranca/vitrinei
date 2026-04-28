@@ -1090,12 +1090,22 @@ const ImportPage = () => {
           }
         }
 
-        // Insert services and products (com quantidade de estoque)
+        // Insert services and products (com quantidade de estoque + checagem anti-duplicidade no BD)
         for (const row of provRows) {
           if (row.serviceName.trim()) {
             const price = parseFloat(row.servicePrice) || 0;
             const qtyRaw = parseInt(row.serviceQuantity, 10);
             const quantity = Number.isFinite(qtyRaw) && qtyRaw >= 0 ? qtyRaw : 0;
+            const unit = row.serviceUnit || 'hr';
+            try {
+              const { data: dup } = await (supabase as any).rpc('check_item_duplicate', {
+                _provider_id: providerId, _kind: 'service', _name: row.serviceName, _unit: unit,
+              });
+              if (dup?.duplicate) {
+                res.errors.push({ line: row._id, message: `Serviço "${row.serviceName}" já existe no estoque deste prestador (id ${dup.id}). Renomeie para importar.` });
+                continue;
+              }
+            } catch {}
             const { error } = await supabase.from('dynamic_services').insert({
               service_id: nextServiceId++,
               name: row.serviceName,
@@ -1103,7 +1113,7 @@ const ImportPage = () => {
               provider: provName,
               provider_id: providerId,
               price,
-              unit: row.serviceUnit || 'hr',
+              unit,
               quantity,
             });
             if (error) {
@@ -1117,6 +1127,16 @@ const ImportPage = () => {
             const tags = row.segment ? [row.segment.toLowerCase()] : [];
             const qtyRaw = parseInt(row.productQuantity, 10);
             const quantity = Number.isFinite(qtyRaw) && qtyRaw >= 0 ? qtyRaw : 0;
+            const unit = row.productUnit || 'un';
+            try {
+              const { data: dup } = await (supabase as any).rpc('check_item_duplicate', {
+                _provider_id: providerId, _kind: 'product', _name: row.productName, _unit: unit,
+              });
+              if (dup?.duplicate) {
+                res.errors.push({ line: row._id, message: `Produto "${row.productName}" já existe no estoque deste prestador (id ${dup.id}). Renomeie para importar.` });
+                continue;
+              }
+            } catch {}
             const { error } = await supabase.from('dynamic_products').insert({
               product_id: nextProductId++,
               name: row.productName,
@@ -1125,7 +1145,7 @@ const ImportPage = () => {
               price,
               stock_type: row.productStockType === 'drop' ? 'drop' : 'fisico',
               tags,
-              unit: row.productUnit || 'un',
+              unit,
               quantity,
             });
             if (error) {
