@@ -487,6 +487,55 @@ const validateBusinessRules = (
       }
     }
   });
+
+  /* ── Cross-group conflicts ──
+     Same phone/email in DIFFERENT entity groups (different person)
+     = real error, blocks import until corrected. */
+  const phoneToGroup = new Map<string, string>();
+  const emailToGroup = new Map<string, string>();
+  rows.forEach(row => {
+    const groupKey = row._groupKey || computeGroupKey(row).key;
+    const phone = row.phone.replace(/\D/g, '').trim();
+    const email = row.email.trim().toLowerCase();
+    if (phone && phone.length >= 8) {
+      const key = phone.slice(-8);
+      const existing = phoneToGroup.get(key);
+      if (existing && existing !== groupKey) {
+        errors.push({ rowId: row._id, field: 'phone', message: 'Telefone usado por outro prestador (corrija para evitar conflito)', severity: 'error' });
+      } else if (!existing) {
+        phoneToGroup.set(key, groupKey);
+      }
+    }
+    if (email) {
+      const existing = emailToGroup.get(email);
+      if (existing && existing !== groupKey) {
+        errors.push({ rowId: row._id, field: 'email', message: 'E-mail usado por outro prestador (corrija para evitar conflito)', severity: 'error' });
+      } else if (!existing) {
+        emailToGroup.set(email, groupKey);
+      }
+    }
+  });
+
+  /* ── Item duplication within same provider group ──
+     Same name + unit for product/service in the same group = error. */
+  const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+  const itemKeySeen = new Map<string, number>();
+  rows.forEach(row => {
+    const groupKey = row._groupKey || computeGroupKey(row).key;
+    if (row.serviceName.trim()) {
+      const k = `${groupKey}|service|${norm(row.serviceName)}|${norm(row.serviceUnit || 'hr')}`;
+      if (itemKeySeen.has(k)) {
+        errors.push({ rowId: row._id, field: 'serviceName', message: `Serviço duplicado no mesmo prestador (linha ${itemKeySeen.get(k)}). Renomeie ou ajuste a unidade.`, severity: 'error' });
+      } else itemKeySeen.set(k, row._id);
+    }
+    if (row.productName.trim()) {
+      const k = `${groupKey}|product|${norm(row.productName)}|${norm(row.productUnit || 'un')}`;
+      if (itemKeySeen.has(k)) {
+        errors.push({ rowId: row._id, field: 'productName', message: `Produto duplicado no mesmo prestador (linha ${itemKeySeen.get(k)}). Renomeie ou ajuste a unidade.`, severity: 'error' });
+      } else itemKeySeen.set(k, row._id);
+    }
+  });
+
   return errors;
 };
 
@@ -1041,12 +1090,22 @@ const ImportPage = () => {
           }
         }
 
-        // Insert services and products (com quantidade de estoque)
+        // Insert services and products (com quantidade de estoque + checagem anti-duplicidade no BD)
         for (const row of provRows) {
           if (row.serviceName.trim()) {
             const price = parseFloat(row.servicePrice) || 0;
             const qtyRaw = parseInt(row.serviceQuantity, 10);
             const quantity = Number.isFinite(qtyRaw) && qtyRaw >= 0 ? qtyRaw : 0;
+            const unit = row.serviceUnit || 'hr';
+            try {
+              const { data: dup } = await (supabase as any).rpc('check_item_duplicate', {
+                _provider_id: providerId, _kind: 'service', _name: row.serviceName, _unit: unit,
+              });
+              if (dup?.duplicate) {
+                res.errors.push({ line: row._id, message: `Serviço "${row.serviceName}" já existe no estoque deste prestador (id ${dup.id}). Renomeie para importar.` });
+                continue;
+              }
+            } catch {}
             const { error } = await supabase.from('dynamic_services').insert({
               service_id: nextServiceId++,
               name: row.serviceName,
@@ -1054,7 +1113,7 @@ const ImportPage = () => {
               provider: provName,
               provider_id: providerId,
               price,
-              unit: row.serviceUnit || 'hr',
+              unit,
               quantity,
             });
             if (error) {
@@ -1068,6 +1127,16 @@ const ImportPage = () => {
             const tags = row.segment ? [row.segment.toLowerCase()] : [];
             const qtyRaw = parseInt(row.productQuantity, 10);
             const quantity = Number.isFinite(qtyRaw) && qtyRaw >= 0 ? qtyRaw : 0;
+            const unit = row.productUnit || 'un';
+            try {
+              const { data: dup } = await (supabase as any).rpc('check_item_duplicate', {
+                _provider_id: providerId, _kind: 'product', _name: row.productName, _unit: unit,
+              });
+              if (dup?.duplicate) {
+                res.errors.push({ line: row._id, message: `Produto "${row.productName}" já existe no estoque deste prestador (id ${dup.id}). Renomeie para importar.` });
+                continue;
+              }
+            } catch {}
             const { error } = await supabase.from('dynamic_products').insert({
               product_id: nextProductId++,
               name: row.productName,
@@ -1076,7 +1145,7 @@ const ImportPage = () => {
               price,
               stock_type: row.productStockType === 'drop' ? 'drop' : 'fisico',
               tags,
-              unit: row.productUnit || 'un',
+              unit,
               quantity,
             });
             if (error) {

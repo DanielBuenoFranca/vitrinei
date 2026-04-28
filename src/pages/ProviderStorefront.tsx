@@ -24,6 +24,7 @@ import { useCart, type ServiceCartItem } from '@/contexts/CartContext';
 import { ProductForm } from '@/components/admin/ProductForm';
 import { ServiceForm } from '@/components/admin/ServiceForm';
 import { ProviderForm } from '@/components/admin/ProviderForm';
+import { KitBuilder } from '@/components/storefront/KitBuilder';
 import { toast } from 'sonner';
 import { MaskedPrice, AccessBanner, useAccessLevel } from '@/components/AccessGate';
 import { useConversion } from '@/contexts/ConversionContext';
@@ -147,6 +148,7 @@ const ProviderStorefront = () => {
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; type: 'service' | 'product'; id: number; name: string }>({ open: false, type: 'service', id: 0, name: '' });
   const [generatingLogo, setGeneratingLogo] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [kitBuilderOpen, setKitBuilderOpen] = useState(false);
   const bannerFileRef = useRef<HTMLInputElement>(null);
 
   const loadProviderData = async (providerData?: ProviderData) => {
@@ -752,6 +754,9 @@ const ProviderStorefront = () => {
                     <Button variant="outline" size="sm" className="gap-1 text-xs h-7" onClick={() => { setEditProduct(null); setProductFormOpen(true); }}>
                       <Plus className="w-3 h-3" /> Produto
                     </Button>
+                    <Button variant="default" size="sm" className="gap-1 text-xs h-7" onClick={() => setKitBuilderOpen(true)}>
+                      <Plus className="w-3 h-3" /> Kit
+                    </Button>
                   </div>
                 )}
               </div>
@@ -817,6 +822,13 @@ const ProviderStorefront = () => {
             }}
             provider={provider}
             segments={dbSegments}
+          />
+          <KitBuilder
+            open={kitBuilderOpen}
+            onClose={() => setKitBuilderOpen(false)}
+            providerId={provider.id}
+            providerName={provider.name}
+            onCreated={() => loadProviderData()}
           />
         </>
       )}

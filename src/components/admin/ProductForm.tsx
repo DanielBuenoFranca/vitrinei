@@ -161,6 +161,19 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
     if (!form.provider.trim()) { toast.error('Fornecedor é obrigatório'); return; }
     if (selectedSegments.length === 0) { toast.error('Selecione pelo menos um segmento'); return; }
     setSaving(true);
+    // Anti-duplicidade no estoque do prestador
+    if (form.provider_id) {
+      try {
+        const { data: dup } = await (supabase as any).rpc('check_item_duplicate', {
+          _provider_id: form.provider_id, _kind: 'product',
+          _name: form.name, _unit: form.unit, _exclude_id: isEdit ? product!.id : null,
+        });
+        if (dup?.duplicate) {
+          toast.error(`Produto duplicado neste prestador: já existe "${dup.name}". Renomeie ou ajuste a unidade.`);
+          setSaving(false); return;
+        }
+      } catch {}
+    }
     const data: any = {
       name: form.name, price: form.price, provider: form.provider,
       provider_id: form.provider_id, stock_type: form.stock_type,

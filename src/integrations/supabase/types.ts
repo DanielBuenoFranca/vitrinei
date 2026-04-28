@@ -138,6 +138,173 @@ export type Database = {
           },
         ]
       }
+      kit_items: {
+        Row: {
+          agreed_unit_cost: number
+          created_at: string
+          id: string
+          is_third_party: boolean
+          kit_id: number
+          quantity_per_kit: number
+          snapshot_name: string | null
+          source_item_id: number
+          source_kind: string
+          source_provider_id: number
+        }
+        Insert: {
+          agreed_unit_cost?: number
+          created_at?: string
+          id?: string
+          is_third_party?: boolean
+          kit_id: number
+          quantity_per_kit?: number
+          snapshot_name?: string | null
+          source_item_id: number
+          source_kind: string
+          source_provider_id: number
+        }
+        Update: {
+          agreed_unit_cost?: number
+          created_at?: string
+          id?: string
+          is_third_party?: boolean
+          kit_id?: number
+          quantity_per_kit?: number
+          snapshot_name?: string | null
+          source_item_id?: number
+          source_kind?: string
+          source_provider_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kit_items_kit_id_fkey"
+            columns: ["kit_id"]
+            isOneToOne: false
+            referencedRelation: "kits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kit_transactions: {
+        Row: {
+          action: string
+          buyer_user_id: string | null
+          created_at: string
+          details: Json | null
+          id: string
+          kit_id: number
+          owner_provider_id: number | null
+          total_amount: number | null
+        }
+        Insert: {
+          action: string
+          buyer_user_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          kit_id: number
+          owner_provider_id?: number | null
+          total_amount?: number | null
+        }
+        Update: {
+          action?: string
+          buyer_user_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          kit_id?: number
+          owner_provider_id?: number | null
+          total_amount?: number | null
+        }
+        Relationships: []
+      }
+      kits: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          id: number
+          image_url: string | null
+          labor_cost: number
+          name: string
+          owner_provider_id: number
+          price: number
+          quantity: number
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: never
+          image_url?: string | null
+          labor_cost?: number
+          name: string
+          owner_provider_id: number
+          price?: number
+          quantity?: number
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: never
+          image_url?: string | null
+          labor_cost?: number
+          name?: string
+          owner_provider_id?: number
+          price?: number
+          quantity?: number
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pending_stock_orders: {
+        Row: {
+          buyer_user_id: string
+          created_at: string
+          delivered_items: Json
+          id: string
+          kit_id: number
+          kit_name: string
+          message: string | null
+          owner_provider_id: number
+          pending_items: Json
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          buyer_user_id: string
+          created_at?: string
+          delivered_items?: Json
+          id?: string
+          kit_id: number
+          kit_name: string
+          message?: string | null
+          owner_provider_id: number
+          pending_items?: Json
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          buyer_user_id?: string
+          created_at?: string
+          delivered_items?: Json
+          id?: string
+          kit_id?: number
+          kit_name?: string
+          message?: string | null
+          owner_provider_id?: number
+          pending_items?: Json
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null
@@ -432,6 +599,57 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_movements: {
+        Row: {
+          balance_after: number | null
+          context: Json | null
+          created_at: string
+          id: string
+          item_id: number
+          item_kind: string
+          item_name: string
+          movement_type: string
+          provider_id: number
+          quantity_delta: number
+          reference_id: string | null
+          reference_label: string | null
+          unit_cost: number | null
+          user_id: string | null
+        }
+        Insert: {
+          balance_after?: number | null
+          context?: Json | null
+          created_at?: string
+          id?: string
+          item_id: number
+          item_kind: string
+          item_name: string
+          movement_type: string
+          provider_id: number
+          quantity_delta: number
+          reference_id?: string | null
+          reference_label?: string | null
+          unit_cost?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          balance_after?: number | null
+          context?: Json | null
+          created_at?: string
+          id?: string
+          item_id?: number
+          item_kind?: string
+          item_name?: string
+          movement_type?: string
+          provider_id?: number
+          quantity_delta?: number
+          reference_id?: string | null
+          reference_label?: string | null
+          unit_cost?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           created_at: string
@@ -642,6 +860,16 @@ export type Database = {
     Functions: {
       calculate_fidelity_score: { Args: { _user_id: string }; Returns: number }
       check_cpf_cnpj_available: { Args: { _doc: string }; Returns: Json }
+      check_item_duplicate: {
+        Args: {
+          _exclude_id?: number
+          _kind: string
+          _name: string
+          _provider_id: number
+          _unit: string
+        }
+        Returns: Json
+      }
       check_provider_uniqueness: {
         Args: {
           _cpf_cnpj?: string
@@ -653,6 +881,18 @@ export type Database = {
       }
       contract_credit: {
         Args: { _amount: number; _user_id: string }
+        Returns: Json
+      }
+      create_kit_acid: {
+        Args: {
+          _description: string
+          _initial_quantity: number
+          _items: Json
+          _labor_cost: number
+          _name: string
+          _owner_provider_id: number
+          _price: number
+        }
         Returns: Json
       }
       get_user_roles: {
@@ -695,6 +935,11 @@ export type Database = {
         Args: { _referred_user_id: string }
         Returns: undefined
       }
+      sell_kit_acid: {
+        Args: { _buyer_id: string; _kit_id: number; _quantity?: number }
+        Returns: Json
+      }
+      unaccent_safe: { Args: { _text: string }; Returns: string }
     }
     Enums: {
       app_role:

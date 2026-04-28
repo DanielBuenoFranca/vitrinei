@@ -1058,6 +1058,17 @@ const AdminPanel = () => {
                                       Ativar + Venda
                                     </Button>
                                   )}
+                                  {(hasProvider || hasMixed) && (() => {
+                                    const prov = providers.find((p: any) => p.user_id === profile.user_id) || providers.find((p: any) => p.name === profile.display_name);
+                                    if (!prov) return null;
+                                    const slug = (prov.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+                                    return (
+                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:text-primary" title="Abrir Loja do prestador"
+                                        onClick={() => navigate(`/loja/${slug}`)}>
+                                        <Store className="h-4 w-4" />
+                                      </Button>
+                                    );
+                                  })()}
                                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
                                     const r = userRoles.find((x: any) => x.user_id === profile.user_id && ['provider','mixed','client','admin','master'].includes(x.role));
                                     setUserForm({ open: true, profile, role: r?.role || 'client', email: authUserEmails[profile.user_id] || null });
