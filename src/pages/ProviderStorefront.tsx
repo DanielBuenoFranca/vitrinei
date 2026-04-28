@@ -823,6 +823,13 @@ const ProviderStorefront = () => {
             provider={provider}
             segments={dbSegments}
           />
+          <KitBuilder
+            open={kitBuilderOpen}
+            onClose={() => setKitBuilderOpen(false)}
+            providerId={provider.id}
+            providerName={provider.name}
+            onCreated={() => loadProviderData()}
+          />
         </>
       )}
 
