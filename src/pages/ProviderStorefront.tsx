@@ -752,6 +752,9 @@ const ProviderStorefront = () => {
                     <Button variant="outline" size="sm" className="gap-1 text-xs h-7" onClick={() => { setEditProduct(null); setProductFormOpen(true); }}>
                       <Plus className="w-3 h-3" /> Produto
                     </Button>
+                    <Button variant="default" size="sm" className="gap-1 text-xs h-7" onClick={() => setKitBuilderOpen(true)}>
+                      <Plus className="w-3 h-3" /> Kit
+                    </Button>
                   </div>
                 )}
               </div>
