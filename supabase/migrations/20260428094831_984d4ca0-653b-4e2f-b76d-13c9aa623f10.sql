@@ -1,0 +1,1 @@
+ALTER TABLE public.dynamic_products ADD COLUMN IF NOT EXISTS image_url text;

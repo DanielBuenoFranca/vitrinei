@@ -19,6 +19,7 @@ export type Database = {
           created_at: string
           distance: string
           id: number
+          image_url: string | null
           name: string
           price: number
           product_id: number
@@ -35,6 +36,7 @@ export type Database = {
           created_at?: string
           distance?: string
           id?: number
+          image_url?: string | null
           name: string
           price?: number
           product_id: number
@@ -51,6 +53,7 @@ export type Database = {
           created_at?: string
           distance?: string
           id?: number
+          image_url?: string | null
           name?: string
           price?: number
           product_id?: number
