@@ -123,6 +123,18 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
     if (!form.provider.trim()) { toast.error('Prestador é obrigatório'); return; }
     if (!form.segment) { toast.error('Segmento é obrigatório'); return; }
     setSaving(true);
+    if (form.provider_id) {
+      try {
+        const { data: dup } = await (supabase as any).rpc('check_item_duplicate', {
+          _provider_id: form.provider_id, _kind: 'service',
+          _name: form.name, _unit: 'hr', _exclude_id: isEdit ? service!.id : null,
+        });
+        if (dup?.duplicate) {
+          toast.error(`Serviço duplicado neste prestador: já existe "${dup.name}". Renomeie para diferenciar.`);
+          setSaving(false); return;
+        }
+      } catch {}
+    }
     const productsNames = linkedProducts.map(p => p.name);
     const data = {
       name: form.name, segment: form.segment, provider: form.provider,
