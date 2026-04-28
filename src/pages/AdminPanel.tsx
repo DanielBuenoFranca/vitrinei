@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle, Megaphone, Mail, Gift, CheckCircle, KeyRound, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle, Megaphone, Mail, Gift, CheckCircle, KeyRound, BarChart3, ImageOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { UserForm } from '@/components/admin/UserForm';
@@ -17,6 +17,7 @@ import { ServiceForm } from '@/components/admin/ServiceForm';
 import { SegmentForm } from '@/components/admin/SegmentForm';
 import { ClearDataDialog } from '@/components/admin/ClearDataDialog';
 import { InconsistencyPanel } from '@/components/admin/InconsistencyPanel';
+import { ImageSanitizationPanel } from '@/components/admin/ImageSanitizationPanel';
 import { UnitForm } from '@/components/admin/UnitForm';
 import { PermissionGate } from '@/components/PermissionGate';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -585,7 +586,14 @@ const AdminPanel = () => {
             <TabsTrigger value="bi" className="text-xs gap-1 px-2 py-1.5">
               <BarChart3 className="h-3 w-3" /> Dashboard BI
             </TabsTrigger>
+            <TabsTrigger value="images" className="text-xs gap-1 px-2 py-1.5">
+              <ImageOff className="h-3 w-3" /> Saneamento Imagens
+            </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="images">
+            <ImageSanitizationPanel />
+          </TabsContent>
 
           {/* ── SEGMENTS TAB ── */}
           <TabsContent value="segments">
