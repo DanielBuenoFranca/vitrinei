@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,29 +11,37 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ConversionProvider } from "@/contexts/ConversionContext";
 import CartBar from "@/components/CartBar";
 import { AttentionFooterBar } from "@/components/AttentionFooterBar";
+import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
+import { DefaultRouteSkeleton, RadarSkeleton, CardexSkeleton } from "@/components/RouteSkeletons";
 import { loadDynamicEntries } from "@/data/searchData";
-import ViniHome from "./pages/ViniHome.tsx";
-import Landing from "./pages/Landing.tsx";
-import MeiPanel from "./pages/MeiPanel.tsx";
-import ClientApp from "./pages/ClientApp.tsx";
-import NotFound from "./pages/NotFound.tsx";
-import ProcessFlows from "./pages/ProcessFlows.tsx";
-import ServiceManagementDemo from "./pages/ServiceManagementDemo.tsx";
-import ClientJourneyDemo from "./pages/ClientJourneyDemo.tsx";
-import MeiManagerDemo from "./pages/MeiManagerDemo.tsx";
-import DropshippingDemo from "./pages/DropshippingDemo.tsx";
-import Demos from "./pages/Demos.tsx";
-import SupportCenterDemo from "./pages/SupportCenterDemo.tsx";
-import AdminPanel from "./pages/AdminPanel.tsx";
-import ProviderStorefront from "./pages/ProviderStorefront.tsx";
-import AuthPage from "./pages/AuthPage.tsx";
-import ResetPasswordPage from "./pages/ResetPasswordPage.tsx";
-import ReferralLanding from "./pages/ReferralLanding.tsx";
-import WalletPage from "./pages/WalletPage.tsx";
-import SubscriptionPage from "./pages/SubscriptionPage.tsx";
-import ImportPage from "./pages/ImportPage.tsx";
 
-const queryClient = new QueryClient();
+// Eager (críticos para 1ª pintura)
+import ViniHome from "./pages/ViniHome.tsx";
+import AuthPage from "./pages/AuthPage.tsx";
+import NotFound from "./pages/NotFound.tsx";
+
+// Lazy (split de bundle)
+const Landing = lazy(() => import("./pages/Landing.tsx"));
+const MeiPanel = lazy(() => import("./pages/MeiPanel.tsx"));
+const ClientApp = lazy(() => import("./pages/ClientApp.tsx"));
+const ProcessFlows = lazy(() => import("./pages/ProcessFlows.tsx"));
+const ServiceManagementDemo = lazy(() => import("./pages/ServiceManagementDemo.tsx"));
+const ClientJourneyDemo = lazy(() => import("./pages/ClientJourneyDemo.tsx"));
+const MeiManagerDemo = lazy(() => import("./pages/MeiManagerDemo.tsx"));
+const DropshippingDemo = lazy(() => import("./pages/DropshippingDemo.tsx"));
+const Demos = lazy(() => import("./pages/Demos.tsx"));
+const SupportCenterDemo = lazy(() => import("./pages/SupportCenterDemo.tsx"));
+const AdminPanel = lazy(() => import("./pages/AdminPanel.tsx"));
+const ProviderStorefront = lazy(() => import("./pages/ProviderStorefront.tsx"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage.tsx"));
+const ReferralLanding = lazy(() => import("./pages/ReferralLanding.tsx"));
+const WalletPage = lazy(() => import("./pages/WalletPage.tsx"));
+const SubscriptionPage = lazy(() => import("./pages/SubscriptionPage.tsx"));
+const ImportPage = lazy(() => import("./pages/ImportPage.tsx"));
+
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false } },
+});
 
 const MasterRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading, isMaster } = useAuth();
@@ -48,6 +56,15 @@ const ForceResetGuard = ({ children }: { children: React.ReactNode }) => {
   if (user && mustResetPassword) return <Navigate to="/reset-password" replace />;
   return <>{children}</>;
 };
+
+function LazyRoute({ children, fallback }: { children: React.ReactNode; fallback?: React.ReactNode }) {
+  const location = useLocation();
+  return (
+    <RouteErrorBoundary routeKey={location.pathname}>
+      <Suspense fallback={fallback ?? <DefaultRouteSkeleton />}>{children}</Suspense>
+    </RouteErrorBoundary>
+  );
+}
 
 const App = () => {
   useEffect(() => { loadDynamicEntries(); }, []);
@@ -64,24 +81,24 @@ const App = () => {
         <CartBar />
         <Routes>
           <Route path="/auth" element={<AuthPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/convite/:code" element={<ReferralLanding />} />
+          <Route path="/reset-password" element={<LazyRoute><ResetPasswordPage /></LazyRoute>} />
+          <Route path="/convite/:code" element={<LazyRoute><ReferralLanding /></LazyRoute>} />
           <Route path="/" element={<ForceResetGuard><ViniHome /></ForceResetGuard>} />
-          <Route path="/buscar" element={<ForceResetGuard><Landing /></ForceResetGuard>} />
-          <Route path="/carteira" element={<ForceResetGuard><WalletPage /></ForceResetGuard>} />
-          <Route path="/assinatura" element={<ForceResetGuard><SubscriptionPage /></ForceResetGuard>} />
-          <Route path="/importar" element={<ForceResetGuard><ImportPage /></ForceResetGuard>} />
-          <Route path="/mei" element={<ForceResetGuard><MeiPanel /></ForceResetGuard>} />
-          <Route path="/client" element={<ForceResetGuard><ClientApp /></ForceResetGuard>} />
-          <Route path="/processos" element={<ForceResetGuard><ProcessFlows /></ForceResetGuard>} />
-          <Route path="/gestao" element={<ForceResetGuard><ServiceManagementDemo /></ForceResetGuard>} />
-          <Route path="/jornada-cliente" element={<ForceResetGuard><ClientJourneyDemo /></ForceResetGuard>} />
-          <Route path="/mei-acompanhamento" element={<ForceResetGuard><MeiManagerDemo /></ForceResetGuard>} />
-          <Route path="/dropshipping" element={<ForceResetGuard><DropshippingDemo /></ForceResetGuard>} />
-          <Route path="/demos" element={<ForceResetGuard><Demos /></ForceResetGuard>} />
-          <Route path="/central-atendimento" element={<ForceResetGuard><SupportCenterDemo /></ForceResetGuard>} />
-          <Route path="/admin" element={<MasterRoute><AdminPanel /></MasterRoute>} />
-          <Route path="/loja/:slug" element={<ForceResetGuard><ProviderStorefront /></ForceResetGuard>} />
+          <Route path="/buscar" element={<ForceResetGuard><LazyRoute fallback={<RadarSkeleton />}><Landing /></LazyRoute></ForceResetGuard>} />
+          <Route path="/carteira" element={<ForceResetGuard><LazyRoute><WalletPage /></LazyRoute></ForceResetGuard>} />
+          <Route path="/assinatura" element={<ForceResetGuard><LazyRoute><SubscriptionPage /></LazyRoute></ForceResetGuard>} />
+          <Route path="/importar" element={<ForceResetGuard><LazyRoute><ImportPage /></LazyRoute></ForceResetGuard>} />
+          <Route path="/mei" element={<ForceResetGuard><LazyRoute><MeiPanel /></LazyRoute></ForceResetGuard>} />
+          <Route path="/client" element={<ForceResetGuard><LazyRoute><ClientApp /></LazyRoute></ForceResetGuard>} />
+          <Route path="/processos" element={<ForceResetGuard><LazyRoute><ProcessFlows /></LazyRoute></ForceResetGuard>} />
+          <Route path="/gestao" element={<ForceResetGuard><LazyRoute><ServiceManagementDemo /></LazyRoute></ForceResetGuard>} />
+          <Route path="/jornada-cliente" element={<ForceResetGuard><LazyRoute><ClientJourneyDemo /></LazyRoute></ForceResetGuard>} />
+          <Route path="/mei-acompanhamento" element={<ForceResetGuard><LazyRoute><MeiManagerDemo /></LazyRoute></ForceResetGuard>} />
+          <Route path="/dropshipping" element={<ForceResetGuard><LazyRoute><DropshippingDemo /></LazyRoute></ForceResetGuard>} />
+          <Route path="/demos" element={<ForceResetGuard><LazyRoute><Demos /></LazyRoute></ForceResetGuard>} />
+          <Route path="/central-atendimento" element={<ForceResetGuard><LazyRoute><SupportCenterDemo /></LazyRoute></ForceResetGuard>} />
+          <Route path="/admin" element={<MasterRoute><LazyRoute fallback={<CardexSkeleton />}><AdminPanel /></LazyRoute></MasterRoute>} />
+          <Route path="/loja/:slug" element={<ForceResetGuard><LazyRoute><ProviderStorefront /></LazyRoute></ForceResetGuard>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <AttentionFooterBar />

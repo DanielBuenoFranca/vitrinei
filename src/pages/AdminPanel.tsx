@@ -18,6 +18,8 @@ import { SegmentForm } from '@/components/admin/SegmentForm';
 import { ClearDataDialog } from '@/components/admin/ClearDataDialog';
 import { InconsistencyPanel } from '@/components/admin/InconsistencyPanel';
 import { ImageSanitizationPanel } from '@/components/admin/ImageSanitizationPanel';
+import { AiGovernancePanel } from '@/components/admin/AiGovernancePanel';
+import { CardexPanel } from '@/components/admin/CardexPanel';
 import { UnitForm } from '@/components/admin/UnitForm';
 import { PermissionGate } from '@/components/PermissionGate';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -589,10 +591,22 @@ const AdminPanel = () => {
             <TabsTrigger value="images" className="text-xs gap-1 px-2 py-1.5">
               <ImageOff className="h-3 w-3" /> Saneamento Imagens
             </TabsTrigger>
+            <TabsTrigger value="ai-governance" className="text-xs gap-1 px-2 py-1.5">
+              <Sparkles className="h-3 w-3" /> Governança IA
+            </TabsTrigger>
+            <TabsTrigger value="cardex" className="text-xs gap-1 px-2 py-1.5">
+              <Database className="h-3 w-3" /> CARDEX
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="images">
             <ImageSanitizationPanel />
+          </TabsContent>
+          <TabsContent value="ai-governance">
+            <AiGovernancePanel />
+          </TabsContent>
+          <TabsContent value="cardex">
+            <CardexPanel />
           </TabsContent>
 
           {/* ── SEGMENTS TAB ── */}
