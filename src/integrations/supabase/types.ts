@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_savings_log: {
+        Row: {
+          context: Json | null
+          created_at: string
+          estimated_credits: number
+          fallback_used: string
+          feature: string
+          id: string
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string
+          estimated_credits?: number
+          fallback_used: string
+          feature: string
+          id?: string
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string
+          estimated_credits?: number
+          fallback_used?: string
+          feature?: string
+          id?: string
+        }
+        Relationships: []
+      }
       dynamic_products: {
         Row: {
           created_at: string
@@ -330,8 +357,10 @@ export type Database = {
           latitude: number | null
           logo_url: string | null
           longitude: number | null
+          margin_pct: number | null
           phone: string | null
           pix_key: string | null
+          profit_pct: number | null
           provider_active: boolean | null
           provider_segments: string[] | null
           provider_type: string | null
@@ -361,8 +390,10 @@ export type Database = {
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
+          margin_pct?: number | null
           phone?: string | null
           pix_key?: string | null
+          profit_pct?: number | null
           provider_active?: boolean | null
           provider_segments?: string[] | null
           provider_type?: string | null
@@ -392,8 +423,10 @@ export type Database = {
           latitude?: number | null
           logo_url?: string | null
           longitude?: number | null
+          margin_pct?: number | null
           phone?: string | null
           pix_key?: string | null
+          profit_pct?: number | null
           provider_active?: boolean | null
           provider_segments?: string[] | null
           provider_type?: string | null
@@ -416,8 +449,10 @@ export type Database = {
           email: string | null
           id: number
           logo_url: string | null
+          margin_pct: number
           name: string
           phone: string | null
+          profit_pct: number
           rating: number
           segment: string[]
           storefront_config: Json
@@ -435,8 +470,10 @@ export type Database = {
           email?: string | null
           id?: number
           logo_url?: string | null
+          margin_pct?: number
           name: string
           phone?: string | null
+          profit_pct?: number
           rating?: number
           segment: string[]
           storefront_config?: Json
@@ -454,8 +491,10 @@ export type Database = {
           email?: string | null
           id?: number
           logo_url?: string | null
+          margin_pct?: number
           name?: string
           phone?: string | null
+          profit_pct?: number
           rating?: number
           segment?: string[]
           storefront_config?: Json
@@ -599,6 +638,96 @@ export type Database = {
           key?: string
           updated_at?: string
           value?: Json
+        }
+        Relationships: []
+      }
+      stock_entries: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          document_number: string | null
+          id: string
+          notes: string | null
+          provider_id: number
+          source_type: string
+          supplier_doc: string | null
+          supplier_name: string | null
+          total_amount: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          document_number?: string | null
+          id?: string
+          notes?: string | null
+          provider_id: number
+          source_type?: string
+          supplier_doc?: string | null
+          supplier_name?: string | null
+          total_amount?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          document_number?: string | null
+          id?: string
+          notes?: string | null
+          provider_id?: number
+          source_type?: string
+          supplier_doc?: string | null
+          supplier_name?: string | null
+          total_amount?: number
+        }
+        Relationships: []
+      }
+      stock_entry_items: {
+        Row: {
+          applied_price: number | null
+          apply_choice: string | null
+          create_new: boolean
+          created_at: string
+          current_price: number | null
+          entry_id: string
+          id: string
+          matched_product_id: number | null
+          quantity: number
+          raw_barcode: string | null
+          raw_name: string
+          suggested_price: number | null
+          unit: string | null
+          unit_cost: number
+        }
+        Insert: {
+          applied_price?: number | null
+          apply_choice?: string | null
+          create_new?: boolean
+          created_at?: string
+          current_price?: number | null
+          entry_id: string
+          id?: string
+          matched_product_id?: number | null
+          quantity?: number
+          raw_barcode?: string | null
+          raw_name: string
+          suggested_price?: number | null
+          unit?: string | null
+          unit_cost?: number
+        }
+        Update: {
+          applied_price?: number | null
+          apply_choice?: string | null
+          create_new?: boolean
+          created_at?: string
+          current_price?: number | null
+          entry_id?: string
+          id?: string
+          matched_product_id?: number | null
+          quantity?: number
+          raw_barcode?: string | null
+          raw_name?: string
+          suggested_price?: number | null
+          unit?: string | null
+          unit_cost?: number
         }
         Relationships: []
       }
@@ -861,6 +990,7 @@ export type Database = {
       }
     }
     Functions: {
+      apply_stock_entry: { Args: { _entry_id: string }; Returns: Json }
       calculate_fidelity_score: { Args: { _user_id: string }; Returns: number }
       check_cpf_cnpj_available: { Args: { _doc: string }; Returns: Json }
       check_item_duplicate: {
