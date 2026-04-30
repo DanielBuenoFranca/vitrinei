@@ -1811,7 +1811,14 @@ const ImportPage = () => {
                 </Button>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto max-h-[50vh] border rounded-md">
+                <div
+                  className="border rounded-md import-preview-scroll"
+                  style={{
+                    overflow: 'scroll',
+                    maxHeight: '50vh',
+                    scrollbarGutter: 'stable both-edges',
+                  }}
+                >
                   <Table>
                     <TableHeader className="sticky top-0 bg-card z-10">
                       <TableRow>
