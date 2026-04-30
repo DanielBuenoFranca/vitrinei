@@ -437,6 +437,36 @@ export type Database = {
         }
         Relationships: []
       }
+      provider_ratings: {
+        Row: {
+          comment: string | null
+          context: Json | null
+          created_at: string
+          id: string
+          provider_id: number
+          stars: number
+          user_id: string | null
+        }
+        Insert: {
+          comment?: string | null
+          context?: Json | null
+          created_at?: string
+          id?: string
+          provider_id: number
+          stars: number
+          user_id?: string | null
+        }
+        Update: {
+          comment?: string | null
+          context?: Json | null
+          created_at?: string
+          id?: string
+          provider_id?: number
+          stars?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       providers: {
         Row: {
           active: boolean
