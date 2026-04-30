@@ -25,6 +25,10 @@ const CartBar = () => {
     clearCart, isMinimized, setIsMinimized,
   } = useCart();
 
+  const isUrgencia =
+    new URLSearchParams(location.search).get('urgencia') === '1' ||
+    location.pathname === '/radar-urgencia';
+
   const navigateToCheckout = () => {
     if (totalCartItems === 0) return;
     const params = new URLSearchParams({
@@ -37,6 +41,11 @@ const CartBar = () => {
         rating: p.rating, distance: p.distance, quantity: productQuantities.get(p.id) || 1,
       }))),
     });
+    if (isUrgencia) {
+      // Modo Radar — vai direto para a simulação de busca + entrega
+      navigate(`/radar-urgencia?${params.toString()}`);
+      return;
+    }
     clearCart();
     navigate(`/jornada-cliente?${params.toString()}`);
   };
