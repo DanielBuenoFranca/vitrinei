@@ -102,6 +102,8 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
   const [providerActive, setProviderActive] = useState(true);
   const [authSplit5x, setAuthSplit5x] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [marginPct, setMarginPct] = useState<number>(30);
+  const [profitPct, setProfitPct] = useState<number>(20);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
