@@ -129,6 +129,8 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
       setProviderActive(profile.provider_active ?? true);
       setAuthSplit5x(profile.auth_split_5x ?? false);
       setLogoUrl(profile.logo_url || null);
+      setMarginPct(Number(profile.margin_pct ?? 30));
+      setProfitPct(Number(profile.profit_pct ?? 20));
     } else {
       setName(''); setEmail(''); setPassword(''); setPhone('');
       setRole('client'); setAvatarUrl(''); setCity(''); setAddress('');
@@ -136,6 +138,7 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
       setSelectedSegments(segments[0] ? [segments[0].name] : []);
       setDistance('2 km'); setRating(4.5); setProviderActive(true);
       setAuthSplit5x(false); setLogoUrl(null);
+      setMarginPct(30); setProfitPct(20);
     }
   }, [open, profile, currentRole, currentEmail, segments]);
 
