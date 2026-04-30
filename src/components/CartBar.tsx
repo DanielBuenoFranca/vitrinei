@@ -25,6 +25,10 @@ const CartBar = () => {
     clearCart, isMinimized, setIsMinimized,
   } = useCart();
 
+  const isUrgencia =
+    new URLSearchParams(location.search).get('urgencia') === '1' ||
+    location.pathname === '/radar-urgencia';
+
   const navigateToCheckout = () => {
     if (totalCartItems === 0) return;
     const params = new URLSearchParams({
@@ -37,6 +41,11 @@ const CartBar = () => {
         rating: p.rating, distance: p.distance, quantity: productQuantities.get(p.id) || 1,
       }))),
     });
+    if (isUrgencia) {
+      // Modo Radar — vai direto para a simulação de busca + entrega
+      navigate(`/radar-urgencia?${params.toString()}`);
+      return;
+    }
     clearCart();
     navigate(`/jornada-cliente?${params.toString()}`);
   };
@@ -118,8 +127,8 @@ const CartBar = () => {
                     <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground" onClick={() => setIsMinimized(true)}>
                       <ChevronUp className="w-3.5 h-3.5" />
                     </Button>
-                    <Button size="sm" className="gap-1 sm:gap-1.5 font-semibold text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3" onClick={() => { setShowCartDetails(true); }}>
-                      <ShoppingCart className="w-3 sm:w-3.5 h-3 sm:h-3.5" /> Finalizar
+                    <Button size="sm" className={`gap-1 sm:gap-1.5 font-semibold text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 ${isUrgencia ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground animate-pulse' : ''}`} onClick={() => { setShowCartDetails(true); }}>
+                      {isUrgencia ? <><Zap className="w-3 sm:w-3.5 h-3 sm:h-3.5" /> Acionar Radar</> : <><ShoppingCart className="w-3 sm:w-3.5 h-3 sm:h-3.5" /> Finalizar</>}
                     </Button>
                   </div>
                 </div>
@@ -278,9 +287,14 @@ const CartBar = () => {
                         {/* Finalizar when credit is sufficient */}
                         {!needsTopUp && (
                           <div className="mt-2">
-                            <Button size="sm" className="w-full gap-1.5 font-semibold" onClick={navigateToCheckout}>
-                              <ShoppingCart className="w-3.5 h-3.5" /> Confirmar compra
+                            <Button size="sm" className={`w-full gap-1.5 font-semibold ${isUrgencia ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground' : ''}`} onClick={navigateToCheckout}>
+                              {isUrgencia ? <><Zap className="w-3.5 h-3.5" /> Acionar Radar de Urgência</> : <><ShoppingCart className="w-3.5 h-3.5" /> Confirmar compra</>}
                             </Button>
+                            {isUrgencia && (
+                              <p className="text-[10px] text-center text-muted-foreground mt-1">
+                                📡 Buscaremos um prestador online próximo a você
+                              </p>
+                            )}
                           </div>
                         )}
                       </div>

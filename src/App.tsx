@@ -39,6 +39,7 @@ const ReferralLanding = lazy(() => import("./pages/ReferralLanding.tsx"));
 const WalletPage = lazy(() => import("./pages/WalletPage.tsx"));
 const SubscriptionPage = lazy(() => import("./pages/SubscriptionPage.tsx"));
 const ImportPage = lazy(() => import("./pages/ImportPage.tsx"));
+const RadarUrgencyFlow = lazy(() => import("./pages/RadarUrgencyFlow.tsx"));
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false } },
@@ -100,6 +101,7 @@ const App = () => {
           <Route path="/central-atendimento" element={<ForceResetGuard><LazyRoute><SupportCenterDemo /></LazyRoute></ForceResetGuard>} />
           <Route path="/admin" element={<MasterRoute><LazyRoute fallback={<CardexSkeleton />}><AdminPanel /></LazyRoute></MasterRoute>} />
           <Route path="/loja/:slug" element={<ForceResetGuard><LazyRoute><ProviderStorefront /></LazyRoute></ForceResetGuard>} />
+          <Route path="/radar-urgencia" element={<ForceResetGuard><LazyRoute fallback={<RadarSkeleton />}><RadarUrgencyFlow /></LazyRoute></ForceResetGuard>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <AttentionFooterBar />
