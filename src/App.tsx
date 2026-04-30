@@ -11,6 +11,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ConversionProvider } from "@/contexts/ConversionContext";
 import CartBar from "@/components/CartBar";
 import { AttentionFooterBar } from "@/components/AttentionFooterBar";
+import { SystemStatusIndicator } from "@/components/SystemStatusIndicator";
 import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import { DefaultRouteSkeleton, RadarSkeleton, CardexSkeleton } from "@/components/RouteSkeletons";
 import { loadDynamicEntries } from "@/data/searchData";
@@ -102,6 +103,7 @@ const App = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
         <AttentionFooterBar />
+        <SystemStatusIndicator />
         </ConversionProvider>
       </BrowserRouter>
     </TooltipProvider>

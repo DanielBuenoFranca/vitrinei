@@ -284,6 +284,34 @@ const generateTemplate = async (
   toast.success(`Modelo atualizado baixado — ${TEMPLATE_SCHEMA.filter(f => f.required).length} colunas obrigatórias`);
 };
 
+/* ─── Heuristic enrichment (modo IA OFF) ─── */
+function heuristicEnrich(r: any, existingSegments: string[]): any {
+  const out: any = { _id: r._id };
+  const isEmpty = (v: any) => !String(v || '').trim();
+  // Segmento — pega 1º existente ou "Geral"
+  if (isEmpty(r.segment)) out.segment = existingSegments[0] || 'Geral';
+  // Telefone fictício consistente por providerName
+  if (isEmpty(r.phone) && r.providerName) {
+    const seed = String(r.providerName).split('').reduce((a: number, c: string) => a + c.charCodeAt(0), 0);
+    const n = (90000 + (seed % 9999)).toString().padStart(5, '0');
+    const last = (1000 + (seed % 8999)).toString();
+    out.phone = `(11) 9${n.slice(0, 4)}-${last}`;
+  }
+  // Email a partir do nome
+  if (isEmpty(r.email) && r.providerName) {
+    const slug = String(r.providerName).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '.').replace(/^\.+|\.+$/g, '');
+    out.email = `${slug || 'contato'}@email.com`;
+  }
+  if (isEmpty(r.city)) out.city = 'São Paulo';
+  // Preços base
+  if (r.serviceName && isEmpty(r.servicePrice)) out.servicePrice = '120';
+  if (r.serviceName && isEmpty(r.serviceUnit)) out.serviceUnit = 'hr';
+  if (r.productName && isEmpty(r.productPrice)) out.productPrice = '49';
+  if (r.productName && isEmpty(r.productUnit)) out.productUnit = 'un';
+  if (r.productName && isEmpty(r.productStockType)) out.productStockType = 'fisico';
+  return out;
+}
+
 
 /* ─── Cascade matching logic ─── */
 const cascadeMatch = (
@@ -764,10 +792,14 @@ const ImportPage = () => {
     }
   };
 
-  /* ─── AI Enrichment ─── */
+  /* ─── AI Enrichment (respeita governance OFF) ─── */
   const enrichWithAI = async () => {
     if (rows.length === 0) return;
     setEnriching(true);
+
+    // Verifica modo IA — se OFF, usa fallback heurístico local (sem créditos)
+    const { getAiModeAsync, logAiSavings } = await import('@/hooks/useAiMode');
+    const aiMode = await getAiModeAsync();
     try {
       // Find rows with empty required fields
       const rowsToEnrich = rows.filter(r => {
@@ -810,9 +842,27 @@ const ImportPage = () => {
           cpfCnpj: r.cpfCnpj,
         }));
 
-        const { data, error } = await supabase.functions.invoke('enrich-import-data', {
-          body: { rows: simplifiedRows, existingSegments: segNames },
-        });
+        let data: any = null;
+        let error: any = null;
+
+        if (aiMode === 'off') {
+          // Fallback heurístico local — sem chamar IA paga
+          data = { enriched: simplifiedRows.map((r: any) => heuristicEnrich(r, segNames)) };
+        } else {
+          const resp = await supabase.functions.invoke('enrich-import-data', {
+            body: { rows: simplifiedRows, existingSegments: segNames },
+          });
+          data = resp.data;
+          error = resp.error;
+          // Se IA falhou (créditos/limite), cai para heurística silenciosamente
+          const status = (resp as any)?.error?.context?.status;
+          if (error || status === 402 || status === 429) {
+            toast.warning('IA indisponível — usando preenchimento heurístico local.');
+            data = { enriched: simplifiedRows.map((r: any) => heuristicEnrich(r, segNames)) };
+            error = null;
+            try { await logAiSavings('import_enrich', 'heuristic_local', simplifiedRows.length, { batch: i / batchSize }); } catch {}
+          }
+        }
 
         if (error) {
           toast.error('Erro ao enriquecer dados: ' + error.message);
@@ -1811,7 +1861,14 @@ const ImportPage = () => {
                 </Button>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto max-h-[50vh] border rounded-md">
+                <div
+                  className="border rounded-md import-preview-scroll"
+                  style={{
+                    overflow: 'scroll',
+                    maxHeight: '50vh',
+                    scrollbarGutter: 'stable both-edges',
+                  }}
+                >
                   <Table>
                     <TableHeader className="sticky top-0 bg-card z-10">
                       <TableRow>

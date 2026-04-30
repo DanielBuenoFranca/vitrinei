@@ -102,6 +102,8 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
   const [providerActive, setProviderActive] = useState(true);
   const [authSplit5x, setAuthSplit5x] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [marginPct, setMarginPct] = useState<number>(30);
+  const [profitPct, setProfitPct] = useState<number>(20);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -127,6 +129,8 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
       setProviderActive(profile.provider_active ?? true);
       setAuthSplit5x(profile.auth_split_5x ?? false);
       setLogoUrl(profile.logo_url || null);
+      setMarginPct(Number(profile.margin_pct ?? 30));
+      setProfitPct(Number(profile.profit_pct ?? 20));
     } else {
       setName(''); setEmail(''); setPassword(''); setPhone('');
       setRole('client'); setAvatarUrl(''); setCity(''); setAddress('');
@@ -134,6 +138,7 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
       setSelectedSegments(segments[0] ? [segments[0].name] : []);
       setDistance('2 km'); setRating(4.5); setProviderActive(true);
       setAuthSplit5x(false); setLogoUrl(null);
+      setMarginPct(30); setProfitPct(20);
     }
   }, [open, profile, currentRole, currentEmail, segments]);
 
@@ -273,6 +278,8 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
         profileData.auth_split_5x = authSplit5x;
         profileData.logo_url = finalLogo;
         profileData.is_provider = true;
+        profileData.margin_pct = Math.max(0, Math.min(500, Number(marginPct) || 0));
+        profileData.profit_pct = Math.max(0, Math.min(500, Number(profitPct) || 0));
       }
 
       const { error: profErr } = await supabase.from('profiles').update(profileData).eq('user_id', userId);
@@ -468,6 +475,26 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
                 <div>
                   <Label className="text-xs">Parcelamento 5x</Label>
                   <div className="pt-2"><Switch checked={authSplit5x} onCheckedChange={setAuthSplit5x} /></div>
+                </div>
+              </div>
+
+              {/* Margem & Lucro — usados no preço sugerido do CARDEX */}
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+                <div>
+                  <Label className="text-xs">% Margem (custo→venda)</Label>
+                  <div className="relative">
+                    <Input type="number" min="0" max="500" step="1" value={marginPct} onChange={e => setMarginPct(parseFloat(e.target.value) || 0)} className="pr-7" />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1">Markup aplicado sobre o custo de entrada.</p>
+                </div>
+                <div>
+                  <Label className="text-xs">% Lucro alvo</Label>
+                  <div className="relative">
+                    <Input type="number" min="0" max="500" step="1" value={profitPct} onChange={e => setProfitPct(parseFloat(e.target.value) || 0)} className="pr-7" />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1">Lucro líquido alvo após custos. Usado no preço sugerido.</p>
                 </div>
               </div>
             </div>

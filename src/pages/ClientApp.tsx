@@ -298,7 +298,7 @@ const ClientApp = () => {
         className="px-3 pt-3 grid grid-cols-3 gap-2 sm:gap-3"
       >
         {[
-          { key: 'urgencia', icon: '⚡', label: 'Urgência', desc: 'Atendimento imediato', tone: 'from-destructive/15 to-orange-500/10 border-destructive/30', onClick: () => navigate('/jornada-cliente?urgencia=1'), badge: isUrgencia ? 'Ativo' : null },
+          { key: 'urgencia', icon: '⚡', label: 'Urgência', desc: isUrgencia ? 'Radar acionado' : 'Atendimento imediato', tone: isUrgencia ? 'from-destructive/40 to-orange-500/30 border-destructive ring-2 ring-destructive/40 animate-pulse' : 'from-destructive/15 to-orange-500/10 border-destructive/30', onClick: () => navigate(isUrgencia ? '/client' : '/jornada-cliente?urgencia=1'), badge: isUrgencia ? '● ATIVO' : null },
           { key: 'home', icon: '🏠', label: 'Home', desc: 'Voltar ao início', tone: 'from-primary/15 to-accent/10 border-primary/30', onClick: () => navigate('/'), badge: null },
           { key: 'agenda', icon: '📅', label: 'Agenda', desc: 'Ver agendamentos', tone: 'from-emerald-500/15 to-cyan-500/10 border-emerald-500/30', onClick: () => navigate('/jornada-cliente?tab=agenda'), badge: cart.filter(c => c.scheduledDate).length > 0 ? String(cart.filter(c => c.scheduledDate).length) : null },
         ].map((card) => (

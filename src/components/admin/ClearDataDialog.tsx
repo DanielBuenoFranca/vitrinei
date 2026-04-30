@@ -1,89 +1,247 @@
+/**
+ * ClearDataDialog — limpeza segura por categoria.
+ * Fluxo:
+ *  1) Marcar categorias.
+ *  2) "Visualizar" -> carrega registros candidatos por categoria.
+ *  3) Expandir e desmarcar itens individuais que não devem ser excluídos.
+ *  4) Confirmar -> exclui apenas o que ficou marcado.
+ *
+ * Categorias contempladas (todas tabelas dinâmicas que podem virar lixo):
+ *   providers, services, products, segments, kits, kit_items,
+ *   stock_entries, stock_entry_items, stock_movements, ai_savings_log
+ */
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, ChevronRight, Loader2, Eye } from 'lucide-react';
+
+type CatKey =
+  | 'providers' | 'services' | 'products' | 'segments'
+  | 'kits' | 'kit_items'
+  | 'stock_entries' | 'stock_entry_items' | 'stock_movements'
+  | 'ai_savings_log';
+
+type Item = { id: string | number; label: string; sublabel?: string; selected: boolean };
 
 interface ClearDataDialogProps {
   open: boolean;
   onClose: () => void;
   onCleared: () => void;
-  counts: { providers: number; services: number; products: number; segments: number };
+  // mantido para compat — não obrigatório mais
+  counts?: { providers?: number; services?: number; products?: number; segments?: number };
 }
 
-export function ClearDataDialog({ open, onClose, onCleared, counts }: ClearDataDialogProps) {
-  const [selected, setSelected] = useState({ providers: false, services: false, products: false, segments: false });
+const CATEGORIES: { key: CatKey; label: string; table: string; warn?: string; idCol?: string }[] = [
+  { key: 'providers',         label: 'Prestadores',          table: 'providers',          warn: 'Exclui também serviços/produtos vinculados ao prestador.' },
+  { key: 'services',          label: 'Serviços',             table: 'dynamic_services' },
+  { key: 'products',          label: 'Produtos',             table: 'dynamic_products' },
+  { key: 'segments',          label: 'Segmentos',            table: 'segments' },
+  { key: 'kits',              label: 'Kits',                 table: 'kits',               warn: 'Exclui também itens dos kits.' },
+  { key: 'kit_items',         label: 'Itens de Kits (órfãos)', table: 'kit_items',        idCol: 'id' },
+  { key: 'stock_entries',     label: 'Entradas de Estoque',  table: 'stock_entries',      idCol: 'id', warn: 'Exclui itens da entrada (cardex permanece).' },
+  { key: 'stock_entry_items', label: 'Itens de Entrada',     table: 'stock_entry_items',  idCol: 'id' },
+  { key: 'stock_movements',   label: 'Movimentações Cardex', table: 'stock_movements',    idCol: 'id', warn: 'Apaga histórico — uso restrito.' },
+  { key: 'ai_savings_log',    label: 'Log de Economia IA',   table: 'ai_savings_log',     idCol: 'id' },
+];
+
+export function ClearDataDialog({ open, onClose, onCleared }: ClearDataDialogProps) {
+  const [selectedCats, setSelectedCats] = useState<Record<CatKey, boolean>>({} as any);
+  const [items, setItems] = useState<Record<CatKey, Item[]>>({} as any);
+  const [counts, setCounts] = useState<Record<CatKey, number>>({} as any);
+  const [loading, setLoading] = useState<Record<CatKey, boolean>>({} as any);
+  const [openCats, setOpenCats] = useState<Record<CatKey, boolean>>({} as any);
+  const [scanning, setScanning] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [scanned, setScanned] = useState(false);
 
-  const toggle = (key: keyof typeof selected) => setSelected(s => ({ ...s, [key]: !s[key] }));
+  const toggleCat = (k: CatKey) => setSelectedCats(s => ({ ...s, [k]: !s[k] }));
 
-  const anySelected = Object.values(selected).some(Boolean);
+  const labelFor = (k: CatKey, row: any): { label: string; sublabel?: string } => {
+    switch (k) {
+      case 'providers': return { label: row.name || `#${row.id}`, sublabel: `${row.email || ''} ${row.phone || ''}`.trim() };
+      case 'services':  return { label: row.name || `#${row.id}`, sublabel: row.provider || '' };
+      case 'products':  return { label: row.name || `#${row.id}`, sublabel: row.provider || '' };
+      case 'segments':  return { label: row.name || `#${row.id}` };
+      case 'kits':      return { label: row.name || `#${row.id}`, sublabel: `R$ ${Number(row.price || 0).toFixed(2)}` };
+      case 'stock_entries': return { label: `Entrada ${row.document_number || row.id}`, sublabel: row.supplier_name || '' };
+      case 'stock_movements': return { label: `${row.movement_type} · ${row.item_name}`, sublabel: new Date(row.created_at).toLocaleString('pt-BR') };
+      case 'ai_savings_log': return { label: row.feature, sublabel: row.fallback_used };
+      default: return { label: row.name || `#${row.id}`, sublabel: row.created_at ? new Date(row.created_at).toLocaleDateString('pt-BR') : '' };
+    }
+  };
+
+  const loadCategory = async (cat: typeof CATEGORIES[number]) => {
+    setLoading(l => ({ ...l, [cat.key]: true }));
+    const { data, count, error } = await supabase
+      .from(cat.table as any)
+      .select('*', { count: 'exact' })
+      .order('created_at' as any, { ascending: false } as any)
+      .limit(500);
+    if (error) {
+      // ordenação por created_at pode falhar em algumas — fallback simples
+      const fb = await supabase.from(cat.table as any).select('*', { count: 'exact' }).limit(500);
+      setItems(p => ({ ...p, [cat.key]: (fb.data || []).map((r: any) => ({ id: r.id, ...labelFor(cat.key, r), selected: true })) }));
+      setCounts(c => ({ ...c, [cat.key]: fb.count || 0 }));
+    } else {
+      setItems(p => ({ ...p, [cat.key]: (data || []).map((r: any) => ({ id: r.id, ...labelFor(cat.key, r), selected: true })) }));
+      setCounts(c => ({ ...c, [cat.key]: count || 0 }));
+    }
+    setLoading(l => ({ ...l, [cat.key]: false }));
+  };
+
+  const scan = async () => {
+    setScanning(true);
+    await Promise.all(
+      CATEGORIES.filter(c => selectedCats[c.key]).map(loadCategory)
+    );
+    setScanned(true);
+    setScanning(false);
+  };
+
+  const toggleItem = (k: CatKey, id: any) => {
+    setItems(p => ({
+      ...p,
+      [k]: (p[k] || []).map(it => it.id === id ? { ...it, selected: !it.selected } : it),
+    }));
+  };
+
+  const toggleAllInCat = (k: CatKey, value: boolean) => {
+    setItems(p => ({ ...p, [k]: (p[k] || []).map(it => ({ ...it, selected: value })) }));
+  };
+
+  const totalToDelete = CATEGORIES.reduce((acc, c) => acc + (selectedCats[c.key] ? (items[c.key] || []).filter(i => i.selected).length : 0), 0);
 
   const handleClear = async () => {
     setClearing(true);
     try {
-      if (selected.services) await supabase.from('dynamic_services').delete().neq('id', 0);
-      if (selected.products) await supabase.from('dynamic_products').delete().neq('id', 0);
-      if (selected.providers) {
-        if (!selected.services) await supabase.from('dynamic_services').delete().neq('id', 0);
-        if (!selected.products) await supabase.from('dynamic_products').delete().neq('id', 0);
-        await supabase.from('providers').delete().neq('id', 0);
+      // Ordem importa: filhos antes de pais
+      const order: CatKey[] = [
+        'stock_movements', 'stock_entry_items', 'stock_entries',
+        'kit_items', 'kits',
+        'services', 'products',
+        'providers', 'segments', 'ai_savings_log',
+      ];
+      for (const k of order) {
+        if (!selectedCats[k]) continue;
+        const ids = (items[k] || []).filter(i => i.selected).map(i => i.id);
+        if (!ids.length) continue;
+        const cat = CATEGORIES.find(c => c.key === k)!;
+        const { error } = await supabase.from(cat.table as any).delete().in('id', ids as any);
+        if (error) {
+          toast.error(`Erro em ${cat.label}: ${error.message}`);
+        }
       }
-      if (selected.segments) await supabase.from('segments').delete().neq('id', 0);
-      toast.success('Dados excluídos com sucesso');
-      setSelected({ providers: false, services: false, products: false, segments: false });
+      toast.success('Limpeza concluída');
+      setSelectedCats({} as any);
+      setItems({} as any);
+      setScanned(false);
       onCleared();
       onClose();
-    } catch {
-      toast.error('Erro ao excluir dados');
+    } catch (e: any) {
+      toast.error('Erro ao excluir dados: ' + (e?.message || ''));
     }
     setClearing(false);
   };
 
-  const items = [
-    { key: 'providers' as const, label: 'Prestadores', count: counts.providers, warn: 'Exclui também serviços e produtos vinculados' },
-    { key: 'services' as const, label: 'Serviços', count: counts.services },
-    { key: 'products' as const, label: 'Produtos', count: counts.products },
-    { key: 'segments' as const, label: 'Segmentos', count: counts.segments },
-  ];
+  const anyCatSelected = Object.values(selectedCats).some(Boolean);
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-destructive" />
             Excluir Dados
           </DialogTitle>
-          <DialogDescription>Selecione quais categorias deseja excluir da base de dados.</DialogDescription>
+          <DialogDescription>
+            Selecione categorias, visualize os registros candidatos e desmarque o que <strong>não</strong> deseja excluir.
+          </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-3 py-2">
-          {items.map(item => (
-            <div key={item.key} className="flex items-start gap-3 p-3 rounded-lg border bg-card">
-              <Checkbox
-                id={item.key}
-                checked={selected[item.key]}
-                onCheckedChange={() => toggle(item.key)}
-                disabled={item.count === 0}
-              />
-              <div className="grid gap-0.5">
-                <Label htmlFor={item.key} className="cursor-pointer">
-                  {item.label} <span className="text-muted-foreground">({item.count})</span>
-                </Label>
-                {item.warn && selected[item.key] && (
-                  <p className="text-[11px] text-destructive">{item.warn}</p>
+
+        {/* Step 1 — categorias */}
+        <div className="grid sm:grid-cols-2 gap-2">
+          {CATEGORIES.map(cat => (
+            <div key={cat.key} className="flex items-start gap-3 p-2.5 rounded-lg border bg-card">
+              <Checkbox id={cat.key} checked={!!selectedCats[cat.key]} onCheckedChange={() => toggleCat(cat.key)} />
+              <div className="grid gap-0.5 flex-1">
+                <Label htmlFor={cat.key} className="cursor-pointer text-sm">{cat.label}</Label>
+                {cat.warn && selectedCats[cat.key] && (
+                  <p className="text-[10px] text-destructive">{cat.warn}</p>
                 )}
               </div>
             </div>
           ))}
         </div>
+
+        {/* Step 2 — visualizar */}
+        <div className="flex items-center justify-between gap-2">
+          <Button variant="outline" size="sm" disabled={!anyCatSelected || scanning} onClick={scan}>
+            {scanning ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Eye className="h-3.5 w-3.5 mr-1.5" />}
+            {scanned ? 'Atualizar lista' : 'Visualizar registros'}
+          </Button>
+          {scanned && (
+            <Badge variant="outline" className="text-xs">
+              {totalToDelete} registro(s) marcados para exclusão
+            </Badge>
+          )}
+        </div>
+
+        {/* Step 3 — listas detalhadas */}
+        {scanned && (
+          <div className="space-y-2">
+            {CATEGORIES.filter(c => selectedCats[c.key]).map(cat => {
+              const list = items[cat.key] || [];
+              const sel = list.filter(i => i.selected).length;
+              return (
+                <Collapsible key={cat.key} open={!!openCats[cat.key]} onOpenChange={(v) => setOpenCats(o => ({ ...o, [cat.key]: v }))}>
+                  <div className="rounded-md border">
+                    <div className="flex items-center justify-between p-2 bg-muted/30">
+                      <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium flex-1">
+                        <ChevronRight className={`h-3.5 w-3.5 transition-transform ${openCats[cat.key] ? 'rotate-90' : ''}`} />
+                        {cat.label}
+                        <Badge variant="secondary" className="text-[10px]">{sel}/{list.length}{counts[cat.key] > list.length ? `+ (de ${counts[cat.key]})` : ''}</Badge>
+                      </CollapsibleTrigger>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={() => toggleAllInCat(cat.key, true)}>marcar tudo</Button>
+                        <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={() => toggleAllInCat(cat.key, false)}>desmarcar</Button>
+                      </div>
+                    </div>
+                    <CollapsibleContent>
+                      <div className="max-h-60 overflow-y-auto divide-y" style={{ scrollbarGutter: 'stable' }}>
+                        {loading[cat.key] && <div className="p-3 text-xs text-muted-foreground text-center"><Loader2 className="h-3 w-3 animate-spin inline mr-1" /> carregando...</div>}
+                        {!loading[cat.key] && list.length === 0 && <div className="p-3 text-xs text-muted-foreground text-center">Nenhum registro encontrado.</div>}
+                        {list.map(it => (
+                          <label key={String(it.id)} className="flex items-center gap-2 p-2 hover:bg-muted/30 cursor-pointer text-xs">
+                            <Checkbox checked={it.selected} onCheckedChange={() => toggleItem(cat.key, it.id)} />
+                            <div className="flex-1 min-w-0">
+                              <div className="truncate font-medium">{it.label}</div>
+                              {it.sublabel && <div className="truncate text-[10px] text-muted-foreground">{it.sublabel}</div>}
+                            </div>
+                            <span className="text-[9px] text-muted-foreground font-mono">#{String(it.id).slice(0, 6)}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </CollapsibleContent>
+                  </div>
+                </Collapsible>
+              );
+            })}
+          </div>
+        )}
+
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button variant="destructive" onClick={handleClear} disabled={!anySelected || clearing}>
-            {clearing ? 'Excluindo...' : 'Excluir Selecionados'}
+          <Button variant="destructive" onClick={handleClear} disabled={!scanned || totalToDelete === 0 || clearing}>
+            {clearing ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <AlertTriangle className="h-3.5 w-3.5 mr-1.5" />}
+            Excluir {totalToDelete > 0 ? `${totalToDelete} registro(s)` : 'selecionados'}
           </Button>
         </DialogFooter>
       </DialogContent>
