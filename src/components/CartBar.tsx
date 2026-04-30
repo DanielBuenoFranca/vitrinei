@@ -287,9 +287,14 @@ const CartBar = () => {
                         {/* Finalizar when credit is sufficient */}
                         {!needsTopUp && (
                           <div className="mt-2">
-                            <Button size="sm" className="w-full gap-1.5 font-semibold" onClick={navigateToCheckout}>
-                              <ShoppingCart className="w-3.5 h-3.5" /> Confirmar compra
+                            <Button size="sm" className={`w-full gap-1.5 font-semibold ${isUrgencia ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground' : ''}`} onClick={navigateToCheckout}>
+                              {isUrgencia ? <><Zap className="w-3.5 h-3.5" /> Acionar Radar de Urgência</> : <><ShoppingCart className="w-3.5 h-3.5" /> Confirmar compra</>}
                             </Button>
+                            {isUrgencia && (
+                              <p className="text-[10px] text-center text-muted-foreground mt-1">
+                                📡 Buscaremos um prestador online próximo a você
+                              </p>
+                            )}
                           </div>
                         )}
                       </div>
