@@ -278,6 +278,8 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
         profileData.auth_split_5x = authSplit5x;
         profileData.logo_url = finalLogo;
         profileData.is_provider = true;
+        profileData.margin_pct = Math.max(0, Math.min(500, Number(marginPct) || 0));
+        profileData.profit_pct = Math.max(0, Math.min(500, Number(profitPct) || 0));
       }
 
       const { error: profErr } = await supabase.from('profiles').update(profileData).eq('user_id', userId);
