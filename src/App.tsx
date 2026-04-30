@@ -103,6 +103,7 @@ const App = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
         <AttentionFooterBar />
+        <SystemStatusIndicator />
         </ConversionProvider>
       </BrowserRouter>
     </TooltipProvider>
