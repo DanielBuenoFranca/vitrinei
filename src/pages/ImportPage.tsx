@@ -814,9 +814,27 @@ const ImportPage = () => {
           cpfCnpj: r.cpfCnpj,
         }));
 
-        const { data, error } = await supabase.functions.invoke('enrich-import-data', {
-          body: { rows: simplifiedRows, existingSegments: segNames },
-        });
+        let data: any = null;
+        let error: any = null;
+
+        if (aiMode === 'off') {
+          // Fallback heurístico local — sem chamar IA paga
+          data = { enriched: simplifiedRows.map((r: any) => heuristicEnrich(r, segNames)) };
+        } else {
+          const resp = await supabase.functions.invoke('enrich-import-data', {
+            body: { rows: simplifiedRows, existingSegments: segNames },
+          });
+          data = resp.data;
+          error = resp.error;
+          // Se IA falhou (créditos/limite), cai para heurística silenciosamente
+          const status = (resp as any)?.error?.context?.status;
+          if (error || status === 402 || status === 429) {
+            toast.warning('IA indisponível — usando preenchimento heurístico local.');
+            data = { enriched: simplifiedRows.map((r: any) => heuristicEnrich(r, segNames)) };
+            error = null;
+            try { await logAiSavings('import_enrich', 'heuristic_local', simplifiedRows.length, { batch: i / batchSize }); } catch {}
+          }
+        }
 
         if (error) {
           toast.error('Erro ao enriquecer dados: ' + error.message);
