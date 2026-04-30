@@ -764,10 +764,14 @@ const ImportPage = () => {
     }
   };
 
-  /* ─── AI Enrichment ─── */
+  /* ─── AI Enrichment (respeita governance OFF) ─── */
   const enrichWithAI = async () => {
     if (rows.length === 0) return;
     setEnriching(true);
+
+    // Verifica modo IA — se OFF, usa fallback heurístico local (sem créditos)
+    const { getAiModeAsync, logAiSavings } = await import('@/hooks/useAiMode');
+    const aiMode = await getAiModeAsync();
     try {
       // Find rows with empty required fields
       const rowsToEnrich = rows.filter(r => {
