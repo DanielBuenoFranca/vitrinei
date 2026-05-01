@@ -41,6 +41,42 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_savings_periods: {
+        Row: {
+          context: Json
+          created_at: string
+          ended_at: string | null
+          ended_by: string | null
+          id: string
+          started_at: string
+          started_by: string | null
+          total_calls_diverted: number
+          total_credits_saved: number
+        }
+        Insert: {
+          context?: Json
+          created_at?: string
+          ended_at?: string | null
+          ended_by?: string | null
+          id?: string
+          started_at?: string
+          started_by?: string | null
+          total_calls_diverted?: number
+          total_credits_saved?: number
+        }
+        Update: {
+          context?: Json
+          created_at?: string
+          ended_at?: string | null
+          ended_by?: string | null
+          id?: string
+          started_at?: string
+          started_by?: string | null
+          total_calls_diverted?: number
+          total_credits_saved?: number
+        }
+        Relationships: []
+      }
       dynamic_products: {
         Row: {
           created_at: string
@@ -366,6 +402,8 @@ export type Database = {
           provider_type: string | null
           rating: number | null
           storefront_config: Json | null
+          subscription_paid: boolean
+          subscription_paid_at: string | null
           updated_at: string
           user_id: string
         }
@@ -399,6 +437,8 @@ export type Database = {
           provider_type?: string | null
           rating?: number | null
           storefront_config?: Json | null
+          subscription_paid?: boolean
+          subscription_paid_at?: string | null
           updated_at?: string
           user_id: string
         }
@@ -432,8 +472,46 @@ export type Database = {
           provider_type?: string | null
           rating?: number | null
           storefront_config?: Json | null
+          subscription_paid?: boolean
+          subscription_paid_at?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      provider_ranking_groups: {
+        Row: {
+          avg_stars: number
+          created_at: string
+          first_at: string
+          group_index: number
+          id: string
+          last_at: string
+          provider_id: number
+          rating_ids: string[]
+          sales_count: number
+        }
+        Insert: {
+          avg_stars: number
+          created_at?: string
+          first_at: string
+          group_index: number
+          id?: string
+          last_at: string
+          provider_id: number
+          rating_ids?: string[]
+          sales_count: number
+        }
+        Update: {
+          avg_stars?: number
+          created_at?: string
+          first_at?: string
+          group_index?: number
+          id?: string
+          last_at?: string
+          provider_id?: number
+          rating_ids?: string[]
+          sales_count?: number
         }
         Relationships: []
       }
@@ -443,6 +521,10 @@ export type Database = {
           context: Json | null
           created_at: string
           id: string
+          item_id: number | null
+          item_kind: string | null
+          item_name: string | null
+          order_ref: string | null
           provider_id: number
           stars: number
           user_id: string | null
@@ -452,6 +534,10 @@ export type Database = {
           context?: Json | null
           created_at?: string
           id?: string
+          item_id?: number | null
+          item_kind?: string | null
+          item_name?: string | null
+          order_ref?: string | null
           provider_id: number
           stars: number
           user_id?: string | null
@@ -461,6 +547,10 @@ export type Database = {
           context?: Json | null
           created_at?: string
           id?: string
+          item_id?: number | null
+          item_kind?: string | null
+          item_name?: string | null
+          order_ref?: string | null
           provider_id?: number
           stars?: number
           user_id?: string | null
@@ -477,15 +567,20 @@ export type Database = {
           created_at: string
           distance: string
           email: string | null
+          groups_count: number
           id: number
+          is_top_provider: boolean
           logo_url: string | null
           margin_pct: number
           name: string
           phone: string | null
           profit_pct: number
+          ranking_score: number
           rating: number
           segment: string[]
           storefront_config: Json
+          top_provider_since: string | null
+          total_sales_rated: number
           type: string
           user_id: string | null
         }
@@ -498,15 +593,20 @@ export type Database = {
           created_at?: string
           distance?: string
           email?: string | null
+          groups_count?: number
           id?: number
+          is_top_provider?: boolean
           logo_url?: string | null
           margin_pct?: number
           name: string
           phone?: string | null
           profit_pct?: number
+          ranking_score?: number
           rating?: number
           segment: string[]
           storefront_config?: Json
+          top_provider_since?: string | null
+          total_sales_rated?: number
           type?: string
           user_id?: string | null
         }
@@ -519,15 +619,20 @@ export type Database = {
           created_at?: string
           distance?: string
           email?: string | null
+          groups_count?: number
           id?: number
+          is_top_provider?: boolean
           logo_url?: string | null
           margin_pct?: number
           name?: string
           phone?: string | null
           profit_pct?: number
+          ranking_score?: number
           rating?: number
           segment?: string[]
           storefront_config?: Json
+          top_provider_since?: string | null
+          total_sales_rated?: number
           type?: string
           user_id?: string | null
         }
@@ -538,27 +643,36 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          min_groups_for_ranking: number
           reward_buyer: number
           reward_mixed_total: number
           reward_seller: number
+          sales_per_group: number
+          top_ranked_count: number
           updated_at: string
         }
         Insert: {
           created_at?: string
           id?: string
           is_active?: boolean
+          min_groups_for_ranking?: number
           reward_buyer?: number
           reward_mixed_total?: number
           reward_seller?: number
+          sales_per_group?: number
+          top_ranked_count?: number
           updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
           is_active?: boolean
+          min_groups_for_ranking?: number
           reward_buyer?: number
           reward_mixed_total?: number
           reward_seller?: number
+          sales_per_group?: number
+          top_ranked_count?: number
           updated_at?: string
         }
         Relationships: []
@@ -1018,6 +1132,34 @@ export type Database = {
         }
         Relationships: []
       }
+      v_lead_funnel: {
+        Row: {
+          activated_at: string | null
+          bonus_released: boolean | null
+          buyer_released: boolean | null
+          commission_amount: number | null
+          first_purchase_at: string | null
+          first_sale_at: string | null
+          has_subscription: boolean | null
+          profile_created: boolean | null
+          referral_code: string | null
+          referral_created_at: string | null
+          referral_id: string | null
+          referral_status: string | null
+          referred_email: string | null
+          referred_id: string | null
+          referred_name: string | null
+          referred_phone: string | null
+          referred_role: string | null
+          referrer_id: string | null
+          referrer_name: string | null
+          seller_released: boolean | null
+          subscription_paid: boolean | null
+          subscription_status: string | null
+          total_paid: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       apply_stock_entry: { Args: { _entry_id: string }; Returns: Json }
@@ -1042,6 +1184,7 @@ export type Database = {
         }
         Returns: Json
       }
+      close_ai_savings_period: { Args: { _user_id?: string }; Returns: Json }
       contract_credit: {
         Args: { _amount: number; _user_id: string }
         Returns: Json
@@ -1058,6 +1201,7 @@ export type Database = {
         }
         Returns: Json
       }
+      current_ai_savings: { Args: never; Returns: Json }
       get_user_roles: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"][]
@@ -1090,6 +1234,8 @@ export type Database = {
         }
         Returns: Json
       }
+      recalc_provider_ranking: { Args: { _provider_id: number }; Returns: Json }
+      refresh_top_providers: { Args: never; Returns: number }
       release_fractioned_cashback: {
         Args: { _phase: string; _referral_id: string }
         Returns: Json
@@ -1102,6 +1248,7 @@ export type Database = {
         Args: { _buyer_id: string; _kit_id: number; _quantity?: number }
         Returns: Json
       }
+      start_ai_savings_period: { Args: { _user_id?: string }; Returns: string }
       unaccent_safe: { Args: { _text: string }; Returns: string }
     }
     Enums: {
