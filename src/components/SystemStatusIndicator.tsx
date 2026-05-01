@@ -1,8 +1,9 @@
 /**
- * SystemStatusIndicator — chip discreto, fixo no canto inferior-direito.
- * - Mostra estado de serviços (IA, imagens) quando algo está em modo contingência/OFF.
- * - Para Master/Admin, abre detalhes ao clicar.
- * - Some quando tudo está normal (não polui a UI).
+ * SystemStatusIndicator V2.1 — chip discreto, fixo no canto direito da tela,
+ * verticalmente acima do botão flutuante (+) do menu lateral.
+ * - Mostra APENAS o símbolo (sem texto).
+ * - Aparece quando a IA paga está em modo contingência (OFF).
+ * - Master/Admin pode clicar para ver detalhes do período aberto + economia ao vivo.
  */
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,48 +16,49 @@ export function SystemStatusIndicator() {
   const { mode, isOn } = useAiMode();
   const { isMaster, isAdmin } = useAuth() as any;
   const [expanded, setExpanded] = useState(false);
-  const [savings, setSavings] = useState({ count: 0, credits: 0, last24h: 0 });
+  const [savings, setSavings] = useState({ credits: 0, calls: 0, periodStart: null as string | null });
 
   const isPrivileged = !!(isMaster || isAdmin);
-  const showChip = !isOn; // só aparece quando algo está em modo contingência
+  const showChip = !isOn;
+
+  const loadSavings = async () => {
+    try {
+      const { data } = await (supabase.rpc as any)("current_ai_savings");
+      if (data) {
+        setSavings({
+          credits: Number(data.credits || 0),
+          calls: Number(data.calls || 0),
+          periodStart: data.started_at || null,
+        });
+      }
+    } catch { /* silent */ }
+  };
 
   useEffect(() => {
-    if (!expanded || !isPrivileged) return;
-    (async () => {
-      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const { data, count } = await supabase
-        .from("ai_savings_log")
-        .select("estimated_credits, created_at", { count: "exact" })
-        .order("created_at", { ascending: false })
-        .limit(200);
-      let total = 0, last24 = 0;
-      (data || []).forEach((r: any) => {
-        const v = Number(r.estimated_credits || 0);
-        total += v;
-        if (new Date(r.created_at).getTime() > Date.now() - 86400000) last24 += v;
-      });
-      setSavings({ count: count || 0, credits: total, last24h: last24 });
-    })();
-  }, [expanded, isPrivileged]);
+    if (!showChip) return;
+    loadSavings();
+    const interval = setInterval(loadSavings, 30000);
+    return () => clearInterval(interval);
+  }, [showChip]);
 
   if (!showChip) return null;
 
   return (
-    <div className="fixed bottom-3 right-3 z-[60] pointer-events-none">
+    // Posicionado verticalmente acima do botão flutuante "+" (que costuma ficar bottom-3 right-3, ~h-12)
+    <div className="fixed right-3 bottom-20 z-[60] pointer-events-none">
       <motion.button
         type="button"
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 0.65, y: 0 }}
-        whileHover={{ opacity: 1 }}
+        initial={{ opacity: 0, scale: 0.5 }}
+        animate={{ opacity: 0.85, scale: 1 }}
+        whileHover={{ opacity: 1, scale: 1.08 }}
         onClick={() => isPrivileged && setExpanded(true)}
-        className={`pointer-events-auto flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-medium border backdrop-blur-md
-          bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30
-          ${isPrivileged ? "cursor-pointer hover:opacity-100" : "cursor-default"}`}
-        title={isPrivileged ? "Clique para detalhes" : "Sistema operando em modo economia"}
-        aria-label="Status do sistema"
+        className={`pointer-events-auto w-9 h-9 rounded-full border backdrop-blur-md flex items-center justify-center shadow-md
+          bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40
+          ${isPrivileged ? "cursor-pointer" : "cursor-default"}`}
+        title={isPrivileged ? "IA em contingência — clique para detalhes" : "Sistema operando em modo economia"}
+        aria-label="IA em modo economia"
       >
-        <ZapOff className="w-3 h-3" />
-        <span>IA off · contingência</span>
+        <ZapOff className="w-4 h-4" />
       </motion.button>
 
       <AnimatePresence>
@@ -65,36 +67,40 @@ export function SystemStatusIndicator() {
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="pointer-events-auto absolute bottom-8 right-0 w-72 rounded-xl border bg-card shadow-xl p-3"
+            className="pointer-events-auto absolute bottom-12 right-0 w-72 rounded-xl border bg-card shadow-xl p-3"
           >
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center gap-1.5 text-xs font-semibold">
                 <Power className="w-3.5 h-3.5 text-amber-500" />
-                Status de Serviços
+                IA em modo economia
               </div>
               <button onClick={() => setExpanded(false)} className="text-muted-foreground hover:text-foreground" aria-label="Fechar">
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
             <div className="space-y-2 text-[11px]">
-              <Row icon={<Sparkles className="w-3 h-3" />} label="IA paga (Lovable AI)" status={isOn ? "online" : "off"} />
-              <Row icon={<ImageOff className="w-3 h-3" />} label="Geração de imagens" status={isOn ? "online" : "fallback"} note={!isOn ? "Unsplash → Pixabay" : undefined} />
+              <Row icon={<Sparkles className="w-3 h-3" />} label="IA paga (Lovable AI)" status="off" />
+              <Row icon={<ImageOff className="w-3 h-3" />} label="Geração de imagens" status="fallback" note="Unsplash → Pixabay" />
               <Row icon={<AlertTriangle className="w-3 h-3" />} label="Auto-OFF em erro" status="online" />
             </div>
 
             <div className="mt-3 pt-2 border-t grid grid-cols-2 gap-2">
               <div className="rounded-md bg-muted/40 p-2">
-                <div className="text-[10px] text-muted-foreground">Economia 24h</div>
-                <div className="text-sm font-semibold tabular-nums">~{savings.last24h.toFixed(0)} créditos</div>
+                <div className="text-[10px] text-muted-foreground">Economia (período aberto)</div>
+                <div className="text-sm font-semibold tabular-nums">~{savings.credits.toFixed(0)} créditos</div>
               </div>
               <div className="rounded-md bg-muted/40 p-2">
-                <div className="text-[10px] text-muted-foreground">Desvios totais</div>
-                <div className="text-sm font-semibold tabular-nums">{savings.count}</div>
+                <div className="text-[10px] text-muted-foreground">Chamadas desviadas</div>
+                <div className="text-sm font-semibold tabular-nums">{savings.calls}</div>
               </div>
             </div>
-
+            {savings.periodStart && (
+              <p className="text-[10px] text-muted-foreground mt-2">
+                Desde {new Date(savings.periodStart).toLocaleString("pt-BR")}
+              </p>
+            )}
             <p className="text-[10px] text-muted-foreground mt-2">
-              Modo OFF protege os créditos do projeto. Reative em <strong>Admin → IA Governance</strong>.
+              Reative em <strong>Admin → IA Governance</strong>.
             </p>
           </motion.div>
         )}
