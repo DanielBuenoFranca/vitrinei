@@ -68,6 +68,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
     stock_type: 'fisico', rating: 4.5, distance: '2 km',
     product_id: Math.floor(Math.random() * 9000) + 1000,
     unit: 'un',
+    quantity: 0,
   });
   const [selectedSegments, setSelectedSegments] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -94,6 +95,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
         rating: product.rating, distance: product.distance,
         product_id: product.product_id,
         unit: (product as any).unit || 'un',
+        quantity: (product as any).quantity ?? 0,
       });
       setSelectedTags(product.tags || []);
       if (product.provider_id) {
@@ -105,7 +107,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
         }
       }
     } else {
-      setForm({ name: '', price: 0, provider: '', provider_id: null, stock_type: 'fisico', rating: 4.5, distance: '2 km', product_id: Math.floor(Math.random() * 9000) + 1000, unit: 'un' });
+      setForm({ name: '', price: 0, provider: '', provider_id: null, stock_type: 'fisico', rating: 4.5, distance: '2 km', product_id: Math.floor(Math.random() * 9000) + 1000, unit: 'un', quantity: 0 });
       setSelectedTags([]);
       setSelectedSegments([]);
       setSegmentTags([]);
@@ -180,6 +182,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
       rating: form.rating, distance: form.distance, tags: selectedTags,
       product_id: form.product_id, related_service_ids: [] as number[],
       unit: form.unit,
+      quantity: form.quantity,
     };
     if (isEdit) {
       const { error } = await supabase.from('dynamic_products').update(data).eq('id', product!.id);
