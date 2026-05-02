@@ -86,11 +86,11 @@ export function SystemStatusIndicator() {
 
             <div className="mt-3 pt-2 border-t grid grid-cols-2 gap-2">
               <div className="rounded-md bg-muted/40 p-2">
-                <div className="text-[10px] text-muted-foreground">Economia (período aberto)</div>
+                <div className="text-[10px] text-muted-foreground">Economia (sistema, período aberto)</div>
                 <div className="text-sm font-semibold tabular-nums">~{savings.credits.toFixed(0)} créditos</div>
               </div>
               <div className="rounded-md bg-muted/40 p-2">
-                <div className="text-[10px] text-muted-foreground">Chamadas desviadas</div>
+                <div className="text-[10px] text-muted-foreground">Chamadas desviadas (sistema)</div>
                 <div className="text-sm font-semibold tabular-nums">{savings.calls}</div>
               </div>
             </div>

@@ -403,7 +403,7 @@ const AdminPanel = () => {
     await supabase.from('providers').delete().eq('id', id);
 
     toast.success(`"${prov?.name}" excluído com ${relSvc.length} serviço(s) e ${relProd.length} produto(s)`);
-    await reloadDynamicEntries();
+    await reloadDynamicEntries(); fetchData();
     fetchData();
   };
 
@@ -414,14 +414,14 @@ const AdminPanel = () => {
   const deleteService = async (id: number) => {
     await supabase.from('dynamic_services').delete().eq('id', id);
     toast.success('Serviço excluído');
-    await reloadDynamicEntries();
+    await reloadDynamicEntries(); fetchData();
     fetchData();
   };
 
   const deleteProduct = async (id: number) => {
     await supabase.from('dynamic_products').delete().eq('id', id);
     toast.success('Produto excluído');
-    await reloadDynamicEntries();
+    await reloadDynamicEntries(); fetchData();
     fetchData();
   };
 
@@ -702,6 +702,7 @@ const AdminPanel = () => {
                           <TableHead>Mão de Obra</TableHead>
                           <TableHead>Produtos</TableHead>
                           <TableHead>Total</TableHead>
+                          <TableHead>Qtd</TableHead>
                           <TableHead>Avaliação</TableHead>
                           <TableHead>Tempo</TableHead>
                           <TableHead></TableHead>
@@ -726,6 +727,18 @@ const AdminPanel = () => {
                               </div>
                             </TableCell>
                             <TableCell className="font-semibold text-primary">R$ {svc.price.toFixed(2)}</TableCell>
+                            <TableCell>
+                              <Input
+                                type="number" min={0} step={1}
+                                value={(svc as any).quantity ?? 0}
+                                onChange={async (e) => {
+                                  const q = parseInt(e.target.value, 10) || 0;
+                                  await supabase.from('dynamic_services').update({ quantity: q }).eq('id', svc.id);
+                                  await reloadDynamicEntries(); fetchData();
+                                }}
+                                className="h-7 w-16 text-xs"
+                              />
+                            </TableCell>
                             <TableCell>⭐ {svc.rating}</TableCell>
                             <TableCell>{svc.time}</TableCell>
                             <TableCell>
@@ -772,6 +785,7 @@ const AdminPanel = () => {
                           <TableHead>Prestador</TableHead>
                           <TableHead>Preço</TableHead>
                           <TableHead>Tipo Estoque</TableHead>
+                          <TableHead>Qtd</TableHead>
                           <TableHead>Avaliação</TableHead>
                           <TableHead>Tags</TableHead>
                           <TableHead>Criado em</TableHead>
@@ -791,6 +805,18 @@ const AdminPanel = () => {
                               <Badge variant={prod.stock_type === 'drop' ? 'outline' : 'default'}>
                                 {prod.stock_type === 'drop' ? 'Drop' : 'Físico'}
                               </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                type="number" min={0} step={1}
+                                value={(prod as any).quantity ?? 0}
+                                onChange={async (e) => {
+                                  const q = parseInt(e.target.value, 10) || 0;
+                                  await supabase.from('dynamic_products').update({ quantity: q }).eq('id', prod.id);
+                                  await reloadDynamicEntries(); fetchData();
+                                }}
+                                className="h-7 w-16 text-xs"
+                              />
                             </TableCell>
                             <TableCell>⭐ {prod.rating}</TableCell>
                             <TableCell>
