@@ -63,6 +63,7 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
     name: '', segment: '', provider: '', provider_id: null as number | null,
     labor_cost: 0, rating: 4.5, distance: '2 km', time: '45 min',
     service_id: Math.floor(Math.random() * 9000) + 1000,
+    unit: 'hr', quantity: 0,
   });
   const [linkedProductIds, setLinkedProductIds] = useState<number[]>([]);
   const [availableProducts, setAvailableProducts] = useState<AvailableProduct[]>([]);
@@ -92,10 +93,12 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
         provider_id: service.provider_id, labor_cost: service.labor_cost || 0,
         rating: service.rating, distance: service.distance, time: service.time,
         service_id: service.service_id,
+        unit: (service as any).unit || 'hr',
+        quantity: (service as any).quantity ?? 0,
       });
       setLinkedProductIds(service.linked_product_ids || []);
     } else {
-      setForm({ name: '', segment: segments[0]?.name || '', provider: '', provider_id: null, labor_cost: 0, rating: 4.5, distance: '2 km', time: '45 min', service_id: Math.floor(Math.random() * 9000) + 1000 });
+      setForm({ name: '', segment: segments[0]?.name || '', provider: '', provider_id: null, labor_cost: 0, rating: 4.5, distance: '2 km', time: '45 min', service_id: Math.floor(Math.random() * 9000) + 1000, unit: 'hr', quantity: 0 });
       setLinkedProductIds([]);
     }
   }, [service, open, segments]);
@@ -127,7 +130,7 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
       try {
         const { data: dup } = await (supabase as any).rpc('check_item_duplicate', {
           _provider_id: form.provider_id, _kind: 'service',
-          _name: form.name, _unit: 'hr', _exclude_id: isEdit ? service!.id : null,
+          _name: form.name, _unit: form.unit, _exclude_id: isEdit ? service!.id : null,
         });
         if (dup?.duplicate) {
           toast.error(`Serviço duplicado neste prestador: já existe "${dup.name}". Renomeie para diferenciar.`);
@@ -142,6 +145,7 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
       distance: form.distance, time: form.time, products: productsNames,
       service_id: form.service_id, labor_cost: form.labor_cost,
       linked_product_ids: linkedProductIds,
+      unit: form.unit, quantity: form.quantity,
     };
     if (isEdit) {
       const { error } = await supabase.from('dynamic_services').update(data).eq('id', service!.id);
@@ -258,7 +262,11 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-3">
+            <div className="grid gap-2">
+              <Label>Qtd (capacidade)</Label>
+              <Input type="number" min="0" step="1" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: parseInt(e.target.value, 10) || 0 }))} />
+            </div>
             <div className="grid gap-2">
               <Label>Avaliação</Label>
               <Input type="number" step="0.1" min="0" max="5" value={form.rating} onChange={e => setForm(f => ({ ...f, rating: parseFloat(e.target.value) || 0 }))} />
