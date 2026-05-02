@@ -107,7 +107,8 @@ export function AiGovernancePanel() {
               <Power className="h-4 w-4" /> Disjuntor Inteligente de IA
             </CardTitle>
             <CardDescription>
-              Controla se o sistema usa IA paga (geração de imagens, chat, enriquecimento) ou alternativas gratuitas.
+              Visão <strong>global do sistema</strong> (todos os usuários) — controla se o sistema usa IA paga
+              (geração de imagens, chat, enriquecimento, importação de planilhas) ou alternativas gratuitas.
               Ao tentar ligar, o sistema verifica créditos antes de assumir o consumo.
             </CardDescription>
           </div>
@@ -147,11 +148,11 @@ export function AiGovernancePanel() {
 
         <div className="rounded-lg border-2 border-primary/20 bg-primary/5 p-3 flex items-center justify-between">
           <div>
-            <div className="text-xs text-muted-foreground">Total geral economizado</div>
+            <div className="text-xs text-muted-foreground">Total geral economizado <span className="text-[10px] text-primary">(sistema todo)</span></div>
             <div className="text-3xl font-bold text-primary tabular-nums">~{totalAll.toFixed(0)} <span className="text-sm font-normal text-muted-foreground">créditos</span></div>
           </div>
-          <div className="text-[11px] text-muted-foreground text-right max-w-[180px]">
-            Período atual + soma do histórico arquivado.
+          <div className="text-[11px] text-muted-foreground text-right max-w-[200px]">
+            Soma agregada de <strong>todos os usuários</strong>: período atual + histórico arquivado.
           </div>
         </div>
 
