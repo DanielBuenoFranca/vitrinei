@@ -327,7 +327,11 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="grid gap-2">
+              <Label>Quantidade (estoque)</Label>
+              <Input type="number" min="0" step="1" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: parseInt(e.target.value, 10) || 0 }))} />
+            </div>
             <div className="grid gap-2">
               <Label>Avaliação</Label>
               <Input type="number" step="0.1" min="0" max="5" value={form.rating} onChange={e => setForm(f => ({ ...f, rating: parseFloat(e.target.value) || 0 }))} />
