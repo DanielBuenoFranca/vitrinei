@@ -1140,69 +1140,91 @@ const ImportPage = () => {
           }
         }
 
-        // Insert services and products (com quantidade de estoque + checagem anti-duplicidade no BD)
+        // STEP A — primeiro insere PRODUTOS do grupo (precisamos dos ids para vincular aos serviços)
+        const createdProducts: { id: number; name: string; price: number }[] = [];
         for (const row of provRows) {
-          if (row.serviceName.trim()) {
-            const price = parseFloat(row.servicePrice) || 0;
-            const qtyRaw = parseInt(row.serviceQuantity, 10);
-            const quantity = Number.isFinite(qtyRaw) && qtyRaw >= 0 ? qtyRaw : 0;
-            const unit = row.serviceUnit || 'hr';
-            try {
-              const { data: dup } = await (supabase as any).rpc('check_item_duplicate', {
-                _provider_id: providerId, _kind: 'service', _name: row.serviceName, _unit: unit,
-              });
-              if (dup?.duplicate) {
-                res.errors.push({ line: row._id, message: `Serviço "${row.serviceName}" já existe no estoque deste prestador (id ${dup.id}). Renomeie para importar.` });
-                continue;
-              }
-            } catch {}
-            const { error } = await supabase.from('dynamic_services').insert({
-              service_id: nextServiceId++,
-              name: row.serviceName,
-              segment: row.segment || 'Geral',
-              provider: provName,
-              provider_id: providerId,
-              price,
-              unit,
-              quantity,
+          if (!row.productName.trim()) continue;
+          const price = parseFloat(row.productPrice) || 0;
+          const tags = row.segment ? [row.segment.toLowerCase()] : [];
+          const qtyRaw = parseInt(row.productQuantity, 10);
+          const quantity = Number.isFinite(qtyRaw) && qtyRaw >= 0 ? qtyRaw : 0;
+          const unit = row.productUnit || 'un';
+          try {
+            const { data: dup } = await (supabase as any).rpc('check_item_duplicate', {
+              _provider_id: providerId, _kind: 'product', _name: row.productName, _unit: unit,
             });
-            if (error) {
-              res.errors.push({ line: row._id, message: `Serviço "${row.serviceName}": ${error.message}` });
-            } else {
-              res.servicesCreated++;
+            if (dup?.duplicate) {
+              // já existe — usa o id existente para vincular
+              createdProducts.push({ id: dup.id, name: row.productName, price });
+              res.errors.push({ line: row._id, message: `Produto "${row.productName}" já existia (id ${dup.id}) — reutilizado para vínculos.` });
+              continue;
             }
+          } catch {}
+          const { data: ins, error } = await supabase.from('dynamic_products').insert({
+            product_id: nextProductId++,
+            name: row.productName,
+            provider: provName,
+            provider_id: providerId,
+            price,
+            stock_type: row.productStockType === 'drop' ? 'drop' : 'fisico',
+            tags,
+            unit,
+            quantity,
+          }).select('id, name, price').single();
+          if (error) {
+            res.errors.push({ line: row._id, message: `Produto "${row.productName}": ${error.message}` });
+          } else if (ins) {
+            createdProducts.push({ id: (ins as any).id, name: (ins as any).name, price: Number((ins as any).price || 0) });
+            res.productsCreated++;
           }
-          if (row.productName.trim()) {
-            const price = parseFloat(row.productPrice) || 0;
-            const tags = row.segment ? [row.segment.toLowerCase()] : [];
-            const qtyRaw = parseInt(row.productQuantity, 10);
-            const quantity = Number.isFinite(qtyRaw) && qtyRaw >= 0 ? qtyRaw : 0;
-            const unit = row.productUnit || 'un';
-            try {
-              const { data: dup } = await (supabase as any).rpc('check_item_duplicate', {
-                _provider_id: providerId, _kind: 'product', _name: row.productName, _unit: unit,
-              });
-              if (dup?.duplicate) {
-                res.errors.push({ line: row._id, message: `Produto "${row.productName}" já existe no estoque deste prestador (id ${dup.id}). Renomeie para importar.` });
-                continue;
-              }
-            } catch {}
-            const { error } = await supabase.from('dynamic_products').insert({
-              product_id: nextProductId++,
-              name: row.productName,
-              provider: provName,
-              provider_id: providerId,
-              price,
-              stock_type: row.productStockType === 'drop' ? 'drop' : 'fisico',
-              tags,
-              unit,
-              quantity,
+        }
+
+        // STEP B — agora insere SERVIÇOS, vinculando TODOS os produtos do prestador (criados acima + pré-existentes)
+        // Carrega produtos já existentes do prestador para vínculo completo
+        const { data: existingProds } = await supabase
+          .from('dynamic_products')
+          .select('id, name, price')
+          .eq('provider_id', providerId);
+        const allProviderProducts = new Map<number, { name: string; price: number }>();
+        (existingProds || []).forEach((p: any) => allProviderProducts.set(p.id, { name: p.name, price: Number(p.price || 0) }));
+        createdProducts.forEach(p => allProviderProducts.set(p.id, { name: p.name, price: p.price }));
+        const linkedIds = Array.from(allProviderProducts.keys());
+        const linkedNames = linkedIds.map(id => allProviderProducts.get(id)!.name);
+        const productsCost = linkedIds.reduce((s, id) => s + (allProviderProducts.get(id)?.price || 0), 0);
+
+        for (const row of provRows) {
+          if (!row.serviceName.trim()) continue;
+          const labor = parseFloat(row.servicePrice) || 0;
+          const totalPrice = labor + productsCost;
+          const qtyRaw = parseInt(row.serviceQuantity, 10);
+          const quantity = Number.isFinite(qtyRaw) && qtyRaw >= 0 ? qtyRaw : 0;
+          const unit = row.serviceUnit || 'hr';
+          try {
+            const { data: dup } = await (supabase as any).rpc('check_item_duplicate', {
+              _provider_id: providerId, _kind: 'service', _name: row.serviceName, _unit: unit,
             });
-            if (error) {
-              res.errors.push({ line: row._id, message: `Produto "${row.productName}": ${error.message}` });
-            } else {
-              res.productsCreated++;
+            if (dup?.duplicate) {
+              res.errors.push({ line: row._id, message: `Serviço "${row.serviceName}" já existe no estoque deste prestador (id ${dup.id}). Renomeie para importar.` });
+              continue;
             }
+          } catch {}
+          const { error } = await supabase.from('dynamic_services').insert({
+            service_id: nextServiceId++,
+            name: row.serviceName,
+            segment: row.segment || 'Geral',
+            provider: provName,
+            provider_id: providerId,
+            price: totalPrice,
+            labor_cost: labor,
+            unit,
+            quantity,
+            products: linkedNames,
+            linked_product_ids: linkedIds,
+          });
+          if (error) {
+            res.errors.push({ line: row._id, message: `Serviço "${row.serviceName}": ${error.message}` });
+          } else {
+            res.servicesCreated++;
           }
         }
       }
