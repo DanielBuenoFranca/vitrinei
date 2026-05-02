@@ -702,6 +702,7 @@ const AdminPanel = () => {
                           <TableHead>Mão de Obra</TableHead>
                           <TableHead>Produtos</TableHead>
                           <TableHead>Total</TableHead>
+                          <TableHead>Qtd</TableHead>
                           <TableHead>Avaliação</TableHead>
                           <TableHead>Tempo</TableHead>
                           <TableHead></TableHead>
@@ -726,6 +727,18 @@ const AdminPanel = () => {
                               </div>
                             </TableCell>
                             <TableCell className="font-semibold text-primary">R$ {svc.price.toFixed(2)}</TableCell>
+                            <TableCell>
+                              <Input
+                                type="number" min={0} step={1}
+                                value={(svc as any).quantity ?? 0}
+                                onChange={async (e) => {
+                                  const q = parseInt(e.target.value, 10) || 0;
+                                  await supabase.from('dynamic_services').update({ quantity: q }).eq('id', svc.id);
+                                  await reloadDynamicEntries();
+                                }}
+                                className="h-7 w-16 text-xs"
+                              />
+                            </TableCell>
                             <TableCell>⭐ {svc.rating}</TableCell>
                             <TableCell>{svc.time}</TableCell>
                             <TableCell>
