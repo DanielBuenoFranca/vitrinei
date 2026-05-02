@@ -403,7 +403,7 @@ const AdminPanel = () => {
     await supabase.from('providers').delete().eq('id', id);
 
     toast.success(`"${prov?.name}" excluído com ${relSvc.length} serviço(s) e ${relProd.length} produto(s)`);
-    await reloadDynamicEntries();
+    await reloadDynamicEntries(); fetchData();
     fetchData();
   };
 
@@ -414,14 +414,14 @@ const AdminPanel = () => {
   const deleteService = async (id: number) => {
     await supabase.from('dynamic_services').delete().eq('id', id);
     toast.success('Serviço excluído');
-    await reloadDynamicEntries();
+    await reloadDynamicEntries(); fetchData();
     fetchData();
   };
 
   const deleteProduct = async (id: number) => {
     await supabase.from('dynamic_products').delete().eq('id', id);
     toast.success('Produto excluído');
-    await reloadDynamicEntries();
+    await reloadDynamicEntries(); fetchData();
     fetchData();
   };
 
@@ -734,7 +734,7 @@ const AdminPanel = () => {
                                 onChange={async (e) => {
                                   const q = parseInt(e.target.value, 10) || 0;
                                   await supabase.from('dynamic_services').update({ quantity: q }).eq('id', svc.id);
-                                  await reloadDynamicEntries();
+                                  await reloadDynamicEntries(); fetchData();
                                 }}
                                 className="h-7 w-16 text-xs"
                               />
@@ -813,7 +813,7 @@ const AdminPanel = () => {
                                 onChange={async (e) => {
                                   const q = parseInt(e.target.value, 10) || 0;
                                   await supabase.from('dynamic_products').update({ quantity: q }).eq('id', prod.id);
-                                  await reloadDynamicEntries();
+                                  await reloadDynamicEntries(); fetchData();
                                 }}
                                 className="h-7 w-16 text-xs"
                               />
