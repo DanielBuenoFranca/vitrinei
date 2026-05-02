@@ -785,6 +785,7 @@ const AdminPanel = () => {
                           <TableHead>Prestador</TableHead>
                           <TableHead>Preço</TableHead>
                           <TableHead>Tipo Estoque</TableHead>
+                          <TableHead>Qtd</TableHead>
                           <TableHead>Avaliação</TableHead>
                           <TableHead>Tags</TableHead>
                           <TableHead>Criado em</TableHead>
@@ -804,6 +805,18 @@ const AdminPanel = () => {
                               <Badge variant={prod.stock_type === 'drop' ? 'outline' : 'default'}>
                                 {prod.stock_type === 'drop' ? 'Drop' : 'Físico'}
                               </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                type="number" min={0} step={1}
+                                value={(prod as any).quantity ?? 0}
+                                onChange={async (e) => {
+                                  const q = parseInt(e.target.value, 10) || 0;
+                                  await supabase.from('dynamic_products').update({ quantity: q }).eq('id', prod.id);
+                                  await reloadDynamicEntries();
+                                }}
+                                className="h-7 w-16 text-xs"
+                              />
                             </TableCell>
                             <TableCell>⭐ {prod.rating}</TableCell>
                             <TableCell>
