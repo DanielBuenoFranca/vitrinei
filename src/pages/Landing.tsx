@@ -73,6 +73,22 @@ const Landing = () => {
     setIsMinimized,
   } = useCart();
   const searchRef = useRef<HTMLInputElement>(null);
+  const speech = useSpeechRecognition();
+  useEffect(() => {
+    if (speech.transcript) setSearchQuery(speech.transcript);
+  }, [speech.transcript]);
+  useEffect(() => {
+    if (!speech.listening && speech.transcript) {
+      // auto-execute on stop
+      setTimeout(() => executeSearch(), 150);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [speech.listening]);
+  const handleMic = () => {
+    if (!speech.supported) return;
+    if (speech.listening) speech.stop();
+    else speech.start();
+  };
 
   const toggleProviderExpanded = (providerName: string) => {
     setExpandedProviders(prev => {
