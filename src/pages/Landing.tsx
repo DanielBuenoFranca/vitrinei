@@ -681,6 +681,7 @@ const Landing = () => {
                                               navigate(`/loja/${slug}`);
                                             }}
                                           >{providerName}</h3>
+                                          <TopProviderBadge active={dbProviders.get(providerName)?.is_top_provider} size="xs" />
                                           {(() => {
                                             const seg = data.services[0]?.segment;
                                             return seg ? <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 shrink-0">{seg}</Badge> : null;
