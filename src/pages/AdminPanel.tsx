@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle, Megaphone, Mail, Gift, CheckCircle, KeyRound, BarChart3, ImageOff } from 'lucide-react';
+import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle, Megaphone, Mail, Gift, CheckCircle, KeyRound, BarChart3, ImageOff, TrendingUp as TrendingUpIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { UserForm } from '@/components/admin/UserForm';
@@ -20,6 +20,7 @@ import { InconsistencyPanel } from '@/components/admin/InconsistencyPanel';
 import { ImageSanitizationPanel } from '@/components/admin/ImageSanitizationPanel';
 import { AiGovernancePanel } from '@/components/admin/AiGovernancePanel';
 import { CardexPanel } from '@/components/admin/CardexPanel';
+import { LeadsJourneyPanel } from '@/components/admin/LeadsJourneyPanel';
 import { UnitForm } from '@/components/admin/UnitForm';
 import { PermissionGate } from '@/components/PermissionGate';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -525,47 +526,24 @@ const AdminPanel = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-6 gap-4">
-          {[
-            { icon: Store, label: 'Prestadores', count: providers.length, color: 'bg-primary/10 text-primary' },
-            { icon: Users, label: 'Serviços', count: services.length, color: 'bg-primary/10 text-primary' },
-            { icon: Package, label: 'Produtos', count: products.length, color: 'bg-accent/20 text-accent-foreground' },
-            { icon: Tag, label: 'Segmentos', count: segments.length, color: 'bg-secondary/50 text-secondary-foreground' },
-            { icon: Ruler, label: 'Unidades', count: units.length, color: 'bg-secondary/50 text-secondary-foreground' },
-            { icon: Database, label: 'Total', count: providers.length + services.length + products.length, color: 'bg-secondary/50 text-secondary-foreground' },
-          ].map((stat, i) => (
-            <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-              <Card>
-                <CardContent className="p-4 flex items-center gap-3">
-                  <div className={`h-10 w-10 rounded-full ${stat.color} flex items-center justify-center`}>
-                    <stat.icon className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">{stat.count}</p>
-                    <p className="text-xs text-muted-foreground">{stat.label}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Tabs */}
+        {/* Tabs (cards de contagem do topo removidos — números agora ficam no menu lateral/trigger) */}
         <Tabs defaultValue="users">
           <TabsList className="flex flex-wrap h-auto gap-1 p-1">
             <TabsTrigger value="segments" className="text-xs gap-1 px-2 py-1.5">
               <Tag className="h-3 w-3" /> Segmentos
+              <Badge variant="secondary" className="ml-1 h-4 px-1 text-[9px]">{segments.length}</Badge>
             </TabsTrigger>
-            {/* Aba "Prestadores" removida — gestão unificada em "Usuários" */}
             <TabsTrigger value="services" className="text-xs gap-1 px-2 py-1.5">
               <Wrench className="h-3 w-3" /> Serviços
+              <Badge variant="secondary" className="ml-1 h-4 px-1 text-[9px]">{services.length}</Badge>
             </TabsTrigger>
             <TabsTrigger value="products" className="text-xs gap-1 px-2 py-1.5">
               <Package className="h-3 w-3" /> Produtos
+              <Badge variant="secondary" className="ml-1 h-4 px-1 text-[9px]">{products.length}</Badge>
             </TabsTrigger>
             <TabsTrigger value="units" className="text-xs gap-1 px-2 py-1.5">
               <Ruler className="h-3 w-3" /> Unidades
+              <Badge variant="secondary" className="ml-1 h-4 px-1 text-[9px]">{units.length}</Badge>
             </TabsTrigger>
             <TabsTrigger value="issues" className="text-xs gap-1 px-2 py-1.5">
               <AlertTriangle className="h-3 w-3" /> Problemas
@@ -575,6 +553,10 @@ const AdminPanel = () => {
             </TabsTrigger>
             <TabsTrigger value="users" className="text-xs gap-1 px-2 py-1.5">
               <UserCog className="h-3 w-3" /> Usuários
+              <Badge variant="secondary" className="ml-1 h-4 px-1 text-[9px]">{userProfiles.length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="leads" className="text-xs gap-1 px-2 py-1.5">
+              <TrendingUpIcon className="h-3 w-3" /> Leads
             </TabsTrigger>
             <TabsTrigger value="marquee" className="text-xs gap-1 px-2 py-1.5">
               <Megaphone className="h-3 w-3" /> Avisos
@@ -598,6 +580,10 @@ const AdminPanel = () => {
               <Database className="h-3 w-3" /> CARDEX
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="leads">
+            <LeadsJourneyPanel />
+          </TabsContent>
 
           <TabsContent value="images">
             <ImageSanitizationPanel />
@@ -1528,7 +1514,7 @@ const AdminPanel = () => {
                 {[
                   { id: 'client', label: 'Comprador', icon: ShoppingCart },
                   { id: 'provider', label: 'Prestador', icon: Wrench },
-                  { id: 'mixed', label: 'Misto', icon: Shuffle },
+                  { id: 'mixed', label: 'Bônus Extra (Prestador+Comprador)', icon: Shuffle },
                   { id: 'admin', label: 'Admin', icon: Shield },
                 ].map(opt => (
                   <button
