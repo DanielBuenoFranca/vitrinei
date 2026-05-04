@@ -506,16 +506,16 @@ export function CampaignForm() {
               <p className="text-[10px] text-muted-foreground mt-1">Liberado após 1ª venda</p>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1.5 block">🔀 Misto Total (R$)</label>
+              <label className="text-sm font-medium mb-1.5 block">🎁 Bônus Extra Total (R$)</label>
               <Input type="number" step="0.01" min="0" value={rewardMixed} onChange={e => setRewardMixed(e.target.value)} placeholder="25.00" />
-              <p className="text-[10px] text-muted-foreground mt-1">Compra + Venda + Bônus restante</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Compra + Venda + Bônus Extra restante (perfil Prestador que também compra)</p>
             </div>
           </div>
 
           <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
-            <p><strong>Perfil Misto:</strong> Fase 1 (compra) = R$ {rewardBuyer} → Fase 2 (venda) = R$ {rewardSeller} → Bônus = R$ {(parseFloat(rewardMixed || '0') - parseFloat(rewardBuyer || '0') - parseFloat(rewardSeller || '0')).toFixed(2)}</p>
-            <p><strong>Perfil Comprador:</strong> 100% (R$ {rewardBuyer}) após 1ª compra confirmada</p>
-            <p><strong>Perfil Prestador:</strong> 100% (R$ {rewardSeller}) após 1ª venda confirmada</p>
+            <p><strong>Indicado Prestador (régua de mérito):</strong> 1) libera R$ {rewardBuyer} na 1ª compra → 2) libera R$ {rewardSeller} na 1ª venda → 3) libera Bônus Extra de R$ {(parseFloat(rewardMixed || '0') - parseFloat(rewardBuyer || '0') - parseFloat(rewardSeller || '0')).toFixed(2)} ao concluir ambas.</p>
+            <p><strong>Indicado Comprador:</strong> 100% (R$ {rewardBuyer}) após a 1ª compra confirmada.</p>
+            <p><strong>Telas de cadastro e informativos refletem esses valores em tempo real.</strong></p>
           </div>
 
           {campaign?.updated_at && (
