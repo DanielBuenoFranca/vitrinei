@@ -303,7 +303,7 @@ export function CampaignForm() {
     switch (role) {
       case 'client': return 'Comprador';
       case 'provider': return 'Prestador';
-      case 'mixed': return 'Misto';
+      case 'mixed': return 'Bônus Extra';
       default: return role || '—';
     }
   };
