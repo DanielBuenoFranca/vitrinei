@@ -1514,7 +1514,7 @@ const AdminPanel = () => {
                 {[
                   { id: 'client', label: 'Comprador', icon: ShoppingCart },
                   { id: 'provider', label: 'Prestador', icon: Wrench },
-                  { id: 'mixed', label: 'Misto', icon: Shuffle },
+                  { id: 'mixed', label: 'Bônus Extra (Prestador+Comprador)', icon: Shuffle },
                   { id: 'admin', label: 'Admin', icon: Shield },
                 ].map(opt => (
                   <button
