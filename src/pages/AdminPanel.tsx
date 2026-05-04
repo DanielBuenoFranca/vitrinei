@@ -20,6 +20,7 @@ import { InconsistencyPanel } from '@/components/admin/InconsistencyPanel';
 import { ImageSanitizationPanel } from '@/components/admin/ImageSanitizationPanel';
 import { AiGovernancePanel } from '@/components/admin/AiGovernancePanel';
 import { CardexPanel } from '@/components/admin/CardexPanel';
+import { LeadsJourneyPanel } from '@/components/admin/LeadsJourneyPanel';
 import { UnitForm } from '@/components/admin/UnitForm';
 import { PermissionGate } from '@/components/PermissionGate';
 import { usePermissions } from '@/hooks/usePermissions';
