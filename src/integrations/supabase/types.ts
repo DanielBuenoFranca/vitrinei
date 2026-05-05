@@ -744,18 +744,21 @@ export type Database = {
         Row: {
           created_at: string
           id: number
+          image_url: string | null
           name: string
           suggested_tags: string[]
         }
         Insert: {
           created_at?: string
           id?: number
+          image_url?: string | null
           name: string
           suggested_tags?: string[]
         }
         Update: {
           created_at?: string
           id?: number
+          image_url?: string | null
           name?: string
           suggested_tags?: string[]
         }

@@ -57,7 +57,7 @@ const Landing = () => {
   const [showSearchProducts, setShowSearchProducts] = useState(false);
   const [pendingChatSuggestions, setPendingChatSuggestions] = useState<Map<number, Set<string>>>(new Map());
   const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
-  const [dbSegments, setDbSegments] = useState<{ id: string; label: string; name: string; tags: string[] }[]>([]);
+  const [dbSegments, setDbSegments] = useState<{ id: string; label: string; name: string; tags: string[]; image_url?: string | null }[]>([]);
   const [providerSegmentMap, setProviderSegmentMap] = useState<Map<string, string[]>>(new Map());
   const [dataLoaded, setDataLoaded] = useState(false);
   const [mobileRevealedSeg, setMobileRevealedSeg] = useState<string | null>(null);
@@ -184,7 +184,7 @@ const Landing = () => {
         supabase.from('providers').select('name, segment').eq('active', true),
       ]);
       if (segs) {
-        setDbSegments(segs.map((s: any) => ({ id: s.name, label: s.name, name: s.name, tags: s.suggested_tags || [] })));
+        setDbSegments(segs.map((s: any) => ({ id: s.name, label: s.name, name: s.name, tags: s.suggested_tags || [], image_url: s.image_url })));
       }
       if (provs) {
         const map = new Map<string, string[]>();
