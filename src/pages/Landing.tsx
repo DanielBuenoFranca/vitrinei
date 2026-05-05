@@ -184,7 +184,7 @@ const Landing = () => {
         supabase.from('providers').select('name, segment').eq('active', true),
       ]);
       if (segs) {
-        setDbSegments(segs.map((s: any) => ({ id: s.name, label: s.name, name: s.name, tags: s.suggested_tags || [] })));
+        setDbSegments(segs.map((s: any) => ({ id: s.name, label: s.name, name: s.name, tags: s.suggested_tags || [], image_url: s.image_url })));
       }
       if (provs) {
         const map = new Map<string, string[]>();
