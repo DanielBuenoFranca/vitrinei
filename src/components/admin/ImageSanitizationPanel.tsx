@@ -117,7 +117,7 @@ export function ImageSanitizationPanel() {
             Detecta prestadores, produtos e kits sem imagem e gera via IA
           </CardDescription>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button size="sm" variant="outline" onClick={scan} disabled={loading || running}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RefreshCw className="h-4 w-4 mr-1" />}
             Re-escanear
@@ -125,6 +125,47 @@ export function ImageSanitizationPanel() {
           <Button size="sm" onClick={runAll} disabled={running || items.length === 0}>
             {running ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Sparkles className="h-4 w-4 mr-1" />}
             Sanear todos ({items.length})
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={running}
+            onClick={async () => {
+              setRunning(true);
+              toast.info('Gerando imagens IA do catálogo (pode demorar)...');
+              const { data, error } = await supabase.functions.invoke('bulk-generate-catalog-images', {
+                body: { target: 'all', force: false },
+              });
+              setRunning(false);
+              if (error) { toast.error('Falha: ' + error.message); return; }
+              const r = data?.result;
+              toast.success(
+                `Segmentos: ${r?.segments?.ok ?? 0} ok / ${r?.segments?.fail ?? 0} falhas. ` +
+                `Prestadores: ${r?.providers?.ok ?? 0} ok / ${r?.providers?.fail ?? 0} falhas.`
+              );
+              scan();
+            }}
+          >
+            <Sparkles className="h-4 w-4 mr-1" /> Gerar imagens catálogo (IA)
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={running}
+            onClick={async () => {
+              if (!confirm('Regerar TODAS as imagens (segmentos + prestadores), inclusive os que já têm? Custo de IA elevado.')) return;
+              setRunning(true);
+              const { data, error } = await supabase.functions.invoke('bulk-generate-catalog-images', {
+                body: { target: 'all', force: true },
+              });
+              setRunning(false);
+              if (error) { toast.error('Falha: ' + error.message); return; }
+              const r = data?.result;
+              toast.success(`Regenerado. Seg: ${r?.segments?.ok}/${r?.providers?.ok} prestadores`);
+              scan();
+            }}
+          >
+            Forçar regeração
           </Button>
         </div>
       </CardHeader>
