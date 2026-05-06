@@ -129,6 +129,12 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
       setCity(profile.city || '');
       setAddress(profile.address || '');
       setCpfCnpj(profile.cpf_cnpj || '');
+      setSkipDocValidation((profile.cpf_cnpj || '').toString().toUpperCase() === 'ISENTO');
+      setCep((profile as any).cep || '');
+      setNeighborhood((profile as any).neighborhood || '');
+      setStateUf((profile as any).state || '');
+      setLatitude(profile.latitude != null ? Number(profile.latitude) : null);
+      setLongitude(profile.longitude != null ? Number(profile.longitude) : null);
       setProviderType((profile.provider_type as any) || 'mei');
       setSelectedSegments(profile.provider_segments || []);
       setDistance(profile.distance || '2 km');
@@ -141,7 +147,9 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
     } else {
       setName(''); setEmail(''); setPassword(''); setPhone('');
       setRole('client'); setAvatarUrl(''); setCity(''); setAddress('');
-      setCpfCnpj(''); setProviderType('mei');
+      setCep(''); setNeighborhood(''); setStateUf('');
+      setLatitude(null); setLongitude(null);
+      setCpfCnpj(''); setSkipDocValidation(false); setProviderType('mei');
       setSelectedSegments(segments[0] ? [segments[0].name] : []);
       setDistance('2 km'); setRating(4.5); setProviderActive(true);
       setAuthSplit5x(false); setLogoUrl(null);
