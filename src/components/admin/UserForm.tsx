@@ -309,7 +309,9 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
         avatar_url: avatarUrl.trim() || null,
         city: city.trim() || null,
         address: address.trim() || null,
-        cpf_cnpj: rawDoc || null,
+        cpf_cnpj: skipDocValidation ? 'ISENTO' : (rawDoc || null),
+        latitude: latitude,
+        longitude: longitude,
       };
       if (isProviderRole) {
         profileData.provider_type = providerType;
