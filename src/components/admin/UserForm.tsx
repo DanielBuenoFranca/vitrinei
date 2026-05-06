@@ -91,6 +91,13 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
   const [avatarUrl, setAvatarUrl] = useState('');
   const [city, setCity] = useState('');
   const [address, setAddress] = useState('');
+  const [cep, setCep] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
+  const [stateUf, setStateUf] = useState('');
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [cepLoading, setCepLoading] = useState(false);
+  const [geoLoading, setGeoLoading] = useState(false);
   const [cpfCnpj, setCpfCnpj] = useState('');
   const [skipDocValidation, setSkipDocValidation] = useState(false);
 
