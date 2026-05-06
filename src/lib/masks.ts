@@ -65,3 +65,36 @@ export const maskDate = (value: string): string => {
 
 /** Unmask - remove all formatting */
 export const unmask = (value: string): string => value.replace(/\D/g, '');
+
+/** Format CEP: 00000-000 */
+export const maskCEP = (value: string): string => {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  return digits.replace(/(\d{5})(\d{1,3})$/, '$1-$2');
+};
+
+/** Lookup CEP via ViaCEP (free, no key) */
+export const lookupCep = async (cep: string): Promise<{
+  cep: string; logradouro: string; bairro: string; localidade: string; uf: string;
+} | null> => {
+  const d = cep.replace(/\D/g, '');
+  if (d.length !== 8) return null;
+  try {
+    const r = await fetch(`https://viacep.com.br/ws/${d}/json/`);
+    const j = await r.json();
+    if (j?.erro) return null;
+    return j;
+  } catch { return null; }
+};
+
+/** Geocode address via Nominatim (OpenStreetMap, free) */
+export const geocodeAddress = async (q: string): Promise<{ lat: number; lon: number } | null> => {
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q=${encodeURIComponent(q)}`, {
+      headers: { 'Accept': 'application/json' },
+    });
+    const j = await r.json();
+    if (Array.isArray(j) && j[0]) return { lat: parseFloat(j[0].lat), lon: parseFloat(j[0].lon) };
+    return null;
+  } catch { return null; }
+};
+
