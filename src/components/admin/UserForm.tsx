@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Upload, X, ImageIcon, Loader2, ShoppingCart, Wrench, Shuffle, Shield, Crown } from 'lucide-react';
-import { maskPhone, maskCPFCNPJ, unmask } from '@/lib/masks';
+import { maskPhone, maskCPFCNPJ, unmask, maskCEP, lookupCep, geocodeAddress } from '@/lib/masks';
 
 type AppRole = 'master' | 'admin' | 'provider' | 'client' | 'mixed';
 
@@ -91,6 +91,13 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
   const [avatarUrl, setAvatarUrl] = useState('');
   const [city, setCity] = useState('');
   const [address, setAddress] = useState('');
+  const [cep, setCep] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
+  const [stateUf, setStateUf] = useState('');
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [cepLoading, setCepLoading] = useState(false);
+  const [geoLoading, setGeoLoading] = useState(false);
   const [cpfCnpj, setCpfCnpj] = useState('');
   const [skipDocValidation, setSkipDocValidation] = useState(false);
 
@@ -122,6 +129,12 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
       setCity(profile.city || '');
       setAddress(profile.address || '');
       setCpfCnpj(profile.cpf_cnpj || '');
+      setSkipDocValidation((profile.cpf_cnpj || '').toString().toUpperCase() === 'ISENTO');
+      setCep((profile as any).cep || '');
+      setNeighborhood((profile as any).neighborhood || '');
+      setStateUf((profile as any).state || '');
+      setLatitude(profile.latitude != null ? Number(profile.latitude) : null);
+      setLongitude(profile.longitude != null ? Number(profile.longitude) : null);
       setProviderType((profile.provider_type as any) || 'mei');
       setSelectedSegments(profile.provider_segments || []);
       setDistance(profile.distance || '2 km');
@@ -134,7 +147,9 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
     } else {
       setName(''); setEmail(''); setPassword(''); setPhone('');
       setRole('client'); setAvatarUrl(''); setCity(''); setAddress('');
-      setCpfCnpj(''); setProviderType('mei');
+      setCep(''); setNeighborhood(''); setStateUf('');
+      setLatitude(null); setLongitude(null);
+      setCpfCnpj(''); setSkipDocValidation(false); setProviderType('mei');
       setSelectedSegments(segments[0] ? [segments[0].name] : []);
       setDistance('2 km'); setRating(4.5); setProviderActive(true);
       setAuthSplit5x(false); setLogoUrl(null);
@@ -148,6 +163,33 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
 
   const toggleSegment = (n: string) => {
     setSelectedSegments(p => p.includes(n) ? p.filter(x => x !== n) : [...p, n]);
+  };
+
+  // ── CEP auto-preenchimento + Geo ────────────────────────────
+  const handleCepChange = async (raw: string) => {
+    const masked = maskCEP(raw);
+    setCep(masked);
+    const d = raw.replace(/\D/g, '');
+    if (d.length === 8) {
+      setCepLoading(true);
+      const info = await lookupCep(d);
+      setCepLoading(false);
+      if (info) {
+        if (!address.trim()) setAddress(info.logradouro || '');
+        setNeighborhood(info.bairro || '');
+        if (!city.trim()) setCity(info.localidade || '');
+        setStateUf(info.uf || '');
+        // Geo em background
+        setGeoLoading(true);
+        const q = `${info.logradouro || ''}, ${info.bairro || ''}, ${info.localidade || ''}, ${info.uf || ''}, Brasil`;
+        const geo = await geocodeAddress(q);
+        if (geo) { setLatitude(geo.lat); setLongitude(geo.lon); }
+        setGeoLoading(false);
+        toast.success('Endereço preenchido pelo CEP');
+      } else {
+        toast.error('CEP não encontrado');
+      }
+    }
   };
 
   // ── Upload de logo ───────────────────────────────────────────
@@ -267,7 +309,12 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
         avatar_url: avatarUrl.trim() || null,
         city: city.trim() || null,
         address: address.trim() || null,
-        cpf_cnpj: rawDoc || null,
+        cep: cep.replace(/\D/g, '') || null,
+        neighborhood: neighborhood.trim() || null,
+        state: stateUf.trim() || null,
+        cpf_cnpj: skipDocValidation ? 'ISENTO' : (rawDoc || null),
+        latitude: latitude,
+        longitude: longitude,
       };
       if (isProviderRole) {
         profileData.provider_type = providerType;
@@ -358,12 +405,31 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
               <Input value={phone} onChange={e => setPhone(maskPhone(e.target.value))} placeholder="(00) 00000-0000" />
             </div>
             <div>
+              <Label>CEP</Label>
+              <div className="relative">
+                <Input
+                  value={cep}
+                  onChange={e => handleCepChange(e.target.value)}
+                  placeholder="00000-000"
+                  maxLength={9}
+                />
+                {(cepLoading || geoLoading) && (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                )}
+              </div>
+              {(latitude != null && longitude != null) && (
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  📍 {latitude.toFixed(4)}, {longitude.toFixed(4)}
+                </p>
+              )}
+            </div>
+            <div>
               <Label>Cidade</Label>
               <Input value={city} onChange={e => setCity(e.target.value)} placeholder="Cidade" />
             </div>
-            <div>
-              <Label>Endereço</Label>
-              <Input value={address} onChange={e => setAddress(e.target.value)} placeholder="Rua, número" />
+            <div className="sm:col-span-2">
+              <Label>Endereço {neighborhood && <span className="text-xs text-muted-foreground">— {neighborhood}{stateUf && `/${stateUf}`}</span>}</Label>
+              <Input value={address} onChange={e => setAddress(e.target.value)} placeholder="Rua, número, complemento" />
             </div>
             <div className="sm:col-span-2">
               <Label>URL do Avatar</Label>
@@ -376,17 +442,22 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
             <div className="flex items-center justify-between mb-1.5">
               <Label>CPF / CNPJ {isProviderRole && '*'}</Label>
               <div className="flex items-center gap-2">
-                <Checkbox id="skip-doc" checked={skipDocValidation} onCheckedChange={v => setSkipDocValidation(!!v)} />
+                <Checkbox id="skip-doc" checked={skipDocValidation} onCheckedChange={v => {
+                  setSkipDocValidation(!!v);
+                  if (v) setCpfCnpj('');
+                }} />
                 <Label htmlFor="skip-doc" className="text-xs text-muted-foreground cursor-pointer">Isento / pular validação</Label>
               </div>
             </div>
             <Input
-              value={maskCPFCNPJ(cpfCnpj)}
+              value={skipDocValidation ? 'ISENTO' : maskCPFCNPJ(cpfCnpj)}
               onChange={e => setCpfCnpj(unmask(e.target.value).slice(0, 14))}
               placeholder="000.000.000-00 ou 00.000.000/0000-00"
               maxLength={18}
+              disabled={skipDocValidation}
+              className={skipDocValidation ? 'font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/20' : ''}
             />
-            {rawDoc.length > 0 && (
+            {!skipDocValidation && rawDoc.length > 0 && (
               <p className={`text-xs mt-1 ${docValidation.valid ? 'text-green-600' : 'text-destructive'}`}>
                 {docValidation.message}
               </p>
