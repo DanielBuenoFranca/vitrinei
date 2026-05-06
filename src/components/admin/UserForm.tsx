@@ -402,12 +402,31 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
               <Input value={phone} onChange={e => setPhone(maskPhone(e.target.value))} placeholder="(00) 00000-0000" />
             </div>
             <div>
+              <Label>CEP</Label>
+              <div className="relative">
+                <Input
+                  value={cep}
+                  onChange={e => handleCepChange(e.target.value)}
+                  placeholder="00000-000"
+                  maxLength={9}
+                />
+                {(cepLoading || geoLoading) && (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                )}
+              </div>
+              {(latitude != null && longitude != null) && (
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  📍 {latitude.toFixed(4)}, {longitude.toFixed(4)}
+                </p>
+              )}
+            </div>
+            <div>
               <Label>Cidade</Label>
               <Input value={city} onChange={e => setCity(e.target.value)} placeholder="Cidade" />
             </div>
-            <div>
-              <Label>Endereço</Label>
-              <Input value={address} onChange={e => setAddress(e.target.value)} placeholder="Rua, número" />
+            <div className="sm:col-span-2">
+              <Label>Endereço {neighborhood && <span className="text-xs text-muted-foreground">— {neighborhood}{stateUf && `/${stateUf}`}</span>}</Label>
+              <Input value={address} onChange={e => setAddress(e.target.value)} placeholder="Rua, número, complemento" />
             </div>
             <div className="sm:col-span-2">
               <Label>URL do Avatar</Label>
@@ -420,17 +439,22 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
             <div className="flex items-center justify-between mb-1.5">
               <Label>CPF / CNPJ {isProviderRole && '*'}</Label>
               <div className="flex items-center gap-2">
-                <Checkbox id="skip-doc" checked={skipDocValidation} onCheckedChange={v => setSkipDocValidation(!!v)} />
+                <Checkbox id="skip-doc" checked={skipDocValidation} onCheckedChange={v => {
+                  setSkipDocValidation(!!v);
+                  if (v) setCpfCnpj('');
+                }} />
                 <Label htmlFor="skip-doc" className="text-xs text-muted-foreground cursor-pointer">Isento / pular validação</Label>
               </div>
             </div>
             <Input
-              value={maskCPFCNPJ(cpfCnpj)}
+              value={skipDocValidation ? 'ISENTO' : maskCPFCNPJ(cpfCnpj)}
               onChange={e => setCpfCnpj(unmask(e.target.value).slice(0, 14))}
               placeholder="000.000.000-00 ou 00.000.000/0000-00"
               maxLength={18}
+              disabled={skipDocValidation}
+              className={skipDocValidation ? 'font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/20' : ''}
             />
-            {rawDoc.length > 0 && (
+            {!skipDocValidation && rawDoc.length > 0 && (
               <p className={`text-xs mt-1 ${docValidation.valid ? 'text-green-600' : 'text-destructive'}`}>
                 {docValidation.message}
               </p>
