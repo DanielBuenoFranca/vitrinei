@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Upload, X, ImageIcon, Loader2, ShoppingCart, Wrench, Shuffle, Shield, Crown } from 'lucide-react';
-import { maskPhone, maskCPFCNPJ, unmask } from '@/lib/masks';
+import { maskPhone, maskCPFCNPJ, unmask, maskCEP, lookupCep, geocodeAddress } from '@/lib/masks';
 
 type AppRole = 'master' | 'admin' | 'provider' | 'client' | 'mixed';
 
