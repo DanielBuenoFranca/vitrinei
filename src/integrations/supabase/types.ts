@@ -379,6 +379,7 @@ export type Database = {
           bank_account: string | null
           bank_agency: string | null
           bank_name: string | null
+          cep: string | null
           city: string | null
           cpf_cnpj: string | null
           cpf_cnpj_normalized: string | null
@@ -394,6 +395,7 @@ export type Database = {
           logo_url: string | null
           longitude: number | null
           margin_pct: number | null
+          neighborhood: string | null
           phone: string | null
           pix_key: string | null
           profit_pct: number | null
@@ -401,6 +403,7 @@ export type Database = {
           provider_segments: string[] | null
           provider_type: string | null
           rating: number | null
+          state: string | null
           storefront_config: Json | null
           subscription_paid: boolean
           subscription_paid_at: string | null
@@ -414,6 +417,7 @@ export type Database = {
           bank_account?: string | null
           bank_agency?: string | null
           bank_name?: string | null
+          cep?: string | null
           city?: string | null
           cpf_cnpj?: string | null
           cpf_cnpj_normalized?: string | null
@@ -429,6 +433,7 @@ export type Database = {
           logo_url?: string | null
           longitude?: number | null
           margin_pct?: number | null
+          neighborhood?: string | null
           phone?: string | null
           pix_key?: string | null
           profit_pct?: number | null
@@ -436,6 +441,7 @@ export type Database = {
           provider_segments?: string[] | null
           provider_type?: string | null
           rating?: number | null
+          state?: string | null
           storefront_config?: Json | null
           subscription_paid?: boolean
           subscription_paid_at?: string | null
@@ -449,6 +455,7 @@ export type Database = {
           bank_account?: string | null
           bank_agency?: string | null
           bank_name?: string | null
+          cep?: string | null
           city?: string | null
           cpf_cnpj?: string | null
           cpf_cnpj_normalized?: string | null
@@ -464,6 +471,7 @@ export type Database = {
           logo_url?: string | null
           longitude?: number | null
           margin_pct?: number | null
+          neighborhood?: string | null
           phone?: string | null
           pix_key?: string | null
           profit_pct?: number | null
@@ -471,6 +479,7 @@ export type Database = {
           provider_segments?: string[] | null
           provider_type?: string | null
           rating?: number | null
+          state?: string | null
           storefront_config?: Json | null
           subscription_paid?: boolean
           subscription_paid_at?: string | null
