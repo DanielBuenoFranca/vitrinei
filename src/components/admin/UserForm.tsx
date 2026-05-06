@@ -165,6 +165,33 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
     setSelectedSegments(p => p.includes(n) ? p.filter(x => x !== n) : [...p, n]);
   };
 
+  // ── CEP auto-preenchimento + Geo ────────────────────────────
+  const handleCepChange = async (raw: string) => {
+    const masked = maskCEP(raw);
+    setCep(masked);
+    const d = raw.replace(/\D/g, '');
+    if (d.length === 8) {
+      setCepLoading(true);
+      const info = await lookupCep(d);
+      setCepLoading(false);
+      if (info) {
+        if (!address.trim()) setAddress(info.logradouro || '');
+        setNeighborhood(info.bairro || '');
+        if (!city.trim()) setCity(info.localidade || '');
+        setStateUf(info.uf || '');
+        // Geo em background
+        setGeoLoading(true);
+        const q = `${info.logradouro || ''}, ${info.bairro || ''}, ${info.localidade || ''}, ${info.uf || ''}, Brasil`;
+        const geo = await geocodeAddress(q);
+        if (geo) { setLatitude(geo.lat); setLongitude(geo.lon); }
+        setGeoLoading(false);
+        toast.success('Endereço preenchido pelo CEP');
+      } else {
+        toast.error('CEP não encontrado');
+      }
+    }
+  };
+
   // ── Upload de logo ───────────────────────────────────────────
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
