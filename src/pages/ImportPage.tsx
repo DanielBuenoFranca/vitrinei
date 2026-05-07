@@ -2002,9 +2002,9 @@ const ImportPage = () => {
                 <div
                   className="border rounded-md import-preview-scroll"
                   style={{
-                    overflow: 'scroll',
-                    maxHeight: '50vh',
-                    scrollbarGutter: 'stable both-edges',
+                    overflow: 'auto',
+                    height: '50vh',
+                    scrollbarGutter: 'stable',
                   }}
                 >
                   <Table>

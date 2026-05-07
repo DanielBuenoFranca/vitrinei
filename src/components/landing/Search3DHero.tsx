@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Search, Sparkles, Star } from 'lucide-react';
+import { Mic, Search, Sparkles, Star, Wrench as WrenchIcon, Package as PackageIcon, LayoutGrid } from 'lucide-react';
 import {
   Wrench, Scissors, Droplets, Sprout, Truck, Hammer, Stethoscope,
   GraduationCap, Car, Home, Brush, ShoppingBag,
@@ -21,6 +21,8 @@ interface Props {
   segments: SegmentItem[];
   activeSegments: string[];
   toggleSegment: (id: string) => void;
+  typeFilter?: 'all' | 'service' | 'product';
+  setTypeFilter?: (v: 'all' | 'service' | 'product') => void;
   children?: ReactNode;
 }
 
@@ -56,7 +58,7 @@ interface Top {
 
 export function Search3DHero({
   searchQuery, setSearchQuery, onSearch, onMic, micListening, micSupported,
-  segments, activeSegments, toggleSegment, children,
+  segments, activeSegments, toggleSegment, typeFilter = 'all', setTypeFilter, children,
 }: Props) {
   const [top, setTop] = useState<Top[]>([]);
   const [thought, setThought] = useState<string | null>(null);
@@ -232,9 +234,34 @@ export function Search3DHero({
 
       {/* (bolha estática removida — sugestões agora aparecem como pensamento do Vini perto do avatar) */}
 
-      {/* ===================== SEGMENTOS 3D ===================== */}
+      {/* ===================== FILTRO TIPO + SEGMENTOS 3D ===================== */}
       <div className="mt-3 mx-auto max-w-2xl">
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-2.5">
+          {setTypeFilter && (
+            <>
+              <TypeFilterCard
+                label="Tudo"
+                icon={LayoutGrid}
+                gradient="linear-gradient(160deg, hsl(255 60% 35%), hsl(225 65% 18%))"
+                active={typeFilter === 'all'}
+                onClick={() => setTypeFilter('all')}
+              />
+              <TypeFilterCard
+                label="Serviços"
+                icon={WrenchIcon}
+                gradient="linear-gradient(160deg, hsl(210 80% 45%), hsl(220 70% 22%))"
+                active={typeFilter === 'service'}
+                onClick={() => setTypeFilter('service')}
+              />
+              <TypeFilterCard
+                label="Produtos"
+                icon={PackageIcon}
+                gradient="linear-gradient(160deg, hsl(160 70% 40%), hsl(170 75% 20%))"
+                active={typeFilter === 'product'}
+                onClick={() => setTypeFilter('product')}
+              />
+            </>
+          )}
           {segs.map((seg) => (
             <SegmentCard
               key={seg.id}
@@ -361,3 +388,47 @@ function SegmentCard({
   );
 }
 
+
+/* ============================================================
+   Card de filtro de tipo (Tudo / Serviços / Produtos)
+   Mesmo padrão visual dos cards de segmento.
+   ============================================================ */
+function TypeFilterCard({
+  label, icon: Icon, gradient, active, onClick,
+}: {
+  label: string;
+  icon: any;
+  gradient: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <motion.button
+      whileTap={{ scale: 0.94 }}
+      whileHover={{ y: -2 }}
+      onClick={onClick}
+      className="group relative overflow-hidden rounded-2xl aspect-square w-full"
+      style={{
+        background: gradient,
+        boxShadow: active
+          ? '0 12px 28px -10px hsl(28 95% 55% / 0.7), inset 0 0 0 2px hsl(28 95% 65% / 0.9)'
+          : '0 8px 20px -10px hsl(225 50% 0% / 0.7), inset 0 1px 0 hsl(0 0% 100% / 0.12)',
+        border: '1px solid ' + (active ? 'hsl(28 95% 70% / 0.7)' : 'hsl(225 30% 40% / 0.45)'),
+      }}
+    >
+      <div className="absolute inset-0 flex items-center justify-center">
+        <Icon className="w-10 h-10 text-white/90 drop-shadow-[0_3px_8px_rgba(0,0,0,0.6)] transition-transform duration-500 group-hover:scale-110" />
+      </div>
+      <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
+      {active && (
+        <div className="absolute inset-0 bg-gradient-to-t from-orange-500/30 via-transparent to-transparent" />
+      )}
+      <span
+        className="absolute inset-x-0 bottom-0 px-1.5 py-1.5 text-center text-[10px] sm:text-[11px] font-bold leading-tight truncate"
+        style={{ color: 'white', textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}
+      >
+        {label}
+      </span>
+    </motion.button>
+  );
+}

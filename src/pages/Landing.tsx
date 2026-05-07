@@ -55,6 +55,7 @@ const Landing = () => {
   const [searchVersion, setSearchVersion] = useState(0);
   const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set());
   const [activeSegments, setActiveSegments] = useState<string[]>([]);
+  const [typeFilter, setTypeFilter] = useState<'all' | 'service' | 'product'>('all');
   const [showAiPanel, setShowAiPanel] = useState(false);
   const [aiMessage, setAiMessage] = useState('');
   const [aiChat, setAiChat] = useState<{ role: 'user' | 'ai'; text: string; searchResult?: SearchResult; contextualSuggestion?: ContextualSuggestion }[]>([]);
@@ -318,6 +319,12 @@ const Landing = () => {
         products: rawResult.products.filter((p: any) => !isSimulatedProvider(p.provider, p)),
       };
     }
+    // Filter by type (service / product)
+    if (typeFilter === 'service') {
+      rawResult = { ...rawResult, products: [] };
+    } else if (typeFilter === 'product') {
+      rawResult = { ...rawResult, services: [] };
+    }
     if (didFallback !== fallbackToAll) {
       // Defer state update to avoid render loop warning
       queueMicrotask(() => setFallbackToAll(didFallback));
@@ -441,6 +448,8 @@ const Landing = () => {
             segments={dbSegments}
             activeSegments={activeSegments}
             toggleSegment={toggleSegment}
+            typeFilter={typeFilter}
+            setTypeFilter={(v) => { setTypeFilter(v); setTimeout(() => { setSearchExecuted(true); setSearchVersion(x => x + 1); }, 0); }}
           >
             {searchExecuted && (
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-5 pb-6">
