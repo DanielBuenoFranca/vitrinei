@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { X } from 'lucide-react';
 import { useNameSuggestion } from '@/hooks/useNameSuggestion';
 import { NameSuggestions } from '@/components/admin/NameSuggestions';
+import { ItemImagePicker } from '@/components/admin/ItemImagePicker';
 
 interface DynamicService {
   id: number;
