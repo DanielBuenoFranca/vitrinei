@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ConversionProvider } from "@/contexts/ConversionContext";
+import { AiSessionProvider } from "@/contexts/AiSessionContext";
 import CartBar from "@/components/CartBar";
 import { AttentionFooterBar } from "@/components/AttentionFooterBar";
 import { SystemStatusIndicator } from "@/components/SystemStatusIndicator";
