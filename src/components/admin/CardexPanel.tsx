@@ -222,20 +222,32 @@ export function CardexPanel() {
 
             <div className="border rounded-md">
               <div className="grid grid-cols-12 gap-1 px-2 py-1.5 bg-muted/40 text-[10px] font-semibold uppercase">
-                <div className="col-span-5">Item</div>
+                <div className="col-span-2">Tipo</div>
+                <div className="col-span-3">Item</div>
                 <div className="col-span-2">Qtd</div>
-                <div className="col-span-2">Custo un.</div>
+                <div className="col-span-2">Custo / M.O.</div>
                 <div className="col-span-2">Preço venda</div>
                 <div className="col-span-1"></div>
               </div>
-              {items.map((it, idx) => (
+              {items.map((it, idx) => {
+                const isService = it.kind === "service";
+                return (
                 <div key={idx} className="grid grid-cols-12 gap-1 px-2 py-1.5 border-t items-center">
-                  <div className="col-span-5">
-                    {it.create_new ? (
+                  <div className="col-span-2">
+                    <Select value={it.kind} onValueChange={(v) => updateItem(idx, { kind: v as "product" | "service" })}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="product">Produto</SelectItem>
+                        <SelectItem value="service">Serviço</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="col-span-3">
+                    {it.create_new || isService ? (
                       <Input
                         value={it.raw_name}
                         onChange={(e) => updateItem(idx, { raw_name: e.target.value })}
-                        placeholder="Nome do produto novo"
+                        placeholder={isService ? "Nome do serviço" : "Nome do produto novo"}
                         className="h-8"
                       />
                     ) : (
@@ -249,12 +261,20 @@ export function CardexPanel() {
                         </SelectContent>
                       </Select>
                     )}
-                    <button type="button" onClick={() => updateItem(idx, { create_new: !it.create_new })} className="text-[10px] text-primary mt-0.5">
-                      {it.create_new ? "↪ usar produto existente" : "↪ criar novo produto"}
-                    </button>
+                    {!isService && (
+                      <button type="button" onClick={() => updateItem(idx, { create_new: !it.create_new })} className="text-[10px] text-primary mt-0.5">
+                        {it.create_new ? "↪ usar produto existente" : "↪ criar novo produto"}
+                      </button>
+                    )}
                   </div>
-                  <div className="col-span-2"><Input type="number" min={1} value={it.quantity} onChange={(e) => updateItem(idx, { quantity: Number(e.target.value) })} className="h-8" /></div>
-                  <div className="col-span-2"><Input type="number" step="0.01" min={0} value={it.unit_cost} onChange={(e) => updateItem(idx, { unit_cost: Number(e.target.value) })} className="h-8" /></div>
+                  <div className="col-span-2">
+                    {isService ? (
+                      <span className="text-[10px] text-muted-foreground">— sem estoque —</span>
+                    ) : (
+                      <Input type="number" min={1} value={it.quantity} onChange={(e) => updateItem(idx, { quantity: Number(e.target.value) })} className="h-8" />
+                    )}
+                  </div>
+                  <div className="col-span-2"><Input type="number" step="0.01" min={0} value={it.unit_cost} onChange={(e) => updateItem(idx, { unit_cost: Number(e.target.value) })} className="h-8" placeholder={isService ? "M.O." : "custo"} /></div>
                   <div className="col-span-2"><Input type="number" step="0.01" min={0} value={it.applied_price} onChange={(e) => updateItem(idx, { applied_price: Number(e.target.value) })} className="h-8" /></div>
                   <div className="col-span-1 text-right">
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeItemRow(idx)} disabled={items.length <= 1}>
@@ -262,7 +282,8 @@ export function CardexPanel() {
                     </Button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
               <div className="px-2 py-1.5 border-t">
                 <Button size="sm" variant="outline" onClick={addItemRow}><Plus className="h-3 w-3 mr-1" /> Adicionar item</Button>
               </div>
