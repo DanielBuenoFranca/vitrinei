@@ -270,6 +270,34 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
     setSaving(true);
     try {
       let userId = profile?.user_id;
+      const isLead = !!profile?.__isLead || (typeof userId === 'string' && userId.startsWith('lead-'));
+      const leadProviderId: number | null = profile?.__providerId ?? null;
+
+      // ── LEAD importado (sem auth): atualiza diretamente a tabela providers ──
+      if (isEdit && isLead) {
+        if (!leadProviderId) { toast.error('Lead sem providerId — recarregue a lista'); setSaving(false); return; }
+        // Auto-gerar logo se faltar
+        let finalLogo = logoUrl;
+        if (isProviderRole && !finalLogo && name.trim()) {
+          finalLogo = await generateAiLogo(name.trim(), selectedSegments[0] || 'Geral');
+        }
+        const provUpdate: any = {
+          name: name.trim(),
+          phone: phone.trim() || null,
+          email: email.trim() || null,
+          cpf_cnpj: skipDocValidation ? 'ISENTO' : (rawDoc || null),
+          city: city.trim() || null,
+          address: address.trim() || null,
+          logo_url: finalLogo,
+          type: providerType,
+          segment: selectedSegments,
+          active: providerActive,
+        };
+        const { error: pErr } = await supabase.from('providers').update(provUpdate).eq('id', leadProviderId);
+        if (pErr) { toast.error('Erro ao salvar lead: ' + pErr.message); setSaving(false); return; }
+        toast.success('Lead atualizado. Use "Ativar" para criar a conta de acesso.');
+        onSaved(); onClose(); setSaving(false); return;
+      }
 
       // 1) Criação de usuário (modo "novo")
       if (!isEdit) {
