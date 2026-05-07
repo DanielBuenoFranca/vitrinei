@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { Mic, Search, Sparkles, Star } from 'lucide-react';
 import {
@@ -21,7 +21,7 @@ interface Props {
   segments: SegmentItem[];
   activeSegments: string[];
   toggleSegment: (id: string) => void;
-  children?: React.ReactNode;
+  children?: ReactNode;
 }
 
 const DEFAULT_ICONS: Record<string, any> = {
