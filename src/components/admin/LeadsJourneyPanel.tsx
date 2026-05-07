@@ -112,7 +112,14 @@ export function LeadsJourneyPanel() {
           <CardTitle className="text-base flex items-center gap-2"><TrendingUp className="h-4 w-4" /> Painel Master de Leads</CardTitle>
           <CardDescription>Jornada completa: Indicação → Cadastro → Assinatura paga → 1ª compra/venda → Bônus liberado.</CardDescription>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Tabs value={sourceFilter} onValueChange={(v) => setSourceFilter(v as any)}>
+            <TabsList className="h-8">
+              <TabsTrigger value="all" className="text-xs h-6">Todos</TabsTrigger>
+              <TabsTrigger value="link" className="text-xs h-6"><Link2 className="h-3 w-3 mr-1" />Link</TabsTrigger>
+              <TabsTrigger value="import" className="text-xs h-6"><FileSpreadsheet className="h-3 w-3 mr-1" />Importação</TabsTrigger>
+            </TabsList>
+          </Tabs>
           <div className="relative">
             <Search className="h-3 w-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Filtrar..." className="pl-7 h-8 w-48" />
