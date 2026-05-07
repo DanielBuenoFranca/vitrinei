@@ -21,6 +21,8 @@ interface Props {
   segments: SegmentItem[];
   activeSegments: string[];
   toggleSegment: (id: string) => void;
+  typeFilter?: 'all' | 'service' | 'product';
+  setTypeFilter?: (v: 'all' | 'service' | 'product') => void;
   children?: ReactNode;
 }
 
