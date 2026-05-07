@@ -1350,15 +1350,10 @@ const ImportPage = () => {
 
       }
 
-      // Step 5: Generate product images in background (fire & forget)
-      setImportProgress({ step: 'Gerando imagens de produtos (IA)...', percent: 80 });
-      const productsToImage = rows.filter(r => r.productName.trim());
-      // Process images async, don't block
-      for (const row of productsToImage.slice(0, 10)) {
-        supabase.functions.invoke('search-product-image', {
-          body: { productName: row.productName, segment: row.segment, itemType: 'product' },
-        }).catch(console.error);
-      }
+      // Step 5: Imagens de produto serão geradas pelo Painel de Saneamento de Imagens
+      // (com fallback grátis Unsplash/Pixabay e auto-off de IA quando não há créditos).
+      setImportProgress({ step: 'Imagens serão geradas no painel de saneamento...', percent: 80 });
+
 
       setImportProgress({ step: 'Finalizando...', percent: 90 });
       await reloadDynamicEntries();
