@@ -135,7 +135,7 @@ export function SegmentForm({ open, onClose, onSaved, segment }: SegmentFormProp
     const trimmed = name.trim().toLowerCase();
     if (!trimmed) { toast.error('Nome é obrigatório'); return; }
     setSaving(true);
-    const payload = { name: trimmed, suggested_tags: selectedTags };
+    const payload: any = { name: trimmed, suggested_tags: selectedTags, image_url: imageUrl };
     if (isEdit) {
       const { error } = await supabase.from('segments').update(payload).eq('id', segment!.id);
       if (error) { toast.error(error.message.includes('unique') ? 'Segmento já existe' : 'Erro ao atualizar'); setSaving(false); return; }
