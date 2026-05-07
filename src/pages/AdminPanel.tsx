@@ -376,11 +376,38 @@ const AdminPanel = () => {
   };
 
   const activateUser = async (userId: string, enableSelling = false, userName?: string) => {
-    // Lead importado (sem auth) — abrir UserForm para criar a conta
+    // Lead importado (sem auth) — registrar na RÉGUA DE ATIVAÇÃO de Leads
+    // (tabela referrals com status 'pending') e abrir o UserForm para criar a conta.
     if (userId.startsWith('lead-')) {
       const lead = userProfiles.find((p: any) => p.user_id === userId);
       if (lead) {
-        toast.info('Este é um Lead importado. Complete o cadastro com e-mail e senha para ativá-lo.');
+        try {
+          // Verifica se já existe um referral para esse e-mail/telefone (evita duplicar)
+          const refEmail = (lead.__leadEmail || '').toLowerCase().trim();
+          const refPhone = (lead.phone || '').replace(/\D/g, '');
+          let existing: any = null;
+          if (refEmail) {
+            const { data } = await supabase.from('referrals')
+              .select('id, status').ilike('referred_email', refEmail).maybeSingle();
+            existing = data;
+          }
+          if (!existing && user?.id) {
+            await supabase.from('referrals').insert({
+              referrer_id: user.id,
+              referral_code: `IMPORT-${lead.__providerId}`,
+              referred_name: lead.display_name || null,
+              referred_email: refEmail || null,
+              referred_phone: refPhone || null,
+              referred_role: 'provider',
+              status: 'pending',
+            });
+            toast.success('Lead inserido na régua de ativação. Complete o cadastro para ativá-lo.');
+          } else {
+            toast.info('Lead já está na régua de ativação. Complete o cadastro para ativá-lo.');
+          }
+        } catch (e: any) {
+          toast.warning('Não foi possível registrar na régua: ' + (e?.message || 'erro'));
+        }
         setUserForm({ open: true, profile: lead, role: 'provider', email: lead.__leadEmail || null });
       }
       return;
