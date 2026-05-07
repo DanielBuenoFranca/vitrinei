@@ -797,7 +797,16 @@ const AdminPanel = () => {
                       <TableBody>
                         {products.map((prod) => (
                           <TableRow key={prod.id}>
-                            <TableCell className="font-medium">{prod.name}</TableCell>
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2">
+                                {(prod as any).image_url ? (
+                                  <img src={(prod as any).image_url} alt={prod.name} className="h-9 w-9 rounded-md object-cover border" />
+                                ) : (
+                                  <div className="h-9 w-9 rounded-md bg-muted border flex items-center justify-center text-[9px] text-muted-foreground">s/img</div>
+                                )}
+                                <span>{prod.name}</span>
+                              </div>
+                            </TableCell>
                             <TableCell>
                               <span>{prod.provider}</span>
                               {prod.provider_id && <Badge variant="outline" className="ml-1 text-[10px]">ID:{prod.provider_id}</Badge>}
