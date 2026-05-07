@@ -85,6 +85,16 @@ const Landing = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [speech.listening]);
+  // Pré-preenche busca via ?q= (vinda do Vini ou outras telas)
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q && !searchExecuted) {
+      setSearchQuery(q);
+      setTimeout(() => executeSearch(), 200);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleMic = () => {
     if (!speech.supported) return;
     if (speech.listening) speech.stop();
