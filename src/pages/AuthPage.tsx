@@ -83,6 +83,19 @@ const AuthPage = () => {
   const [refCode, setRefCode] = useState('');
   const [selectedProfile, setSelectedProfile] = useState<string>('');
   const [selectedPlan, setSelectedPlan] = useState<string>('bronze');
+  const { activePlans: plans } = useSubscriptionPlans();
+  const [campaignRewards, setCampaignRewards] = useState<{ buyer: number; seller: number; mixed: number } | null>(null);
+
+  useEffect(() => {
+    supabase.from('referral_campaigns').select('reward_buyer,reward_seller,reward_mixed_total').eq('is_active', true).maybeSingle()
+      .then(({ data }) => {
+        if (data) setCampaignRewards({
+          buyer: Number((data as any).reward_buyer) || 0,
+          seller: Number((data as any).reward_seller) || 0,
+          mixed: Number((data as any).reward_mixed_total) || 0,
+        });
+      });
+  }, []);
 
   // Activation modals
   const [activationModal, setActivationModal] = useState<{ open: boolean; code: string; email: string }>({ open: false, code: '', email: '' });
