@@ -205,6 +205,10 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
             id={service?.id}
             name={form.name}
             segment={form.segment}
+            providerName={form.provider}
+            unit={form.unit}
+            price={form.labor_cost}
+            linkedNames={availableProducts.filter(p => linkedProductIds.includes(p.id)).map(p => p.name)}
             imageUrl={imageUrl}
             onChange={setImageUrl}
           />
