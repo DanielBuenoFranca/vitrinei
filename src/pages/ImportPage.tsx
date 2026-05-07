@@ -628,9 +628,30 @@ const ImportPage = () => {
   const runValidation = useCallback((data: ParsedRow[]) => {
     const formatErrors = validateFormat(data);
     const businessErrors = validateBusinessRules(data, existingSegments);
+    // DB conflict warnings: CPF/email/nome já cadastrado no banco
+    const dbErrors: RowError[] = [];
+    const seenGroups = new Set<string>();
+    data.forEach(row => {
+      const cpf = row.cpfCnpj.replace(/\D/g, '').trim();
+      const email = (row.email || '').trim().toLowerCase();
+      const name = (row.providerName || '').trim().toLowerCase();
+      const gKey = row._groupKey || '';
+      if (gKey && seenGroups.has(gKey)) return;
+      if (gKey) seenGroups.add(gKey);
+      const m = existingProviders.find(p => {
+        const pCpf = p.cpf_cnpj?.replace(/\D/g, '') || '';
+        if (cpf && cpf.length >= 11 && pCpf === cpf) return true;
+        if (email && p.email?.trim().toLowerCase() === email) return true;
+        if (name && p.name.trim().toLowerCase() === name) return true;
+        return false;
+      });
+      if (m && row._matchType === 'new') {
+        dbErrors.push({ rowId: row._id, field: 'providerName', message: `Já existe prestador "${m.name}" (id ${m.id}) com mesmo CPF/email/nome — itens serão vinculados a ele`, severity: 'info' });
+      }
+    });
     const seen = new Set(formatErrors.map(e => `${e.rowId}:${e.field}`));
-    return [...formatErrors, ...businessErrors.filter(e => !seen.has(`${e.rowId}:${e.field}`))];
-  }, [existingSegments]);
+    return [...formatErrors, ...businessErrors.filter(e => !seen.has(`${e.rowId}:${e.field}`)), ...dbErrors];
+  }, [existingSegments, existingProviders]);
 
   useEffect(() => {
     if (rows.length > 0 && dbLoaded) {
