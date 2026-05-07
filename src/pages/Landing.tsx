@@ -421,39 +421,7 @@ const Landing = () => {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background">
-      {/* Cabeçalho oculto na tela de busca — acesso ao menu via botão flutuante */}
-      <div className="fixed top-2 right-2 z-50 flex items-center gap-1.5">
-        {user ? (
-          <>
-            <Button variant="secondary" size="sm" className="h-8 text-[11px] gap-1 backdrop-blur-md bg-card/70" onClick={() => navigate('/carteira')}>
-              💰
-            </Button>
-            <Button variant="ghost" size="sm" className="h-8 text-[11px] backdrop-blur-md bg-card/70" onClick={signOut}>Sair</Button>
-          </>
-        ) : (
-          <Button variant="default" size="sm" className="h-8 text-[11px]" onClick={() => navigate('/auth')}>Entrar</Button>
-        )}
-        <div className="relative group">
-          <Button variant="ghost" size="icon" className="h-8 w-8 backdrop-blur-md bg-card/70">
-            <Plus className="w-4 h-4" />
-          </Button>
-          <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 min-w-[200px] z-50">
-            <div className="p-1.5 space-y-0.5">
-              <button onClick={() => navigate('/demos')} className="w-full text-left px-3 py-1.5 text-xs hover:bg-muted rounded-md flex items-center gap-2">📱 Demonstrações</button>
-              <button onClick={() => navigate('/processos')} className="w-full text-left px-3 py-1.5 text-xs hover:bg-muted rounded-md flex items-center gap-2">🔄 Fluxos</button>
-              <button onClick={() => navigate('/gestao')} className="w-full text-left px-3 py-1.5 text-xs hover:bg-muted rounded-md flex items-center gap-2">🔧 Gestão</button>
-              <button onClick={() => navigate('/jornada-cliente')} className="w-full text-left px-3 py-1.5 text-xs hover:bg-muted rounded-md flex items-center gap-2">🛒 Jornada</button>
-              <button onClick={() => navigate('/mei-acompanhamento')} className="w-full text-left px-3 py-1.5 text-xs hover:bg-muted rounded-md flex items-center gap-2">📊 MEI</button>
-              <button onClick={() => navigate('/dropshipping')} className="w-full text-left px-3 py-1.5 text-xs hover:bg-muted rounded-md flex items-center gap-2">🌐 Drop</button>
-              <button onClick={() => navigate('/central-atendimento')} className="w-full text-left px-3 py-1.5 text-xs hover:bg-muted rounded-md flex items-center gap-2">🎧 Central</button>
-              <div className="border-t border-border my-1" />
-              <button onClick={() => navigate('/admin')} className="w-full text-left px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/10 rounded-md flex items-center gap-2">
-                <Settings className="w-3.5 h-3.5" /> Painel Admin
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Cabeçalho oculto na tela de busca — sem ícones (carteira, sair, +) */}
 
       {/* Main content area - fills remaining space */}
       <main className="flex-1 flex flex-col overflow-hidden">
