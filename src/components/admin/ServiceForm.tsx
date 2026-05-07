@@ -200,6 +200,14 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
             <Input value={form.name} onChange={e => { setForm(f => ({ ...f, name: e.target.value })); suggest(e.target.value, 'service', allServiceNames); }} placeholder="Nome do serviço" />
             <NameSuggestions suggestions={suggestions} loading={sugLoading} onSelect={(n) => { setForm(f => ({ ...f, name: n })); clearSuggestions(); }} />
           </div>
+          <ItemImagePicker
+            kind="service"
+            id={service?.id}
+            name={form.name}
+            segment={form.segment}
+            imageUrl={imageUrl}
+            onChange={setImageUrl}
+          />
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
               <Label>Segmento *</Label>
