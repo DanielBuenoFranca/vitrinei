@@ -204,7 +204,7 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
         setIsStreaming(false);
       }
     },
-    [messages, isStreaming, listening, stop, userName, onClose],
+    [messages, isStreaming, listening, stop, userName, onClose, navigate, session, update],
   );
 
   const handleSubmit = (e?: React.FormEvent) => {
