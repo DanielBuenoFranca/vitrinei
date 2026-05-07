@@ -81,49 +81,99 @@ export function CardexPanel() {
   const submitEntry = async () => {
     const pid = Number(providerId);
     if (!pid) { toast.error("Selecione o prestador/fornecedor destino do estoque"); return; }
-    const validItems = items.filter((i) => (i.create_new ? i.raw_name.trim() : i.matched_product_id) && i.quantity > 0);
+    const validItems = items.filter((i) => {
+      if (i.kind === "service") return i.raw_name.trim() && i.applied_price > 0;
+      return (i.create_new ? i.raw_name.trim() : i.matched_product_id) && i.quantity > 0;
+    });
     if (!validItems.length) { toast.error("Adicione ao menos um item válido"); return; }
 
     setSaving(true);
     try {
-      const total = validItems.reduce((s, i) => s + i.unit_cost * i.quantity, 0);
-      const { data: entry, error: e1 } = await supabase
-        .from("stock_entries")
-        .insert({
+      // Split: services go straight to dynamic_services + service_execution movement (no stock)
+      const services = validItems.filter((i) => i.kind === "service");
+      const products = validItems.filter((i) => i.kind === "product");
+
+      // 1) Services: criar/atualizar dynamic_services e registrar service_execution
+      const provName = providers.find((p) => p.id === pid)?.name || "";
+      for (const s of services) {
+        const { data: existing } = await supabase
+          .from("dynamic_services")
+          .select("id, service_id")
+          .eq("provider_id", pid)
+          .ilike("name", s.raw_name.trim())
+          .maybeSingle();
+        let svcId = existing?.id;
+        if (!existing) {
+          const { data: newSvc } = await supabase.from("dynamic_services").insert({
+            service_id: Math.floor(Date.now() / 1000) + Math.floor(Math.random() * 1000),
+            name: s.raw_name.trim(),
+            provider: provName,
+            provider_id: pid,
+            segment: "Serviços",
+            price: s.applied_price,
+            labor_cost: s.unit_cost,
+            unit: "hr",
+            quantity: 0,
+          } as any).select("id").single();
+          svcId = newSvc?.id;
+        } else {
+          await supabase.from("dynamic_services").update({
+            price: s.applied_price, labor_cost: s.unit_cost,
+          }).eq("id", existing.id);
+        }
+        await supabase.from("stock_movements").insert({
           provider_id: pid,
-          source_type: "manual",
-          document_number: docNumber || null,
-          supplier_name: supplier || null,
-          total_amount: total,
-        } as any)
-        .select("id")
-        .single();
-      if (e1 || !entry) throw e1 || new Error("Falha ao criar entrada");
+          item_kind: "service",
+          item_id: svcId || 0,
+          item_name: s.raw_name.trim(),
+          movement_type: "service_execution",
+          quantity_delta: 0,
+          balance_after: null,
+          unit_cost: s.unit_cost,
+          reference_label: docNumber ? `CARDEX Serviço: ${docNumber}` : "CARDEX Serviço",
+        } as any);
+      }
 
-      const payload = validItems.map((i) => {
-        const matched = i.matched_product_id ? products.find((p) => p.id === i.matched_product_id) : null;
-        return {
-          entry_id: entry.id,
-          raw_name: i.create_new ? i.raw_name.trim() : matched?.name || i.raw_name.trim(),
-          matched_product_id: i.create_new ? null : i.matched_product_id,
-          create_new: i.create_new,
-          quantity: i.quantity,
-          unit_cost: i.unit_cost,
-          current_price: matched?.price || 0,
-          suggested_price: i.applied_price || matched?.price || i.unit_cost,
-          applied_price: i.applied_price || matched?.price || i.unit_cost,
-          apply_choice: i.apply_choice,
-          unit: "un",
-        };
-      });
+      // 2) Produtos: pipeline existente
+      if (products.length > 0) {
+        const total = products.reduce((s, i) => s + i.unit_cost * i.quantity, 0);
+        const { data: entry, error: e1 } = await supabase
+          .from("stock_entries")
+          .insert({
+            provider_id: pid,
+            source_type: "manual",
+            document_number: docNumber || null,
+            supplier_name: supplier || null,
+            total_amount: total,
+          } as any)
+          .select("id")
+          .single();
+        if (e1 || !entry) throw e1 || new Error("Falha ao criar entrada");
 
-      const { error: e2 } = await supabase.from("stock_entry_items").insert(payload as any);
-      if (e2) throw e2;
+        const payload = products.map((i) => {
+          const matched = i.matched_product_id ? (window as any).__none__ ?? null : null;
+          return {
+            entry_id: entry.id,
+            raw_name: i.create_new ? i.raw_name.trim() : (i.raw_name.trim() || ""),
+            matched_product_id: i.create_new ? null : i.matched_product_id,
+            create_new: i.create_new,
+            quantity: i.quantity,
+            unit_cost: i.unit_cost,
+            current_price: 0,
+            suggested_price: i.applied_price || i.unit_cost,
+            applied_price: i.applied_price || i.unit_cost,
+            apply_choice: i.apply_choice,
+            unit: "un",
+          };
+        });
 
-      const { error: e3 } = await (supabase.rpc as any)("apply_stock_entry", { _entry_id: entry.id });
-      if (e3) throw e3;
+        const { error: e2 } = await supabase.from("stock_entry_items").insert(payload as any);
+        if (e2) throw e2;
+        const { error: e3 } = await (supabase.rpc as any)("apply_stock_entry", { _entry_id: entry.id });
+        if (e3) throw e3;
+      }
 
-      toast.success("Entrada aplicada — saldos atualizados.");
+      toast.success("Movimentações aplicadas com sucesso.");
       setOpen(false);
       setItems([{ raw_name: "", matched_product_id: null, create_new: true, quantity: 1, unit_cost: 0, applied_price: 0, apply_choice: "custom", kind: "product" }]);
       setDocNumber(""); setSupplier("");
