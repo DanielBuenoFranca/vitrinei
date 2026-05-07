@@ -136,6 +136,7 @@ export function LeadsJourneyPanel() {
               <TableRow>
                 <TableHead>Indicador</TableHead>
                 <TableHead>Indicado</TableHead>
+                <TableHead>Origem</TableHead>
                 <TableHead>Perfil</TableHead>
                 <TableHead className="min-w-[760px]">Jornada</TableHead>
                 <TableHead className="text-right">Pago (R$)</TableHead>
