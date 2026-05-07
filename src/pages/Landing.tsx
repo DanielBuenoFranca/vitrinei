@@ -55,6 +55,7 @@ const Landing = () => {
   const [searchVersion, setSearchVersion] = useState(0);
   const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set());
   const [activeSegments, setActiveSegments] = useState<string[]>([]);
+  const [typeFilter, setTypeFilter] = useState<'all' | 'service' | 'product'>('all');
   const [showAiPanel, setShowAiPanel] = useState(false);
   const [aiMessage, setAiMessage] = useState('');
   const [aiChat, setAiChat] = useState<{ role: 'user' | 'ai'; text: string; searchResult?: SearchResult; contextualSuggestion?: ContextualSuggestion }[]>([]);
