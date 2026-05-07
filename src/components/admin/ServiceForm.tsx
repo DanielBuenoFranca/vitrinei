@@ -150,6 +150,7 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
       service_id: form.service_id, labor_cost: form.labor_cost,
       linked_product_ids: linkedProductIds,
       unit: form.unit, quantity: form.quantity,
+      image_url: imageUrl,
     };
     if (isEdit) {
       const { error } = await supabase.from('dynamic_services').update(data).eq('id', service!.id);
