@@ -141,6 +141,7 @@ Deno.serve(async (req) => {
     else if (kind === "kit") await supabase.from("kits").update({ image_url: url }).eq("id", id);
     else if (kind === "service") await supabase.from("dynamic_services").update({ image_url: url }).eq("id", id);
     else if (kind === "segment") await supabase.from("segments").update({ image_url: url }).eq("id", id);
+    else if (kind === "profile") await supabase.from("profiles").update({ avatar_url: url }).eq("user_id", String(id));
 
     // log economia (~1 crédito de IA economizado por imagem)
     await supabase.from("ai_savings_log").insert({
