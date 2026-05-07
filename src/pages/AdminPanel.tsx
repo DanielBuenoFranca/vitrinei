@@ -107,6 +107,7 @@ const AdminPanel = () => {
   const [authUserConfirmed, setAuthUserConfirmed] = useState<Record<string, string | null>>({});
   const [resendingConfirmation, setResendingConfirmation] = useState(false);
   const [activatingUser, setActivatingUser] = useState<string | null>(null);
+  const [activationResult, setActivationResult] = useState<{ open: boolean; summary: string[]; plan?: any; userName?: string }>({ open: false, summary: [] });
 
   // Marquee / Header announcements
   const [marqueeMessages, setMarqueeMessages] = useState<string[]>([]);
