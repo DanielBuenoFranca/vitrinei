@@ -406,6 +406,7 @@ export interface ProductItem {
   distance: string;
   relatedServiceIds: number[];
   tags: string[]; // for matching symptoms/needs
+  image_url?: string | null;
 }
 
 export const productInventory: ProductItem[] = [
@@ -1871,6 +1872,7 @@ export async function loadDynamicEntries(): Promise<void> {
         distance: row.distance,
         relatedServiceIds: row.related_service_ids || [],
         tags: row.tags || [],
+        image_url: row.image_url || null,
         _fromDb: true,
       }));
     }
