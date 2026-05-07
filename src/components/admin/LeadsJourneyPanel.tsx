@@ -6,8 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { TrendingUp, RefreshCw, Search, CheckCircle2, Circle } from "lucide-react";
+import { TrendingUp, RefreshCw, Search, CheckCircle2, Circle, Link2, FileSpreadsheet } from "lucide-react";
 
 interface Lead {
   id: string;
