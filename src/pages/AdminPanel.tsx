@@ -375,7 +375,16 @@ const AdminPanel = () => {
     setSavingUser(false);
   };
 
-  const activateUser = async (userId: string, enableSelling = false) => {
+  const activateUser = async (userId: string, enableSelling = false, userName?: string) => {
+    // Lead importado (sem auth) — abrir UserForm para criar a conta
+    if (userId.startsWith('lead-')) {
+      const lead = userProfiles.find((p: any) => p.user_id === userId);
+      if (lead) {
+        toast.info('Este é um Lead importado. Complete o cadastro com e-mail e senha para ativá-lo.');
+        setUserForm({ open: true, profile: lead, role: 'provider', email: lead.__leadEmail || null });
+      }
+      return;
+    }
     setActivatingUser(userId);
     try {
       const { data, error } = await supabase.functions.invoke('activate-user', {
@@ -385,10 +394,11 @@ const AdminPanel = () => {
         toast.error('Erro ao ativar: ' + (data?.error || error?.message || 'desconhecido'));
       } else {
         toast.success(enableSelling ? 'Prestador ativado e liberado para vender!' : 'Usuário ativado com sucesso!');
+        setActivationResult({ open: true, summary: data?.summary || [], plan: data?.plan, userName });
         await fetchUsers();
       }
     } catch (e: any) {
-      toast.error('Erro ao ativar usuário');
+      toast.error('Erro ao ativar usuário: ' + (e?.message || 'desconhecido'));
     }
     setActivatingUser(null);
   };
