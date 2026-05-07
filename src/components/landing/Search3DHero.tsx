@@ -130,62 +130,53 @@ export function Search3DHero({
         )}
       </AnimatePresence>
 
-      {/* ===================== HERO CARD: VINI + BUSCA ===================== */}
+      {/* ===================== HERO CARD COMPACTO: VINI + BUSCA ===================== */}
       <motion.div
-        initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-        className="relative mx-auto max-w-2xl rounded-[28px] p-3 sm:p-4"
+        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+        className="relative mx-auto max-w-2xl rounded-2xl p-2"
         style={{
           background:
             'linear-gradient(160deg, hsl(255 55% 28% / 0.85), hsl(228 60% 14% / 0.92))',
           boxShadow:
-            '0 22px 60px -22px hsl(265 90% 45% / 0.6),' +
-            'inset 0 1px 0 hsl(0 0% 100% / 0.12),' +
-            'inset 0 -3px 14px hsl(265 80% 30% / 0.3)',
-          border: '1px solid hsl(265 70% 60% / 0.35)',
+            '0 14px 36px -18px hsl(265 90% 45% / 0.55),' +
+            'inset 0 1px 0 hsl(0 0% 100% / 0.1)',
+          border: '1px solid hsl(265 70% 60% / 0.32)',
         }}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <motion.img
             src={viniAvatar}
             alt="Vini"
-            className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 drop-shadow-[0_6px_22px_rgba(168,140,255,0.65)]"
-            animate={{ y: [0, -4, 0] }}
+            className="w-10 h-10 shrink-0 drop-shadow-[0_4px_14px_rgba(168,140,255,0.6)]"
+            animate={{ y: [0, -3, 0] }}
             transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
           />
-          <div className="flex-1 min-w-0">
-            <h2 className="text-white font-display font-bold text-lg sm:text-2xl leading-tight text-center">
-              Descreva o que <span className="text-violet-200">você precisa</span>
-            </h2>
-            <div className="mt-2 flex gap-2">
-              <button
-                onClick={onMic}
-                disabled={!micSupported}
-                className={`flex-1 flex items-center justify-center gap-1.5 rounded-full px-3 py-2.5 text-sm font-bold transition-all
-                  ${micListening
-                    ? 'bg-red-500 text-white animate-pulse'
-                    : 'bg-white/95 text-violet-700 hover:bg-white shadow-[0_8px_22px_-8px_rgba(168,140,255,0.8)]'}
-                  ${!micSupported ? 'opacity-50 cursor-not-allowed' : ''}`}
-                title={micSupported ? 'Falar' : 'Reconhecimento de voz indisponível'}
-              >
-                <Mic className="w-4 h-4" /> Falar
-              </button>
-              <button
-                onClick={onSearch}
-                className="flex-1 flex items-center justify-center gap-1.5 rounded-full px-3 py-2.5 text-sm font-bold bg-white/95 text-violet-700 hover:bg-white shadow-[0_8px_22px_-8px_rgba(168,140,255,0.8)]"
-              >
-                <Search className="w-4 h-4" /> BUSCAR
-              </button>
-            </div>
-          </div>
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && onSearch()}
+            placeholder="Digite ou fale o que precisa…"
+            className="flex-1 min-w-0 bg-black/30 border border-white/10 rounded-lg px-2.5 py-1.5 text-[13px] text-white placeholder:text-white/40 focus:outline-none focus:border-violet-400/60"
+          />
+          <button
+            onClick={onMic}
+            disabled={!micSupported}
+            className={`shrink-0 flex items-center justify-center gap-1 rounded-lg px-2.5 py-1.5 text-[12px] font-bold transition-all
+              ${micListening
+                ? 'bg-red-500 text-white animate-pulse'
+                : 'bg-white/95 text-violet-700 hover:bg-white'}
+              ${!micSupported ? 'opacity-50 cursor-not-allowed' : ''}`}
+            title={micSupported ? 'Falar' : 'Reconhecimento de voz indisponível'}
+          >
+            <Mic className="w-3.5 h-3.5" /> Falar
+          </button>
+          <button
+            onClick={onSearch}
+            className="shrink-0 flex items-center justify-center gap-1 rounded-lg px-2.5 py-1.5 text-[12px] font-bold bg-white/95 text-violet-700 hover:bg-white"
+          >
+            <Search className="w-3.5 h-3.5" /> Buscar
+          </button>
         </div>
-
-        <input
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && onSearch()}
-          placeholder="Digite ou fale: 'preciso de uma manicure...'"
-          className="mt-2 w-full bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-violet-400/60"
-        />
       </motion.div>
 
       {/* ===================== TOP 3 PRESTADORES (faixa fotográfica grande) ===================== */}
