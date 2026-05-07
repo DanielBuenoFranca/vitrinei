@@ -1047,8 +1047,11 @@ const AdminPanel = () => {
                               </TableCell>
                               <TableCell>
                                 <span className="font-medium text-sm">{profile.display_name || 'Sem nome'}</span>
+                                {profile.__isLead && (
+                                  <Badge variant="outline" className="ml-2 text-[9px] bg-amber-500/20 text-amber-700 border-amber-300">LEAD (importado)</Badge>
+                                )}
                               </TableCell>
-                              <TableCell className="text-xs text-muted-foreground">{authUserEmails[profile.user_id] || '—'}</TableCell>
+                              <TableCell className="text-xs text-muted-foreground">{authUserEmails[profile.user_id] || profile.__leadEmail || '—'}</TableCell>
                               <TableCell>
                                 <Badge variant="outline" className="text-[10px]">
                                   {modalidade === 'Prestador' && <Wrench className="w-2.5 h-2.5 mr-0.5 inline" />}
