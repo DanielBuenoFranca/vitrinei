@@ -284,12 +284,31 @@ const generateTemplate = async (
   toast.success(`Modelo atualizado baixado — ${TEMPLATE_SCHEMA.filter(f => f.required).length} colunas obrigatórias`);
 };
 
-/* ─── Heuristic enrichment (modo IA OFF) ─── */
-function heuristicEnrich(r: any, existingSegments: string[]): any {
+/* ─── Heuristic enrichment (modo IA OFF + defaults do sistema) ─── */
+type SegmentMeta = { name: string; tags: string[] };
+function inferSegment(r: any, segs: SegmentMeta[]): string {
+  const text = `${r.productName || ''} ${r.serviceName || ''} ${r.providerName || ''}`
+    .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (!text.trim() || segs.length === 0) return segs[0]?.name || 'Geral';
+  let best: { name: string; score: number } = { name: 'Geral', score: 0 };
+  for (const s of segs) {
+    const norm = (v: string) => v.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const tokens = [norm(s.name), ...(s.tags || []).map(norm)].filter(t => t.length >= 3);
+    let score = 0;
+    for (const tok of tokens) if (text.includes(tok)) score += tok === norm(s.name) ? 3 : 1;
+    if (score > best.score) best = { name: s.name, score };
+  }
+  return best.score > 0 ? best.name : (segs[0]?.name || 'Geral');
+}
+function heuristicEnrich(r: any, existingSegments: string[] | SegmentMeta[]): any {
   const out: any = { _id: r._id };
   const isEmpty = (v: any) => !String(v || '').trim();
-  // Segmento — pega 1º existente ou "Geral"
-  if (isEmpty(r.segment)) out.segment = existingSegments[0] || 'Geral';
+  // Normalize segments arg to SegmentMeta[]
+  const segs: SegmentMeta[] = Array.isArray(existingSegments) && typeof existingSegments[0] === 'string'
+    ? (existingSegments as string[]).map(n => ({ name: n, tags: [] }))
+    : (existingSegments as SegmentMeta[]) || [];
+  // Segmento — inferência por palavra-chave (produto/serviço) contra tags+nomes
+  if (isEmpty(r.segment)) out.segment = inferSegment(r, segs);
   // Telefone fictício consistente por providerName
   if (isEmpty(r.phone) && r.providerName) {
     const seed = String(r.providerName).split('').reduce((a: number, c: string) => a + c.charCodeAt(0), 0);
