@@ -42,9 +42,6 @@ const slugify = (value: string) => normalizeText(value).replace(/[^a-z0-9]+/g, '
 const visualIcons = [Scissors, Droplets, Sprout, Truck, Hammer, Stethoscope, GraduationCap, Car, Brush, Cpu, Heart, PawPrint, PartyPopper, Leaf, Monitor, Gem, Shirt, Music, WrenchIcon, ShoppingBag];
 const pickVisualIcon = (seed: string) => visualIcons[Math.abs([...normalizeText(seed)].reduce((acc, c) => acc + c.charCodeAt(0), 0)) % visualIcons.length];
 
-const getSegmentImage = (segment: string) => dbImageCache.get(normalizeText(segment));
-const dbImageCache = new Map<string, string>();
-
 
 const Landing = () => {
   const navigate = useNavigate();
