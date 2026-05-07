@@ -33,6 +33,7 @@ export function SegmentForm({ open, onClose, onSaved, segment }: SegmentFormProp
   const [newTag, setNewTag] = useState('');
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -42,6 +43,7 @@ export function SegmentForm({ open, onClose, onSaved, segment }: SegmentFormProp
     setLoadingTags(false);
     setNewTag('');
     setEditingIdx(null);
+    setImageUrl((segment as any)?.image_url || null);
 
     // Auto-generate tags for new segments when name is provided via edit
     if (segment?.name && (!segment.suggested_tags || segment.suggested_tags.length === 0)) {
