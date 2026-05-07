@@ -58,6 +58,11 @@ export function ImageSanitizationPanel() {
         if (isMissing(s.image_url))
           list.push({ kind: 'segment', id: s.id, name: s.name, current: s.image_url });
       });
+      (profs.data || []).forEach((p: any) => {
+        // Considera vazio se não houver avatar nem logo
+        if (isMissing(p.avatar_url) && isMissing(p.logo_url))
+          list.push({ kind: 'profile', id: p.user_id, name: p.display_name || 'Usuário sem nome', current: p.avatar_url });
+      });
       setItems(list);
       toast.success(`${list.length} registros sem imagem encontrados`);
     } catch (e: any) {
