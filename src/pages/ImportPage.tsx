@@ -2074,48 +2074,56 @@ const ImportPage = () => {
                 <div
                   className="border rounded-md import-preview-scroll"
                   style={{
-                    overflow: 'auto',
-                    height: '50vh',
-                    scrollbarGutter: 'stable',
+                    overflowX: 'auto',
+                    overflowY: 'hidden',
                   }}
                 >
-                  <Table>
-                    <TableHeader className="sticky top-0 bg-card z-10">
-                      <TableRow>
-                        <TableHead className="text-[10px] w-8">#</TableHead>
-                        <TableHead className="text-[10px] w-16">Status</TableHead>
-                        {COLUMNS.map(col => (
-                          <TableHead key={col} className="text-[10px] whitespace-nowrap">{FIELD_LABELS[col]}</TableHead>
-                        ))}
-                        <TableHead className="text-[10px] w-8"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {rows.map(row => (
-                        <TableRow
-                          key={row._id}
-                          className={
-                            row._aiFields && row._aiFields.size > 0
-                              ? 'bg-purple-500/5'
-                              : row._matchType !== 'new'
-                                ? 'bg-blue-500/5'
-                                : ''
-                          }
-                        >
-                          <TableCell className="text-[10px] text-muted-foreground font-mono">{row._id}</TableCell>
-                          <TableCell className="py-1 px-1">{matchBadge(row)}</TableCell>
+                  <div
+                    className="import-preview-scroll"
+                    style={{
+                      overflowY: 'auto',
+                      overflowX: 'hidden',
+                      maxHeight: '50vh',
+                    }}
+                  >
+                    <Table>
+                      <TableHeader className="sticky top-0 bg-card z-10">
+                        <TableRow>
+                          <TableHead className="text-[10px] w-8">#</TableHead>
+                          <TableHead className="text-[10px] w-16">Status</TableHead>
                           {COLUMNS.map(col => (
-                            <TableCell key={col} className="py-1 px-1">{renderCell(row, col)}</TableCell>
+                            <TableHead key={col} className="text-[10px] whitespace-nowrap">{FIELD_LABELS[col]}</TableHead>
                           ))}
-                          <TableCell className="py-1 px-0">
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeRow(row._id)}>
-                              <Trash2 className="w-3 h-3 text-muted-foreground hover:text-destructive" />
-                            </Button>
-                          </TableCell>
+                          <TableHead className="text-[10px] w-8"></TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {rows.map(row => (
+                          <TableRow
+                            key={row._id}
+                            className={
+                              row._aiFields && row._aiFields.size > 0
+                                ? 'bg-purple-500/5'
+                                : row._matchType !== 'new'
+                                  ? 'bg-blue-500/5'
+                                  : ''
+                            }
+                          >
+                            <TableCell className="text-[10px] text-muted-foreground font-mono">{row._id}</TableCell>
+                            <TableCell className="py-1 px-1">{matchBadge(row)}</TableCell>
+                            {COLUMNS.map(col => (
+                              <TableCell key={col} className="py-1 px-1">{renderCell(row, col)}</TableCell>
+                            ))}
+                            <TableCell className="py-1 px-0">
+                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeRow(row._id)}>
+                                <Trash2 className="w-3 h-3 text-muted-foreground hover:text-destructive" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
               </CardContent>
             </Card>
