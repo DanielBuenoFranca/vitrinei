@@ -8,8 +8,8 @@ import { ImageOff, Loader2, RefreshCw, Sparkles, CheckCircle2, AlertTriangle } f
 import { toast } from 'sonner';
 
 type Item = {
-  kind: 'provider' | 'product' | 'kit';
-  id: number;
+  kind: 'provider' | 'product' | 'kit' | 'service' | 'segment';
+  id: number | string;
   name: string;
   segment?: string;
   current?: string | null;
@@ -28,10 +28,12 @@ export function ImageSanitizationPanel() {
   const scan = async () => {
     setLoading(true);
     try {
-      const [provs, prods, kits] = await Promise.all([
+      const [provs, prods, kits, svcs, segs] = await Promise.all([
         supabase.from('providers').select('id, name, logo_url, segment').order('id'),
         supabase.from('dynamic_products').select('id, name, image_url, provider').order('id'),
         supabase.from('kits').select('id, name, image_url').order('id'),
+        supabase.from('dynamic_services').select('id, name, image_url, segment, provider').order('id'),
+        supabase.from('segments').select('id, name, image_url').order('name'),
       ]);
 
       const list: Item[] = [];
@@ -46,6 +48,14 @@ export function ImageSanitizationPanel() {
       (kits.data || []).forEach((k: any) => {
         if (isMissing(k.image_url))
           list.push({ kind: 'kit', id: k.id, name: k.name, current: k.image_url });
+      });
+      (svcs.data || []).forEach((s: any) => {
+        if (isMissing(s.image_url))
+          list.push({ kind: 'service', id: s.id, name: s.name, segment: s.segment || s.provider, current: s.image_url });
+      });
+      (segs.data || []).forEach((s: any) => {
+        if (isMissing(s.image_url))
+          list.push({ kind: 'segment', id: s.id, name: s.name, current: s.image_url });
       });
       setItems(list);
       toast.success(`${list.length} registros sem imagem encontrados`);
@@ -102,9 +112,9 @@ export function ImageSanitizationPanel() {
   };
 
   const kindLabel = (k: Item['kind']) =>
-    k === 'provider' ? 'Prestador' : k === 'product' ? 'Produto' : 'Kit';
+    k === 'provider' ? 'Prestador' : k === 'product' ? 'Produto' : k === 'kit' ? 'Kit' : k === 'service' ? 'Serviço' : 'Segmento';
   const kindColor = (k: Item['kind']) =>
-    k === 'provider' ? 'default' : k === 'product' ? 'secondary' : 'outline';
+    k === 'provider' ? 'default' : k === 'product' ? 'secondary' : k === 'kit' ? 'outline' : k === 'service' ? 'secondary' : 'default';
 
   return (
     <Card>
