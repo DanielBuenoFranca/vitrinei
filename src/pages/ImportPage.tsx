@@ -1100,6 +1100,7 @@ const ImportPage = () => {
         } else {
           const allSegments = [...new Set(provRows.map(r => r.segment.trim()).filter(Boolean))];
           const cpfVal = firstRow.cpfCnpj.replace(/\D/g, '').trim() || null;
+          const emailVal = (firstRow.email || '').trim().toLowerCase();
           const { data: newProv, error } = await supabase.from('providers').insert({
             name: provName,
             segment: allSegments.length > 0 ? allSegments : ['Geral'],
@@ -1111,32 +1112,51 @@ const ImportPage = () => {
             active: false,
           }).select().single();
 
-          if (error || !newProv) {
-            res.errors.push({ line: firstRow._id, message: `Erro ao criar "${provName}": ${error?.message}` });
-            continue;
-          }
-          providerId = (newProv as any).id;
-          providerList.push({ id: providerId, name: provName, segment: allSegments, phone: firstRow.phone, email: firstRow.email, cpf_cnpj: cpfVal });
-          res.providersCreated++;
+          let createdNew = !error && !!newProv;
+          let recovered: ExistingProvider | null = null;
 
-          if (!cpfVal) {
-            res.fixes.push({ icon: 'document', message: `"${provName}": CPF/CNPJ ausente — marcado como ISENTO` });
-          }
-          if (!firstRow.phone.trim() && !firstRow.email.trim()) {
-            res.fixes.push({ icon: 'contact', message: `"${provName}" criado sem contato — corrija no Admin` });
-          }
-
-          // Generate logo
-          try {
-            const { data: logoData, error: logoErr } = await supabase.functions.invoke('generate-provider-logo', {
-              body: { providerName: provName, segment: allSegments[0] || 'Geral' },
-            });
-            if (!logoErr && logoData?.logoUrl) {
-              await supabase.from('providers').update({ logo_url: logoData.logoUrl }).eq('id', providerId);
-              res.fixes.push({ icon: 'logo', message: `"${provName}": logo gerado por IA` });
+          if (!createdNew) {
+            // Fallback: prestador já existe (CPF/email/nome). Recupera para vincular itens.
+            const tries: any[] = [];
+            if (cpfVal) tries.push(supabase.from('providers').select('id, name, segment, phone, email, cpf_cnpj').eq('cpf_cnpj', cpfVal).maybeSingle());
+            if (emailVal) tries.push(supabase.from('providers').select('id, name, segment, phone, email, cpf_cnpj').ilike('email', emailVal).maybeSingle());
+            tries.push(supabase.from('providers').select('id, name, segment, phone, email, cpf_cnpj').ilike('name', provName).maybeSingle());
+            for (const t of tries) {
+              const { data } = await t;
+              if (data) { recovered = data as ExistingProvider; break; }
             }
-          } catch (e) {
-            console.error('Logo generation error:', e);
+            if (!recovered) {
+              res.errors.push({ line: firstRow._id, message: `Erro ao criar "${provName}": ${error?.message || 'desconhecido'}` });
+              continue;
+            }
+          }
+
+          if (createdNew) {
+            providerId = (newProv as any).id;
+            providerList.push({ id: providerId, name: provName, segment: allSegments, phone: firstRow.phone, email: firstRow.email, cpf_cnpj: cpfVal });
+            res.providersCreated++;
+            if (!cpfVal) res.fixes.push({ icon: 'document', message: `"${provName}": CPF/CNPJ ausente — marcado como ISENTO` });
+            if (!firstRow.phone.trim() && !firstRow.email.trim()) res.fixes.push({ icon: 'contact', message: `"${provName}" criado sem contato — corrija no Admin` });
+
+            // Generate logo
+            try {
+              const { data: logoData, error: logoErr } = await supabase.functions.invoke('generate-provider-logo', {
+                body: { providerName: provName, segment: allSegments[0] || 'Geral' },
+              });
+              if (!logoErr && logoData?.logoUrl) {
+                await supabase.from('providers').update({ logo_url: logoData.logoUrl }).eq('id', providerId);
+                res.fixes.push({ icon: 'logo', message: `"${provName}": logo gerado por IA` });
+              }
+            } catch (e) { console.error('Logo generation error:', e); }
+          } else if (recovered) {
+            providerId = recovered.id;
+            providerList.push(recovered);
+            res.providersLinked++;
+            res.fixes.push({ icon: 'merge', message: `"${provName}" já existia — vinculado ao prestador "${recovered.name}" (id ${recovered.id})` });
+            // mescla segmentos
+            const cur = new Set(recovered.segment || []);
+            const novos = allSegments.filter(s => !cur.has(s));
+            if (novos.length) await supabase.from('providers').update({ segment: [...cur, ...novos] }).eq('id', providerId);
           }
         }
 
