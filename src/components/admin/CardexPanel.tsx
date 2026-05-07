@@ -40,6 +40,7 @@ export function CardexPanel() {
   const [rows, setRows] = useState<Movement[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState("");
+  const [providerFilter, setProviderFilter] = useState<string>("all");
 
   const [open, setOpen] = useState(false);
   const [providers, setProviders] = useState<{ id: number; name: string }[]>([]);
@@ -68,10 +69,13 @@ export function CardexPanel() {
   };
   useEffect(() => { load(); loadOptions(); }, []);
 
+  const providerNameById = (id: number) => providers.find((p) => p.id === id)?.name || `#${id}`;
+
   const filtered = rows.filter((r) => {
+    if (providerFilter !== "all" && String(r.provider_id) !== providerFilter) return false;
     if (!filter) return true;
     const q = filter.toLowerCase();
-    return [r.item_name, r.reference_label, r.movement_type].some((v) => (v || "").toLowerCase().includes(q));
+    return [r.item_name, r.reference_label, r.movement_type, providerNameById(r.provider_id)].some((v) => (v || "").toString().toLowerCase().includes(q));
   });
 
   const addItemRow = () => setItems((it) => [...it, { raw_name: "", matched_product_id: null, create_new: true, quantity: 1, unit_cost: 0, applied_price: 0, apply_choice: "custom", kind: "product" }]);
