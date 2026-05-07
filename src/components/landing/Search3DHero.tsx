@@ -232,13 +232,7 @@ export function Search3DHero({
         </div>
       )}
 
-      {/* ===================== BOLHA "POSSO TE AJUDAR..." ===================== */}
-      <div className="mt-3 mx-auto max-w-2xl flex items-center gap-2 rounded-2xl bg-white/95 px-3 py-2.5 shadow-[0_10px_24px_-12px_rgba(0,0,0,.6)]">
-        <img src={viniAvatar} alt="" className="w-6 h-6 shrink-0" />
-        <span className="text-[12.5px] text-violet-900/95 font-medium">
-          Posso te ajudar a encontrar um prestador de serviços próximo
-        </span>
-      </div>
+      {/* (bolha estática removida — sugestões agora aparecem como pensamento do Vini perto do avatar) */}
 
       {/* ===================== SEGMENTOS 3D ===================== */}
       <div className="mt-3 mx-auto max-w-2xl">
