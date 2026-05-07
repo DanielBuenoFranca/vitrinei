@@ -39,18 +39,34 @@ interface ClearDataDialogProps {
   counts?: { providers?: number; services?: number; products?: number; segments?: number };
 }
 
-const CATEGORIES: { key: CatKey; label: string; table: string; warn?: string; idCol?: string }[] = [
-  { key: 'providers',         label: 'Prestadores',          table: 'providers',          warn: 'Exclui também serviços/produtos vinculados ao prestador.' },
-  { key: 'services',          label: 'Serviços',             table: 'dynamic_services' },
-  { key: 'products',          label: 'Produtos',             table: 'dynamic_products' },
-  { key: 'segments',          label: 'Segmentos',            table: 'segments' },
-  { key: 'kits',              label: 'Kits',                 table: 'kits',               warn: 'Exclui também itens dos kits.' },
-  { key: 'kit_items',         label: 'Itens de Kits (órfãos)', table: 'kit_items',        idCol: 'id' },
-  { key: 'stock_entries',     label: 'Entradas de Estoque',  table: 'stock_entries',      idCol: 'id', warn: 'Exclui itens da entrada (cardex permanece).' },
-  { key: 'stock_entry_items', label: 'Itens de Entrada',     table: 'stock_entry_items',  idCol: 'id' },
-  { key: 'stock_movements',   label: 'Movimentações Cardex', table: 'stock_movements',    idCol: 'id', warn: 'Apaga histórico — uso restrito.' },
-  { key: 'ai_savings_log',    label: 'Log de Economia IA',   table: 'ai_savings_log',     idCol: 'id' },
+type CatDef = { key: CatKey; label: string; table: string; warn?: string; idCol?: string; group: 'movements' | 'system' };
+const CATEGORIES: CatDef[] = [
+  // Cadastros de movimentações (operação diária)
+  { key: 'providers',         label: 'Prestadores',          table: 'providers',          warn: 'Exclui também serviços/produtos vinculados e reseta flags em perfis.', group: 'movements' },
+  { key: 'products',          label: 'Produtos',             table: 'dynamic_products',   group: 'movements' },
+  { key: 'services',          label: 'Serviços',             table: 'dynamic_services',   group: 'movements' },
+  { key: 'kits',              label: 'Kits',                 table: 'kits',               warn: 'Exclui também itens dos kits.', group: 'movements' },
+  { key: 'kit_items',         label: 'Itens de Kits (órfãos)', table: 'kit_items',        idCol: 'id', group: 'movements' },
+  // Cadastros do sistema (cuidado — podem gerar inconsistências)
+  { key: 'segments',          label: 'Segmentos',            table: 'segments',           group: 'system' },
+  { key: 'stock_entries',     label: 'Entradas de Estoque',  table: 'stock_entries',      idCol: 'id', warn: 'Exclui itens da entrada (cardex permanece).', group: 'system' },
+  { key: 'stock_entry_items', label: 'Itens de Entrada',     table: 'stock_entry_items',  idCol: 'id', group: 'system' },
+  { key: 'stock_movements',   label: 'Movimentações Cardex', table: 'stock_movements',    idCol: 'id', warn: 'Apaga histórico — uso restrito.', group: 'system' },
+  { key: 'ai_savings_log',    label: 'Log de Economia IA',   table: 'ai_savings_log',     idCol: 'id', group: 'system' },
 ];
+
+const GROUP_META: Record<'movements' | 'system', { title: string; description: string; tone: string }> = {
+  movements: {
+    title: 'Cadastros de movimentações',
+    description: 'Registros criados na operação diária da ferramenta.',
+    tone: 'border-primary/30',
+  },
+  system: {
+    title: 'Cadastros do sistema',
+    description: 'Atenção — apagar pode gerar falhas ou inconsistências nos fluxos.',
+    tone: 'border-destructive/40',
+  },
+};
 
 export function ClearDataDialog({ open, onClose, onCleared }: ClearDataDialogProps) {
   const [selectedCats, setSelectedCats] = useState<Record<CatKey, boolean>>({} as any);
