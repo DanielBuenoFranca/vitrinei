@@ -375,7 +375,8 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
         profileData.profit_pct = Math.max(0, Math.min(500, Number(profitPct) || 0));
       }
 
-      const { error: profErr } = await supabase.from('profiles').update(profileData).eq('user_id', userId);
+      const { data: updRows, error: profErr } = await supabase
+        .from('profiles').update(profileData).eq('user_id', userId).select('user_id, provider_segments');
       if (profErr) {
         if (profErr.message?.includes('idx_profiles_cpf_cnpj_norm') || profErr.code === '23505') {
           toast.error('CPF/CNPJ já cadastrado em outro usuário');
@@ -383,6 +384,17 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
           toast.error('Erro ao salvar perfil: ' + profErr.message);
         }
         setSaving(false); return;
+      }
+      // Se o profile ainda não existir (caso raro: trigger handle_new_user falhou), faz upsert
+      if (!updRows || updRows.length === 0) {
+        const { error: upErr } = await supabase.from('profiles').upsert({ user_id: userId, ...profileData }, { onConflict: 'user_id' });
+        if (upErr) { toast.error('Erro ao criar perfil: ' + upErr.message); setSaving(false); return; }
+      }
+      // Garantia extra: força gravação do array de segmentos (alguns triggers podem coalescer arrays vazios)
+      if (isProviderRole && selectedSegments.length > 0) {
+        await supabase.from('profiles').update({ provider_segments: selectedSegments, is_provider: true }).eq('user_id', userId);
+        // Sincroniza também na tabela providers diretamente, caso o trigger não tenha atualizado
+        await supabase.from('providers').update({ segment: selectedSegments }).eq('user_id', userId);
       }
 
       // 4) Persistir/atualizar assinatura (jornada Lead → Ativo)
