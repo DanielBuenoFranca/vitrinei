@@ -234,8 +234,8 @@ export function Search3DHero({
 
       {/* ===================== SEGMENTOS 3D ===================== */}
       <div className="mt-3 mx-auto max-w-2xl">
-        <div className="grid grid-cols-5 gap-2">
-          {segs.slice(0, 5).map((seg) => (
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-2.5">
+          {segs.map((seg) => (
             <SegmentCard
               key={seg.id}
               seg={seg}
@@ -244,19 +244,6 @@ export function Search3DHero({
             />
           ))}
         </div>
-        {segs.length > 5 && (
-          <div className="mt-2 flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 snap-x">
-            {segs.slice(5).map((seg) => (
-              <div key={seg.id} className="snap-start shrink-0 w-[19%] min-w-[80px]">
-                <SegmentCard
-                  seg={seg}
-                  active={activeSegments.includes(seg.id)}
-                  onClick={() => toggleSegment(seg.id)}
-                />
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* ===================== MAIS PROCURADOS PERTO DE VOCÊ ===================== */}
