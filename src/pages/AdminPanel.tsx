@@ -178,13 +178,40 @@ const AdminPanel = () => {
   useEffect(() => { fetchData(); fetchUsers(); fetchMarquee(); }, []);
 
   const fetchUsers = async () => {
-    const [profilesRes, rolesRes, subsRes, walletsRes] = await Promise.all([
+    const [profilesRes, rolesRes, subsRes, walletsRes, provLeadsRes] = await Promise.all([
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('user_roles').select('*'),
       supabase.from('subscriptions').select('*'),
       supabase.from('wallets').select('*'),
+      supabase.from('providers').select('id, name, phone, email, cpf_cnpj, city, address, logo_url, created_at, user_id, segment, type').is('user_id', null),
     ]);
-    setUserProfiles(profilesRes.data || []);
+    const profiles = profilesRes.data || [];
+    const profileDocs = new Set(
+      profiles.map((p: any) => (p.cpf_cnpj || '').replace(/\D/g, '')).filter(Boolean)
+    );
+    // Surface imported providers (leads without auth account) as virtual profiles
+    const leadProfiles = (provLeadsRes.data || [])
+      .filter((p: any) => {
+        const doc = (p.cpf_cnpj || '').replace(/\D/g, '');
+        return !doc || !profileDocs.has(doc);
+      })
+      .map((p: any) => ({
+        id: `lead-${p.id}`,
+        user_id: `lead-${p.id}`,
+        display_name: p.name,
+        phone: p.phone || null,
+        avatar_url: p.logo_url || null,
+        cpf_cnpj: p.cpf_cnpj || null,
+        city: p.city || null,
+        address: p.address || null,
+        created_at: p.created_at,
+        is_provider: true,
+        is_customer: false,
+        __isLead: true,
+        __providerId: p.id,
+        __leadEmail: p.email || null,
+      }));
+    setUserProfiles([...profiles, ...leadProfiles]);
     setUserRoles(rolesRes.data || []);
     setUserSubscriptions(subsRes.data || []);
     setUserWallets(walletsRes.data || []);
@@ -199,10 +226,27 @@ const AdminPanel = () => {
           if (u.id && u.email) emailMap[u.id] = u.email;
           confirmedMap[u.id] = u.email_confirmed_at || null;
         });
+        // Inject lead emails (from imported providers) so e-mail column shows them
+        leadProfiles.forEach((lp: any) => {
+          if (lp.__leadEmail) emailMap[lp.user_id] = lp.__leadEmail;
+        });
         setAuthUserEmails(emailMap);
         setAuthUserConfirmed(confirmedMap);
+      } else {
+        // Even when not master, still show lead emails
+        const emailMap: Record<string, string> = {};
+        leadProfiles.forEach((lp: any) => {
+          if (lp.__leadEmail) emailMap[lp.user_id] = lp.__leadEmail;
+        });
+        setAuthUserEmails(emailMap);
       }
-    } catch { /* non-master users won't have access */ }
+    } catch {
+      const emailMap: Record<string, string> = {};
+      leadProfiles.forEach((lp: any) => {
+        if (lp.__leadEmail) emailMap[lp.user_id] = lp.__leadEmail;
+      });
+      setAuthUserEmails(emailMap);
+    }
   };
 
   const toggleUserRole = async (userId: string, role: string) => {
