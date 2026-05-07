@@ -113,7 +113,7 @@ const COLUMNS: (keyof Omit<ParsedRow, '_id' | '_matchType' | '_matchedProviderId
   'providerName', 'cpfCnpj', 'segment',
   'serviceName', 'servicePrice', 'serviceUnit', 'serviceQuantity',
   'productName', 'productPrice', 'productUnit', 'productStockType', 'productQuantity',
-  'phone', 'email', 'city',
+  'city',
 ];
 
 /* ─── Schema definition: drives both the template and parsing ───
