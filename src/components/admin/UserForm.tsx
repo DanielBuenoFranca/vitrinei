@@ -211,13 +211,14 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
 
   const generateAiLogo = async (n: string, seg: string): Promise<string | null> => {
     try {
-      toast.info('🎨 Gerando arte com IA...');
-      const { data, error } = await supabase.functions.invoke('generate-provider-logo', {
-        body: { providerName: n, segment: seg },
+      toast.info('🎨 Gerando arte (modo economia)...');
+      const { data, error } = await supabase.functions.invoke('sanitize-images', {
+        body: { kind: 'provider', id: 0, name: n, segment: seg },
       });
-      if (error || !data?.logoUrl) return null;
-      toast.success('Arte gerada');
-      return data.logoUrl;
+      const url = (data as any)?.imageUrl || (data as any)?.logoUrl;
+      if (error || !url) return null;
+      toast.success((data as any)?.source === 'ai' ? 'Arte gerada (IA)' : 'Imagem aplicada (grátis)');
+      return url;
     } catch { return null; }
   };
 
