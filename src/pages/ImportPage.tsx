@@ -880,7 +880,7 @@ const ImportPage = () => {
         });
       } else {
         setAutoFillSummary(null);
-      }
+      setDedupPending(dedupItems);
 
       if (dedupItems.length > 0) {
         setShowDedupModal(true);
