@@ -1121,7 +1121,7 @@ const AdminPanel = () => {
                                       size="sm"
                                       className="h-8 text-xs gap-1"
                                       disabled={activatingUser === profile.user_id}
-                                      onClick={() => activateUser(profile.user_id)}
+                                      onClick={() => activateUser(profile.user_id, false, profile.display_name)}
                                     >
                                       {activatingUser === profile.user_id
                                         ? <Loader2 className="h-3 w-3 animate-spin" />
@@ -1137,7 +1137,7 @@ const AdminPanel = () => {
                                       size="sm"
                                       className="h-8 text-xs gap-1 border-green-300 text-green-700 hover:bg-green-50"
                                       disabled={activatingUser === profile.user_id}
-                                      onClick={() => activateUser(profile.user_id, true)}
+                                      onClick={() => activateUser(profile.user_id, true, profile.display_name)}
                                       title="Liberar prestador para vender e aplicar débito de assinatura"
                                     >
                                       {activatingUser === profile.user_id
@@ -1153,7 +1153,7 @@ const AdminPanel = () => {
                                       size="sm"
                                       className="h-8 text-xs gap-1"
                                       disabled={activatingUser === profile.user_id}
-                                      onClick={() => activateUser(profile.user_id, true)}
+                                      onClick={() => activateUser(profile.user_id, true, profile.display_name)}
                                       title="Ativar conta + liberar venda + aplicar débito"
                                     >
                                       {activatingUser === profile.user_id
