@@ -72,31 +72,28 @@ export function Search3DHero({
       .then(({ data }) => setTop((data as any) || []));
   }, []);
 
-  // Pensamentos aleatórios do Vini — aparecem discretamente e somem ao interagir
+  // Pensamentos do Vini — discretos, somem só na interação do usuário
   const thoughts = [
-    'Posso encontrar um prestador próximo de você ✨',
-    'Diga ou digite o que precisa — eu cuido do resto.',
-    'Mais de 2.450 profissionais prontos agora.',
-    'Quer economizar? Posso sugerir um combo.',
-    'Estou aqui se precisar — só falar comigo.',
-    'Vou organizar tudo na sua agenda.',
+    'Posso encontrar um prestador próximo ✨',
+    'Diga ou digite o que precisa',
+    '+2.450 profissionais agora',
+    'Quer economizar? Pergunte sobre combos',
+    'Estou aqui — só falar comigo',
+    'Vou organizar tudo na sua agenda',
   ];
   useEffect(() => {
-    let i = 0;
-    const show = () => {
-      setThought(thoughts[Math.floor(Math.random() * thoughts.length)]);
-      if (thoughtTimer.current) window.clearTimeout(thoughtTimer.current);
-      thoughtTimer.current = window.setTimeout(() => setThought(null), 5000);
-    };
-    show();
-    const interval = window.setInterval(() => { i++; show(); }, 9000);
-    return () => {
-      clearInterval(interval);
-      if (thoughtTimer.current) window.clearTimeout(thoughtTimer.current);
-    };
+    setThought(thoughts[Math.floor(Math.random() * thoughts.length)]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const dismissThought = () => setThought(null);
+  const dismissThought = () => {
+    if (!thought) return;
+    setThought(null);
+    // próximo pensamento aparece após nova interação ociosa
+    if (thoughtTimer.current) window.clearTimeout(thoughtTimer.current);
+    thoughtTimer.current = window.setTimeout(() => {
+      setThought(thoughts[Math.floor(Math.random() * thoughts.length)]);
+    }, 8000);
+  };
 
   // Mostra até 6 segmentos no grid principal (igual mockup: 5 + scroll horizontal)
   const segs = segments.slice(0, 10);
@@ -113,6 +110,24 @@ export function Search3DHero({
           'linear-gradient(180deg, hsl(228 50% 6%) 0%, hsl(225 55% 4%) 100%)',
       }}
     >
+      {/* Pensamento discreto do Vini — canto superior esquerdo, transparente */}
+      <AnimatePresence>
+        {thought && (
+          <motion.div
+            key={thought}
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -8 }}
+            transition={{ duration: 0.4 }}
+            className="fixed top-1.5 left-2 z-30 max-w-[60%] pointer-events-none select-none"
+          >
+            <span className="text-[10.5px] italic text-white/55 leading-tight tracking-wide drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">
+              💭 {thought}
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ===================== HERO CARD: VINI + BUSCA ===================== */}
       <motion.div
         initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
@@ -128,30 +143,13 @@ export function Search3DHero({
         }}
       >
         <div className="flex items-center gap-3">
-          <div className="relative shrink-0">
-            <motion.img
-              src={viniAvatar}
-              alt="Vini"
-              className="w-16 h-16 sm:w-20 sm:h-20 drop-shadow-[0_6px_22px_rgba(168,140,255,0.65)]"
-              animate={{ y: [0, -4, 0] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-            />
-            <AnimatePresence>
-              {thought && (
-                <motion.div
-                  key={thought}
-                  initial={{ opacity: 0, y: 6, scale: 0.9 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -4, scale: 0.95 }}
-                  transition={{ duration: 0.35 }}
-                  className="absolute left-[105%] top-1 z-20 max-w-[200px] rounded-2xl rounded-bl-sm bg-white/95 px-2.5 py-1.5 text-[10.5px] font-medium text-violet-900 shadow-[0_8px_22px_-10px_rgba(0,0,0,.6)] pointer-events-none"
-                  style={{ whiteSpace: 'normal' }}
-                >
-                  <span className="opacity-80">{thought}</span>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          <motion.img
+            src={viniAvatar}
+            alt="Vini"
+            className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 drop-shadow-[0_6px_22px_rgba(168,140,255,0.65)]"
+            animate={{ y: [0, -4, 0] }}
+            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+          />
           <div className="flex-1 min-w-0">
             <h2 className="text-white font-display font-bold text-lg sm:text-2xl leading-tight text-center">
               Descreva o que <span className="text-violet-200">você precisa</span>
