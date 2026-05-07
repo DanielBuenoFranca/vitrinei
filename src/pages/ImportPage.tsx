@@ -2084,6 +2084,8 @@ const ImportPage = () => {
                       overflowY: 'auto',
                       overflowX: 'hidden',
                       maxHeight: '50vh',
+                      width: 'max-content',
+                      minWidth: '100%',
                     }}
                   >
                     <Table>
