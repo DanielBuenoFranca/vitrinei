@@ -17,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Upload, X, ImageIcon, Loader2, ShoppingCart, Wrench, Shuffle, Shield, Crown } from 'lucide-react';
 import { maskPhone, maskCPFCNPJ, unmask, maskCEP, lookupCep, geocodeAddress } from '@/lib/masks';
+import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlans';
 
 type AppRole = 'master' | 'admin' | 'provider' | 'client' | 'mixed';
 
@@ -116,6 +117,16 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
 
   const [saving, setSaving] = useState(false);
 
+  // ── Subscription plan ───────────────────────────────────────
+  const { activePlans } = useSubscriptionPlans();
+  const defaultPlanId = (() => {
+    if (!activePlans.length) return 'prata';
+    const sorted = [...activePlans].sort((a, b) => Number(a.price) - Number(b.price));
+    return sorted[Math.floor(sorted.length / 2)]?.id || sorted[0].id;
+  })();
+  const [selectedPlanId, setSelectedPlanId] = useState<string>(defaultPlanId);
+  useEffect(() => { if (!isEdit) setSelectedPlanId(defaultPlanId); }, [defaultPlanId, isEdit]);
+
   // ── Hidrata estado ao abrir ──────────────────────────────────
   useEffect(() => {
     if (!open) return;
@@ -144,6 +155,11 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
       setLogoUrl(profile.logo_url || null);
       setMarginPct(Number(profile.margin_pct ?? 30));
       setProfitPct(Number(profile.profit_pct ?? 20));
+      // Load current subscription
+      if (profile.user_id && !String(profile.user_id).startsWith('lead-')) {
+        supabase.from('subscriptions').select('plan').eq('user_id', profile.user_id).maybeSingle()
+          .then(({ data }) => { if (data?.plan) setSelectedPlanId(data.plan); });
+      }
     } else {
       setName(''); setEmail(''); setPassword(''); setPhone('');
       setRole('client'); setAvatarUrl(''); setCity(''); setAddress('');
@@ -154,8 +170,9 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
       setDistance('2 km'); setRating(4.5); setProviderActive(true);
       setAuthSplit5x(false); setLogoUrl(null);
       setMarginPct(30); setProfitPct(20);
+      setSelectedPlanId(defaultPlanId);
     }
-  }, [open, profile, currentRole, currentEmail, segments]);
+  }, [open, profile, currentRole, currentEmail, segments, defaultPlanId]);
 
   const isProviderRole = role === 'provider' || role === 'mixed';
   const docValidation = validateDoc(cpfCnpj);
@@ -340,7 +357,25 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
         setSaving(false); return;
       }
 
-      toast.success(isEdit ? 'Usuário atualizado' : 'Usuário criado e ativado');
+      // 4) Persistir/atualizar assinatura (jornada Lead → Ativo)
+      try {
+        const planObj = activePlans.find(p => p.id === selectedPlanId);
+        if (planObj && userId && !String(userId).startsWith('lead-')) {
+          const { data: existingSub } = await supabase
+            .from('subscriptions').select('id, plan').eq('user_id', userId).maybeSingle();
+          if (!existingSub) {
+            await supabase.from('subscriptions').insert({
+              user_id: userId, plan: planObj.id, price: planObj.price, status: 'active',
+            });
+          } else if (existingSub.plan !== planObj.id) {
+            await supabase.from('subscriptions').update({
+              plan: planObj.id, price: planObj.price, status: 'active',
+            }).eq('id', existingSub.id);
+          }
+        }
+      } catch (e) { console.warn('subscription persist:', e); }
+
+      toast.success(isEdit ? 'Usuário atualizado' : 'Usuário criado — jornada de Lead iniciada');
       onSaved();
       onClose();
     } catch (e: any) {
@@ -380,6 +415,31 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
                     <span className="text-xs font-bold">{opt.label}</span>
                   </div>
                   <p className="text-[10px] text-muted-foreground leading-tight">{opt.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Plano de Assinatura ── */}
+          <div>
+            <Label className="text-sm font-semibold mb-2 block">
+              Plano de Assinatura * <span className="text-xs font-normal text-muted-foreground">(padrão = valor médio)</span>
+            </Label>
+            <div className="grid grid-cols-3 gap-2">
+              {activePlans.map(p => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setSelectedPlanId(p.id)}
+                  className={`p-2 rounded-lg border text-center transition-all ${
+                    selectedPlanId === p.id
+                      ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
+                      : 'border-border hover:border-primary/40'
+                  }`}
+                >
+                  <div className="text-base">{p.badge}</div>
+                  <div className="text-xs font-bold">{p.name}</div>
+                  <div className="text-xs text-primary font-bold">R$ {Number(p.price).toFixed(0)}</div>
                 </button>
               ))}
             </div>

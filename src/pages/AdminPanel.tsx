@@ -107,6 +107,7 @@ const AdminPanel = () => {
   const [authUserConfirmed, setAuthUserConfirmed] = useState<Record<string, string | null>>({});
   const [resendingConfirmation, setResendingConfirmation] = useState(false);
   const [activatingUser, setActivatingUser] = useState<string | null>(null);
+  const [activationResult, setActivationResult] = useState<{ open: boolean; summary: string[]; plan?: any; userName?: string }>({ open: false, summary: [] });
 
   // Marquee / Header announcements
   const [marqueeMessages, setMarqueeMessages] = useState<string[]>([]);
@@ -374,7 +375,16 @@ const AdminPanel = () => {
     setSavingUser(false);
   };
 
-  const activateUser = async (userId: string, enableSelling = false) => {
+  const activateUser = async (userId: string, enableSelling = false, userName?: string) => {
+    // Lead importado (sem auth) — abrir UserForm para criar a conta
+    if (userId.startsWith('lead-')) {
+      const lead = userProfiles.find((p: any) => p.user_id === userId);
+      if (lead) {
+        toast.info('Este é um Lead importado. Complete o cadastro com e-mail e senha para ativá-lo.');
+        setUserForm({ open: true, profile: lead, role: 'provider', email: lead.__leadEmail || null });
+      }
+      return;
+    }
     setActivatingUser(userId);
     try {
       const { data, error } = await supabase.functions.invoke('activate-user', {
@@ -384,10 +394,11 @@ const AdminPanel = () => {
         toast.error('Erro ao ativar: ' + (data?.error || error?.message || 'desconhecido'));
       } else {
         toast.success(enableSelling ? 'Prestador ativado e liberado para vender!' : 'Usuário ativado com sucesso!');
+        setActivationResult({ open: true, summary: data?.summary || [], plan: data?.plan, userName });
         await fetchUsers();
       }
     } catch (e: any) {
-      toast.error('Erro ao ativar usuário');
+      toast.error('Erro ao ativar usuário: ' + (e?.message || 'desconhecido'));
     }
     setActivatingUser(null);
   };
@@ -1110,7 +1121,7 @@ const AdminPanel = () => {
                                       size="sm"
                                       className="h-8 text-xs gap-1"
                                       disabled={activatingUser === profile.user_id}
-                                      onClick={() => activateUser(profile.user_id)}
+                                      onClick={() => activateUser(profile.user_id, false, profile.display_name)}
                                     >
                                       {activatingUser === profile.user_id
                                         ? <Loader2 className="h-3 w-3 animate-spin" />
@@ -1126,7 +1137,7 @@ const AdminPanel = () => {
                                       size="sm"
                                       className="h-8 text-xs gap-1 border-green-300 text-green-700 hover:bg-green-50"
                                       disabled={activatingUser === profile.user_id}
-                                      onClick={() => activateUser(profile.user_id, true)}
+                                      onClick={() => activateUser(profile.user_id, true, profile.display_name)}
                                       title="Liberar prestador para vender e aplicar débito de assinatura"
                                     >
                                       {activatingUser === profile.user_id
@@ -1142,7 +1153,7 @@ const AdminPanel = () => {
                                       size="sm"
                                       className="h-8 text-xs gap-1"
                                       disabled={activatingUser === profile.user_id}
-                                      onClick={() => activateUser(profile.user_id, true)}
+                                      onClick={() => activateUser(profile.user_id, true, profile.display_name)}
                                       title="Ativar conta + liberar venda + aplicar débito"
                                     >
                                       {activatingUser === profile.user_id
@@ -1402,6 +1413,36 @@ const AdminPanel = () => {
       <SegmentForm open={segmentForm.open} onClose={() => setSegmentForm({ open: false, item: null })} onSaved={fetchData} segment={segmentForm.item} />
       <UnitForm open={unitForm.open} onClose={() => setUnitForm({ open: false, item: null })} onSaved={fetchData} unit={unitForm.item} />
       <ClearDataDialog open={clearDialog} onClose={() => setClearDialog(false)} onCleared={() => { reloadDynamicEntries(); fetchData(); }} counts={{ providers: providers.length, services: services.length, products: products.length, segments: segments.length }} />
+
+      {/* Activation Result Summary */}
+      <Dialog open={activationResult.open} onOpenChange={(v) => !v && setActivationResult({ open: false, summary: [] })}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              Ativação concluída
+            </DialogTitle>
+            <DialogDescription>
+              {activationResult.userName ? <>Resumo das ações realizadas para <strong>{activationResult.userName}</strong>:</> : 'Resumo das ações realizadas:'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5 text-sm py-2 max-h-[50vh] overflow-y-auto">
+            {activationResult.summary.map((line, i) => (
+              <div key={i} className={`px-2 py-1.5 rounded ${line.startsWith('✓') ? 'bg-green-50 text-green-800 dark:bg-green-950/30 dark:text-green-200' : 'bg-muted text-muted-foreground'}`}>
+                {line}
+              </div>
+            ))}
+            {activationResult.plan && (
+              <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
+                Plano vigente: <strong>{activationResult.plan.name}</strong> — R$ {Number(activationResult.plan.price).toFixed(2)}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setActivationResult({ open: false, summary: [] })}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Provider Confirmation */}
       <Dialog open={deleteConfirm.open} onOpenChange={(v) => !v && setDeleteConfirm({ open: false, provider: null })}>
