@@ -360,13 +360,4 @@ function SegmentCard({
     </motion.button>
   );
 }
-      {/* Label */}
-      <span
-        className="relative z-10 w-full text-center text-[9px] sm:text-[10px] font-bold leading-tight truncate px-0.5"
-        style={{ color: active ? 'white' : 'hsl(225 20% 90%)' }}
-      >
-        {seg.label}
-      </span>
-    </motion.button>
-  );
-}
+
