@@ -104,6 +104,8 @@ export function Search3DHero({
   return (
     <div
       className="relative h-full overflow-y-auto px-3 pt-3 pb-8"
+      onScroll={dismissThought}
+      onPointerDown={dismissThought}
       style={{
         background:
           'radial-gradient(ellipse at 50% 0%, hsl(255 60% 22%) 0%, transparent 55%),' +
