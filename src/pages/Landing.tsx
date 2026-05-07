@@ -341,7 +341,9 @@ const Landing = () => {
     return Array.from(providerMap.entries());
   })();
 
-  const getSegmentVisual = (segment?: string) => dbSegments.find(s => segment && normalizeText(s.id) === normalizeText(segment) || segment && normalizeText(s.name) === normalizeText(segment));
+  const getSegmentVisual = (segment?: string) => segment
+    ? dbSegments.find(s => normalizeText(s.id) === normalizeText(segment) || normalizeText(s.name) === normalizeText(segment))
+    : undefined;
   const getVisualIcon = (label: string) => pickVisualIcon(label);
 
   const handleAiSend = () => {
