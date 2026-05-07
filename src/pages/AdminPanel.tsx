@@ -630,7 +630,14 @@ const AdminPanel = () => {
                           return (
                             <TableRow key={seg.id}>
                               <TableCell className="font-medium">
-                                <Badge variant="outline">{seg.name}</Badge>
+                                <div className="flex items-center gap-2">
+                                  {(seg as any).image_url ? (
+                                    <img src={(seg as any).image_url} alt={seg.name} className="h-9 w-9 rounded-md object-cover border" />
+                                  ) : (
+                                    <div className="h-9 w-9 rounded-md bg-muted border flex items-center justify-center text-[9px] text-muted-foreground">s/img</div>
+                                  )}
+                                  <Badge variant="outline">{seg.name}</Badge>
+                                </div>
                               </TableCell>
                               <TableCell className="text-center">{segProviders}</TableCell>
                               <TableCell className="text-center">{segServices}</TableCell>
