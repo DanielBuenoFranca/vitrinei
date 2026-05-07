@@ -81,6 +81,7 @@ const App = () => {
       <Sonner />
       <BrowserRouter>
         <ConversionProvider>
+        <AiSessionProvider>
         <CartBar />
         <Routes>
           <Route path="/auth" element={<AuthPage />} />
