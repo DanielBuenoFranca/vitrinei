@@ -1189,14 +1189,13 @@ const ImportPage = () => {
             if (!cpfVal) res.fixes.push({ icon: 'document', message: `"${provName}": CPF/CNPJ ausente — marcado como ISENTO` });
             if (!firstRow.phone.trim() && !firstRow.email.trim()) res.fixes.push({ icon: 'contact', message: `"${provName}" criado sem contato — corrija no Admin` });
 
-            // Generate logo
+            // Generate logo via sanitize-images (fallback grátis + auto-off de IA quando sem créditos)
             try {
-              const { data: logoData, error: logoErr } = await supabase.functions.invoke('generate-provider-logo', {
-                body: { providerName: provName, segment: allSegments[0] || 'Geral' },
+              const { data: logoData } = await supabase.functions.invoke('sanitize-images', {
+                body: { kind: 'provider', id: providerId, name: provName, segment: allSegments[0] || 'Geral' },
               });
-              if (!logoErr && logoData?.logoUrl) {
-                await supabase.from('providers').update({ logo_url: logoData.logoUrl }).eq('id', providerId);
-                res.fixes.push({ icon: 'logo', message: `"${provName}": logo gerado por IA` });
+              if (logoData?.imageUrl) {
+                res.fixes.push({ icon: 'logo', message: `"${provName}": logo gerado (${logoData.source || 'auto'})` });
               }
             } catch (e) { console.error('Logo generation error:', e); }
           } else if (recovered) {
