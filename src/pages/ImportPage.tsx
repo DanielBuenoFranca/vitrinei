@@ -109,11 +109,13 @@ const FIELD_LABELS: Record<string, string> = {
   city: 'Cidade',
 };
 
+// Preview foca em SERVIÇOS e PRODUTOS. Os dados do usuário/prestador
+// (nome, CPF/CNPJ, segmento, telefone, e-mail, cidade) são tratados
+// exclusivamente no card "Cadastros detectados".
 const COLUMNS: (keyof Omit<ParsedRow, '_id' | '_matchType' | '_matchedProviderId' | '_matchedProviderName' | '_aiFields' | '_groupKey' | '_groupKeyType'>)[] = [
-  'providerName', 'cpfCnpj', 'segment',
+  'providerName',
   'serviceName', 'servicePrice', 'serviceUnit', 'serviceQuantity',
   'productName', 'productPrice', 'productUnit', 'productStockType', 'productQuantity',
-  'city',
 ];
 
 /* ─── Schema definition: drives both the template and parsing ───
