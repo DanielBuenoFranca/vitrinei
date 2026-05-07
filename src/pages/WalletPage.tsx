@@ -656,8 +656,7 @@ const WalletPage = () => {
                     if (error) { toast.error(error.message); return; }
                     if (data?.error) { toast.error(data.error); return; }
                     const link = `${window.location.origin}/convite/${data.token}`;
-                    await navigator.clipboard.writeText(link);
-                    toast.success('Link 24h copiado!');
+                    setShareModal({ open: true, link, expires: data.expires_at || null });
                     loadData();
                   }}>+ Gerar link 24h</Button>
                 </div>
