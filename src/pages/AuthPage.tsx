@@ -616,6 +616,15 @@ const AuthPage = () => {
               </div>
             </div>
 
+            {campaignRewards && (
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-2 text-[11px] flex items-center justify-between">
+                <span className="flex items-center gap-1 font-semibold"><Gift className="w-3 h-3 text-primary" /> Bonificação ativa</span>
+                <span className="text-muted-foreground">
+                  Comprador R$ {campaignRewards.buyer.toFixed(2)} · Prestador R$ {campaignRewards.seller.toFixed(2)} · Misto R$ {campaignRewards.mixed.toFixed(2)}
+                </span>
+              </div>
+            )}
+
             <Button className="w-full" onClick={handleSignup} disabled={loading}>
               {loading ? 'Cadastrando...' : 'Criar Conta'}
             </Button>
