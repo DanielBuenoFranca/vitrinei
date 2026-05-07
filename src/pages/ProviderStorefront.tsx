@@ -304,23 +304,24 @@ const ProviderStorefront = () => {
     setSavingConfig(false);
   };
 
-  // Generate logo via AI
+  // Generate logo via saneamento (respeita economia: usa Unsplash/Pixabay quando IA off / sem créditos)
   const generateLogo = async () => {
     if (!provider) return;
     setGeneratingLogo(true);
     try {
-      const resp = await supabase.functions.invoke('generate-provider-logo', {
-        body: { providerName: provider.name, segment: (Array.isArray(provider.segment) ? provider.segment[0] : provider.segment) },
+      const seg = Array.isArray(provider.segment) ? provider.segment[0] : provider.segment;
+      const resp = await supabase.functions.invoke('sanitize-images', {
+        body: { kind: 'provider', id: provider.id, name: provider.name, segment: seg },
       });
       if (resp.error) throw new Error(resp.error.message);
-      const logoUrl = resp.data?.logoUrl;
+      const logoUrl = (resp.data as any)?.imageUrl || (resp.data as any)?.logoUrl;
       if (logoUrl) {
         const { data: updated } = await supabase.from('providers').update({ logo_url: logoUrl }).eq('id', provider.id).select().single();
         if (updated) setProvider(updated as ProviderData);
-        toast.success('Logo gerado com sucesso!');
+        toast.success((resp.data as any)?.source === 'ai' ? 'Logo gerado pela IA!' : 'Logo aplicado sem consumir créditos');
       }
     } catch (e: any) {
-      toast.warning('IA indisponível — faça upload manual do logo', { icon: '🤖', duration: 5000 });
+      toast.warning('Não foi possível obter imagem — faça upload manual', { icon: '🤖', duration: 5000 });
     }
     setGeneratingLogo(false);
   };
