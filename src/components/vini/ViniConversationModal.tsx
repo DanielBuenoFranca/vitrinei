@@ -103,6 +103,36 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
       setIsStreaming(true);
       const controller = new AbortController();
       abortRef.current = controller;
+
+      // 1) Router: classifica intenção e contexto antes de chamar o vini-chat
+      try {
+        const { data: routed } = await supabase.functions.invoke('ai-router', {
+          body: { message: text, session },
+        });
+        if (routed && !routed.error) {
+          update({
+            tags: routed.tags || [],
+            segments: routed.segments || [],
+            lastIntent: routed.intent,
+            lastQuery: routed.query || text,
+          });
+          if (routed.intent && routed.intent !== 'chat' && routed.next_agent !== 'vini') {
+            const transition = routed.transition_message || 'Vou redirecionar você para a área certa...';
+            setMessages((m) => [...m, { role: 'assistant', content: transition, id: `${Date.now()}-t` }]);
+            setIsStreaming(false);
+            setTimeout(() => {
+              if (routed.next_agent === 'support') navigate('/central-atendimento');
+              else if (routed.next_agent === 'cart') navigate('/carteira');
+              else navigate(`/buscar?q=${encodeURIComponent(routed.query || text)}`);
+              onClose();
+            }, 900);
+            return;
+          }
+        }
+      } catch {
+        // silent fallback to vini-chat
+      }
+
       const assistantId = `${Date.now()}-a`;
       let accumulated = '';
 
