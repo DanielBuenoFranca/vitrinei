@@ -117,6 +117,16 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
 
   const [saving, setSaving] = useState(false);
 
+  // ── Subscription plan ───────────────────────────────────────
+  const { activePlans } = useSubscriptionPlans();
+  const defaultPlanId = (() => {
+    if (!activePlans.length) return 'prata';
+    const sorted = [...activePlans].sort((a, b) => Number(a.price) - Number(b.price));
+    return sorted[Math.floor(sorted.length / 2)]?.id || sorted[0].id;
+  })();
+  const [selectedPlanId, setSelectedPlanId] = useState<string>(defaultPlanId);
+  useEffect(() => { if (!isEdit) setSelectedPlanId(defaultPlanId); }, [defaultPlanId, isEdit]);
+
   // ── Hidrata estado ao abrir ──────────────────────────────────
   useEffect(() => {
     if (!open) return;
