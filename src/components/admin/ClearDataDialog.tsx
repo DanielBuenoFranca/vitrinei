@@ -39,18 +39,34 @@ interface ClearDataDialogProps {
   counts?: { providers?: number; services?: number; products?: number; segments?: number };
 }
 
-const CATEGORIES: { key: CatKey; label: string; table: string; warn?: string; idCol?: string }[] = [
-  { key: 'providers',         label: 'Prestadores',          table: 'providers',          warn: 'Exclui também serviços/produtos vinculados ao prestador.' },
-  { key: 'services',          label: 'Serviços',             table: 'dynamic_services' },
-  { key: 'products',          label: 'Produtos',             table: 'dynamic_products' },
-  { key: 'segments',          label: 'Segmentos',            table: 'segments' },
-  { key: 'kits',              label: 'Kits',                 table: 'kits',               warn: 'Exclui também itens dos kits.' },
-  { key: 'kit_items',         label: 'Itens de Kits (órfãos)', table: 'kit_items',        idCol: 'id' },
-  { key: 'stock_entries',     label: 'Entradas de Estoque',  table: 'stock_entries',      idCol: 'id', warn: 'Exclui itens da entrada (cardex permanece).' },
-  { key: 'stock_entry_items', label: 'Itens de Entrada',     table: 'stock_entry_items',  idCol: 'id' },
-  { key: 'stock_movements',   label: 'Movimentações Cardex', table: 'stock_movements',    idCol: 'id', warn: 'Apaga histórico — uso restrito.' },
-  { key: 'ai_savings_log',    label: 'Log de Economia IA',   table: 'ai_savings_log',     idCol: 'id' },
+type CatDef = { key: CatKey; label: string; table: string; warn?: string; idCol?: string; group: 'movements' | 'system' };
+const CATEGORIES: CatDef[] = [
+  // Cadastros de movimentações (operação diária)
+  { key: 'providers',         label: 'Prestadores',          table: 'providers',          warn: 'Exclui também serviços/produtos vinculados e reseta flags em perfis.', group: 'movements' },
+  { key: 'products',          label: 'Produtos',             table: 'dynamic_products',   group: 'movements' },
+  { key: 'services',          label: 'Serviços',             table: 'dynamic_services',   group: 'movements' },
+  { key: 'kits',              label: 'Kits',                 table: 'kits',               warn: 'Exclui também itens dos kits.', group: 'movements' },
+  { key: 'kit_items',         label: 'Itens de Kits (órfãos)', table: 'kit_items',        idCol: 'id', group: 'movements' },
+  // Cadastros do sistema (cuidado — podem gerar inconsistências)
+  { key: 'segments',          label: 'Segmentos',            table: 'segments',           group: 'system' },
+  { key: 'stock_entries',     label: 'Entradas de Estoque',  table: 'stock_entries',      idCol: 'id', warn: 'Exclui itens da entrada (cardex permanece).', group: 'system' },
+  { key: 'stock_entry_items', label: 'Itens de Entrada',     table: 'stock_entry_items',  idCol: 'id', group: 'system' },
+  { key: 'stock_movements',   label: 'Movimentações Cardex', table: 'stock_movements',    idCol: 'id', warn: 'Apaga histórico — uso restrito.', group: 'system' },
+  { key: 'ai_savings_log',    label: 'Log de Economia IA',   table: 'ai_savings_log',     idCol: 'id', group: 'system' },
 ];
+
+const GROUP_META: Record<'movements' | 'system', { title: string; description: string; tone: string }> = {
+  movements: {
+    title: 'Cadastros de movimentações',
+    description: 'Registros criados na operação diária da ferramenta.',
+    tone: 'border-primary/30',
+  },
+  system: {
+    title: 'Cadastros do sistema',
+    description: 'Atenção — apagar pode gerar falhas ou inconsistências nos fluxos.',
+    tone: 'border-destructive/40',
+  },
+};
 
 export function ClearDataDialog({ open, onClose, onCleared }: ClearDataDialogProps) {
   const [selectedCats, setSelectedCats] = useState<Record<CatKey, boolean>>({} as any);
@@ -134,6 +150,41 @@ export function ClearDataDialog({ open, onClose, onCleared }: ClearDataDialogPro
         const ids = (items[k] || []).filter(i => i.selected).map(i => i.id);
         if (!ids.length) continue;
         const cat = CATEGORIES.find(c => c.key === k)!;
+
+        if (k === 'providers') {
+          const provIds = ids as number[];
+          const { data: provRows } = await supabase
+            .from('providers').select('id, user_id').in('id', provIds);
+          const userIds = (provRows || []).map((r: any) => r.user_id).filter(Boolean);
+
+          await supabase.from('dynamic_services').delete().in('provider_id', provIds);
+          await supabase.from('dynamic_products').delete().in('provider_id', provIds);
+          await supabase.from('stock_movements').delete().in('provider_id', provIds);
+          const { data: entries } = await supabase.from('stock_entries').select('id').in('provider_id', provIds);
+          const entryIds = (entries || []).map((e: any) => e.id);
+          if (entryIds.length) await supabase.from('stock_entry_items').delete().in('entry_id', entryIds);
+          await supabase.from('stock_entries').delete().in('provider_id', provIds);
+          const { data: kitRows } = await supabase.from('kits').select('id').in('owner_provider_id', provIds);
+          const kitIds = (kitRows || []).map((k: any) => k.id);
+          if (kitIds.length) {
+            await supabase.from('kit_items').delete().in('kit_id', kitIds);
+            await supabase.from('kits').delete().in('id', kitIds);
+          }
+
+          const { error } = await supabase.from('providers').delete().in('id', provIds);
+          if (error) toast.error(`Erro em ${cat.label}: ${error.message}`);
+
+          if (userIds.length) {
+            await supabase.from('profiles').update({
+              is_provider: false,
+              provider_segments: [],
+              provider_active: false,
+            }).in('user_id', userIds);
+            await supabase.from('user_roles').delete().in('user_id', userIds).eq('role', 'provider' as any);
+          }
+          continue;
+        }
+
         const { error } = await supabase.from(cat.table as any).delete().in('id', ids as any);
         if (error) {
           toast.error(`Erro em ${cat.label}: ${error.message}`);
@@ -166,19 +217,46 @@ export function ClearDataDialog({ open, onClose, onCleared }: ClearDataDialogPro
           </DialogDescription>
         </DialogHeader>
 
-        {/* Step 1 — categorias */}
-        <div className="grid sm:grid-cols-2 gap-2">
-          {CATEGORIES.map(cat => (
-            <div key={cat.key} className="flex items-start gap-3 p-2.5 rounded-lg border bg-card">
-              <Checkbox id={cat.key} checked={!!selectedCats[cat.key]} onCheckedChange={() => toggleCat(cat.key)} />
-              <div className="grid gap-0.5 flex-1">
-                <Label htmlFor={cat.key} className="cursor-pointer text-sm">{cat.label}</Label>
-                {cat.warn && selectedCats[cat.key] && (
-                  <p className="text-[10px] text-destructive">{cat.warn}</p>
-                )}
+        {/* Step 1 — categorias agrupadas */}
+        <div className="space-y-3">
+          {(['movements', 'system'] as const).map(group => {
+            const cats = CATEGORIES.filter(c => c.group === group);
+            const allSelected = cats.every(c => selectedCats[c.key]);
+            const meta = GROUP_META[group];
+            return (
+              <div key={group} className={`rounded-lg border-2 ${meta.tone} p-3 bg-card/50`}>
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div>
+                    <div className="text-sm font-semibold">{meta.title}</div>
+                    <div className="text-[11px] text-muted-foreground">{meta.description}</div>
+                  </div>
+                  <Button
+                    variant="ghost" size="sm" className="h-6 text-[10px]"
+                    onClick={() => setSelectedCats(s => {
+                      const next = { ...s };
+                      cats.forEach(c => { next[c.key] = !allSelected; });
+                      return next;
+                    })}
+                  >
+                    {allSelected ? 'desmarcar grupo' : 'marcar grupo'}
+                  </Button>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-2">
+                  {cats.map(cat => (
+                    <div key={cat.key} className="flex items-start gap-3 p-2.5 rounded-lg border bg-background">
+                      <Checkbox id={cat.key} checked={!!selectedCats[cat.key]} onCheckedChange={() => toggleCat(cat.key)} />
+                      <div className="grid gap-0.5 flex-1">
+                        <Label htmlFor={cat.key} className="cursor-pointer text-sm">{cat.label}</Label>
+                        {cat.warn && selectedCats[cat.key] && (
+                          <p className="text-[10px] text-destructive">{cat.warn}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Step 2 — visualizar */}
