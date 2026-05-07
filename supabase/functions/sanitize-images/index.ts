@@ -144,6 +144,16 @@ async function enrichContext(supabase: any, kind: string, id: number, base: any)
       if (data) {
         ctx.tags = Array.from(new Set([...(ctx.tags || []), ...((data.suggested_tags as string[]) || [])]));
       }
+    } else if (kind === "profile" && id) {
+      const { data } = await supabase.from("profiles")
+        .select("display_name, provider_segments, is_provider").eq("user_id", String(id)).maybeSingle();
+      if (data) {
+        ctx.name = ctx.name || data.display_name || "Usuário";
+        if (Array.isArray(data.provider_segments) && data.provider_segments.length) {
+          ctx.segment = ctx.segment || data.provider_segments[0];
+        }
+        ctx.providerType = ctx.providerType || (data.is_provider ? "mei" : "user");
+      }
     }
   } catch (e) {
     console.warn("enrichContext warn:", e);
