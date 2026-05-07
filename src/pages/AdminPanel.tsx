@@ -1146,17 +1146,31 @@ const AdminPanel = () => {
                                 <div className="flex gap-1 flex-wrap">
                                   {(() => {
                                     const isActive = !!userSub && userSub.status === 'active';
+                                    const isTriggered = !isActive && !!userSubPending;
                                     const isLeadRow = String(profile.user_id).startsWith('lead-');
                                     if (isActive) {
                                       return (
                                         <Button
                                           variant="outline" size="sm"
-                                          className="h-8 text-xs gap-1 opacity-60 cursor-not-allowed"
+                                          className="h-8 text-xs gap-1 opacity-60 cursor-not-allowed bg-green-50 border-green-300 text-green-700"
                                           disabled
-                                          title="Usuário já está ATIVO (assinatura ativa). Para reativar, cancele a assinatura primeiro."
+                                          title="Usuário ATIVO (assinatura paga). Para reativar, cancele a assinatura primeiro."
                                         >
                                           <CheckCircle className="h-3 w-3 text-green-600" />
-                                          Ativo
+                                          Ativado
+                                        </Button>
+                                      );
+                                    }
+                                    if (isTriggered) {
+                                      return (
+                                        <Button
+                                          variant="outline" size="sm"
+                                          className="h-8 text-xs gap-1 opacity-70 cursor-not-allowed bg-amber-50 border-amber-300 text-amber-700"
+                                          disabled
+                                          title="Botão acionado — aguardando pagamento da assinatura para tornar-se ATIVO."
+                                        >
+                                          <Loader2 className="h-3 w-3" />
+                                          Acionado
                                         </Button>
                                       );
                                     }
@@ -1168,7 +1182,7 @@ const AdminPanel = () => {
                                         onClick={() => activateUser(profile.user_id, false, profile.display_name)}
                                         title={isLeadRow
                                           ? 'Inserir Lead na régua de ativação'
-                                          : 'Ativar conta + reset de senha obrigatório + iniciar jornada de Lead'}
+                                          : 'Acionar ativação (Lead) — aguarda pagamento para ficar ATIVO'}
                                       >
                                         {activatingUser === profile.user_id
                                           ? <Loader2 className="h-3 w-3 animate-spin" />
