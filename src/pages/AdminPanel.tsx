@@ -376,40 +376,57 @@ const AdminPanel = () => {
   };
 
   const activateUser = async (userId: string, enableSelling = false, userName?: string) => {
-    // Lead importado (sem auth) — registrar na RÉGUA DE ATIVAÇÃO de Leads
-    // (tabela referrals com status 'pending') e abrir o UserForm para criar a conta.
+    // Lead importado (sem auth) — tenta criar a conta automaticamente com defaults
+    // (sem abrir UserForm). Se faltar e-mail, então abre o form para coletar o mínimo.
     if (userId.startsWith('lead-')) {
       const lead = userProfiles.find((p: any) => p.user_id === userId);
-      if (lead) {
-        try {
-          // Verifica se já existe um referral para esse e-mail/telefone (evita duplicar)
-          const refEmail = (lead.__leadEmail || '').toLowerCase().trim();
-          const refPhone = (lead.phone || '').replace(/\D/g, '');
-          let existing: any = null;
-          if (refEmail) {
-            const { data } = await supabase.from('referrals')
-              .select('id, status').ilike('referred_email', refEmail).maybeSingle();
-            existing = data;
-          }
-          if (!existing && user?.id) {
-            await supabase.from('referrals').insert({
-              referrer_id: user.id,
-              referral_code: `IMPORT-${lead.__providerId}`,
-              referred_name: lead.display_name || null,
-              referred_email: refEmail || null,
-              referred_phone: refPhone || null,
-              referred_role: 'provider',
-              status: 'pending',
-            });
-            toast.success('Lead inserido na régua de ativação. Complete o cadastro para ativá-lo.');
-          } else {
-            toast.info('Lead já está na régua de ativação. Complete o cadastro para ativá-lo.');
-          }
-        } catch (e: any) {
-          toast.warning('Não foi possível registrar na régua: ' + (e?.message || 'erro'));
-        }
-        setUserForm({ open: true, profile: lead, role: 'provider', email: lead.__leadEmail || null });
+      if (!lead) return;
+      const refEmail = (lead.__leadEmail || '').toLowerCase().trim();
+
+      if (!refEmail) {
+        toast.warning('Lead sem e-mail — preencha o cadastro para ativar.');
+        setUserForm({ open: true, profile: lead, role: 'provider', email: null });
+        return;
       }
+
+      setActivatingUser(userId);
+      try {
+        // 1) Cria a conta auth com senha temporária + defaults (papel Prestador)
+        const tmpPwd = `Tmp${Math.random().toString(36).slice(2, 10)}!`;
+        const { data: createRes, error: createErr } = await supabase.functions.invoke('create-user', {
+          body: {
+            email: refEmail,
+            password: tmpPwd,
+            name: lead.display_name || refEmail.split('@')[0],
+            phone: lead.phone || undefined,
+            role: 'provider',
+          },
+        });
+        if (createErr || createRes?.error) {
+          toast.error('Erro ao criar conta do lead: ' + (createRes?.error || createErr?.message || ''));
+          setActivatingUser(null); return;
+        }
+        const newUserId = createRes.user_id;
+
+        // 2) Vincula provider importado ao novo user_id (preserva loja/produtos)
+        if (lead.__providerId) {
+          await supabase.from('providers').update({ user_id: newUserId, active: true }).eq('id', lead.__providerId);
+        }
+
+        // 3) Aciona ativação (jornada de Lead, sem liberar venda — aguarda pagamento)
+        const { data, error } = await supabase.functions.invoke('activate-user', {
+          body: { user_id: newUserId, enable_selling: false },
+        });
+        if (error || data?.error) {
+          toast.error('Erro ao ativar lead: ' + (data?.error || error?.message || ''));
+        } else {
+          toast.success('Lead acionado — aguardando pagamento da assinatura para ficar ATIVO.');
+          await fetchUsers();
+        }
+      } catch (e: any) {
+        toast.error('Erro inesperado: ' + (e?.message || 'desconhecido'));
+      }
+      setActivatingUser(null);
       return;
     }
     setActivatingUser(userId);
