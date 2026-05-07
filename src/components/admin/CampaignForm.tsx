@@ -112,16 +112,20 @@ export function CampaignForm() {
     setLoading(false);
   };
 
+  const [bonusGenerated, setBonusGenerated] = useState(0);
+  const [totalSubsPaid, setTotalSubsPaid] = useState(0);
+
   const loadReferrals = async () => {
     setLoadingReferrals(true);
     const { data: refs } = await supabase
       .from('referrals')
       .select('*')
-      .order('created_at', { ascending: false })
-      .limit(100);
+      .order('expires_at', { ascending: true, nullsFirst: false })
+      .limit(200);
 
     if (refs) {
       const referrerIds = [...new Set(refs.map(r => r.referrer_id))];
+      const referredIds = [...new Set(refs.map(r => r.referred_id).filter(Boolean) as string[])];
       const { data: profiles } = await supabase
         .from('profiles')
         .select('user_id, display_name')
@@ -136,12 +140,28 @@ export function CampaignForm() {
       }));
       setReferrals(rows);
 
-      const pending = refs.filter(r => r.status === 'pending').length;
-      const partial = refs.filter(r => r.status === 'partial').length;
-      const activated = refs.filter(r => r.status === 'activated').length;
+      const now = Date.now();
+      const pending = refs.filter((r: any) => r.link_token && !r.consumed_at && !r.referred_id && (!r.expires_at || new Date(r.expires_at).getTime() > now)).length;
+      const activated = refs.filter(r => r.referred_id).length;
       const totalPaid = refs.reduce((s, r) => s + Number(r.total_paid || 0), 0);
       const totalPending = refs.reduce((s, r) => s + Math.max(0, Number(r.commission_amount) - Number(r.total_paid || 0)), 0);
-      setSummary({ total: refs.length, pending, partial, activated, totalPaid, totalPending });
+      setSummary({ total: refs.length, pending, partial: 0, activated, totalPaid, totalPending });
+
+      // Bonificação gerada (despesa do ecossistema) e total pago em assinaturas via leads
+      if (referredIds.length > 0) {
+        const { data: subs } = await supabase
+          .from('subscriptions')
+          .select('user_id, price, status')
+          .in('user_id', referredIds);
+        setTotalSubsPaid((subs || []).filter((s: any) => s.status === 'active').reduce((acc: number, s: any) => acc + Number(s.price || 0), 0));
+      } else {
+        setTotalSubsPaid(0);
+      }
+      const { data: bonusTx } = await supabase
+        .from('wallet_transactions')
+        .select('amount')
+        .in('type', ['referral_cashback', 'referral_bonus']);
+      setBonusGenerated((bonusTx || []).reduce((acc: number, t: any) => acc + Number(t.amount || 0), 0));
     }
     setLoadingReferrals(false);
   };
