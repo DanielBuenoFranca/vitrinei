@@ -85,28 +85,45 @@ Deno.serve(async (req) => {
     }
 
     const query = [name, segment].filter(Boolean).join(" ");
-    let pick: { url: string; source: string } | null =
-      (await tryUnsplash(query)) ||
-      (await tryPixabay(query)) ||
-      (await tryOpenverse(query)) ||
-      (await tryLoremflickr(query));
+    const candidates: Array<{ url: string; source: string } | null> = [
+      await tryUnsplash(query),
+      await tryPixabay(query),
+      await tryOpenverse(query),
+      await tryLoremflickr(query),
+      placeholder(kind, name),
+    ];
 
-    if (!pick) pick = placeholder(kind, name);
-
-    // baixa (se falhar, troca para placeholder e tenta de novo)
-    let imgRes = await fetch(pick.url);
-    if (!imgRes.ok) {
-      pick = placeholder(kind, name);
-      imgRes = await fetch(pick.url);
-      if (!imgRes.ok) {
-        return new Response(JSON.stringify({ error: "download-failed" }), {
-          status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+    // tenta cada candidato sequencialmente; se download falhar, passa para o próximo
+    let buf: Uint8Array | null = null;
+    let ct = "image/jpeg";
+    let usedSource = "svg-fallback";
+    for (const c of candidates) {
+      if (!c) continue;
+      try {
+        const r = await fetch(c.url, { redirect: "follow" });
+        if (!r.ok) continue;
+        const ab = await r.arrayBuffer();
+        if (!ab || ab.byteLength < 200) continue;
+        buf = new Uint8Array(ab);
+        ct = r.headers.get("content-type") || "image/jpeg";
+        usedSource = c.source;
+        break;
+      } catch { /* tenta próximo */ }
     }
-    const buf = new Uint8Array(await imgRes.arrayBuffer());
-    const ct = imgRes.headers.get("content-type") || "image/jpeg";
-    const ext = ct.includes("png") ? "png" : ct.includes("webp") ? "webp" : "jpg";
+
+    // fallback final garantido: SVG gerado localmente (não depende de rede)
+    if (!buf) {
+      const initials = (name.split(/\s+/).map((p: string) => p[0]).filter(Boolean).slice(0, 2).join("") || "V").toUpperCase();
+      const palette = ["#6d28d9", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#ec4899"];
+      const color = palette[Math.abs([...String(name)].reduce((a, c) => a + c.charCodeAt(0), 0)) % palette.length];
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${color}"/><stop offset="1" stop-color="#111827"/></linearGradient></defs><rect width="640" height="640" fill="url(#g)"/><text x="50%" y="50%" font-family="Inter,Arial,sans-serif" font-size="220" font-weight="800" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${initials}</text></svg>`;
+      buf = new TextEncoder().encode(svg);
+      ct = "image/svg+xml";
+      usedSource = "svg-fallback";
+    }
+
+    const pick = { url: "", source: usedSource };
+    const ext = ct.includes("svg") ? "svg" : ct.includes("png") ? "png" : ct.includes("webp") ? "webp" : "jpg";
 
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const bucket = kind === "provider" ? "provider-logos" : "storefront-assets";
