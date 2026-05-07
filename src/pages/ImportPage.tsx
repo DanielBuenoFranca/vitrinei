@@ -1189,14 +1189,13 @@ const ImportPage = () => {
             if (!cpfVal) res.fixes.push({ icon: 'document', message: `"${provName}": CPF/CNPJ ausente — marcado como ISENTO` });
             if (!firstRow.phone.trim() && !firstRow.email.trim()) res.fixes.push({ icon: 'contact', message: `"${provName}" criado sem contato — corrija no Admin` });
 
-            // Generate logo
+            // Generate logo via sanitize-images (fallback grátis + auto-off de IA quando sem créditos)
             try {
-              const { data: logoData, error: logoErr } = await supabase.functions.invoke('generate-provider-logo', {
-                body: { providerName: provName, segment: allSegments[0] || 'Geral' },
+              const { data: logoData } = await supabase.functions.invoke('sanitize-images', {
+                body: { kind: 'provider', id: providerId, name: provName, segment: allSegments[0] || 'Geral' },
               });
-              if (!logoErr && logoData?.logoUrl) {
-                await supabase.from('providers').update({ logo_url: logoData.logoUrl }).eq('id', providerId);
-                res.fixes.push({ icon: 'logo', message: `"${provName}": logo gerado por IA` });
+              if (logoData?.imageUrl) {
+                res.fixes.push({ icon: 'logo', message: `"${provName}": logo gerado (${logoData.source || 'auto'})` });
               }
             } catch (e) { console.error('Logo generation error:', e); }
           } else if (recovered) {
@@ -1351,15 +1350,10 @@ const ImportPage = () => {
 
       }
 
-      // Step 5: Generate product images in background (fire & forget)
-      setImportProgress({ step: 'Gerando imagens de produtos (IA)...', percent: 80 });
-      const productsToImage = rows.filter(r => r.productName.trim());
-      // Process images async, don't block
-      for (const row of productsToImage.slice(0, 10)) {
-        supabase.functions.invoke('search-product-image', {
-          body: { productName: row.productName, segment: row.segment, itemType: 'product' },
-        }).catch(console.error);
-      }
+      // Step 5: Imagens de produto serão geradas pelo Painel de Saneamento de Imagens
+      // (com fallback grátis Unsplash/Pixabay e auto-off de IA quando não há créditos).
+      setImportProgress({ step: 'Imagens serão geradas no painel de saneamento...', percent: 80 });
+
 
       setImportProgress({ step: 'Finalizando...', percent: 90 });
       await reloadDynamicEntries();
