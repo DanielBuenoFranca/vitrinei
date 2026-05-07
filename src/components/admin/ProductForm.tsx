@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNameSuggestion } from '@/hooks/useNameSuggestion';
 import { NameSuggestions } from '@/components/admin/NameSuggestions';
+import { ItemImagePicker } from '@/components/admin/ItemImagePicker';
 import { X, Plus, Loader2, Sparkles } from 'lucide-react';
 
 interface DynamicProduct {
