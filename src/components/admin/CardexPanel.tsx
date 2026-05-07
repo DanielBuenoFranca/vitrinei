@@ -221,6 +221,7 @@ export function CardexPanel() {
             <TableHeader>
               <TableRow>
                 <TableHead>Data</TableHead>
+                <TableHead>Loja</TableHead>
                 <TableHead>Item</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead className="text-right">Δ Qtd</TableHead>
@@ -233,6 +234,9 @@ export function CardexPanel() {
               {filtered.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell className="text-xs whitespace-nowrap">{new Date(r.created_at).toLocaleString("pt-BR")}</TableCell>
+                  <TableCell className="text-xs">
+                    <Badge variant="secondary" className="text-[10px]">{providerNameById(r.provider_id)}</Badge>
+                  </TableCell>
                   <TableCell className="text-xs">
                     <div className="font-medium">{r.item_name}</div>
                     <div className="text-[10px] text-muted-foreground">{r.item_kind} #{r.item_id}</div>
@@ -247,7 +251,7 @@ export function CardexPanel() {
                 </TableRow>
               ))}
               {filtered.length === 0 && !loading && (
-                <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">Nenhuma movimentação encontrada.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-8">Nenhuma movimentação encontrada.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
