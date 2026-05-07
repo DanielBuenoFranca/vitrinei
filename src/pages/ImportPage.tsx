@@ -1349,6 +1349,7 @@ const ImportPage = () => {
           }
         }
 
+      }
 
       // Step 5: Generate product images in background (fire & forget)
       setImportProgress({ step: 'Gerando imagens de produtos (IA)...', percent: 80 });
