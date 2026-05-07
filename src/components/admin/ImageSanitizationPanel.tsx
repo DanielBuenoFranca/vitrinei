@@ -8,7 +8,7 @@ import { ImageOff, Loader2, RefreshCw, Sparkles, CheckCircle2, AlertTriangle } f
 import { toast } from 'sonner';
 
 type Item = {
-  kind: 'provider' | 'product' | 'kit' | 'service' | 'segment';
+  kind: 'provider' | 'product' | 'kit' | 'service' | 'segment' | 'profile';
   id: number | string;
   name: string;
   segment?: string;
