@@ -955,6 +955,13 @@ const WalletPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ShareReferralModal
+        open={shareModal.open}
+        onOpenChange={(v) => setShareModal((s) => ({ ...s, open: v }))}
+        link={shareModal.link}
+        expiresAt={shareModal.expires}
+      />
     </div>
   );
 };
