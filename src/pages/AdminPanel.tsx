@@ -704,7 +704,16 @@ const AdminPanel = () => {
                       <TableBody>
                         {services.map((svc) => (
                           <TableRow key={svc.id}>
-                            <TableCell className="font-medium">{svc.name}</TableCell>
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2">
+                                {(svc as any).image_url ? (
+                                  <img src={(svc as any).image_url} alt={svc.name} className="h-9 w-9 rounded-md object-cover border" />
+                                ) : (
+                                  <div className="h-9 w-9 rounded-md bg-muted border flex items-center justify-center text-[9px] text-muted-foreground">s/img</div>
+                                )}
+                                <span>{svc.name}</span>
+                              </div>
+                            </TableCell>
                             <TableCell><Badge variant="secondary">{svc.segment}</Badge></TableCell>
                             <TableCell>
                               <span>{svc.provider}</span>
