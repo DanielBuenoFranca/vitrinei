@@ -1,74 +1,45 @@
+Plano de execução em 3 entregas sequenciais para cobrir as 5 frentes solicitadas, priorizando estabilidade do banco (CARDEX) e governança de créditos antes da UX de importação e indicações.
 
+## Entrega 1 — Estabilidade backend (CARDEX + Gating IA + Imagens estoque)
 
-## Plano: Cena 3D high-end com escritório futurista + Vini levitando
+**2. CARDEX**
+- Migração: `ALTER TABLE stock_movements DROP CONSTRAINT stock_movements_movement_type_check` e recriar aceitando os valores hoje em uso (`sale`, `entry_in`, `kit_consumption`, `kit_supplier_debit`, `adjust_in`, `adjust_out`, `service_execution`) — mantendo lower_case que já é padrão das RPCs `sell_kit_acid`/`apply_stock_entry`. Decisão: padronizar lowercase (não maiúsculas) para não quebrar funções já em produção; documentar enum.
+- Adicionar `item_kind = 'service'` no fluxo: novo tipo de movimento `service_execution` sem decremento de estoque. Permitir `quantity_delta = 0` e `balance_after = NULL` para serviços.
+- `CardexPanel.tsx`: ao escolher tipo "Serviço", esconder campos de quantidade/estoque, exibir apenas preço, M.O. e histórico.
 
-### Limpeza
-- **Substituir** `src/components/vini/ViniScene.tsx` (atual: estrelas/Sparkles do tema espacial → será o novo cenário 3D imersivo).
-- **Substituir** `src/components/vini/ViniAvatar.tsx` por uma versão "DOM-only" (apenas wrapper para clique + saudação), pois o avatar agora é renderizado **dentro** do Canvas 3D como um plano texturizado para participar da iluminação/parallax/bloom.
-- **Manter intactos**: microfone central, menu lateral em abas de vidro, plus menu, header, bubbles, lógica de voz/`hasInteracted`/`scheduleHide` em `ViniHome.tsx`.
-- **Não excluir** os assets atuais (`vini-avatar.png` continua sendo usado como textura). **Adicionar** o novo asset de fundo.
+**3. Gating IA + Imagens**
+- `useAiMode.ts` / wrappers de chamada IA: capturar 402/429 silenciosamente (try/catch + `logAiSavings`), nunca mostrar toast ao usuário final, ativar fallback `[AI off]`.
+- `ImageSanitizationPanel`: novo botão "Buscar imagens estoque (web)" que dispara edge function `search-product-image` (já existe) em lote para `dynamic_products` sem `image_url`. Estilo e-commerce.
 
-### Novos assets
-- Copiar `user-uploads://Fundo_mais_distante.png` → `src/assets/office-bg.png` (cenário de escritório futurista).
-- Copiar `user-uploads://Avatar_recortado_e_proporcional_ao_fundo.png` → `src/assets/vini-avatar.png` (substitui o atual, já transparente e proporcional).
+## Entrega 2 — Importação inteligente
 
-### Dependência nova
-- Instalar `@react-three/postprocessing@^2.16.3` (compatível com R3F v8, Three 0.160) para `EffectComposer` + `Bloom`.
+**1. Frente importação `/importar`**
+- `ImportPage.tsx`:
+  - Highlight de erro por campo (não por linha): aplicar classe `border-red-500` apenas no `<input>` do email/telefone em conflito.
+  - Agrupamento por chave (email OU CPF normalizado): mesclar linhas, e quando houver divergência exibir checklist por campo (planilha vs base) com radio "manter base / usar planilha".
+  - Validação produtos↔serviços: ao processar serviços com `linked_products`, procurar produto por nome normalizado em (a) base atual e (b) outras linhas da mesma planilha; só falhar se nenhum dos dois resolver.
+  - Duplicidade de serviços: substituir registro existente preservando `labor_cost` da planilha e re-vinculando `linked_product_ids`.
+- UI: forçar `overflow: scroll` (não `auto`) no container do preview para barras sempre visíveis.
 
-### Arquitetura do novo `ViniScene.tsx` (Canvas full-screen, `pointer-events-none`)
+## Entrega 3 — Indicações 24h + Gestão usuários/assinatura
 
-```text
-Canvas (camera z=5, fov=42, dpr=[1,1.6])
-├─ <color background> + <fog>          ← profundidade ambiente
-├─ Lights
-│   ├─ ambientLight 0.35
-│   ├─ directionalLight (key, frente-cima)
-│   └─ pointLight CIANO atrás do Vini  ← simula portal iluminando costas
-├─ Layer 0 — BackgroundPlane
-│   ├─ planeGeometry [16,10] em z=-3
-│   ├─ texture office-bg.png (sRGB)
-│   └─ parallax: lerp posição com pointer * 0.05
-├─ Layer 0.5 — StocksGlassPanel (à esquerda, z=-1.2)
-│   ├─ boxGeometry slim
-│   └─ MeshTransmissionMaterial { ior:1.5, transmission:1, chromaticAberration:0.06, roughness:0.05, thickness:0.4 }
-├─ Layer 1 — ViniAvatarPlane (centro, z=0.5)
-│   ├─ planeGeometry [2.4,2.4]
-│   ├─ texture vini-avatar.png + meshStandardMaterial transparent + emissive sutil nos olhos via emissiveMap (mesma textura, intensidade baixa) → Bloom captura olhos
-│   ├─ float: position.y = sin(t*2)*0.1
-│   ├─ tilt: rotation.y/x lerp em direção ao pointer (intensidade 0.15 vs fundo 0.05)
-│   └─ billboard parcial (sempre encarando câmera no eixo Y)
-└─ EffectComposer
-    └─ Bloom { intensity:0.9, luminanceThreshold:0.85, luminanceSmoothing:0.2, mipmapBlur:true }
-```
+**4. Links 24h**
+- Migração: adicionar `expires_at timestamptz`, `link_token text unique`, `max_uses int default 1` em `referrals`. Índice em `expires_at`.
+- RPC `generate_referral_link(_referrer uuid)`: valida ≤3 links ativos, gera token aleatório, expira em 24h.
+- `WalletPage.tsx`: botão "Gerar link 24h" + lista discreta dos últimos 10 (timestamp + status calculado).
+- `ReferralLanding.tsx`: validar `expires_at` e marcar como consumido após cadastro.
+- `CampaignForm.tsx` (admin): tabela ordenada por `expires_at ASC`, edição inline da data, novos cards totalizadores: Total / Pendentes / Ativados / Total Pago / Bonificação gerada (lida de `wallet_transactions` tipo `referral_cashback`+`referral_bonus`).
 
-### Hook de pointer (smoothing elástico)
-- `usePointer()` reaproveitado: `target` (raw) + `smooth` (lerp 0.05 por frame em `useFrame`). Background usa `smooth * 0.05`, avatar usa `smooth * 0.15` → paralaxe real entre camadas.
+**5. Usuários + Assinatura**
+- `AdminPanel` Usuários: coluna "Papéis" mostra apenas labels: Master, Administrador, Comprador, Prestador (mapping em `usePermissions`).
+- `UserForm.tsx`: dois selects — "Perfil" (Comprador/Prestador/Misto) + "Acesso" (Padrão/Admin/Master). Default: Comprador + Padrão.
+- Status de assinatura visível; ao trocar plano, calcular diff via `useSubscriptionPlans` e lançar débito/crédito em `wallet_transactions` tipo `subscription_adjustment`.
+- CEP obrigatório no cadastro (já implementado parcialmente em entrega anterior — reforçar `required` + bloqueio de submit até `latitude/longitude` resolvidos). ISENTO já implementado, manter.
 
-### Mudanças em `ViniHome.tsx`
-- Remover `<ViniAvatar onClick=... size=... />` do bloco central — o avatar agora vive dentro do Canvas.
-- Manter o **wrapper invisível clicável** centralizado (`div` com `pointer-events-auto`) sobre a posição do avatar 3D, que dispara `handleAvatarClick` (abre menu/wakes Vini).
-- Manter saudação, mic, menu lateral, bubbles **como overlays DOM** (z-index 20-40, acima do Canvas z-0).
-- Remover os 2 overlays gradientes pesados do topo/base ou suavizá-los para `from-background/40` para não cobrir o cenário.
+## Riscos / decisões técnicas
 
-### Responsividade
-- Canvas usa `dpr=[1,1.6]` e `frameloop='demand'` se `prefers-reduced-motion`.
-- No mobile (`< 640px`): reduzir tamanho do plano do avatar para `[1.8, 1.8]`, mover painel de vidro para fora da tela (esconder) para não competir com mic.
-- Hit-area do clique no avatar permanece HTML (centralizado), garantindo toque preciso.
+- **Padrão de `movement_type`**: manter lowercase (oposto ao texto do usuário que pediu maiúsculas). Motivo: 4 RPCs em produção já gravam lowercase; mudar para uppercase exigiria reescrever `sell_kit_acid` + `apply_stock_entry` + dados históricos. Vou comunicar essa decisão.
+- **Sem novas tabelas**: aproveitar `referrals` existente (extensão de colunas).
+- **AI silent fail**: já existe `[AI off]` no padrão de resiliência — apenas garantir que NÃO toast o erro 402.
 
-### Detalhes técnicos
-- Texturas carregadas via `useLoader(THREE.TextureLoader, …)` com `colorSpace = THREE.SRGBColorSpace`.
-- `MeshTransmissionMaterial` do `@react-three/drei` (já instalado).
-- Bloom seletivo: como Three 0.160 não tem layers selectiva trivial, usaremos `luminanceThreshold` alto (0.85) para que apenas regiões muito brilhantes (olhos amarelos do robô + emissões cianas do PointLight refletindo no plano) emitam glow — dispensa setup de layers.
-- `pointer-events-none` no wrapper do Canvas garante que mic, menu e botões DOM recebam todos os toques.
-
-### Arquivos tocados
-1. `package.json` — adicionar `@react-three/postprocessing`
-2. `src/assets/office-bg.png` (novo)
-3. `src/assets/vini-avatar.png` (substituído)
-4. `src/components/vini/ViniScene.tsx` (reescrito)
-5. `src/components/vini/ViniAvatar.tsx` (reduzido a hit-area DOM + halo opcional)
-6. `src/pages/ViniHome.tsx` (ajuste do bloco central + remoção dos gradientes pesados)
-
-### Resultado esperado
-Vini flutua em primeiro plano, painel de stocks à esquerda refrata o escritório atrás, fundo se desloca lentamente com o cursor enquanto o robô se desloca 3× mais rápido (paralaxe real), olhos e portal emitem brilho cinematográfico via Bloom, e toda a UI (mic, menus, header) continua funcional sobreposta.
-
+Posso começar pela Entrega 1 (CARDEX + gating)?
