@@ -118,9 +118,9 @@ export function ImageSanitizationPanel() {
   };
 
   const kindLabel = (k: Item['kind']) =>
-    k === 'provider' ? 'Prestador' : k === 'product' ? 'Produto' : k === 'kit' ? 'Kit' : k === 'service' ? 'Serviço' : 'Segmento';
+    k === 'provider' ? 'Prestador' : k === 'product' ? 'Produto' : k === 'kit' ? 'Kit' : k === 'service' ? 'Serviço' : k === 'profile' ? 'Usuário' : 'Segmento';
   const kindColor = (k: Item['kind']) =>
-    k === 'provider' ? 'default' : k === 'product' ? 'secondary' : k === 'kit' ? 'outline' : k === 'service' ? 'secondary' : 'default';
+    k === 'provider' ? 'default' : k === 'product' ? 'secondary' : k === 'kit' ? 'outline' : k === 'service' ? 'secondary' : k === 'profile' ? 'outline' : 'default';
 
   return (
     <Card>
