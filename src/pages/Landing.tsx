@@ -443,159 +443,196 @@ const Landing = () => {
             toggleSegment={toggleSegment}
           >
             {searchExecuted && (
-              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 pb-6">
-                <div className="rounded-[24px] border border-primary/20 bg-card/90 p-3 shadow-xl backdrop-blur-xl">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <Badge className={`${fallbackToAll ? 'bg-accent/10 text-accent border-accent/20' : 'bg-success/10 text-success border-success/20'} text-xs px-3 py-1`}>
-                        {fallbackToAll ? <Sparkles className="w-3.5 h-3.5 mr-1.5" /> : <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />}
-                        {fallbackToAll ? 'Catálogo completo' : 'Resultados na mesma tela'}
-                      </Badge>
-                      <p className="mt-1 text-[11px] text-muted-foreground truncate">
-                        {executedQuery ? `Busca: “${executedQuery}”` : 'Navegação por segmentos'} · {filteredResults.length} serviço(s) · {searchResult.products.length} produto(s)
-                      </p>
+              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-5 pb-6">
+
+                {/* === FAIXA ROLANTE: PRESTADORES === */}
+                {hasResults && providerEntries.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2 px-1">
+                      <h3 className="text-white text-sm font-bold tracking-wide flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-violet-300" /> Prestadores próximos
+                      </h3>
+                      <label className="flex items-center gap-1.5 cursor-pointer select-none rounded-full border border-white/15 bg-white/5 px-2 py-0.5">
+                        <Checkbox checked={showSimulated} onCheckedChange={(v) => setShowSimulated(!!v)} className="h-3 w-3" />
+                        <span className="text-[10px] text-white/70 whitespace-nowrap">Incluir simulados</span>
+                      </label>
                     </div>
-                    <label className="flex items-center gap-1.5 shrink-0 cursor-pointer select-none rounded-full border border-border bg-background/60 px-2 py-1">
-                      <Checkbox checked={showSimulated} onCheckedChange={(v) => setShowSimulated(!!v)} className="h-3.5 w-3.5" />
-                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">Incluir simulados</span>
-                    </label>
-                  </div>
-
-                  <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-                    {dbSegments.map((seg) => {
-                      const isActive = activeSegments.includes(seg.id);
-                      const Icon = getVisualIcon(seg.label);
-                      return (
-                        <button
-                          key={seg.id}
-                          onClick={() => toggleSegment(seg.id)}
-                          className={`shrink-0 w-[72px] rounded-2xl p-1.5 text-left transition-all ${isActive ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted/60 text-foreground hover:bg-muted'}`}
-                        >
-                          <div className="aspect-square rounded-xl overflow-hidden bg-background/40 flex items-center justify-center">
-                            {seg.image_url ? <img src={seg.image_url} alt={seg.label} className="w-full h-full object-cover" /> : <Icon className="w-7 h-7" />}
-                          </div>
-                          <p className="mt-1 text-[9px] font-bold leading-tight truncate">{seg.label}</p>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {hasResults && (
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    {providerEntries.map(([providerName, data], idx) => {
-                      const prov = dbProviders.get(providerName);
-                      const segName = data.services[0]?.segment || data.products[0]?.tags?.[0] || providerName;
-                      const segVisual = getSegmentVisual(segName);
-                      const Icon = getVisualIcon(`${providerName}-${segName}`);
-                      const expanded = expandedProviders.has(providerName);
-                      const slug = slugify(providerName);
-                      return (
-                        <motion.div key={providerName} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }} className="overflow-hidden rounded-[24px] border border-border/70 bg-card/95 shadow-xl">
-                          <button onClick={() => toggleProviderExpanded(providerName)} className="block w-full text-left">
-                            <div className="relative aspect-[16/9] overflow-hidden bg-muted">
-                              {prov?.logo_url ? (
-                                <img src={prov.logo_url} alt={providerName} className="w-full h-full object-cover" />
-                              ) : segVisual?.image_url ? (
-                                <img src={segVisual.image_url} alt={segName} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-primary/10">
-                                  <Icon className="w-16 h-16 text-primary drop-shadow-lg" />
-                                </div>
-                              )}
-                              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background/95 via-background/50 to-transparent p-3">
-                                <div className="flex items-end justify-between gap-2">
-                                  <div className="min-w-0">
-                                    <div className="flex items-center gap-1.5">
-                                      <h3 className="font-display text-sm font-bold text-foreground truncate">{providerName}</h3>
-                                      <TopProviderBadge active={prov?.is_top_provider} size="xs" />
-                                    </div>
-                                    <p className="text-[11px] text-muted-foreground truncate">{data.services.length} serviço(s) · {data.products.length} produto(s)</p>
+                    <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
+                      {providerEntries.map(([providerName, data], idx) => {
+                        const prov = dbProviders.get(providerName);
+                        const segName = data.services[0]?.segment || data.products[0]?.tags?.[0] || providerName;
+                        const segVisual = getSegmentVisual(segName);
+                        const Icon = getVisualIcon(`${providerName}-${segName}`);
+                        const slug = slugify(providerName);
+                        return (
+                          <motion.div
+                            key={providerName}
+                            initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: idx * 0.04 }}
+                            className="snap-start shrink-0 w-[160px] rounded-2xl overflow-hidden relative"
+                            style={{
+                              background: 'linear-gradient(160deg, hsl(225 40% 18%), hsl(225 55% 8%))',
+                              border: '1px solid hsl(265 50% 50% / 0.35)',
+                              boxShadow: '0 14px 32px -16px hsl(265 80% 40% / 0.6), inset 0 1px 0 rgba(255,255,255,.08)',
+                            }}
+                          >
+                            <button onClick={() => toggleProviderExpanded(providerName)} className="block w-full text-left">
+                              <div className="relative aspect-[3/4] overflow-hidden">
+                                {prov?.logo_url ? (
+                                  <img src={prov.logo_url} alt={providerName} className="w-full h-full object-cover" />
+                                ) : segVisual?.image_url ? (
+                                  <img src={segVisual.image_url} alt={segName} className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-violet-900/60 to-slate-900">
+                                    <Icon className="w-14 h-14 text-violet-200/70 drop-shadow-[0_4px_10px_rgba(0,0,0,.6)]" />
                                   </div>
-                                  <ChevronDown className={`w-4 h-4 text-foreground transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                                )}
+                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-2">
+                                  <div className="flex items-center gap-1">
+                                    <h4 className="text-[12px] font-bold text-white truncate flex-1 drop-shadow">{providerName}</h4>
+                                    <TopProviderBadge active={prov?.is_top_provider} size="xs" />
+                                  </div>
+                                  <div className="flex items-center gap-1 text-[10px] text-amber-300 mt-0.5">
+                                    <Star className="w-2.5 h-2.5 fill-amber-300" />
+                                    <span>{(prov?.rating ?? data.services[0]?.rating ?? 4.8)}</span>
+                                    <span className="text-white/50">·</span>
+                                    <MapPin className="w-2.5 h-2.5 text-white/50" />
+                                    <span className="text-white/60 truncate">{data.services[0]?.distance || '2km'}</span>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </button>
-
-                          <div className="p-3 flex items-center justify-between gap-2 border-t border-border/60">
-                            <div className="flex items-center gap-2 text-[11px] text-muted-foreground min-w-0">
-                              <MapPin className="w-3.5 h-3.5 shrink-0" />
-                              <span className="truncate">{data.services[0]?.distance || data.products[0]?.distance || 'Próximo'}</span>
-                              <Star className="w-3.5 h-3.5 fill-accent text-accent shrink-0" />
-                              <span>{data.services[0]?.rating || data.products[0]?.rating || '4.8'}</span>
-                            </div>
+                            </button>
                             {dbProviderNames.has(providerName) && (
-                              <Button variant="default" size="sm" className="h-7 px-2.5 text-[10px] gap-1" onClick={() => navigate(`/loja/${slug}`)}>
-                                <Store className="w-3.5 h-3.5" /> Loja
-                              </Button>
+                              <button
+                                onClick={() => navigate(`/loja/${slug}`)}
+                                className="w-full py-1.5 text-[10px] font-bold text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 flex items-center justify-center gap-1 transition-all"
+                              >
+                                <Store className="w-3 h-3" /> Visitar Loja
+                              </button>
                             )}
-                          </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
-                          <AnimatePresence initial={false}>
-                            {expanded && (
-                              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                                <div className="p-3 pt-0 space-y-3">
-                                  {data.services.length > 0 && (
-                                    <div className="space-y-2">
-                                      <p className="text-[11px] font-semibold text-primary flex items-center gap-1"><WrenchIcon className="w-3.5 h-3.5" /> Serviços</p>
-                                      {data.services.map((result) => {
-                                        const seg = getSegmentVisual(result.segment);
-                                        const SIcon = getVisualIcon(result.name);
-                                        return (
-                                          <button key={result.id} onClick={() => {
-                                            if (accessLevel === 'visitor') { toast.info('Crie sua conta para adicionar serviços ao carrinho', { action: { label: 'Cadastrar', onClick: () => navigate('/auth') }, duration: 5000 }); return; }
-                                            if (accessLevel === 'lead') { toast.warning('Confirme seu e-mail para contratar serviços', { description: 'Verifique sua caixa de entrada e clique no link de confirmação.', action: { label: 'Ver status', onClick: () => navigate('/carteira') }, duration: 6000 }); return; }
-                                            toggleServiceInCart(result);
-                                          }} className={`w-full rounded-2xl border p-2 text-left transition-all ${isInServiceCart(result.id) ? 'border-primary bg-primary/10' : 'border-border/70 bg-background/50 hover:border-primary/40'}`}>
-                                            <div className="flex items-center gap-2">
-                                              <div className="w-14 h-14 rounded-xl overflow-hidden bg-primary/10 flex items-center justify-center shrink-0">
-                                                {seg?.image_url ? <img src={seg.image_url} alt={result.name} className="w-full h-full object-cover" /> : <SIcon className="w-7 h-7 text-primary" />}
-                                              </div>
-                                              <div className="min-w-0 flex-1">
-                                                <h4 className="font-semibold text-sm text-foreground truncate">{result.name}</h4>
-                                                <p className="text-[11px] text-muted-foreground truncate"><MaskedPrice value={result.price} /> · {result.time}</p>
-                                              </div>
-                                              {isInServiceCart(result.id) ? <CheckCircle2 className="w-4 h-4 text-primary" /> : <Plus className="w-4 h-4 text-primary" />}
-                                            </div>
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-                                  )}
-                                  {data.products.length > 0 && (
-                                    <div className="space-y-2">
-                                      <p className="text-[11px] font-semibold text-success flex items-center gap-1"><ShoppingBag className="w-3.5 h-3.5" /> Produtos</p>
-                                      {data.products.map((product) => {
-                                        const PIcon = getVisualIcon(product.name);
-                                        return (
-                                          <button key={product.id} onClick={() => {
-                                            if (accessLevel === 'visitor') { toast.info('Crie sua conta para adicionar produtos ao carrinho', { action: { label: 'Cadastrar', onClick: () => navigate('/auth') }, duration: 5000 }); return; }
-                                            if (accessLevel === 'lead') { toast.warning('Confirme seu e-mail para comprar produtos', { description: 'Verifique sua caixa de entrada e clique no link de confirmação.', action: { label: 'Ver status', onClick: () => navigate('/carteira') }, duration: 6000 }); return; }
-                                            toggleProductInCart(product);
-                                          }} className={`w-full rounded-2xl border p-2 text-left transition-all ${isInProductCart(product.id) ? 'border-success bg-success/10' : 'border-border/70 bg-background/50 hover:border-success/40'}`}>
-                                            <div className="flex items-center gap-2">
-                                              <div className="w-14 h-14 rounded-xl overflow-hidden bg-success/10 flex items-center justify-center shrink-0">
-                                                {product.image_url ? <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" /> : <PIcon className="w-7 h-7 text-success" />}
-                                              </div>
-                                              <div className="min-w-0 flex-1">
-                                                <h4 className="font-semibold text-sm text-foreground truncate">{product.name}</h4>
-                                                <p className="text-[11px] text-muted-foreground truncate"><MaskedPrice value={product.price} /> · {product.stockType === 'fisico' ? 'Estoque' : 'Dropshipping'}</p>
-                                              </div>
-                                              {isInProductCart(product.id) ? <CheckCircle2 className="w-4 h-4 text-success" /> : <Plus className="w-4 h-4 text-success" />}
-                                            </div>
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-                                  )}
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </motion.div>
-                      );
-                    })}
+                {/* === MARKETPLACE: SERVIÇOS === */}
+                {hasResults && filteredResults.length > 0 && (
+                  <div>
+                    <h3 className="text-white text-sm font-bold mb-2 px-1 flex items-center gap-1.5">
+                      <WrenchIcon className="w-3.5 h-3.5 text-violet-300" /> Serviços ({filteredResults.length})
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                      {filteredResults.map((result, idx) => {
+                        const seg = getSegmentVisual(result.segment);
+                        const SIcon = getVisualIcon(result.name);
+                        const inCart = isInServiceCart(result.id);
+                        const prov = dbProviders.get(result.provider);
+                        return (
+                          <motion.button
+                            key={result.id}
+                            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.03 }}
+                            whileHover={{ y: -2 }}
+                            onClick={() => {
+                              if (accessLevel === 'visitor') { toast.info('Crie sua conta para adicionar serviços ao carrinho', { action: { label: 'Cadastrar', onClick: () => navigate('/auth') }, duration: 5000 }); return; }
+                              if (accessLevel === 'lead') { toast.warning('Confirme seu e-mail para contratar serviços', { duration: 6000 }); return; }
+                              toggleServiceInCart(result);
+                            }}
+                            className="rounded-2xl overflow-hidden text-left relative group"
+                            style={{
+                              background: 'linear-gradient(160deg, hsl(225 35% 16%), hsl(225 50% 7%))',
+                              border: inCart ? '1px solid hsl(265 80% 60%)' : '1px solid hsl(225 30% 30% / 0.5)',
+                              boxShadow: inCart
+                                ? '0 12px 30px -10px hsl(265 80% 50% / 0.8), inset 0 1px 0 rgba(255,255,255,.1)'
+                                : '0 10px 24px -12px hsl(225 60% 0% / 0.7), inset 0 1px 0 rgba(255,255,255,.06)',
+                            }}
+                          >
+                            <div className="aspect-[4/3] overflow-hidden bg-gradient-to-br from-violet-900/40 to-slate-900 relative">
+                              {seg?.image_url ? (
+                                <img src={seg.image_url} alt={result.name} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center"><SIcon className="w-10 h-10 text-violet-300/60" /></div>
+                              )}
+                              <div className="absolute top-1.5 right-1.5 rounded-full bg-black/70 backdrop-blur px-1.5 py-0.5 flex items-center gap-0.5">
+                                {inCart ? <CheckCircle2 className="w-3 h-3 text-violet-300" /> : <Plus className="w-3 h-3 text-white" />}
+                              </div>
+                            </div>
+                            <div className="p-2">
+                              <h4 className="text-[11px] font-bold text-white truncate">{result.name}</h4>
+                              <p className="text-[9px] text-white/50 truncate">{result.provider}</p>
+                              <div className="flex items-center justify-between mt-1">
+                                <span className="text-[11px] font-bold text-violet-200"><MaskedPrice value={result.price} /></span>
+                                <span className="flex items-center gap-0.5 text-[9px] text-amber-300">
+                                  <Star className="w-2 h-2 fill-amber-300" /> {result.rating ?? 4.8}
+                                </span>
+                              </div>
+                            </div>
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* === MARKETPLACE: PRODUTOS === */}
+                {hasResults && searchResult.products.length > 0 && (
+                  <div>
+                    <h3 className="text-white text-sm font-bold mb-2 px-1 flex items-center gap-1.5">
+                      <ShoppingBag className="w-3.5 h-3.5 text-emerald-300" /> Produtos ({searchResult.products.length})
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                      {searchResult.products.map((product, idx) => {
+                        const PIcon = getVisualIcon(product.name);
+                        const inCart = isInProductCart(product.id);
+                        return (
+                          <motion.button
+                            key={product.id}
+                            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.03 }}
+                            whileHover={{ y: -2 }}
+                            onClick={() => {
+                              if (accessLevel === 'visitor') { toast.info('Crie sua conta para adicionar produtos ao carrinho', { action: { label: 'Cadastrar', onClick: () => navigate('/auth') }, duration: 5000 }); return; }
+                              if (accessLevel === 'lead') { toast.warning('Confirme seu e-mail para comprar produtos', { duration: 6000 }); return; }
+                              toggleProductInCart(product);
+                            }}
+                            className="rounded-2xl overflow-hidden text-left relative group"
+                            style={{
+                              background: 'linear-gradient(160deg, hsl(160 35% 14%), hsl(160 50% 6%))',
+                              border: inCart ? '1px solid hsl(160 70% 50%)' : '1px solid hsl(160 25% 28% / 0.5)',
+                              boxShadow: inCart
+                                ? '0 12px 30px -10px hsl(160 80% 40% / 0.7), inset 0 1px 0 rgba(255,255,255,.1)'
+                                : '0 10px 24px -12px hsl(160 60% 0% / 0.7), inset 0 1px 0 rgba(255,255,255,.06)',
+                            }}
+                          >
+                            <div className="aspect-[4/3] overflow-hidden bg-gradient-to-br from-emerald-900/40 to-slate-900 relative">
+                              {product.image_url ? (
+                                <img src={product.image_url} alt={product.name} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center"><PIcon className="w-10 h-10 text-emerald-300/60" /></div>
+                              )}
+                              <div className="absolute top-1.5 right-1.5 rounded-full bg-black/70 backdrop-blur px-1.5 py-0.5 flex items-center gap-0.5">
+                                {inCart ? <CheckCircle2 className="w-3 h-3 text-emerald-300" /> : <Plus className="w-3 h-3 text-white" />}
+                              </div>
+                              <div className="absolute top-1.5 left-1.5 rounded-full bg-emerald-500/80 backdrop-blur px-1.5 py-0.5">
+                                <span className="text-[8px] font-bold text-white">{product.stockType === 'fisico' ? 'Estoque' : 'Drop'}</span>
+                              </div>
+                            </div>
+                            <div className="p-2">
+                              <h4 className="text-[11px] font-bold text-white truncate">{product.name}</h4>
+                              <p className="text-[9px] text-white/50 truncate">{product.provider}</p>
+                              <div className="flex items-center justify-between mt-1">
+                                <span className="text-[11px] font-bold text-emerald-200"><MaskedPrice value={product.price} /></span>
+                                <span className="flex items-center gap-0.5 text-[9px] text-amber-300">
+                                  <Star className="w-2 h-2 fill-amber-300" /> {product.rating ?? 4.8}
+                                </span>
+                              </div>
+                            </div>
+                          </motion.button>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
 
