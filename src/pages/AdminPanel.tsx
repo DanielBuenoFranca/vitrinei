@@ -1066,6 +1066,7 @@ const AdminPanel = () => {
                         {userProfiles.map((profile: any) => {
                           const roles = userRoles.filter((r: any) => r.user_id === profile.user_id);
                           const userSub = userSubscriptions.find((s: any) => s.user_id === profile.user_id && s.status === 'active');
+                          const userSubPending = userSubscriptions.find((s: any) => s.user_id === profile.user_id && s.status === 'pending');
                           // Determine modalidade from roles
                           const hasProvider = roles.some((r: any) => r.role === 'provider');
                           const hasClient = roles.some((r: any) => r.role === 'client');
