@@ -667,11 +667,17 @@ const WalletPage = () => {
                     const status = consumed ? 'Finalizado' : expired ? 'Expirado' : 'Ativo';
                     const color = consumed ? 'text-green-600' : expired ? 'text-muted-foreground' : 'text-primary';
                     return (
-                      <div key={r.id} className="flex items-center justify-between text-[10px] py-1 border-b last:border-0">
+                      <button
+                        key={r.id}
+                        type="button"
+                        disabled={consumed || expired}
+                        onClick={() => setShareModal({ open: true, link: `${window.location.origin}/convite/${r.link_token}`, expires: r.expires_at })}
+                        className="w-full flex items-center justify-between text-[10px] py-1 border-b last:border-0 hover:bg-muted/40 px-1 rounded disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
                         <span className="truncate font-mono">{r.link_token?.slice(0, 12)}…</span>
                         <span className={`${color} ml-2 shrink-0`}>{status}</span>
                         <span className="text-muted-foreground ml-2 shrink-0">{new Date(r.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
-                      </div>
+                      </button>
                     );
                   })}
                   {referrals.filter((r: any) => r.link_token).length === 0 && (
