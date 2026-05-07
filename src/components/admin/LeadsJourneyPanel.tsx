@@ -44,12 +44,13 @@ export function LeadsJourneyPanel() {
   const [rows, setRows] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState("");
+  const [sourceFilter, setSourceFilter] = useState<"all" | "link" | "import">("all");
 
   const load = async () => {
     setLoading(true);
     const { data: refs } = await supabase
       .from("referrals")
-      .select("id, referrer_id, referred_id, referred_name, referred_email, referred_role, status, joined_at, created_at, buyer_released, seller_released, bonus_released, total_paid")
+      .select("id, referrer_id, referred_id, referred_name, referred_email, referred_role, status, source, joined_at, created_at, buyer_released, seller_released, bonus_released, total_paid")
       .order("created_at", { ascending: false })
       .limit(200);
 
