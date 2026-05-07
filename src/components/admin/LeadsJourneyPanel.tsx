@@ -18,13 +18,13 @@ interface Lead {
   referred_email: string | null;
   referred_role: string | null;
   status: string;
+  source: string;
   joined_at: string | null;
   created_at: string;
   buyer_released: boolean;
   seller_released: boolean;
   bonus_released: boolean;
   total_paid: number;
-  // computed
   has_subscription: boolean;
   first_purchase_at: string | null;
   first_sale_at: string | null;
