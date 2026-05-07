@@ -223,6 +223,10 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
             id={product?.id}
             name={form.name}
             segment={selectedSegments[0]}
+            tags={selectedTags}
+            providerName={form.provider}
+            unit={form.unit}
+            price={form.price}
             imageUrl={imageUrl}
             onChange={setImageUrl}
           />

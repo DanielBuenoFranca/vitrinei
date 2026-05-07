@@ -14,13 +14,27 @@ interface Props {
   imageUrl: string | null;
   onChange: (url: string | null) => void;
   bucket?: string; // override
+  /** Tags do item (ajuda IA a desambiguar) */
+  tags?: string[];
+  /** Descrição livre do item */
+  description?: string;
+  /** Nome do prestador associado */
+  providerName?: string;
+  /** Tipo do prestador (mei, comercial...) */
+  providerType?: string;
+  /** Itens vinculados (ex.: produtos de um serviço/kit) */
+  linkedNames?: string[];
+  /** Unidade de medida */
+  unit?: string;
+  /** Preço estimado */
+  price?: number;
 }
 
 /**
  * Bloco reutilizável: mostra a imagem do item em tamanho normal,
  * permite upload manual e geração via sanitize-images (respeita modo economia).
  */
-export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, bucket }: Props) {
+export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, bucket, tags, description, providerName, providerType, linkedNames, unit, price }: Props) {
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -48,14 +62,26 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
     setBusy(true);
     try {
       const { data, error } = await supabase.functions.invoke('sanitize-images', {
-        body: { kind, id: id || 0, name: name.trim(), segment },
+        body: {
+          kind,
+          id: id || 0,
+          name: name.trim(),
+          segment,
+          tags: (tags || []).filter(Boolean),
+          description,
+          providerName,
+          providerType,
+          linkedNames: (linkedNames || []).filter(Boolean),
+          unit,
+          price,
+        },
       });
       const url = (data as any)?.imageUrl;
       if (error || !url) {
         toast.warning('Não foi possível obter imagem agora');
       } else {
         onChange(url);
-        toast.success((data as any)?.source === 'ai' ? 'Imagem gerada pela IA' : 'Imagem aplicada (sem custo de créditos)');
+        toast.success((data as any)?.source === 'ai' ? 'Imagem gerada pela IA com base no contexto do item' : 'Imagem aplicada (sem custo de créditos)');
       }
     } catch {
       toast.warning('Falha ao gerar imagem');
