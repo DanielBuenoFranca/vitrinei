@@ -1414,6 +1414,36 @@ const AdminPanel = () => {
       <UnitForm open={unitForm.open} onClose={() => setUnitForm({ open: false, item: null })} onSaved={fetchData} unit={unitForm.item} />
       <ClearDataDialog open={clearDialog} onClose={() => setClearDialog(false)} onCleared={() => { reloadDynamicEntries(); fetchData(); }} counts={{ providers: providers.length, services: services.length, products: products.length, segments: segments.length }} />
 
+      {/* Activation Result Summary */}
+      <Dialog open={activationResult.open} onOpenChange={(v) => !v && setActivationResult({ open: false, summary: [] })}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              Ativação concluída
+            </DialogTitle>
+            <DialogDescription>
+              {activationResult.userName ? <>Resumo das ações realizadas para <strong>{activationResult.userName}</strong>:</> : 'Resumo das ações realizadas:'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5 text-sm py-2 max-h-[50vh] overflow-y-auto">
+            {activationResult.summary.map((line, i) => (
+              <div key={i} className={`px-2 py-1.5 rounded ${line.startsWith('✓') ? 'bg-green-50 text-green-800 dark:bg-green-950/30 dark:text-green-200' : 'bg-muted text-muted-foreground'}`}>
+                {line}
+              </div>
+            ))}
+            {activationResult.plan && (
+              <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
+                Plano vigente: <strong>{activationResult.plan.name}</strong> — R$ {Number(activationResult.plan.price).toFixed(2)}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setActivationResult({ open: false, summary: [] })}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Provider Confirmation */}
       <Dialog open={deleteConfirm.open} onOpenChange={(v) => !v && setDeleteConfirm({ open: false, provider: null })}>
         <DialogContent className="max-w-sm">
