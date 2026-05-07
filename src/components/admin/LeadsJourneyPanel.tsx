@@ -153,6 +153,13 @@ export function LeadsJourneyPanel() {
                       <div className="font-medium">{r.referred_name || "—"}</div>
                       <div className="text-[10px] text-muted-foreground">{r.referred_email || ""}</div>
                     </TableCell>
+                    <TableCell>
+                      {(r.source || "link") === "import" ? (
+                        <Badge variant="outline" className="text-[9px] border-amber-500/50 text-amber-600 dark:text-amber-400"><FileSpreadsheet className="h-3 w-3 mr-1" />Importação</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[9px] border-emerald-500/50 text-emerald-600 dark:text-emerald-400"><Link2 className="h-3 w-3 mr-1" />Link</Badge>
+                      )}
+                    </TableCell>
                     <TableCell><Badge variant="outline" className="text-[9px]">{profileLabel}</Badge></TableCell>
                     <TableCell>
                       <div className="grid grid-cols-5 gap-2 items-center">
@@ -160,7 +167,11 @@ export function LeadsJourneyPanel() {
                         <Step done={!!r.referred_id} label="Cadastro" sub={fmt(r.joined_at)} />
                         <Step done={r.has_subscription} label="Assinatura" sub={r.has_subscription ? "ativa" : null} />
                         <Step done={!!r.first_purchase_at || !!r.first_sale_at} label={isMixed ? "1ª compra/venda" : "1ª compra"} sub={fmt(r.first_purchase_at || r.first_sale_at)} />
-                        <Step done={r.bonus_released || r.status === "activated"} label="Bônus liberado" sub={r.status} />
+                        {(r.source || "link") === "import" ? (
+                          <Step done={false} label="Bônus liberado" sub="sem bônus (importação)" />
+                        ) : (
+                          <Step done={r.bonus_released || r.status === "activated"} label="Bônus liberado" sub={r.status} />
+                        )}
                       </div>
                     </TableCell>
                     <TableCell className="text-right tabular-nums text-xs">{Number(r.total_paid || 0).toFixed(2)}</TableCell>
@@ -168,7 +179,7 @@ export function LeadsJourneyPanel() {
                 );
               })}
               {filtered.length === 0 && !loading && (
-                <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">Nenhum lead encontrado.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">Nenhum lead encontrado.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
