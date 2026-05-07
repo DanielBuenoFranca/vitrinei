@@ -319,6 +319,12 @@ const Landing = () => {
         products: rawResult.products.filter((p: any) => !isSimulatedProvider(p.provider, p)),
       };
     }
+    // Filter by type (service / product)
+    if (typeFilter === 'service') {
+      rawResult = { ...rawResult, products: [] };
+    } else if (typeFilter === 'product') {
+      rawResult = { ...rawResult, services: [] };
+    }
     if (didFallback !== fallbackToAll) {
       // Defer state update to avoid render loop warning
       queueMicrotask(() => setFallbackToAll(didFallback));
