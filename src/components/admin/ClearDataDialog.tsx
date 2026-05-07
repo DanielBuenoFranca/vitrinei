@@ -150,6 +150,41 @@ export function ClearDataDialog({ open, onClose, onCleared }: ClearDataDialogPro
         const ids = (items[k] || []).filter(i => i.selected).map(i => i.id);
         if (!ids.length) continue;
         const cat = CATEGORIES.find(c => c.key === k)!;
+
+        if (k === 'providers') {
+          const provIds = ids as number[];
+          const { data: provRows } = await supabase
+            .from('providers').select('id, user_id').in('id', provIds);
+          const userIds = (provRows || []).map((r: any) => r.user_id).filter(Boolean);
+
+          await supabase.from('dynamic_services').delete().in('provider_id', provIds);
+          await supabase.from('dynamic_products').delete().in('provider_id', provIds);
+          await supabase.from('stock_movements').delete().in('provider_id', provIds);
+          const { data: entries } = await supabase.from('stock_entries').select('id').in('provider_id', provIds);
+          const entryIds = (entries || []).map((e: any) => e.id);
+          if (entryIds.length) await supabase.from('stock_entry_items').delete().in('entry_id', entryIds);
+          await supabase.from('stock_entries').delete().in('provider_id', provIds);
+          const { data: kitRows } = await supabase.from('kits').select('id').in('owner_provider_id', provIds);
+          const kitIds = (kitRows || []).map((k: any) => k.id);
+          if (kitIds.length) {
+            await supabase.from('kit_items').delete().in('kit_id', kitIds);
+            await supabase.from('kits').delete().in('id', kitIds);
+          }
+
+          const { error } = await supabase.from('providers').delete().in('id', provIds);
+          if (error) toast.error(`Erro em ${cat.label}: ${error.message}`);
+
+          if (userIds.length) {
+            await supabase.from('profiles').update({
+              is_provider: false,
+              provider_segments: [],
+              provider_active: false,
+            }).in('user_id', userIds);
+            await supabase.from('user_roles').delete().in('user_id', userIds).eq('role', 'provider' as any);
+          }
+          continue;
+        }
+
         const { error } = await supabase.from(cat.table as any).delete().in('id', ids as any);
         if (error) {
           toast.error(`Erro em ${cat.label}: ${error.message}`);
