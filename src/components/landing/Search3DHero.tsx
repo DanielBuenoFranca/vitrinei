@@ -322,30 +322,44 @@ function SegmentCard({
   return (
     <motion.button
       whileTap={{ scale: 0.94 }}
+      whileHover={{ y: -2 }}
       onClick={onClick}
-      className="group relative flex flex-col items-center justify-end overflow-hidden rounded-2xl aspect-[3/4] p-1.5"
+      className="group relative overflow-hidden rounded-2xl aspect-square w-full"
       style={{
-        background: active
-          ? 'linear-gradient(160deg, hsl(28 95% 55%), hsl(20 85% 42%))'
-          : 'linear-gradient(160deg, hsl(225 30% 22%), hsl(225 40% 11%))',
         boxShadow: active
-          ? '0 10px 24px -10px hsl(28 95% 55% / 0.75), inset 0 1px 0 hsl(0 0% 100% / 0.35), inset 0 -2px 6px hsl(20 85% 30% / 0.5)'
-          : '0 8px 20px -10px hsl(225 50% 0% / 0.7), inset 0 1px 0 hsl(0 0% 100% / 0.1), inset 0 -2px 6px hsl(225 60% 5% / 0.6)',
-        border: '1px solid ' + (active ? 'hsl(28 95% 70% / 0.55)' : 'hsl(225 30% 40% / 0.4)'),
+          ? '0 12px 28px -10px hsl(28 95% 55% / 0.7), inset 0 0 0 2px hsl(28 95% 65% / 0.9)'
+          : '0 8px 20px -10px hsl(225 50% 0% / 0.7), inset 0 1px 0 hsl(0 0% 100% / 0.08)',
+        border: '1px solid ' + (active ? 'hsl(28 95% 70% / 0.7)' : 'hsl(225 30% 35% / 0.45)'),
+        background: 'hsl(225 35% 14%)',
       }}
     >
-      {/* Imagem 3D do segmento (ocupa quase todo o card) */}
-      <div className="absolute inset-1 top-1 bottom-7 rounded-xl overflow-hidden flex items-center justify-center">
-        {seg.image_url ? (
-          <img
-            src={seg.image_url}
-            alt={seg.label}
-            className="w-full h-full object-cover drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]"
-          />
-        ) : (
-          <Icon className="w-8 h-8 text-white/85 drop-shadow-[0_3px_6px_rgba(0,0,0,.5)]" />
-        )}
-      </div>
+      {/* Imagem cobre todo o card */}
+      {seg.image_url ? (
+        <img
+          src={seg.image_url}
+          alt={seg.label}
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-violet-900/40 to-slate-900">
+          <Icon className="w-9 h-9 text-white/85 drop-shadow-[0_3px_6px_rgba(0,0,0,.5)]" />
+        </div>
+      )}
+      {/* Overlay gradiente para legibilidade do label */}
+      <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
+      {active && (
+        <div className="absolute inset-0 bg-gradient-to-t from-orange-500/30 via-transparent to-transparent" />
+      )}
+      {/* Label */}
+      <span
+        className="absolute inset-x-0 bottom-0 px-1.5 py-1.5 text-center text-[10px] sm:text-[11px] font-bold leading-tight truncate"
+        style={{ color: 'white', textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}
+      >
+        {seg.label}
+      </span>
+    </motion.button>
+  );
+}
       {/* Label */}
       <span
         className="relative z-10 w-full text-center text-[9px] sm:text-[10px] font-bold leading-tight truncate px-0.5"
