@@ -72,31 +72,28 @@ export function Search3DHero({
       .then(({ data }) => setTop((data as any) || []));
   }, []);
 
-  // Pensamentos aleatórios do Vini — aparecem discretamente e somem ao interagir
+  // Pensamentos do Vini — discretos, somem só na interação do usuário
   const thoughts = [
-    'Posso encontrar um prestador próximo de você ✨',
-    'Diga ou digite o que precisa — eu cuido do resto.',
-    'Mais de 2.450 profissionais prontos agora.',
-    'Quer economizar? Posso sugerir um combo.',
-    'Estou aqui se precisar — só falar comigo.',
-    'Vou organizar tudo na sua agenda.',
+    'Posso encontrar um prestador próximo ✨',
+    'Diga ou digite o que precisa',
+    '+2.450 profissionais agora',
+    'Quer economizar? Pergunte sobre combos',
+    'Estou aqui — só falar comigo',
+    'Vou organizar tudo na sua agenda',
   ];
   useEffect(() => {
-    let i = 0;
-    const show = () => {
-      setThought(thoughts[Math.floor(Math.random() * thoughts.length)]);
-      if (thoughtTimer.current) window.clearTimeout(thoughtTimer.current);
-      thoughtTimer.current = window.setTimeout(() => setThought(null), 5000);
-    };
-    show();
-    const interval = window.setInterval(() => { i++; show(); }, 9000);
-    return () => {
-      clearInterval(interval);
-      if (thoughtTimer.current) window.clearTimeout(thoughtTimer.current);
-    };
+    setThought(thoughts[Math.floor(Math.random() * thoughts.length)]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const dismissThought = () => setThought(null);
+  const dismissThought = () => {
+    if (!thought) return;
+    setThought(null);
+    // próximo pensamento aparece após nova interação ociosa
+    if (thoughtTimer.current) window.clearTimeout(thoughtTimer.current);
+    thoughtTimer.current = window.setTimeout(() => {
+      setThought(thoughts[Math.floor(Math.random() * thoughts.length)]);
+    }, 8000);
+  };
 
   // Mostra até 6 segmentos no grid principal (igual mockup: 5 + scroll horizontal)
   const segs = segments.slice(0, 10);
