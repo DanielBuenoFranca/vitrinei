@@ -1,5 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useState, useRef, type ReactNode } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, Search, Sparkles, Star } from 'lucide-react';
 import {
   Wrench, Scissors, Droplets, Sprout, Truck, Hammer, Stethoscope,
