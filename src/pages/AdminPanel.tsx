@@ -74,7 +74,7 @@ const AdminPanel = () => {
   const [clearDialog, setClearDialog] = useState(false);
 
   const [userForm, setUserForm] = useState<{ open: boolean; profile: any | null; role: any; email: string | null }>({ open: false, profile: null, role: null, email: null });
-  const [migratingProviders, setMigratingProviders] = useState(false);
+  
   const [productForm, setProductForm] = useState<{ open: boolean; item: DynamicProduct | null }>({ open: false, item: null });
   const [serviceForm, setServiceForm] = useState<{ open: boolean; item: DynamicService | null }>({ open: false, item: null });
   const [segmentForm, setSegmentForm] = useState<{ open: boolean; item: Segment | null }>({ open: false, item: null });
@@ -910,7 +910,7 @@ const AdminPanel = () => {
                   const r = userRoles.find((x: any) => x.user_id === prof.user_id && ['provider','mixed'].includes(x.role));
                   setUserForm({ open: true, profile: prof, role: r?.role || 'provider', email: authUserEmails[prof.user_id] || null });
                 } else {
-                  toast.info('Prestador legado sem usuário vinculado. Use "Migrar Prestadores Legados" na aba Usuários.');
+                  toast.info('Prestador legado sem usuário vinculado. Cadastre/ajuste o usuário com o mesmo CPF/CNPJ — a vinculação é automática.');
                 }
               }}
               onEditService={(s) => setServiceForm({ open: true, item: s })}
@@ -929,18 +929,6 @@ const AdminPanel = () => {
                   <CardDescription>Usuários cadastrados no sistema — dados completos e edição de perfil</CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline" disabled={migratingProviders} onClick={async () => {
-                    setMigratingProviders(true);
-                    try {
-                      const { data, error } = await supabase.functions.invoke('migrate-orphan-providers');
-                      if (error || data?.error) toast.error('Erro: ' + (data?.error || error?.message));
-                      else { toast.success(`Migrados: ${data.migrated}, vinculados: ${data.skipped}, erros: ${data.errors?.length || 0}`); fetchUsers(); fetchData(); }
-                    } catch (e: any) { toast.error('Erro: ' + e.message); }
-                    setMigratingProviders(false);
-                  }}>
-                    {migratingProviders ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Shuffle className="h-4 w-4 mr-1" />}
-                    Migrar Prestadores Legados
-                  </Button>
                   <Button size="sm" onClick={() => setUserForm({ open: true, profile: null, role: null, email: null })}>
                     <Plus className="h-4 w-4 mr-1" /> Novo Usuário
                   </Button>
