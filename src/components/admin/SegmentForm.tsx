@@ -183,6 +183,14 @@ export function SegmentForm({ open, onClose, onSaved, segment }: SegmentFormProp
             <p className="text-[10px] text-muted-foreground">Clique em "Gerar Tags" ou saia do campo para a IA sugerir tags de produtos para este segmento</p>
           </div>
 
+          <ItemImagePicker
+            kind="segment"
+            id={segment?.id}
+            name={name}
+            imageUrl={imageUrl}
+            onChange={setImageUrl}
+          />
+
           {/* Tags selecionadas */}
           {selectedTags.length > 0 && (
             <div className="grid gap-2">
