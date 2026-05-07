@@ -1,6 +1,7 @@
-// Edge function: saneamento de imagens (modo ON = IA paga, modo OFF = imagem grátis).
-// Verifica site_settings.ai_credits_mode antes de chamar a IA. Se OFF ou se a IA falhar,
-// delega para fetch-free-image (Unsplash → Pixabay) — Graceful Degradation total.
+// Edge function: saneamento de imagens com inteligência contextual.
+// Enriquece o prompt com dados reais do banco (segmento, tags, prestador, vínculos,
+// descrição) para gerar imagens profissionais, realistas e fiéis ao item.
+// Modo ON = IA paga, modo OFF = imagem grátis (Unsplash → Pixabay → ...).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 const corsHeaders = {
@@ -32,12 +33,178 @@ async function autoOffOnFailure(supabase: any, reason: string) {
   } catch (e) { console.warn("autoOff failed", e); }
 }
 
+// ---------- Context enrichment ----------
+type EnrichedContext = {
+  name: string;
+  segment?: string;
+  tags: string[];
+  description?: string;
+  providerName?: string;
+  providerType?: string;
+  linkedNames: string[];
+  unit?: string;
+  price?: number;
+};
+
+async function enrichContext(supabase: any, kind: string, id: number, base: any): Promise<EnrichedContext> {
+  const ctx: EnrichedContext = {
+    name: base.name,
+    segment: base.segment,
+    tags: Array.isArray(base.tags) ? base.tags.filter(Boolean) : [],
+    description: base.description,
+    providerName: base.providerName,
+    providerType: base.providerType,
+    linkedNames: [],
+    unit: base.unit,
+    price: base.price,
+  };
+
+  try {
+    if (kind === "product" && id) {
+      const { data } = await supabase.from("dynamic_products")
+        .select("name, tags, unit, price, provider, provider_id, related_service_ids")
+        .eq("id", id).maybeSingle();
+      if (data) {
+        ctx.tags = Array.from(new Set([...(ctx.tags || []), ...((data.tags as string[]) || [])]));
+        ctx.unit = ctx.unit || data.unit;
+        ctx.price = ctx.price ?? Number(data.price);
+        ctx.providerName = ctx.providerName || data.provider;
+        // segmento: pega do prestador
+        if (data.provider_id) {
+          const { data: prov } = await supabase.from("providers")
+            .select("name, type, segment").eq("id", data.provider_id).maybeSingle();
+          if (prov) {
+            ctx.providerName = ctx.providerName || prov.name;
+            ctx.providerType = ctx.providerType || prov.type;
+            if (!ctx.segment && Array.isArray(prov.segment) && prov.segment.length) {
+              ctx.segment = prov.segment[0];
+            }
+          }
+        }
+        // serviços relacionados
+        if (Array.isArray(data.related_service_ids) && data.related_service_ids.length) {
+          const { data: svcs } = await supabase.from("dynamic_services")
+            .select("name").in("id", data.related_service_ids).limit(5);
+          ctx.linkedNames = (svcs || []).map((s: any) => s.name);
+        }
+      }
+    } else if (kind === "service" && id) {
+      const { data } = await supabase.from("dynamic_services")
+        .select("name, segment, price, provider, provider_id, linked_product_ids, products, unit")
+        .eq("id", id).maybeSingle();
+      if (data) {
+        ctx.segment = ctx.segment || data.segment;
+        ctx.unit = ctx.unit || data.unit;
+        ctx.price = ctx.price ?? Number(data.price);
+        ctx.providerName = ctx.providerName || data.provider;
+        if (Array.isArray(data.products)) ctx.linkedNames.push(...data.products);
+        if (Array.isArray(data.linked_product_ids) && data.linked_product_ids.length) {
+          const { data: prods } = await supabase.from("dynamic_products")
+            .select("name, tags").in("id", data.linked_product_ids).limit(8);
+          (prods || []).forEach((p: any) => {
+            ctx.linkedNames.push(p.name);
+            if (Array.isArray(p.tags)) ctx.tags.push(...p.tags);
+          });
+        }
+        if (data.provider_id) {
+          const { data: prov } = await supabase.from("providers")
+            .select("type").eq("id", data.provider_id).maybeSingle();
+          if (prov) ctx.providerType = ctx.providerType || prov.type;
+        }
+      }
+    } else if (kind === "kit" && id) {
+      const { data } = await supabase.from("kits")
+        .select("name, description, price, owner_provider_id").eq("id", id).maybeSingle();
+      if (data) {
+        ctx.description = ctx.description || (data as any).description;
+        ctx.price = ctx.price ?? Number(data.price);
+        if (data.owner_provider_id) {
+          const { data: prov } = await supabase.from("providers")
+            .select("name, type, segment").eq("id", data.owner_provider_id).maybeSingle();
+          if (prov) {
+            ctx.providerName = ctx.providerName || prov.name;
+            ctx.providerType = ctx.providerType || prov.type;
+            if (!ctx.segment && Array.isArray(prov.segment) && prov.segment.length) ctx.segment = prov.segment[0];
+          }
+        }
+        const { data: items } = await supabase.from("kit_items")
+          .select("snapshot_name").eq("kit_id", id).limit(10);
+        ctx.linkedNames = (items || []).map((i: any) => i.snapshot_name).filter(Boolean);
+      }
+    } else if (kind === "provider" && id) {
+      const { data } = await supabase.from("providers")
+        .select("name, type, segment, city").eq("id", id).maybeSingle();
+      if (data) {
+        ctx.providerType = ctx.providerType || data.type;
+        if (!ctx.segment && Array.isArray(data.segment) && data.segment.length) ctx.segment = data.segment.join(", ");
+      }
+    } else if (kind === "segment" && id) {
+      const { data } = await supabase.from("segments")
+        .select("name, suggested_tags").eq("id", id).maybeSingle();
+      if (data) {
+        ctx.tags = Array.from(new Set([...(ctx.tags || []), ...((data.suggested_tags as string[]) || [])]));
+      }
+    }
+  } catch (e) {
+    console.warn("enrichContext warn:", e);
+  }
+
+  // dedup + limit
+  ctx.tags = Array.from(new Set(ctx.tags.map(t => String(t).trim()).filter(Boolean))).slice(0, 8);
+  ctx.linkedNames = Array.from(new Set(ctx.linkedNames.filter(Boolean))).slice(0, 6);
+  return ctx;
+}
+
+function buildPrompt(kind: string, ctx: EnrichedContext): string {
+  const tagsStr = ctx.tags.length ? ` Keywords: ${ctx.tags.join(", ")}.` : "";
+  const linkedStr = ctx.linkedNames.length ? ` Related items: ${ctx.linkedNames.join(", ")}.` : "";
+  const segStr = ctx.segment ? ` Category: ${ctx.segment}.` : "";
+  const descStr = ctx.description ? ` Description: ${ctx.description}.` : "";
+  const provStr = ctx.providerName ? ` Provider: ${ctx.providerName}${ctx.providerType ? ` (${ctx.providerType})` : ""}.` : "";
+
+  const base = `Subject: "${ctx.name}".${segStr}${tagsStr}${linkedStr}${descStr}${provStr}`;
+
+  if (kind === "provider") {
+    return `Create a modern, minimalist BRAND LOGO ICON for the small business "${ctx.name}".${segStr}${tagsStr} ` +
+      `Style: bold geometric mark, flat vector, 2-3 brand colors, professional, memorable, suitable as circular avatar. ` +
+      `Clean solid white background, NO TEXT, NO LETTERS, NO WORDS, no watermarks, no photo realism. ` +
+      `The icon must visually represent the business sector and feel trustworthy and professional. Square format, centered.`;
+  }
+  if (kind === "product") {
+    return `Photorealistic professional studio PRODUCT PHOTO of: "${ctx.name}". ${base} ` +
+      `Make sure the object shown is exactly this product (use the keywords and category to disambiguate). ` +
+      `High-end e-commerce catalog style: clean seamless white background, soft studio lighting, sharp focus, ` +
+      `accurate proportions and materials, realistic textures, subtle shadow, centered composition, square framing. ` +
+      `NO text, NO labels with brand names, NO watermarks, NO collages, single hero subject, ultra detailed 8k.`;
+  }
+  if (kind === "kit") {
+    return `Photorealistic studio photo of a PRODUCT KIT / BUNDLE named "${ctx.name}". ${base} ` +
+      `Show the related items grouped together as a curated set, neatly arranged, true to the listed components. ` +
+      `Clean white background, professional e-commerce styling, accurate materials, soft shadow, centered, square. ` +
+      `NO text, NO watermarks, NO logos.`;
+  }
+  if (kind === "service") {
+    return `Premium 3D illustrated ICON representing the SERVICE "${ctx.name}". ${base} ` +
+      `Show tools, scene or symbolic objects that clearly communicate this exact service (use keywords/related items). ` +
+      `Style: glossy 3D render, vibrant brand-friendly colors, soft realistic lighting, ambient occlusion, ` +
+      `subtle reflections, beveled edges, app-icon framing, clean white background, soft drop shadow, centered. ` +
+      `NO text, NO watermarks. The icon must be instantly recognizable as this specific service.`;
+  }
+  if (kind === "segment") {
+    return `Hyper-realistic premium 3D APP ICON representing the category "${ctx.name}".${tagsStr} ` +
+      `Pixar/Disney style, glossy materials, vibrant colorful objects floating, soft realistic lighting, ` +
+      `ambient occlusion, reflections, depth of field, beveled edges, soft drop shadow, clean white seamless background, ` +
+      `centered composition, NO text, NO watermarks, square app-icon framing, ultra-detailed 8k.`;
+  }
+  return `Professional photo of "${ctx.name}". ${base} Clean white background, no text.`;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
     const payload = await req.json();
-    const { kind, id, name, segment } = payload || {};
+    const { kind, id, name } = payload || {};
     if (!kind || !id || !name) {
       return new Response(JSON.stringify({ error: "kind, id and name are required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -46,13 +213,19 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
+    // Enriquece contexto a partir do banco + payload
+    const ctx = await enrichContext(supabase, kind, Number(id) || 0, payload);
+    // query usado pelo fallback grátis (mais rico que só "name segment")
+    const queryParts = [ctx.name, ctx.segment, ...ctx.tags.slice(0, 3), ...ctx.linkedNames.slice(0, 2)]
+      .filter(Boolean).join(" ");
+
     // 1) lê toggle
     const { data: settings } = await supabase.from("site_settings").select("value").eq("key","ai_credits_mode").maybeSingle();
     const aiMode = ((settings?.value as any)?.mode || "on") as "on" | "off";
 
-    // 2) modo OFF → free direto
+    // 2) modo OFF → free direto (com query enriquecida)
     if (aiMode === "off") {
-      const r = await callFreeFallback(supabase, { kind, id, name, segment });
+      const r = await callFreeFallback(supabase, { kind, id, name, segment: queryParts });
       return new Response(await r.text(), { status: r.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -60,26 +233,12 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       await autoOffOnFailure(supabase, "missing_lovable_key");
-      const r = await callFreeFallback(supabase, { kind, id, name, segment });
+      const r = await callFreeFallback(supabase, { kind, id, name, segment: queryParts });
       return new Response(await r.text(), { status: r.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    let prompt = "";
-    if (kind === "provider") {
-      prompt = `Modern minimalist logo icon for a small business "${name}" in "${segment || 'services'}". Bold colors, geometric, on clean white background, no text, flat design, suitable as avatar.`;
-    } else if (kind === "product") {
-      prompt = `Professional studio product photo of "${name}" (category: ${segment || 'general'}), clean white background, e-commerce catalog style, no text or watermarks.`;
-    } else if (kind === "kit") {
-      prompt = `Professional photo of a product kit/bundle named "${name}" (${segment || 'general'}), multiple items grouped, clean white background, e-commerce style, no text.`;
-    } else if (kind === "service") {
-      prompt = `Premium 3D render icon representing the service "${name}" (category: ${segment || 'services'}). Glossy 3D illustration, vibrant colors, clean white background, no text, app-icon style, soft shadow.`;
-    } else if (kind === "segment") {
-      prompt = `Hyper-realistic premium 3D render app icon representing the category "${name}". Pixar/Disney style, glossy materials, vibrant colorful objects floating with soft realistic lighting and ambient occlusion, subtle metallic and plastic reflections, depth of field, beveled edges, soft drop shadow, clean white seamless background, centered composition, no text, no watermarks, square app-icon framing, ultra-detailed 8k quality.`;
-    } else {
-      return new Response(JSON.stringify({ error: "invalid kind" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const prompt = buildPrompt(kind, ctx);
+    console.log("[sanitize-images] prompt:", prompt.slice(0, 300));
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -91,23 +250,22 @@ Deno.serve(async (req) => {
       }),
     });
 
-    // 402 (sem crédito) ou 429 → auto-off + free fallback (silencioso)
     if (aiRes.status === 402 || aiRes.status === 429) {
       await autoOffOnFailure(supabase, aiRes.status === 402 ? "no_credits" : "rate_limited");
-      const r = await callFreeFallback(supabase, { kind, id, name, segment });
+      const r = await callFreeFallback(supabase, { kind, id, name, segment: queryParts });
       return new Response(await r.text(), { status: r.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     if (!aiRes.ok) {
       console.error("AI error:", aiRes.status, await aiRes.text());
-      const r = await callFreeFallback(supabase, { kind, id, name, segment });
+      const r = await callFreeFallback(supabase, { kind, id, name, segment: queryParts });
       return new Response(await r.text(), { status: r.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const aiData = await aiRes.json();
     const imageData = aiData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
     if (!imageData?.startsWith("data:image")) {
-      const r = await callFreeFallback(supabase, { kind, id, name, segment });
+      const r = await callFreeFallback(supabase, { kind, id, name, segment: queryParts });
       return new Response(await r.text(), { status: r.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -118,7 +276,6 @@ Deno.serve(async (req) => {
 
     const bucket = kind === "provider" ? "provider-logos" : "storefront-assets";
     const folder = kind === "provider" ? "" : `${kind}-images/`;
-    void folder;
     const safeName = name.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 30);
     const fileName = `${folder}sanitized-${kind}-${id}-${Date.now()}-${safeName}.${ext}`;
 
@@ -133,7 +290,7 @@ Deno.serve(async (req) => {
     else if (kind === "service") await supabase.from("dynamic_services").update({ image_url: url }).eq("id", id);
     else if (kind === "segment") await supabase.from("segments").update({ image_url: url }).eq("id", id);
 
-    return new Response(JSON.stringify({ imageUrl: url, source: "ai" }), {
+    return new Response(JSON.stringify({ imageUrl: url, source: "ai", contextUsed: ctx }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
