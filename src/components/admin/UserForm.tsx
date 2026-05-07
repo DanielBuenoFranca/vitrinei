@@ -155,6 +155,11 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
       setLogoUrl(profile.logo_url || null);
       setMarginPct(Number(profile.margin_pct ?? 30));
       setProfitPct(Number(profile.profit_pct ?? 20));
+      // Load current subscription
+      if (profile.user_id && !String(profile.user_id).startsWith('lead-')) {
+        supabase.from('subscriptions').select('plan').eq('user_id', profile.user_id).maybeSingle()
+          .then(({ data }) => { if (data?.plan) setSelectedPlanId(data.plan); });
+      }
     } else {
       setName(''); setEmail(''); setPassword(''); setPhone('');
       setRole('client'); setAvatarUrl(''); setCity(''); setAddress('');
@@ -165,8 +170,9 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
       setDistance('2 km'); setRating(4.5); setProviderActive(true);
       setAuthSplit5x(false); setLogoUrl(null);
       setMarginPct(30); setProfitPct(20);
+      setSelectedPlanId(defaultPlanId);
     }
-  }, [open, profile, currentRole, currentEmail, segments]);
+  }, [open, profile, currentRole, currentEmail, segments, defaultPlanId]);
 
   const isProviderRole = role === 'provider' || role === 'mixed';
   const docValidation = validateDoc(cpfCnpj);
