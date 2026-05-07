@@ -1165,15 +1165,18 @@ const AdminPanel = () => {
                                     const isActive = !!userSub && userSub.status === 'active';
                                     const isTriggered = !isActive && !!userSubPending;
                                     const isLeadRow = String(profile.user_id).startsWith('lead-');
+                                    // "Conta criada" = tem auth mas nenhuma assinatura (active OU pending) ainda
+                                    const hasAccountNoSub = !isLeadRow && !isActive && !isTriggered;
+
                                     if (isActive) {
                                       return (
                                         <Button
                                           variant="outline" size="sm"
-                                          className="h-8 text-xs gap-1 opacity-60 cursor-not-allowed bg-green-50 border-green-300 text-green-700"
+                                          className="h-8 text-xs gap-1 cursor-not-allowed bg-green-100 border-green-400 text-green-800 hover:bg-green-100"
                                           disabled
-                                          title="Usuário ATIVO (assinatura paga). Para reativar, cancele a assinatura primeiro."
+                                          title="ATIVADO — assinatura paga e ativa. Para reativar, cancele a assinatura primeiro."
                                         >
-                                          <CheckCircle className="h-3 w-3 text-green-600" />
+                                          <CheckCircle className="h-3 w-3 text-green-700" />
                                           Ativado
                                         </Button>
                                       );
@@ -1182,24 +1185,38 @@ const AdminPanel = () => {
                                       return (
                                         <Button
                                           variant="outline" size="sm"
-                                          className="h-8 text-xs gap-1 opacity-70 cursor-not-allowed bg-amber-50 border-amber-300 text-amber-700"
+                                          className="h-8 text-xs gap-1 cursor-not-allowed bg-amber-100 border-amber-400 text-amber-800 hover:bg-amber-100"
                                           disabled
-                                          title="Botão acionado — aguardando pagamento da assinatura para tornar-se ATIVO."
+                                          title="Aguardando pagamento da assinatura para tornar-se ATIVADO."
                                         >
                                           <Loader2 className="h-3 w-3" />
-                                          Acionado
+                                          Aguardando pagamento
                                         </Button>
                                       );
                                     }
+                                    if (hasAccountNoSub) {
+                                      return (
+                                        <Button
+                                          variant="outline" size="sm"
+                                          className="h-8 text-xs gap-1 cursor-not-allowed bg-slate-100 border-slate-300 text-slate-600 hover:bg-slate-100"
+                                          disabled
+                                          title="Conta de acesso criada. Aguardando geração da assinatura para liberar pagamento."
+                                        >
+                                          <CheckCircle className="h-3 w-3 text-slate-500" />
+                                          Conta criada
+                                        </Button>
+                                      );
+                                    }
+                                    // Etapa 1 — única clicável
                                     return (
                                       <Button
                                         variant="outline" size="sm"
-                                        className="h-8 text-xs gap-1"
+                                        className="h-8 text-xs gap-1 bg-slate-50 border-slate-400 text-slate-700 hover:bg-slate-200"
                                         disabled={activatingUser === profile.user_id}
                                         onClick={() => activateUser(profile.user_id, false, profile.display_name)}
                                         title={isLeadRow
-                                          ? 'Inserir Lead na régua de ativação'
-                                          : 'Acionar ativação (Lead) — aguarda pagamento para ficar ATIVO'}
+                                          ? 'Etapa 1 — Acionar ativação do Lead (cria conta + jornada)'
+                                          : 'Etapa 1 — Acionar ativação (Lead). Aguarda pagamento para ficar ATIVADO.'}
                                       >
                                         {activatingUser === profile.user_id
                                           ? <Loader2 className="h-3 w-3 animate-spin" />
