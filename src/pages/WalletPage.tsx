@@ -645,6 +645,40 @@ const WalletPage = () => {
                 <Share2 className="w-3 h-3" /> Compartilhar no WhatsApp
               </Button>
 
+              {/* 24h Quick Links */}
+              <div className="border-t pt-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold flex items-center gap-1"><Timer className="w-3 h-3 text-primary" /> Links rápidos (24h)</p>
+                  <Button size="sm" variant="default" className="h-7 text-[10px] gap-1" onClick={async () => {
+                    const { data, error } = await (supabase.rpc as any)('generate_referral_link_24h', { _referrer: user.id });
+                    if (error) { toast.error(error.message); return; }
+                    if (data?.error) { toast.error(data.error); return; }
+                    const link = `${window.location.origin}/convite/${data.token}`;
+                    await navigator.clipboard.writeText(link);
+                    toast.success('Link 24h copiado!');
+                    loadData();
+                  }}>+ Gerar link 24h</Button>
+                </div>
+                <div className="space-y-1 max-h-40 overflow-y-auto">
+                  {referrals.filter((r: any) => r.link_token).slice(0, 10).map((r: any) => {
+                    const expired = r.expires_at && new Date(r.expires_at) < new Date();
+                    const consumed = !!r.consumed_at || !!r.referred_id;
+                    const status = consumed ? 'Finalizado' : expired ? 'Expirado' : 'Ativo';
+                    const color = consumed ? 'text-green-600' : expired ? 'text-muted-foreground' : 'text-primary';
+                    return (
+                      <div key={r.id} className="flex items-center justify-between text-[10px] py-1 border-b last:border-0">
+                        <span className="truncate font-mono">{r.link_token?.slice(0, 12)}…</span>
+                        <span className={`${color} ml-2 shrink-0`}>{status}</span>
+                        <span className="text-muted-foreground ml-2 shrink-0">{new Date(r.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                    );
+                  })}
+                  {referrals.filter((r: any) => r.link_token).length === 0 && (
+                    <p className="text-[10px] text-muted-foreground text-center py-1">Nenhum link 24h gerado.</p>
+                  )}
+                </div>
+              </div>
+
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-green-500" /> {activatedReferrals.length} liberadas</span>
                 <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-yellow-500" /> {pendingReferrals.length} pendentes</span>
