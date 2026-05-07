@@ -97,6 +97,7 @@ export function LeadsJourneyPanel() {
   useEffect(() => { load(); }, []);
 
   const filtered = rows.filter((r) => {
+    if (sourceFilter !== "all" && (r.source || "link") !== sourceFilter) return false;
     if (!filter) return true;
     const q = filter.toLowerCase();
     return [r.referred_name, r.referred_email, r.referrer_name, r.status].some((v) => (v || "").toString().toLowerCase().includes(q));
