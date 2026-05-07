@@ -145,19 +145,21 @@ export function ProviderForm({ open, onClose, onSaved, provider, segments }: Pro
 
   const generateAiLogo = async (name: string, segment: string): Promise<string | null> => {
     try {
-      toast.info('🎨 Gerando arte com IA...');
-      const { data, error } = await supabase.functions.invoke('generate-provider-logo', {
-        body: { providerName: name, segment },
+      toast.info('🎨 Gerando arte (com economia de créditos)...');
+      // sanitize-images respeita o toggle ai_credits_mode: usa Unsplash/Pixabay grátis quando IA está OFF.
+      const { data, error } = await supabase.functions.invoke('sanitize-images', {
+        body: { kind: 'provider', id: provider?.id || 0, name, segment },
       });
-      if (error || !data?.logoUrl) {
-        console.error('AI logo error:', error || data);
+      const url = (data as any)?.imageUrl || (data as any)?.logoUrl;
+      if (error || !url) {
+        console.error('logo error:', error || data);
         toast.warning('Não foi possível gerar arte automática');
         return null;
       }
-      toast.success('🎨 Arte gerada pela IA!');
-      return data.logoUrl;
+      toast.success((data as any)?.source === 'ai' ? '🎨 Arte gerada pela IA!' : '🖼️ Imagem obtida sem custo de créditos');
+      return url;
     } catch (e) {
-      console.error('AI logo error:', e);
+      console.error('logo error:', e);
       return null;
     }
   };
