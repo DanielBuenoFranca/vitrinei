@@ -545,22 +545,52 @@ const validateBusinessRules = (
   });
 
   /* ── Item duplication within same provider group ──
-     Same name + unit for product/service in the same group = error. */
+     Regras (novas):
+     • Serviço repetido (mesmo nome+unidade) = mesma entidade — usado como
+       "agrupador" para receber novos produtos (NÃO é erro, é INFO).
+     • Produto repetido (mesmo nome+unidade) no mesmo prestador = erro,
+       a não ser que apareça em linhas com SERVIÇOS diferentes (vínculo
+       válido). Detectamos isso por chave (groupKey|product|name|unit|service).
+     • Linha sem serviço E sem produto = erro (já validado em validateFormat). */
   const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
-  const itemKeySeen = new Map<string, number>();
+  const serviceKeySeen = new Map<string, number>();
+  const productLinkSeen = new Map<string, number>();
   rows.forEach(row => {
     const groupKey = row._groupKey || computeGroupKey(row).key;
-    if (row.serviceName.trim()) {
-      const k = `${groupKey}|service|${norm(row.serviceName)}|${norm(row.serviceUnit || 'hr')}`;
-      if (itemKeySeen.has(k)) {
-        errors.push({ rowId: row._id, field: 'serviceName', message: `Serviço duplicado no mesmo prestador (linha ${itemKeySeen.get(k)}). Renomeie ou ajuste a unidade.`, severity: 'error' });
-      } else itemKeySeen.set(k, row._id);
+    const hasService = !!row.serviceName.trim();
+    const hasProduct = !!row.productName.trim();
+
+    if (hasService) {
+      const sk = `${groupKey}|service|${norm(row.serviceName)}|${norm(row.serviceUnit || 'hr')}`;
+      if (serviceKeySeen.has(sk)) {
+        errors.push({
+          rowId: row._id,
+          field: 'serviceName',
+          message: hasProduct
+            ? `Serviço já listado na linha ${serviceKeySeen.get(sk)} — produto desta linha será vinculado a ele.`
+            : `Serviço já listado na linha ${serviceKeySeen.get(sk)} — duplicata ignorada.`,
+          severity: 'info',
+        });
+      } else {
+        serviceKeySeen.set(sk, row._id);
+      }
     }
-    if (row.productName.trim()) {
-      const k = `${groupKey}|product|${norm(row.productName)}|${norm(row.productUnit || 'un')}`;
-      if (itemKeySeen.has(k)) {
-        errors.push({ rowId: row._id, field: 'productName', message: `Produto duplicado no mesmo prestador (linha ${itemKeySeen.get(k)}). Renomeie ou ajuste a unidade.`, severity: 'error' });
-      } else itemKeySeen.set(k, row._id);
+
+    if (hasProduct) {
+      const serviceTag = hasService ? norm(row.serviceName) + '|' + norm(row.serviceUnit || 'hr') : '__no_service__';
+      const pk = `${groupKey}|product|${norm(row.productName)}|${norm(row.productUnit || 'un')}|${serviceTag}`;
+      if (productLinkSeen.has(pk)) {
+        errors.push({
+          rowId: row._id,
+          field: 'productName',
+          message: hasService
+            ? `Produto já vinculado a este serviço na linha ${productLinkSeen.get(pk)}.`
+            : `Produto duplicado no mesmo prestador (linha ${productLinkSeen.get(pk)}). Renomeie ou ajuste a unidade.`,
+          severity: 'error',
+        });
+      } else {
+        productLinkSeen.set(pk, row._id);
+      }
     }
   });
 
@@ -1181,93 +1211,144 @@ const ImportPage = () => {
           }
         }
 
-        // STEP A — primeiro insere PRODUTOS do grupo (precisamos dos ids para vincular aos serviços)
-        const createdProducts: { id: number; name: string; price: number }[] = [];
-        for (const row of provRows) {
-          if (!row.productName.trim()) continue;
-          const price = parseFloat(row.productPrice) || 0;
-          const tags = row.segment ? [row.segment.toLowerCase()] : [];
-          const qtyRaw = parseInt(row.productQuantity, 10);
-          const quantity = Number.isFinite(qtyRaw) && qtyRaw >= 0 ? qtyRaw : 0;
-          const unit = row.productUnit || 'un';
-          try {
-            const { data: dup } = await (supabase as any).rpc('check_item_duplicate', {
-              _provider_id: providerId, _kind: 'product', _name: row.productName, _unit: unit,
-            });
-            if (dup?.duplicate) {
-              // já existe — usa o id existente para vincular
-              createdProducts.push({ id: dup.id, name: row.productName, price });
-              res.errors.push({ line: row._id, message: `Produto "${row.productName}" já existia (id ${dup.id}) — reutilizado para vínculos.` });
-              continue;
-            }
-          } catch {}
-          const { data: ins, error } = await supabase.from('dynamic_products').insert({
-            product_id: nextProductId++,
-            name: row.productName,
-            provider: provName,
-            provider_id: providerId,
-            price,
-            stock_type: row.productStockType === 'drop' ? 'drop' : 'fisico',
-            tags,
-            unit,
-            quantity,
-          }).select('id, name, price').single();
-          if (error) {
-            res.errors.push({ line: row._id, message: `Produto "${row.productName}": ${error.message}` });
-          } else if (ins) {
-            createdProducts.push({ id: (ins as any).id, name: (ins as any).name, price: Number((ins as any).price || 0) });
-            res.productsCreated++;
-          }
-        }
+        /* ── Nova lógica de vínculo Serviço↔Produto por LINHA ──
+           Regras:
+           1. Linha com serviço + produto  → produto é criado/recuperado e VINCULADO àquele serviço.
+           2. Linha só com produto         → produto é criado standalone (sem vínculo a serviço).
+           3. Linha só com serviço         → serviço é criado sem novos produtos nesta linha.
+           4. Serviço com mesmo nome+unidade já existente (na planilha ou no banco do prestador)
+              é REUTILIZADO — novos produtos da linha são anexados a ele. */
 
-        // STEP B — agora insere SERVIÇOS, vinculando TODOS os produtos do prestador (criados acima + pré-existentes)
-        // Carrega produtos já existentes do prestador para vínculo completo
-        const { data: existingProds } = await supabase
-          .from('dynamic_products')
-          .select('id, name, price')
+        const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+
+        // Cache de serviços do prestador (DB + criados nesta importação)
+        const { data: existingSvcs } = await supabase
+          .from('dynamic_services')
+          .select('id, name, unit, labor_cost, linked_product_ids, products')
           .eq('provider_id', providerId);
-        const allProviderProducts = new Map<number, { name: string; price: number }>();
-        (existingProds || []).forEach((p: any) => allProviderProducts.set(p.id, { name: p.name, price: Number(p.price || 0) }));
-        createdProducts.forEach(p => allProviderProducts.set(p.id, { name: p.name, price: p.price }));
-        const linkedIds = Array.from(allProviderProducts.keys());
-        const linkedNames = linkedIds.map(id => allProviderProducts.get(id)!.name);
-        const productsCost = linkedIds.reduce((s, id) => s + (allProviderProducts.get(id)?.price || 0), 0);
+        const serviceCache = new Map<string, { id: number; laborCost: number; linkedIds: number[]; linkedNames: string[] }>();
+        (existingSvcs || []).forEach((s: any) => {
+          const k = `${norm(s.name)}|${norm(s.unit || 'hr')}`;
+          serviceCache.set(k, {
+            id: s.id,
+            laborCost: Number(s.labor_cost || 0),
+            linkedIds: Array.isArray(s.linked_product_ids) ? [...s.linked_product_ids] : [],
+            linkedNames: Array.isArray(s.products) ? [...s.products] : [],
+          });
+        });
+
+        // Cache de produtos do prestador (para deduplicar)
+        const { data: existingProdsCache } = await supabase
+          .from('dynamic_products')
+          .select('id, name, unit, price')
+          .eq('provider_id', providerId);
+        const productCache = new Map<string, { id: number; price: number; name: string }>();
+        (existingProdsCache || []).forEach((p: any) => {
+          const k = `${norm(p.name)}|${norm(p.unit || 'un')}`;
+          productCache.set(k, { id: p.id, price: Number(p.price || 0), name: p.name });
+        });
+
+        const recomputeServicePrice = async (svcId: number, laborCost: number, linkedIds: number[], linkedNames: string[]) => {
+          let prodSum = 0;
+          for (const pid of linkedIds) {
+            // procura no cache de produtos
+            for (const v of productCache.values()) if (v.id === pid) { prodSum += v.price; break; }
+          }
+          await supabase.from('dynamic_services').update({
+            price: laborCost + prodSum,
+            linked_product_ids: linkedIds,
+            products: linkedNames,
+          }).eq('id', svcId);
+        };
 
         for (const row of provRows) {
-          if (!row.serviceName.trim()) continue;
-          const labor = parseFloat(row.servicePrice) || 0;
-          const totalPrice = labor + productsCost;
-          const qtyRaw = parseInt(row.serviceQuantity, 10);
-          const quantity = Number.isFinite(qtyRaw) && qtyRaw >= 0 ? qtyRaw : 0;
-          const unit = row.serviceUnit || 'hr';
-          try {
-            const { data: dup } = await (supabase as any).rpc('check_item_duplicate', {
-              _provider_id: providerId, _kind: 'service', _name: row.serviceName, _unit: unit,
-            });
-            if (dup?.duplicate) {
-              res.errors.push({ line: row._id, message: `Serviço "${row.serviceName}" já existe no estoque deste prestador (id ${dup.id}). Renomeie para importar.` });
-              continue;
+          const hasService = !!row.serviceName.trim();
+          const hasProduct = !!row.productName.trim();
+          if (!hasService && !hasProduct) continue;
+
+          // ── Resolve ou cria SERVIÇO desta linha (se houver) ──
+          let svcEntry: { id: number; laborCost: number; linkedIds: number[]; linkedNames: string[] } | null = null;
+          if (hasService) {
+            const unit = row.serviceUnit || 'hr';
+            const sk = `${norm(row.serviceName)}|${norm(unit)}`;
+            if (serviceCache.has(sk)) {
+              svcEntry = serviceCache.get(sk)!;
+            } else {
+              const labor = parseFloat(row.servicePrice) || 0;
+              const qtyRaw = parseInt(row.serviceQuantity, 10);
+              const quantity = Number.isFinite(qtyRaw) && qtyRaw >= 0 ? qtyRaw : 0;
+              const { data: ins, error } = await supabase.from('dynamic_services').insert({
+                service_id: nextServiceId++,
+                name: row.serviceName,
+                segment: row.segment || 'Geral',
+                provider: provName,
+                provider_id: providerId,
+                price: labor,
+                labor_cost: labor,
+                unit,
+                quantity,
+                products: [],
+                linked_product_ids: [],
+              }).select('id').single();
+              if (error) {
+                res.errors.push({ line: row._id, message: `Serviço "${row.serviceName}": ${error.message}` });
+                continue;
+              }
+              svcEntry = { id: (ins as any).id, laborCost: labor, linkedIds: [], linkedNames: [] };
+              serviceCache.set(sk, svcEntry);
+              res.servicesCreated++;
             }
-          } catch {}
-          const { error } = await supabase.from('dynamic_services').insert({
-            service_id: nextServiceId++,
-            name: row.serviceName,
-            segment: row.segment || 'Geral',
-            provider: provName,
-            provider_id: providerId,
-            price: totalPrice,
-            labor_cost: labor,
-            unit,
-            quantity,
-            products: linkedNames,
-            linked_product_ids: linkedIds,
-          });
-          if (error) {
-            res.errors.push({ line: row._id, message: `Serviço "${row.serviceName}": ${error.message}` });
-          } else {
-            res.servicesCreated++;
+          }
+
+          // ── Resolve ou cria PRODUTO desta linha (se houver) ──
+          let prodId: number | null = null;
+          let prodName: string | null = null;
+          let prodPrice = 0;
+          if (hasProduct) {
+            const punit = row.productUnit || 'un';
+            const pk = `${norm(row.productName)}|${norm(punit)}`;
+            if (productCache.has(pk)) {
+              const p = productCache.get(pk)!;
+              prodId = p.id; prodName = p.name; prodPrice = p.price;
+            } else {
+              const price = parseFloat(row.productPrice) || 0;
+              const tags = row.segment ? [row.segment.toLowerCase()] : [];
+              const qtyRaw = parseInt(row.productQuantity, 10);
+              const quantity = Number.isFinite(qtyRaw) && qtyRaw >= 0 ? qtyRaw : 0;
+              const { data: ins, error } = await supabase.from('dynamic_products').insert({
+                product_id: nextProductId++,
+                name: row.productName,
+                provider: provName,
+                provider_id: providerId,
+                price,
+                stock_type: row.productStockType === 'drop' ? 'drop' : 'fisico',
+                tags,
+                unit: punit,
+                quantity,
+              }).select('id, name, price').single();
+              if (error) {
+                res.errors.push({ line: row._id, message: `Produto "${row.productName}": ${error.message}` });
+              } else if (ins) {
+                prodId = (ins as any).id;
+                prodName = (ins as any).name;
+                prodPrice = Number((ins as any).price || 0);
+                productCache.set(pk, { id: prodId, name: prodName, price: prodPrice });
+                res.productsCreated++;
+              }
+            }
+          }
+
+          // ── Vincula produto ao serviço desta linha (se ambos existirem) ──
+          if (svcEntry && prodId !== null && prodName) {
+            if (!svcEntry.linkedIds.includes(prodId)) {
+              svcEntry.linkedIds.push(prodId);
+              svcEntry.linkedNames.push(prodName);
+              await recomputeServicePrice(svcEntry.id, svcEntry.laborCost, svcEntry.linkedIds, svcEntry.linkedNames);
+              res.fixes.push({ icon: 'merge', message: `"${prodName}" vinculado ao serviço "${row.serviceName}"` });
+            }
           }
         }
+
       }
 
       // Step 5: Generate product images in background (fire & forget)
