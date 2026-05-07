@@ -59,6 +59,8 @@ export function Search3DHero({
   segments, activeSegments, toggleSegment, children,
 }: Props) {
   const [top, setTop] = useState<Top[]>([]);
+  const [thought, setThought] = useState<string | null>(null);
+  const thoughtTimer = useRef<number | null>(null);
 
   useEffect(() => {
     supabase.from('providers')
@@ -69,6 +71,32 @@ export function Search3DHero({
       .limit(6)
       .then(({ data }) => setTop((data as any) || []));
   }, []);
+
+  // Pensamentos aleatórios do Vini — aparecem discretamente e somem ao interagir
+  const thoughts = [
+    'Posso encontrar um prestador próximo de você ✨',
+    'Diga ou digite o que precisa — eu cuido do resto.',
+    'Mais de 2.450 profissionais prontos agora.',
+    'Quer economizar? Posso sugerir um combo.',
+    'Estou aqui se precisar — só falar comigo.',
+    'Vou organizar tudo na sua agenda.',
+  ];
+  useEffect(() => {
+    let i = 0;
+    const show = () => {
+      setThought(thoughts[Math.floor(Math.random() * thoughts.length)]);
+      if (thoughtTimer.current) window.clearTimeout(thoughtTimer.current);
+      thoughtTimer.current = window.setTimeout(() => setThought(null), 5000);
+    };
+    show();
+    const interval = window.setInterval(() => { i++; show(); }, 9000);
+    return () => {
+      clearInterval(interval);
+      if (thoughtTimer.current) window.clearTimeout(thoughtTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const dismissThought = () => setThought(null);
 
   // Mostra até 6 segmentos no grid principal (igual mockup: 5 + scroll horizontal)
   const segs = segments.slice(0, 10);
