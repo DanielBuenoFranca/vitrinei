@@ -195,7 +195,14 @@ export function CardexPanel() {
           <CardTitle className="text-base flex items-center gap-2"><ClipboardList className="h-4 w-4" /> CARDEX — Movimentações</CardTitle>
           <CardDescription>Auditoria granular + entrada manual de estoque (RPC <code>apply_stock_entry</code>).</CardDescription>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Select value={providerFilter} onValueChange={setProviderFilter}>
+            <SelectTrigger className="h-8 w-[180px] text-xs"><SelectValue placeholder="Loja" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as lojas</SelectItem>
+              {providers.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
           <div className="relative">
             <Search className="h-3 w-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Filtrar..." className="pl-7 h-8 w-48" />
