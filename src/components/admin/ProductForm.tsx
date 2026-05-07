@@ -78,6 +78,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
   const [newTag, setNewTag] = useState('');
   const [saving, setSaving] = useState(false);
   const [allProductNames, setAllProductNames] = useState<string[]>([]);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const { suggestions, loading: sugLoading, suggest, clear: clearSuggestions } = useNameSuggestion();
 
   useEffect(() => {
