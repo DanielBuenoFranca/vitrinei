@@ -44,6 +44,8 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const navigate = useNavigate();
+  const { session, update } = useAiSession();
 
   const { supported, listening, transcript, start, stop } = useSpeechRecognition();
 
