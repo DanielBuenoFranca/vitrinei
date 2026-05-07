@@ -70,6 +70,7 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
   const [availableProducts, setAvailableProducts] = useState<AvailableProduct[]>([]);
   const [saving, setSaving] = useState(false);
   const [allServiceNames, setAllServiceNames] = useState<string[]>([]);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const { suggestions, loading: sugLoading, suggest, clear: clearSuggestions } = useNameSuggestion();
 
   useEffect(() => {
