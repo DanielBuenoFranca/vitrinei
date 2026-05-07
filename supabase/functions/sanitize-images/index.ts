@@ -71,6 +71,10 @@ Deno.serve(async (req) => {
       prompt = `Professional studio product photo of "${name}" (category: ${segment || 'general'}), clean white background, e-commerce catalog style, no text or watermarks.`;
     } else if (kind === "kit") {
       prompt = `Professional photo of a product kit/bundle named "${name}" (${segment || 'general'}), multiple items grouped, clean white background, e-commerce style, no text.`;
+    } else if (kind === "service") {
+      prompt = `Premium 3D render icon representing the service "${name}" (category: ${segment || 'services'}). Glossy 3D illustration, vibrant colors, clean white background, no text, app-icon style, soft shadow.`;
+    } else if (kind === "segment") {
+      prompt = `Premium 3D render icon for the category "${name}". Glossy 3D illustration, vibrant gradient colors, clean white background, no text or watermarks, app-icon style with soft shadow, suitable as catalog tile.`;
     } else {
       return new Response(JSON.stringify({ error: "invalid kind" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -114,6 +118,7 @@ Deno.serve(async (req) => {
 
     const bucket = kind === "provider" ? "provider-logos" : "storefront-assets";
     const folder = kind === "provider" ? "" : `${kind}-images/`;
+    void folder;
     const safeName = name.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 30);
     const fileName = `${folder}sanitized-${kind}-${id}-${Date.now()}-${safeName}.${ext}`;
 
@@ -125,6 +130,8 @@ Deno.serve(async (req) => {
     if (kind === "provider") await supabase.from("providers").update({ logo_url: url }).eq("id", id);
     else if (kind === "product") await supabase.from("dynamic_products").update({ image_url: url }).eq("id", id);
     else if (kind === "kit") await supabase.from("kits").update({ image_url: url }).eq("id", id);
+    else if (kind === "service") await supabase.from("dynamic_services").update({ image_url: url }).eq("id", id);
+    else if (kind === "segment") await supabase.from("segments").update({ image_url: url }).eq("id", id);
 
     return new Response(JSON.stringify({ imageUrl: url, source: "ai" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
