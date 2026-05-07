@@ -692,9 +692,12 @@ export type Database = {
           bonus_released: boolean
           buyer_released: boolean
           commission_amount: number
+          consumed_at: string | null
           created_at: string
+          expires_at: string | null
           id: string
           joined_at: string | null
+          link_token: string | null
           referral_code: string
           referred_email: string | null
           referred_id: string | null
@@ -712,9 +715,12 @@ export type Database = {
           bonus_released?: boolean
           buyer_released?: boolean
           commission_amount?: number
+          consumed_at?: string | null
           created_at?: string
+          expires_at?: string | null
           id?: string
           joined_at?: string | null
+          link_token?: string | null
           referral_code: string
           referred_email?: string | null
           referred_id?: string | null
@@ -732,9 +738,12 @@ export type Database = {
           bonus_released?: boolean
           buyer_released?: boolean
           commission_amount?: number
+          consumed_at?: string | null
           created_at?: string
+          expires_at?: string | null
           id?: string
           joined_at?: string | null
+          link_token?: string | null
           referral_code?: string
           referred_email?: string | null
           referred_id?: string | null
@@ -1214,7 +1223,18 @@ export type Database = {
         Returns: Json
       }
       current_ai_savings: { Args: never; Returns: Json }
+      generate_referral_link_24h: { Args: { _referrer: string }; Returns: Json }
       get_public_display_name: { Args: { _user_id: string }; Returns: string }
+      get_referral_by_token: {
+        Args: { _token: string }
+        Returns: {
+          consumed_at: string
+          expires_at: string
+          id: string
+          referrer_id: string
+          status: string
+        }[]
+      }
       get_user_roles: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"][]

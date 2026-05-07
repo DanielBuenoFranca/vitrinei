@@ -1907,13 +1907,11 @@ const ImportPage = () => {
                         <TableRow
                           key={row._id}
                           className={
-                            criticalRowIds.has(row._id)
-                              ? 'bg-destructive/5'
-                              : row._aiFields && row._aiFields.size > 0
-                                ? 'bg-purple-500/5'
-                                : row._matchType !== 'new'
-                                  ? 'bg-blue-500/5'
-                                  : ''
+                            row._aiFields && row._aiFields.size > 0
+                              ? 'bg-purple-500/5'
+                              : row._matchType !== 'new'
+                                ? 'bg-blue-500/5'
+                                : ''
                           }
                         >
                           <TableCell className="text-[10px] text-muted-foreground font-mono">{row._id}</TableCell>

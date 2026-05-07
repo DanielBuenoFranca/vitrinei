@@ -33,6 +33,7 @@ type EntryRow = {
   unit_cost: number;
   applied_price: number;
   apply_choice: "keep" | "custom";
+  kind: "product" | "service";
 };
 
 export function CardexPanel() {
@@ -47,7 +48,7 @@ export function CardexPanel() {
   const [docNumber, setDocNumber] = useState("");
   const [supplier, setSupplier] = useState("");
   const [items, setItems] = useState<EntryRow[]>([
-    { raw_name: "", matched_product_id: null, create_new: true, quantity: 1, unit_cost: 0, applied_price: 0, apply_choice: "custom" },
+    { raw_name: "", matched_product_id: null, create_new: true, quantity: 1, unit_cost: 0, applied_price: 0, apply_choice: "custom", kind: "product" },
   ]);
   const [saving, setSaving] = useState(false);
 
@@ -73,58 +74,108 @@ export function CardexPanel() {
     return [r.item_name, r.reference_label, r.movement_type].some((v) => (v || "").toLowerCase().includes(q));
   });
 
-  const addItemRow = () => setItems((it) => [...it, { raw_name: "", matched_product_id: null, create_new: true, quantity: 1, unit_cost: 0, applied_price: 0, apply_choice: "custom" }]);
+  const addItemRow = () => setItems((it) => [...it, { raw_name: "", matched_product_id: null, create_new: true, quantity: 1, unit_cost: 0, applied_price: 0, apply_choice: "custom", kind: "product" }]);
   const removeItemRow = (idx: number) => setItems((it) => it.filter((_, i) => i !== idx));
   const updateItem = (idx: number, patch: Partial<EntryRow>) => setItems((it) => it.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
 
   const submitEntry = async () => {
     const pid = Number(providerId);
     if (!pid) { toast.error("Selecione o prestador/fornecedor destino do estoque"); return; }
-    const validItems = items.filter((i) => (i.create_new ? i.raw_name.trim() : i.matched_product_id) && i.quantity > 0);
+    const validItems = items.filter((i) => {
+      if (i.kind === "service") return i.raw_name.trim() && i.applied_price > 0;
+      return (i.create_new ? i.raw_name.trim() : i.matched_product_id) && i.quantity > 0;
+    });
     if (!validItems.length) { toast.error("Adicione ao menos um item válido"); return; }
 
     setSaving(true);
     try {
-      const total = validItems.reduce((s, i) => s + i.unit_cost * i.quantity, 0);
-      const { data: entry, error: e1 } = await supabase
-        .from("stock_entries")
-        .insert({
+      // Split: services go straight to dynamic_services + service_execution movement (no stock)
+      const services = validItems.filter((i) => i.kind === "service");
+      const products = validItems.filter((i) => i.kind === "product");
+
+      // 1) Services: criar/atualizar dynamic_services e registrar service_execution
+      const provName = providers.find((p) => p.id === pid)?.name || "";
+      for (const s of services) {
+        const { data: existing } = await supabase
+          .from("dynamic_services")
+          .select("id, service_id")
+          .eq("provider_id", pid)
+          .ilike("name", s.raw_name.trim())
+          .maybeSingle();
+        let svcId = existing?.id;
+        if (!existing) {
+          const { data: newSvc } = await supabase.from("dynamic_services").insert({
+            service_id: Math.floor(Date.now() / 1000) + Math.floor(Math.random() * 1000),
+            name: s.raw_name.trim(),
+            provider: provName,
+            provider_id: pid,
+            segment: "Serviços",
+            price: s.applied_price,
+            labor_cost: s.unit_cost,
+            unit: "hr",
+            quantity: 0,
+          } as any).select("id").single();
+          svcId = newSvc?.id;
+        } else {
+          await supabase.from("dynamic_services").update({
+            price: s.applied_price, labor_cost: s.unit_cost,
+          }).eq("id", existing.id);
+        }
+        await supabase.from("stock_movements").insert({
           provider_id: pid,
-          source_type: "manual",
-          document_number: docNumber || null,
-          supplier_name: supplier || null,
-          total_amount: total,
-        } as any)
-        .select("id")
-        .single();
-      if (e1 || !entry) throw e1 || new Error("Falha ao criar entrada");
+          item_kind: "service",
+          item_id: svcId || 0,
+          item_name: s.raw_name.trim(),
+          movement_type: "service_execution",
+          quantity_delta: 0,
+          balance_after: null,
+          unit_cost: s.unit_cost,
+          reference_label: docNumber ? `CARDEX Serviço: ${docNumber}` : "CARDEX Serviço",
+        } as any);
+      }
 
-      const payload = validItems.map((i) => {
-        const matched = i.matched_product_id ? products.find((p) => p.id === i.matched_product_id) : null;
-        return {
-          entry_id: entry.id,
-          raw_name: i.create_new ? i.raw_name.trim() : matched?.name || i.raw_name.trim(),
-          matched_product_id: i.create_new ? null : i.matched_product_id,
-          create_new: i.create_new,
-          quantity: i.quantity,
-          unit_cost: i.unit_cost,
-          current_price: matched?.price || 0,
-          suggested_price: i.applied_price || matched?.price || i.unit_cost,
-          applied_price: i.applied_price || matched?.price || i.unit_cost,
-          apply_choice: i.apply_choice,
-          unit: "un",
-        };
-      });
+      // 2) Produtos: pipeline existente
+      if (products.length > 0) {
+        const total = products.reduce((s, i) => s + i.unit_cost * i.quantity, 0);
+        const { data: entry, error: e1 } = await supabase
+          .from("stock_entries")
+          .insert({
+            provider_id: pid,
+            source_type: "manual",
+            document_number: docNumber || null,
+            supplier_name: supplier || null,
+            total_amount: total,
+          } as any)
+          .select("id")
+          .single();
+        if (e1 || !entry) throw e1 || new Error("Falha ao criar entrada");
 
-      const { error: e2 } = await supabase.from("stock_entry_items").insert(payload as any);
-      if (e2) throw e2;
+        const payload = products.map((i) => {
+          const matched = i.matched_product_id ? (window as any).__none__ ?? null : null;
+          return {
+            entry_id: entry.id,
+            raw_name: i.create_new ? i.raw_name.trim() : (i.raw_name.trim() || ""),
+            matched_product_id: i.create_new ? null : i.matched_product_id,
+            create_new: i.create_new,
+            quantity: i.quantity,
+            unit_cost: i.unit_cost,
+            current_price: 0,
+            suggested_price: i.applied_price || i.unit_cost,
+            applied_price: i.applied_price || i.unit_cost,
+            apply_choice: i.apply_choice,
+            unit: "un",
+          };
+        });
 
-      const { error: e3 } = await (supabase.rpc as any)("apply_stock_entry", { _entry_id: entry.id });
-      if (e3) throw e3;
+        const { error: e2 } = await supabase.from("stock_entry_items").insert(payload as any);
+        if (e2) throw e2;
+        const { error: e3 } = await (supabase.rpc as any)("apply_stock_entry", { _entry_id: entry.id });
+        if (e3) throw e3;
+      }
 
-      toast.success("Entrada aplicada — saldos atualizados.");
+      toast.success("Movimentações aplicadas com sucesso.");
       setOpen(false);
-      setItems([{ raw_name: "", matched_product_id: null, create_new: true, quantity: 1, unit_cost: 0, applied_price: 0, apply_choice: "custom" }]);
+      setItems([{ raw_name: "", matched_product_id: null, create_new: true, quantity: 1, unit_cost: 0, applied_price: 0, apply_choice: "custom", kind: "product" }]);
       setDocNumber(""); setSupplier("");
       await Promise.all([load(), loadOptions()]);
     } catch (err: any) {
@@ -221,20 +272,32 @@ export function CardexPanel() {
 
             <div className="border rounded-md">
               <div className="grid grid-cols-12 gap-1 px-2 py-1.5 bg-muted/40 text-[10px] font-semibold uppercase">
-                <div className="col-span-5">Item</div>
+                <div className="col-span-2">Tipo</div>
+                <div className="col-span-3">Item</div>
                 <div className="col-span-2">Qtd</div>
-                <div className="col-span-2">Custo un.</div>
+                <div className="col-span-2">Custo / M.O.</div>
                 <div className="col-span-2">Preço venda</div>
                 <div className="col-span-1"></div>
               </div>
-              {items.map((it, idx) => (
+              {items.map((it, idx) => {
+                const isService = it.kind === "service";
+                return (
                 <div key={idx} className="grid grid-cols-12 gap-1 px-2 py-1.5 border-t items-center">
-                  <div className="col-span-5">
-                    {it.create_new ? (
+                  <div className="col-span-2">
+                    <Select value={it.kind} onValueChange={(v) => updateItem(idx, { kind: v as "product" | "service" })}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="product">Produto</SelectItem>
+                        <SelectItem value="service">Serviço</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="col-span-3">
+                    {it.create_new || isService ? (
                       <Input
                         value={it.raw_name}
                         onChange={(e) => updateItem(idx, { raw_name: e.target.value })}
-                        placeholder="Nome do produto novo"
+                        placeholder={isService ? "Nome do serviço" : "Nome do produto novo"}
                         className="h-8"
                       />
                     ) : (
@@ -248,12 +311,20 @@ export function CardexPanel() {
                         </SelectContent>
                       </Select>
                     )}
-                    <button type="button" onClick={() => updateItem(idx, { create_new: !it.create_new })} className="text-[10px] text-primary mt-0.5">
-                      {it.create_new ? "↪ usar produto existente" : "↪ criar novo produto"}
-                    </button>
+                    {!isService && (
+                      <button type="button" onClick={() => updateItem(idx, { create_new: !it.create_new })} className="text-[10px] text-primary mt-0.5">
+                        {it.create_new ? "↪ usar produto existente" : "↪ criar novo produto"}
+                      </button>
+                    )}
                   </div>
-                  <div className="col-span-2"><Input type="number" min={1} value={it.quantity} onChange={(e) => updateItem(idx, { quantity: Number(e.target.value) })} className="h-8" /></div>
-                  <div className="col-span-2"><Input type="number" step="0.01" min={0} value={it.unit_cost} onChange={(e) => updateItem(idx, { unit_cost: Number(e.target.value) })} className="h-8" /></div>
+                  <div className="col-span-2">
+                    {isService ? (
+                      <span className="text-[10px] text-muted-foreground">— sem estoque —</span>
+                    ) : (
+                      <Input type="number" min={1} value={it.quantity} onChange={(e) => updateItem(idx, { quantity: Number(e.target.value) })} className="h-8" />
+                    )}
+                  </div>
+                  <div className="col-span-2"><Input type="number" step="0.01" min={0} value={it.unit_cost} onChange={(e) => updateItem(idx, { unit_cost: Number(e.target.value) })} className="h-8" placeholder={isService ? "M.O." : "custo"} /></div>
                   <div className="col-span-2"><Input type="number" step="0.01" min={0} value={it.applied_price} onChange={(e) => updateItem(idx, { applied_price: Number(e.target.value) })} className="h-8" /></div>
                   <div className="col-span-1 text-right">
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeItemRow(idx)} disabled={items.length <= 1}>
@@ -261,7 +332,8 @@ export function CardexPanel() {
                     </Button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
               <div className="px-2 py-1.5 border-t">
                 <Button size="sm" variant="outline" onClick={addItemRow}><Plus className="h-3 w-3 mr-1" /> Adicionar item</Button>
               </div>
