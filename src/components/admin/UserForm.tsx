@@ -413,7 +413,32 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
                   <div className="flex items-center gap-2 mb-1">
                     <opt.icon className={`w-4 h-4 ${role === opt.id ? 'text-primary' : 'text-muted-foreground'}`} />
                     <span className="text-xs font-bold">{opt.label}</span>
-                  </div>
+          </div>
+
+          {/* ── Plano de Assinatura ── */}
+          <div>
+            <Label className="text-sm font-semibold mb-2 block">
+              Plano de Assinatura * <span className="text-xs font-normal text-muted-foreground">(padrão = valor médio)</span>
+            </Label>
+            <div className="grid grid-cols-3 gap-2">
+              {activePlans.map(p => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setSelectedPlanId(p.id)}
+                  className={`p-2 rounded-lg border text-center transition-all ${
+                    selectedPlanId === p.id
+                      ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
+                      : 'border-border hover:border-primary/40'
+                  }`}
+                >
+                  <div className="text-base">{p.badge}</div>
+                  <div className="text-xs font-bold">{p.name}</div>
+                  <div className="text-xs text-primary font-bold">R$ {Number(p.price).toFixed(0)}</div>
+                </button>
+              ))}
+            </div>
+          </div>
                   <p className="text-[10px] text-muted-foreground leading-tight">{opt.desc}</p>
                 </button>
               ))}
