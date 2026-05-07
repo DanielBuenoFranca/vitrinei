@@ -1142,21 +1142,41 @@ const AdminPanel = () => {
                               </TableCell>
                                <TableCell>
                                 <div className="flex gap-1 flex-wrap">
-                                  {!authUserConfirmed[profile.user_id] && (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="h-8 text-xs gap-1"
-                                      disabled={activatingUser === profile.user_id}
-                                      onClick={() => activateUser(profile.user_id, false, profile.display_name)}
-                                    >
-                                      {activatingUser === profile.user_id
-                                        ? <Loader2 className="h-3 w-3 animate-spin" />
-                                        : <CheckCircle className="h-3 w-3" />
-                                      }
-                                      Ativar
-                                    </Button>
-                                  )}
+                                  {(() => {
+                                    const isActive = !!userSub && userSub.status === 'active';
+                                    const isLeadRow = String(profile.user_id).startsWith('lead-');
+                                    if (isActive) {
+                                      return (
+                                        <Button
+                                          variant="outline" size="sm"
+                                          className="h-8 text-xs gap-1 opacity-60 cursor-not-allowed"
+                                          disabled
+                                          title="Usuário já está ATIVO (assinatura ativa). Para reativar, cancele a assinatura primeiro."
+                                        >
+                                          <CheckCircle className="h-3 w-3 text-green-600" />
+                                          Ativo
+                                        </Button>
+                                      );
+                                    }
+                                    return (
+                                      <Button
+                                        variant="outline" size="sm"
+                                        className="h-8 text-xs gap-1"
+                                        disabled={activatingUser === profile.user_id}
+                                        onClick={() => activateUser(profile.user_id, false, profile.display_name)}
+                                        title={isLeadRow
+                                          ? 'Inserir Lead na régua de ativação'
+                                          : 'Ativar conta + reset de senha obrigatório + iniciar jornada de Lead'}
+                                      >
+                                        {activatingUser === profile.user_id
+                                          ? <Loader2 className="h-3 w-3 animate-spin" />
+                                          : <CheckCircle className="h-3 w-3" />
+                                        }
+                                        Ativar
+                                      </Button>
+                                    );
+                                  })()}
+
                                   {/* Enable selling: activates + applies subscription debit + creates provider */}
                                   {(hasProvider || hasMixed) && authUserConfirmed[profile.user_id] && (
                                     <Button

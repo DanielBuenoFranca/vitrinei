@@ -47,16 +47,37 @@ Deno.serve(async (req) => {
 
     const summary: string[] = []
 
-    // 1) Confirm email
-    const { data: updatedUser, error: updateErr } = await supabase.auth.admin.updateUserById(user_id, { email_confirm: true })
+    // 0) Bloqueio: usuário já ATIVO (assinatura ativa) não pode ser reativado
+    const { data: activeSub } = await supabase
+      .from('subscriptions').select('id, plan, status').eq('user_id', user_id).eq('status', 'active').maybeSingle()
+    if (activeSub && !enable_selling) {
+      return json({
+        error: 'Usuário já está ATIVO (assinatura ativa). Para reativar, primeiro cancele a assinatura para que ele volte a ser um Lead.',
+      }, 409)
+    }
+
+    // 1) Confirma e-mail + força reset de senha no próximo login + marca jornada Lead
+    const { data: existingUser } = await supabase.auth.admin.getUserById(user_id)
+    const prevMeta = existingUser?.user?.user_metadata || {}
+    const { data: updatedUser, error: updateErr } = await supabase.auth.admin.updateUserById(user_id, {
+      email_confirm: true,
+      user_metadata: {
+        ...prevMeta,
+        must_reset_password: true,
+        lead_journey_started: true,
+        lead_journey_started_at: new Date().toISOString(),
+      },
+    })
     if (updateErr) return json({ error: updateErr.message }, 400)
     summary.push('✓ E-mail confirmado / conta ativada')
+    summary.push('🔐 Reset de senha obrigatório no próximo login')
+    summary.push('🚀 Jornada de Lead iniciada (tarja de conversão + abordagem IA ativada)')
 
     const meta = updatedUser?.user?.user_metadata || {}
     const userEmail = updatedUser?.user?.email || ''
     const selectedProfile = meta.selected_profile || 'client'
 
-    // 2) Resolve plan (use selected, else system default = middle plan)
+    // 2) Plano (selecionado ou padrão = mediano)
     let selectedPlan: string = meta.selected_plan || ''
     let planPrice = 100
     let planName = 'Prata'
@@ -74,7 +95,6 @@ Deno.serve(async (req) => {
     } catch { /* defaults */ }
 
     if (!selectedPlan) {
-      // pick the median-priced plan
       const sorted = [...allPlans].sort((a, b) => Number(a.price) - Number(b.price))
       const mid = sorted[Math.floor(sorted.length / 2)] || sorted[0]
       selectedPlan = mid.id
@@ -87,27 +107,55 @@ Deno.serve(async (req) => {
       summary.push(`✓ Plano selecionado: ${planName} (R$ ${planPrice.toFixed(2)})`)
     }
 
-    // 3) Ensure role
+    // 3) Garante role
     const { data: existingRoles } = await supabase.from('user_roles').select('id, role').eq('user_id', user_id)
     if (!existingRoles?.length) {
       await supabase.from('user_roles').insert({ user_id, role: selectedProfile })
       summary.push(`✓ Papel atribuído: ${selectedProfile}`)
     }
 
-    // 4) Ensure subscription record (Lead → Active)
+    // 4) Assinatura PENDENTE (Lead) — só vira active após pagamento (enable_selling)
+    const subStatus = enable_selling ? 'active' : 'pending'
     const { data: existingSub } = await supabase
-      .from('subscriptions').select('id, plan').eq('user_id', user_id).maybeSingle()
+      .from('subscriptions').select('id, plan, status').eq('user_id', user_id).maybeSingle()
     if (!existingSub) {
-      await supabase.from('subscriptions').insert({ user_id, plan: selectedPlan, price: planPrice, status: 'active' })
-      summary.push('✓ Assinatura criada (status: ativa)')
-    } else if (existingSub.plan !== selectedPlan) {
-      await supabase.from('subscriptions').update({ plan: selectedPlan, price: planPrice, status: 'active' }).eq('id', existingSub.id)
-      summary.push('✓ Assinatura atualizada')
+      await supabase.from('subscriptions').insert({ user_id, plan: selectedPlan, price: planPrice, status: subStatus })
+      summary.push(`✓ Assinatura criada (status: ${subStatus === 'active' ? 'ativa' : 'pendente — aguardando pagamento'})`)
     } else {
-      summary.push('• Assinatura já existente — mantida')
+      const updates: any = {}
+      if (existingSub.plan !== selectedPlan) { updates.plan = selectedPlan; updates.price = planPrice }
+      if (existingSub.status !== subStatus && subStatus === 'active') updates.status = 'active'
+      if (Object.keys(updates).length) {
+        await supabase.from('subscriptions').update(updates).eq('id', existingSub.id)
+        summary.push('✓ Assinatura atualizada')
+      } else {
+        summary.push('• Assinatura já existente — mantida')
+      }
     }
 
-    // 5) Wallet debit (only when explicitly enabling selling / final payment phase)
+    // 5) Régua de Leads — referral pending
+    try {
+      const { data: existingRef } = await supabase
+        .from('referrals').select('id').eq('referred_id', user_id).maybeSingle()
+      if (!existingRef) {
+        await supabase.from('referrals').insert({
+          referrer_id: caller.id,
+          referred_id: user_id,
+          referred_name: meta.full_name || userEmail.split('@')[0],
+          referred_email: userEmail || null,
+          referral_code: `ACT-${user_id.slice(0, 8)}`,
+          referred_role: selectedProfile,
+          status: 'pending',
+        })
+        summary.push('✓ Inserido na régua de ativação de Leads')
+      } else {
+        summary.push('• Já estava na régua de Leads')
+      }
+    } catch (e: any) {
+      summary.push('⚠ Régua de Leads: ' + (e?.message || 'erro'))
+    }
+
+    // 6) Débito + provisionamento somente se enable_selling (pagamento confirmado)
     if (enable_selling) {
       const { data: walletData } = await supabase.from('wallets').select('id, balance').eq('user_id', user_id).maybeSingle()
       if (walletData) {
@@ -126,7 +174,6 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Provider provisioning
       if (selectedProfile === 'provider' || selectedProfile === 'mixed') {
         const { data: profile } = await supabase
           .from('profiles').select('display_name, phone, cpf_cnpj').eq('user_id', user_id).maybeSingle()
@@ -152,7 +199,7 @@ Deno.serve(async (req) => {
       }
       summary.push('✓ Lead convertido em USUÁRIO ATIVO')
     } else {
-      summary.push('• Jornada de Lead iniciada — aguardando pagamento para liberar venda')
+      summary.push('• Aguardando pagamento da assinatura para liberar venda (Lead → Ativo)')
     }
 
     return json({ success: true, summary, plan: { id: selectedPlan, name: planName, price: planPrice } })

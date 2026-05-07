@@ -251,8 +251,8 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
       if (!skipDocValidation && rawDoc.length === 0) return 'CPF/CNPJ é obrigatório para Prestador (ou marque "Isento")';
     }
 
-    // Unicidade global de CPF/CNPJ no profiles
-    if (rawDoc.length >= 11) {
+    // Unicidade global de CPF/CNPJ no profiles (ISENTO sempre permitido)
+    if (!skipDocValidation && rawDoc.length >= 11) {
       const q = supabase.from('profiles').select('user_id, display_name').eq('cpf_cnpj_normalized', rawDoc).limit(1);
       const { data } = profile ? await q.neq('user_id', profile.user_id) : await q;
       if (data && data.length > 0) {
