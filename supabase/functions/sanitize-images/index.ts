@@ -206,6 +206,11 @@ function buildPrompt(kind: string, ctx: EnrichedContext): string {
       `ambient occlusion, reflections, depth of field, beveled edges, soft drop shadow, clean white seamless background, ` +
       `centered composition, NO text, NO watermarks, square app-icon framing, ultra-detailed 8k.`;
   }
+  if (kind === "profile") {
+    return `Modern, minimalist AVATAR for the user "${ctx.name}".${segStr}${tagsStr} ` +
+      `Style: friendly geometric portrait icon, soft gradients, 2-3 colors, professional. ` +
+      `Clean white background, NO TEXT, NO LETTERS, no watermarks. Square format, centered, suitable as circular avatar.`;
+  }
   return `Professional photo of "${ctx.name}". ${base} Clean white background, no text.`;
 }
 
