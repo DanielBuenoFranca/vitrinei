@@ -100,6 +100,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
         quantity: (product as any).quantity ?? 0,
       });
       setSelectedTags(product.tags || []);
+      setImageUrl((product as any).image_url || null);
       if (product.provider_id) {
         const prov = providers.find(p => p.id === product.provider_id);
         if (prov) {
@@ -113,6 +114,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
       setSelectedTags([]);
       setSelectedSegments([]);
       setSegmentTags([]);
+      setImageUrl(null);
     }
   }, [product, open, providers]);
 
