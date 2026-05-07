@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -38,6 +38,7 @@ const aiSuggestions = [
 
 const Landing = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, signOut, displayName } = useAuth();
   const { profileLabel } = usePermissions();
   const accessLevel = useAccessLevel();
@@ -84,6 +85,16 @@ const Landing = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [speech.listening]);
+  // Pré-preenche busca via ?q= (vinda do Vini ou outras telas)
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q && !searchExecuted) {
+      setSearchQuery(q);
+      setTimeout(() => executeSearch(), 200);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleMic = () => {
     if (!speech.supported) return;
     if (speech.listening) speech.stop();

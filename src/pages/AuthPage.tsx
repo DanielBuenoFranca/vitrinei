@@ -11,6 +11,7 @@ import { lovable } from '@/integrations/lovable/index';
 import { toast } from 'sonner';
 import { Zap, Mail, Lock, User, ArrowLeft, Gift, ShoppingCart, Wrench, Shuffle, Crown, Check, KeyRound, CheckCircle, IdCard, Loader2, X } from 'lucide-react';
 import { maskCPFCNPJ, unmask } from '@/lib/masks';
+import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlans';
 
 // CPF/CNPJ digit-check validator (Brazilian standard)
 function isValidCpfCnpj(raw: string): boolean {
@@ -53,11 +54,7 @@ const profileOptions = [
   { id: 'mixed', label: 'Misto', icon: Shuffle, desc: 'Compre e venda no mesmo perfil' },
 ];
 
-const plans = [
-  { id: 'bronze', name: 'Bronze', price: 50, badge: '🥉', discount: 5 },
-  { id: 'prata', name: 'Prata', price: 100, badge: '🥈', discount: 10, popular: true },
-  { id: 'ouro', name: 'Ouro', price: 200, badge: '🥇', discount: 20 },
-];
+// Plans loaded dynamically via useSubscriptionPlans hook (site_settings.subscription_plans)
 
 // Generate a 6-digit activation code from user id
 const generateActivationCode = (userId: string) => {
@@ -86,6 +83,19 @@ const AuthPage = () => {
   const [refCode, setRefCode] = useState('');
   const [selectedProfile, setSelectedProfile] = useState<string>('');
   const [selectedPlan, setSelectedPlan] = useState<string>('bronze');
+  const { activePlans: plans } = useSubscriptionPlans();
+  const [campaignRewards, setCampaignRewards] = useState<{ buyer: number; seller: number; mixed: number } | null>(null);
+
+  useEffect(() => {
+    supabase.from('referral_campaigns').select('reward_buyer,reward_seller,reward_mixed_total').eq('is_active', true).maybeSingle()
+      .then(({ data }) => {
+        if (data) setCampaignRewards({
+          buyer: Number((data as any).reward_buyer) || 0,
+          seller: Number((data as any).reward_seller) || 0,
+          mixed: Number((data as any).reward_mixed_total) || 0,
+        });
+      });
+  }, []);
 
   // Activation modals
   const [activationModal, setActivationModal] = useState<{ open: boolean; code: string; email: string }>({ open: false, code: '', email: '' });
@@ -605,6 +615,15 @@ const AuthPage = () => {
                 ))}
               </div>
             </div>
+
+            {campaignRewards && (
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-2 text-[11px] flex items-center justify-between">
+                <span className="flex items-center gap-1 font-semibold"><Gift className="w-3 h-3 text-primary" /> Bonificação ativa</span>
+                <span className="text-muted-foreground">
+                  Comprador R$ {campaignRewards.buyer.toFixed(2)} · Prestador R$ {campaignRewards.seller.toFixed(2)} · Misto R$ {campaignRewards.mixed.toFixed(2)}
+                </span>
+              </div>
+            )}
 
             <Button className="w-full" onClick={handleSignup} disabled={loading}>
               {loading ? 'Cadastrando...' : 'Criar Conta'}
