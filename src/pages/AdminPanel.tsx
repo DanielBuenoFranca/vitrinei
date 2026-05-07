@@ -74,7 +74,7 @@ const AdminPanel = () => {
   const [clearDialog, setClearDialog] = useState(false);
 
   const [userForm, setUserForm] = useState<{ open: boolean; profile: any | null; role: any; email: string | null }>({ open: false, profile: null, role: null, email: null });
-  const [migratingProviders, setMigratingProviders] = useState(false);
+  
   const [productForm, setProductForm] = useState<{ open: boolean; item: DynamicProduct | null }>({ open: false, item: null });
   const [serviceForm, setServiceForm] = useState<{ open: boolean; item: DynamicService | null }>({ open: false, item: null });
   const [segmentForm, setSegmentForm] = useState<{ open: boolean; item: Segment | null }>({ open: false, item: null });
