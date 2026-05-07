@@ -14,6 +14,20 @@ interface Props {
   imageUrl: string | null;
   onChange: (url: string | null) => void;
   bucket?: string; // override
+  /** Tags do item (ajuda IA a desambiguar) */
+  tags?: string[];
+  /** Descrição livre do item */
+  description?: string;
+  /** Nome do prestador associado */
+  providerName?: string;
+  /** Tipo do prestador (mei, comercial...) */
+  providerType?: string;
+  /** Itens vinculados (ex.: produtos de um serviço/kit) */
+  linkedNames?: string[];
+  /** Unidade de medida */
+  unit?: string;
+  /** Preço estimado */
+  price?: number;
 }
 
 /**
