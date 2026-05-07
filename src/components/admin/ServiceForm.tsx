@@ -99,9 +99,11 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
         quantity: (service as any).quantity ?? 0,
       });
       setLinkedProductIds(service.linked_product_ids || []);
+      setImageUrl((service as any).image_url || null);
     } else {
       setForm({ name: '', segment: segments[0]?.name || '', provider: '', provider_id: null, labor_cost: 0, rating: 4.5, distance: '2 km', time: '45 min', service_id: Math.floor(Math.random() * 9000) + 1000, unit: 'hr', quantity: 0 });
       setLinkedProductIds([]);
+      setImageUrl(null);
     }
   }, [service, open, segments]);
 
