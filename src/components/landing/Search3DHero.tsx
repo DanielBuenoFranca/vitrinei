@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Search, Sparkles, Star } from 'lucide-react';
+import { Mic, Search, Sparkles, Star, Wrench as WrenchIcon, Package as PackageIcon, LayoutGrid } from 'lucide-react';
 import {
   Wrench, Scissors, Droplets, Sprout, Truck, Hammer, Stethoscope,
   GraduationCap, Car, Home, Brush, ShoppingBag,
