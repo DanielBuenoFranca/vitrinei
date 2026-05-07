@@ -1613,25 +1613,26 @@ const Landing = () => {
 
       {/* Cart is now rendered globally via CartBar */}
 
-      {/* Floating Home button — fixed bottom-left, returns to Vini Home */}
-      <button
-        type="button"
-        onClick={() => navigate('/')}
-        aria-label="Voltar à Home"
-        className="fixed left-2 bottom-2 sm:left-3 sm:bottom-3 z-50 w-[58px] h-[58px] rounded-xl flex flex-col items-center justify-center gap-0.5 bg-white/[0.08] backdrop-blur-xl border-[0.5px] border-[hsl(var(--vini-glow,188_100%_55%)/0.5)] text-foreground/90 shadow-[0_4px_18px_hsl(var(--primary)/0.25)] hover:bg-white/[0.16] transition-all"
-      >
-        <Home className="w-[18px] h-[18px]" strokeWidth={1.5} />
-        <span className="text-[8.5px] font-medium leading-tight">Home</span>
-      </button>
-
-      {/* Footer - minimal */}
-      <footer className="shrink-0 border-t border-border py-1.5 px-4 bg-card/50">
-        <div className="container mx-auto flex items-center justify-center gap-2 text-[10px] text-muted-foreground">
-          <span className="font-medium text-foreground">Vitrinei Connect</span>
-          <span>•</span>
-          <span>Bueno & Ribeiro Tecnologia Ltda</span>
-          <span>•</span>
-          <span>© 2026</span>
+      {/* Footer - Quick actions (Home, Urgência, Perfil, Indicação) */}
+      <footer className="shrink-0 border-t border-border bg-card/60 backdrop-blur-md px-2 py-1">
+        <div className="container mx-auto max-w-2xl grid grid-cols-4 gap-1.5">
+          {[
+            { label: 'Home', icon: Home, onClick: () => navigate('/') },
+            { label: 'Urgência', icon: Zap, onClick: () => navigate('/radar-urgencia') },
+            { label: 'Perfil', icon: Users, onClick: () => navigate(user ? '/carteira' : '/auth') },
+            { label: 'Indicação', icon: Sparkles, onClick: () => navigate('/convite/INDIQUE') },
+          ].map((btn) => (
+            <button
+              key={btn.label}
+              type="button"
+              onClick={btn.onClick}
+              className="flex flex-col items-center justify-center gap-0.5 rounded-lg py-1 px-1 bg-white/[0.05] hover:bg-white/[0.12] border border-white/10 hover:border-primary/40 transition-all text-foreground/85 hover:text-primary"
+              aria-label={btn.label}
+            >
+              <btn.icon className="w-4 h-4" strokeWidth={1.6} />
+              <span className="text-[9px] font-medium leading-none">{btn.label}</span>
+            </button>
+          ))}
         </div>
       </footer>
       </main>
