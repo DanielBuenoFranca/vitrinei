@@ -187,6 +187,7 @@ export function SegmentForm({ open, onClose, onSaved, segment }: SegmentFormProp
             kind="segment"
             id={segment?.id}
             name={name}
+            tags={selectedTags}
             imageUrl={imageUrl}
             onChange={setImageUrl}
           />
