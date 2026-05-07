@@ -1217,7 +1217,7 @@ const ImportPage = () => {
             email: firstRow.email || '',
             city: firstRow.city || '',
             cpf_cnpj: cpfVal || 'ISENTO',
-            active: false,
+            active: true,
           }).select().single();
 
           let createdNew = !error && !!newProv;
