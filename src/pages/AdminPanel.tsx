@@ -1412,7 +1412,7 @@ const AdminPanel = () => {
       <ServiceForm open={serviceForm.open} onClose={() => setServiceForm({ open: false, item: null })} onSaved={() => { reloadDynamicEntries(); fetchData(); }} service={serviceForm.item} providers={providerList} segments={segmentList} />
       <SegmentForm open={segmentForm.open} onClose={() => setSegmentForm({ open: false, item: null })} onSaved={fetchData} segment={segmentForm.item} />
       <UnitForm open={unitForm.open} onClose={() => setUnitForm({ open: false, item: null })} onSaved={fetchData} unit={unitForm.item} />
-      <ClearDataDialog open={clearDialog} onClose={() => setClearDialog(false)} onCleared={() => { reloadDynamicEntries(); fetchData(); }} counts={{ providers: providers.length, services: services.length, products: products.length, segments: segments.length }} />
+      <ClearDataDialog open={clearDialog} onClose={() => setClearDialog(false)} onCleared={async () => { await reloadDynamicEntries(); await fetchData(); await fetchUsers(); }} counts={{ providers: providers.length, services: services.length, products: products.length, segments: segments.length }} />
 
       {/* Activation Result Summary */}
       <Dialog open={activationResult.open} onOpenChange={(v) => !v && setActivationResult({ open: false, summary: [] })}>
