@@ -413,6 +413,11 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
                   <div className="flex items-center gap-2 mb-1">
                     <opt.icon className={`w-4 h-4 ${role === opt.id ? 'text-primary' : 'text-muted-foreground'}`} />
                     <span className="text-xs font-bold">{opt.label}</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground leading-tight">{opt.desc}</p>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* ── Plano de Assinatura ── */}
@@ -435,11 +440,6 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
                   <div className="text-base">{p.badge}</div>
                   <div className="text-xs font-bold">{p.name}</div>
                   <div className="text-xs text-primary font-bold">R$ {Number(p.price).toFixed(0)}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-                  <p className="text-[10px] text-muted-foreground leading-tight">{opt.desc}</p>
                 </button>
               ))}
             </div>
