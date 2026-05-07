@@ -32,12 +32,8 @@ const ReferralLanding = () => {
         .maybeSingle();
 
       if (refData?.referrer_id) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('display_name')
-          .eq('user_id', refData.referrer_id)
-          .maybeSingle();
-        if (profile?.display_name) setReferrerName(profile.display_name);
+        const { data: name } = await (supabase.rpc as any)('get_public_display_name', { _user_id: refData.referrer_id });
+        if (name) setReferrerName(name as string);
       }
 
       // Fetch active campaign
