@@ -40,6 +40,7 @@ export function CardexPanel() {
   const [rows, setRows] = useState<Movement[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState("");
+  const [providerFilter, setProviderFilter] = useState<string>("all");
 
   const [open, setOpen] = useState(false);
   const [providers, setProviders] = useState<{ id: number; name: string }[]>([]);
@@ -68,10 +69,13 @@ export function CardexPanel() {
   };
   useEffect(() => { load(); loadOptions(); }, []);
 
+  const providerNameById = (id: number) => providers.find((p) => p.id === id)?.name || `#${id}`;
+
   const filtered = rows.filter((r) => {
+    if (providerFilter !== "all" && String(r.provider_id) !== providerFilter) return false;
     if (!filter) return true;
     const q = filter.toLowerCase();
-    return [r.item_name, r.reference_label, r.movement_type].some((v) => (v || "").toLowerCase().includes(q));
+    return [r.item_name, r.reference_label, r.movement_type, providerNameById(r.provider_id)].some((v) => (v || "").toString().toLowerCase().includes(q));
   });
 
   const addItemRow = () => setItems((it) => [...it, { raw_name: "", matched_product_id: null, create_new: true, quantity: 1, unit_cost: 0, applied_price: 0, apply_choice: "custom", kind: "product" }]);
@@ -191,7 +195,14 @@ export function CardexPanel() {
           <CardTitle className="text-base flex items-center gap-2"><ClipboardList className="h-4 w-4" /> CARDEX — Movimentações</CardTitle>
           <CardDescription>Auditoria granular + entrada manual de estoque (RPC <code>apply_stock_entry</code>).</CardDescription>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Select value={providerFilter} onValueChange={setProviderFilter}>
+            <SelectTrigger className="h-8 w-[180px] text-xs"><SelectValue placeholder="Loja" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as lojas</SelectItem>
+              {providers.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
           <div className="relative">
             <Search className="h-3 w-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Filtrar..." className="pl-7 h-8 w-48" />
@@ -210,6 +221,7 @@ export function CardexPanel() {
             <TableHeader>
               <TableRow>
                 <TableHead>Data</TableHead>
+                <TableHead>Loja</TableHead>
                 <TableHead>Item</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead className="text-right">Δ Qtd</TableHead>
@@ -222,6 +234,9 @@ export function CardexPanel() {
               {filtered.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell className="text-xs whitespace-nowrap">{new Date(r.created_at).toLocaleString("pt-BR")}</TableCell>
+                  <TableCell className="text-xs">
+                    <Badge variant="secondary" className="text-[10px]">{providerNameById(r.provider_id)}</Badge>
+                  </TableCell>
                   <TableCell className="text-xs">
                     <div className="font-medium">{r.item_name}</div>
                     <div className="text-[10px] text-muted-foreground">{r.item_kind} #{r.item_id}</div>
@@ -236,7 +251,7 @@ export function CardexPanel() {
                 </TableRow>
               ))}
               {filtered.length === 0 && !loading && (
-                <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">Nenhuma movimentação encontrada.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-8">Nenhuma movimentação encontrada.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

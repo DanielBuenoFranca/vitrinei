@@ -710,6 +710,7 @@ export type Database = {
           referrer_id: string
           reward_snapshot: Json | null
           seller_released: boolean
+          source: string
           status: string
           total_paid: number
         }
@@ -733,6 +734,7 @@ export type Database = {
           referrer_id: string
           reward_snapshot?: Json | null
           seller_released?: boolean
+          source?: string
           status?: string
           total_paid?: number
         }
@@ -756,6 +758,7 @@ export type Database = {
           referrer_id?: string
           reward_snapshot?: Json | null
           seller_released?: boolean
+          source?: string
           status?: string
           total_paid?: number
         }
@@ -1279,6 +1282,10 @@ export type Database = {
       release_referral_cashback: {
         Args: { _referred_user_id: string }
         Returns: undefined
+      }
+      release_referral_phase: {
+        Args: { _phase: string; _referral_id: string }
+        Returns: Json
       }
       sell_kit_acid: {
         Args: { _buyer_id: string; _kit_id: number; _quantity?: number }

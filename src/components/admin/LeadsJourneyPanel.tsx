@@ -6,8 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { TrendingUp, RefreshCw, Search, CheckCircle2, Circle } from "lucide-react";
+import { TrendingUp, RefreshCw, Search, CheckCircle2, Circle, Link2, FileSpreadsheet } from "lucide-react";
 
 interface Lead {
   id: string;
@@ -18,13 +19,13 @@ interface Lead {
   referred_email: string | null;
   referred_role: string | null;
   status: string;
+  source: string;
   joined_at: string | null;
   created_at: string;
   buyer_released: boolean;
   seller_released: boolean;
   bonus_released: boolean;
   total_paid: number;
-  // computed
   has_subscription: boolean;
   first_purchase_at: string | null;
   first_sale_at: string | null;
@@ -44,12 +45,13 @@ export function LeadsJourneyPanel() {
   const [rows, setRows] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState("");
+  const [sourceFilter, setSourceFilter] = useState<"all" | "link" | "import">("all");
 
   const load = async () => {
     setLoading(true);
     const { data: refs } = await supabase
       .from("referrals")
-      .select("id, referrer_id, referred_id, referred_name, referred_email, referred_role, status, joined_at, created_at, buyer_released, seller_released, bonus_released, total_paid")
+      .select("id, referrer_id, referred_id, referred_name, referred_email, referred_role, status, source, joined_at, created_at, buyer_released, seller_released, bonus_released, total_paid")
       .order("created_at", { ascending: false })
       .limit(200);
 
@@ -95,6 +97,7 @@ export function LeadsJourneyPanel() {
   useEffect(() => { load(); }, []);
 
   const filtered = rows.filter((r) => {
+    if (sourceFilter !== "all" && (r.source || "link") !== sourceFilter) return false;
     if (!filter) return true;
     const q = filter.toLowerCase();
     return [r.referred_name, r.referred_email, r.referrer_name, r.status].some((v) => (v || "").toString().toLowerCase().includes(q));
@@ -109,7 +112,14 @@ export function LeadsJourneyPanel() {
           <CardTitle className="text-base flex items-center gap-2"><TrendingUp className="h-4 w-4" /> Painel Master de Leads</CardTitle>
           <CardDescription>Jornada completa: Indicação → Cadastro → Assinatura paga → 1ª compra/venda → Bônus liberado.</CardDescription>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Tabs value={sourceFilter} onValueChange={(v) => setSourceFilter(v as any)}>
+            <TabsList className="h-8">
+              <TabsTrigger value="all" className="text-xs h-6">Todos</TabsTrigger>
+              <TabsTrigger value="link" className="text-xs h-6"><Link2 className="h-3 w-3 mr-1" />Link</TabsTrigger>
+              <TabsTrigger value="import" className="text-xs h-6"><FileSpreadsheet className="h-3 w-3 mr-1" />Importação</TabsTrigger>
+            </TabsList>
+          </Tabs>
           <div className="relative">
             <Search className="h-3 w-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Filtrar..." className="pl-7 h-8 w-48" />
@@ -126,6 +136,7 @@ export function LeadsJourneyPanel() {
               <TableRow>
                 <TableHead>Indicador</TableHead>
                 <TableHead>Indicado</TableHead>
+                <TableHead>Origem</TableHead>
                 <TableHead>Perfil</TableHead>
                 <TableHead className="min-w-[760px]">Jornada</TableHead>
                 <TableHead className="text-right">Pago (R$)</TableHead>
@@ -142,6 +153,13 @@ export function LeadsJourneyPanel() {
                       <div className="font-medium">{r.referred_name || "—"}</div>
                       <div className="text-[10px] text-muted-foreground">{r.referred_email || ""}</div>
                     </TableCell>
+                    <TableCell>
+                      {(r.source || "link") === "import" ? (
+                        <Badge variant="outline" className="text-[9px] border-amber-500/50 text-amber-600 dark:text-amber-400"><FileSpreadsheet className="h-3 w-3 mr-1" />Importação</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[9px] border-emerald-500/50 text-emerald-600 dark:text-emerald-400"><Link2 className="h-3 w-3 mr-1" />Link</Badge>
+                      )}
+                    </TableCell>
                     <TableCell><Badge variant="outline" className="text-[9px]">{profileLabel}</Badge></TableCell>
                     <TableCell>
                       <div className="grid grid-cols-5 gap-2 items-center">
@@ -149,7 +167,11 @@ export function LeadsJourneyPanel() {
                         <Step done={!!r.referred_id} label="Cadastro" sub={fmt(r.joined_at)} />
                         <Step done={r.has_subscription} label="Assinatura" sub={r.has_subscription ? "ativa" : null} />
                         <Step done={!!r.first_purchase_at || !!r.first_sale_at} label={isMixed ? "1ª compra/venda" : "1ª compra"} sub={fmt(r.first_purchase_at || r.first_sale_at)} />
-                        <Step done={r.bonus_released || r.status === "activated"} label="Bônus liberado" sub={r.status} />
+                        {(r.source || "link") === "import" ? (
+                          <Step done={false} label="Bônus liberado" sub="sem bônus (importação)" />
+                        ) : (
+                          <Step done={r.bonus_released || r.status === "activated"} label="Bônus liberado" sub={r.status} />
+                        )}
                       </div>
                     </TableCell>
                     <TableCell className="text-right tabular-nums text-xs">{Number(r.total_paid || 0).toFixed(2)}</TableCell>
@@ -157,7 +179,7 @@ export function LeadsJourneyPanel() {
                 );
               })}
               {filtered.length === 0 && !loading && (
-                <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">Nenhum lead encontrado.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">Nenhum lead encontrado.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

@@ -146,6 +146,7 @@ Deno.serve(async (req) => {
           referral_code: `ACT-${user_id.slice(0, 8)}`,
           referred_role: selectedProfile,
           status: 'pending',
+          source: 'import',
         })
         summary.push('✓ Inserido na régua de ativação de Leads')
       } else {

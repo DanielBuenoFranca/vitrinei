@@ -144,6 +144,16 @@ async function enrichContext(supabase: any, kind: string, id: number, base: any)
       if (data) {
         ctx.tags = Array.from(new Set([...(ctx.tags || []), ...((data.suggested_tags as string[]) || [])]));
       }
+    } else if (kind === "profile" && id) {
+      const { data } = await supabase.from("profiles")
+        .select("display_name, provider_segments, is_provider").eq("user_id", String(id)).maybeSingle();
+      if (data) {
+        ctx.name = ctx.name || data.display_name || "Usuário";
+        if (Array.isArray(data.provider_segments) && data.provider_segments.length) {
+          ctx.segment = ctx.segment || data.provider_segments[0];
+        }
+        ctx.providerType = ctx.providerType || (data.is_provider ? "mei" : "user");
+      }
     }
   } catch (e) {
     console.warn("enrichContext warn:", e);
@@ -195,6 +205,11 @@ function buildPrompt(kind: string, ctx: EnrichedContext): string {
       `Pixar/Disney style, glossy materials, vibrant colorful objects floating, soft realistic lighting, ` +
       `ambient occlusion, reflections, depth of field, beveled edges, soft drop shadow, clean white seamless background, ` +
       `centered composition, NO text, NO watermarks, square app-icon framing, ultra-detailed 8k.`;
+  }
+  if (kind === "profile") {
+    return `Modern, minimalist AVATAR for the user "${ctx.name}".${segStr}${tagsStr} ` +
+      `Style: friendly geometric portrait icon, soft gradients, 2-3 colors, professional. ` +
+      `Clean white background, NO TEXT, NO LETTERS, no watermarks. Square format, centered, suitable as circular avatar.`;
   }
   return `Professional photo of "${ctx.name}". ${base} Clean white background, no text.`;
 }
@@ -289,6 +304,7 @@ Deno.serve(async (req) => {
     else if (kind === "kit") await supabase.from("kits").update({ image_url: url }).eq("id", id);
     else if (kind === "service") await supabase.from("dynamic_services").update({ image_url: url }).eq("id", id);
     else if (kind === "segment") await supabase.from("segments").update({ image_url: url }).eq("id", id);
+    else if (kind === "profile") await supabase.from("profiles").update({ avatar_url: url }).eq("user_id", String(id));
 
     return new Response(JSON.stringify({ imageUrl: url, source: "ai", contextUsed: ctx }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
