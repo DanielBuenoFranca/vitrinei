@@ -58,7 +58,7 @@ interface Top {
 
 export function Search3DHero({
   searchQuery, setSearchQuery, onSearch, onMic, micListening, micSupported,
-  segments, activeSegments, toggleSegment, children,
+  segments, activeSegments, toggleSegment, typeFilter = 'all', setTypeFilter, children,
 }: Props) {
   const [top, setTop] = useState<Top[]>([]);
   const [thought, setThought] = useState<string | null>(null);
