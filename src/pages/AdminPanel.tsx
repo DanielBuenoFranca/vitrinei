@@ -910,7 +910,7 @@ const AdminPanel = () => {
                   const r = userRoles.find((x: any) => x.user_id === prof.user_id && ['provider','mixed'].includes(x.role));
                   setUserForm({ open: true, profile: prof, role: r?.role || 'provider', email: authUserEmails[prof.user_id] || null });
                 } else {
-                  toast.info('Prestador legado sem usuário vinculado. Use "Migrar Prestadores Legados" na aba Usuários.');
+                  toast.info('Prestador legado sem usuário vinculado. Cadastre/ajuste o usuário com o mesmo CPF/CNPJ — a vinculação é automática.');
                 }
               }}
               onEditService={(s) => setServiceForm({ open: true, item: s })}
