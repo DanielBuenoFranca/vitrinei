@@ -420,8 +420,9 @@ const AdminPanel = () => {
       if (error || data?.error) {
         toast.error('Erro ao ativar: ' + (data?.error || error?.message || 'desconhecido'));
       } else {
-        toast.success(enableSelling ? 'Prestador ativado e liberado para vender!' : 'Usuário ativado com sucesso!');
-        setActivationResult({ open: true, summary: data?.summary || [], plan: data?.plan, userName });
+        toast.success(enableSelling
+          ? 'Prestador ativado e liberado para vender!'
+          : 'Botão acionado — aguardando pagamento da assinatura para ativar o usuário.');
         await fetchUsers();
       }
     } catch (e: any) {
