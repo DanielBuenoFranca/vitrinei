@@ -2029,6 +2029,21 @@ const ImportPage = () => {
           )}
         </AnimatePresence>
 
+        {/* Auto-fill summary banner — defaults aplicados pela IA local sem custo */}
+        {autoFillSummary && rows.length > 0 && !result && (
+          <Card className="border-purple-500/40 bg-purple-500/5">
+            <CardContent className="p-3 text-xs">
+              <div className="font-semibold text-purple-700 dark:text-purple-300 mb-1">
+                ✨ Preenchimento automático: {autoFillSummary.rows} linha(s)
+              </div>
+              <div className="text-muted-foreground">
+                Campos obrigatórios preenchidos com defaults do sistema (segmento inferido, plano médio, perfil padrão, etc.):{' '}
+                <span className="text-purple-700 dark:text-purple-300">{autoFillSummary.fields.join(' • ')}</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Data table */}
         {rows.length > 0 && !result && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
