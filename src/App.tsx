@@ -108,6 +108,7 @@ const App = () => {
         </Routes>
         <AttentionFooterBar />
         <SystemStatusIndicator />
+        </AiSessionProvider>
         </ConversionProvider>
       </BrowserRouter>
     </TooltipProvider>
