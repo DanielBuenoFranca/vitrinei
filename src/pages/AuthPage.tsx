@@ -54,11 +54,7 @@ const profileOptions = [
   { id: 'mixed', label: 'Misto', icon: Shuffle, desc: 'Compre e venda no mesmo perfil' },
 ];
 
-const plans = [
-  { id: 'bronze', name: 'Bronze', price: 50, badge: '🥉', discount: 5 },
-  { id: 'prata', name: 'Prata', price: 100, badge: '🥈', discount: 10, popular: true },
-  { id: 'ouro', name: 'Ouro', price: 200, badge: '🥇', discount: 20 },
-];
+// Plans loaded dynamically via useSubscriptionPlans hook (site_settings.subscription_plans)
 
 // Generate a 6-digit activation code from user id
 const generateActivationCode = (userId: string) => {
