@@ -155,6 +155,7 @@ const WalletPage = () => {
   
   // Paywall / checkout state
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [shareModal, setShareModal] = useState<{ open: boolean; link: string; expires: string | null }>({ open: false, link: '', expires: null });
   const [checkoutPlan, setCheckoutPlan] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'card'>('pix');
 
