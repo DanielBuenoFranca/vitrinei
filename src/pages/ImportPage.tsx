@@ -284,12 +284,31 @@ const generateTemplate = async (
   toast.success(`Modelo atualizado baixado — ${TEMPLATE_SCHEMA.filter(f => f.required).length} colunas obrigatórias`);
 };
 
-/* ─── Heuristic enrichment (modo IA OFF) ─── */
-function heuristicEnrich(r: any, existingSegments: string[]): any {
+/* ─── Heuristic enrichment (modo IA OFF + defaults do sistema) ─── */
+type SegmentMeta = { name: string; tags: string[] };
+function inferSegment(r: any, segs: SegmentMeta[]): string {
+  const text = `${r.productName || ''} ${r.serviceName || ''} ${r.providerName || ''}`
+    .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (!text.trim() || segs.length === 0) return segs[0]?.name || 'Geral';
+  let best: { name: string; score: number } = { name: 'Geral', score: 0 };
+  for (const s of segs) {
+    const norm = (v: string) => v.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const tokens = [norm(s.name), ...(s.tags || []).map(norm)].filter(t => t.length >= 3);
+    let score = 0;
+    for (const tok of tokens) if (text.includes(tok)) score += tok === norm(s.name) ? 3 : 1;
+    if (score > best.score) best = { name: s.name, score };
+  }
+  return best.score > 0 ? best.name : (segs[0]?.name || 'Geral');
+}
+function heuristicEnrich(r: any, existingSegments: string[] | SegmentMeta[]): any {
   const out: any = { _id: r._id };
   const isEmpty = (v: any) => !String(v || '').trim();
-  // Segmento — pega 1º existente ou "Geral"
-  if (isEmpty(r.segment)) out.segment = existingSegments[0] || 'Geral';
+  // Normalize segments arg to SegmentMeta[]
+  const segs: SegmentMeta[] = Array.isArray(existingSegments) && typeof existingSegments[0] === 'string'
+    ? (existingSegments as string[]).map(n => ({ name: n, tags: [] }))
+    : (existingSegments as SegmentMeta[]) || [];
+  // Segmento — inferência por palavra-chave (produto/serviço) contra tags+nomes
+  if (isEmpty(r.segment)) out.segment = inferSegment(r, segs);
   // Telefone fictício consistente por providerName
   if (isEmpty(r.phone) && r.providerName) {
     const seed = String(r.providerName).split('').reduce((a: number, c: string) => a + c.charCodeAt(0), 0);
@@ -610,12 +629,14 @@ const ImportPage = () => {
   const [fileName, setFileName] = useState('');
   const [editingCell, setEditingCell] = useState<{ rowId: number; field: string } | null>(null);
   const [existingSegments, setExistingSegments] = useState<Set<string>>(new Set());
+  const [segmentMetas, setSegmentMetas] = useState<{ name: string; tags: string[] }[]>([]);
   const [existingProviders, setExistingProviders] = useState<ExistingProvider[]>([]);
   const [dbLoaded, setDbLoaded] = useState(false);
   const [importedFileHashes, setImportedFileHashes] = useState<Set<string>>(new Set());
   const [importProgress, setImportProgress] = useState<{ step: string; percent: number } | null>(null);
   const [templateProgress, setTemplateProgress] = useState<{ step: string; percent: number } | null>(null);
   const [generatingTemplate, setGeneratingTemplate] = useState(false);
+  const [autoFillSummary, setAutoFillSummary] = useState<{ rows: number; fields: string[] } | null>(null);
 
   const handleGenerateTemplate = useCallback(async () => {
     setGeneratingTemplate(true);
@@ -644,10 +665,12 @@ const ImportPage = () => {
   useEffect(() => {
     const load = async () => {
       const [segRes, provRes] = await Promise.all([
-        supabase.from('segments').select('name'),
+        supabase.from('segments').select('name, suggested_tags'),
         supabase.from('providers').select('id, name, segment, phone, email, cpf_cnpj'),
       ]);
-      setExistingSegments(new Set((segRes.data || []).map(s => s.name)));
+      const segData = (segRes.data || []) as any[];
+      setExistingSegments(new Set(segData.map(s => s.name)));
+      setSegmentMetas(segData.map(s => ({ name: s.name, tags: s.suggested_tags || [] })));
       setExistingProviders((provRes.data || []) as ExistingProvider[]);
       setDbLoaded(true);
     };
@@ -824,8 +847,40 @@ const ImportPage = () => {
         }
       }
 
-      setRows(matched);
-      setErrors(runValidation(matched));
+      // Auto-aplicar DEFAULTS DO SISTEMA (heurístico, sem IA): preenche
+      // campos obrigatórios vazios sem custo de créditos antes do preview.
+      const filledFieldsCount: Record<string, number> = {};
+      let rowsAffected = 0;
+      const withDefaults: ParsedRow[] = matched.map(r => {
+        const defaults = heuristicEnrich(r, segmentMetas);
+        const fields: Set<string> = new Set();
+        const next: any = { ...r };
+        for (const k of Object.keys(defaults)) {
+          if (k === '_id') continue;
+          const cur = String((r as any)[k] || '').trim();
+          const val = String(defaults[k] || '').trim();
+          if (!cur && val) {
+            next[k] = val;
+            fields.add(k);
+            filledFieldsCount[k] = (filledFieldsCount[k] || 0) + 1;
+          }
+        }
+        if (fields.size > 0) {
+          rowsAffected++;
+          next._aiFields = fields;
+        }
+        return next as ParsedRow;
+      });
+      setRows(withDefaults);
+      setErrors(runValidation(withDefaults));
+      if (rowsAffected > 0) {
+        setAutoFillSummary({
+          rows: rowsAffected,
+          fields: Object.entries(filledFieldsCount).map(([f, n]) => `${FIELD_LABELS[f as keyof typeof FIELD_LABELS] || f} (${n})`),
+        });
+      } else {
+        setAutoFillSummary(null);
+      }
       setDedupPending(dedupItems);
 
       if (dedupItems.length > 0) {
@@ -1973,6 +2028,21 @@ const ImportPage = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Auto-fill summary banner — defaults aplicados pela IA local sem custo */}
+        {autoFillSummary && rows.length > 0 && !result && (
+          <Card className="border-purple-500/40 bg-purple-500/5">
+            <CardContent className="p-3 text-xs">
+              <div className="font-semibold text-purple-700 dark:text-purple-300 mb-1">
+                ✨ Preenchimento automático: {autoFillSummary.rows} linha(s)
+              </div>
+              <div className="text-muted-foreground">
+                Campos obrigatórios preenchidos com defaults do sistema (segmento inferido, plano médio, perfil padrão, etc.):{' '}
+                <span className="text-purple-700 dark:text-purple-300">{autoFillSummary.fields.join(' • ')}</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Data table */}
         {rows.length > 0 && !result && (
