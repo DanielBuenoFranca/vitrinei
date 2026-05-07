@@ -110,6 +110,24 @@ export function Search3DHero({
           'linear-gradient(180deg, hsl(228 50% 6%) 0%, hsl(225 55% 4%) 100%)',
       }}
     >
+      {/* Pensamento discreto do Vini — canto superior esquerdo, transparente */}
+      <AnimatePresence>
+        {thought && (
+          <motion.div
+            key={thought}
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -8 }}
+            transition={{ duration: 0.4 }}
+            className="fixed top-1.5 left-2 z-30 max-w-[60%] pointer-events-none select-none"
+          >
+            <span className="text-[10.5px] italic text-white/55 leading-tight tracking-wide drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">
+              💭 {thought}
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ===================== HERO CARD: VINI + BUSCA ===================== */}
       <motion.div
         initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
