@@ -331,6 +331,21 @@ const Landing = () => {
   const filteredResults = searchResult.services;
   const hasResults = searchExecuted && (filteredResults.length > 0 || searchResult.products.length > 0);
   const noResults = searchExecuted && executedQuery && !fallbackToAll && filteredResults.length === 0 && searchResult.products.length === 0;
+  const providerEntries = (() => {
+    const providerMap = new Map<string, { products: typeof searchResult.products; services: typeof filteredResults }>();
+    searchResult.products.forEach(p => {
+      if (!providerMap.has(p.provider)) providerMap.set(p.provider, { products: [], services: [] });
+      providerMap.get(p.provider)!.products.push(p);
+    });
+    filteredResults.forEach(s => {
+      if (!providerMap.has(s.provider)) providerMap.set(s.provider, { products: [], services: [] });
+      providerMap.get(s.provider)!.services.push(s);
+    });
+    return Array.from(providerMap.entries());
+  })();
+
+  const getSegmentVisual = (segment?: string) => dbSegments.find(s => segment && normalizeText(s.id) === normalizeText(segment) || segment && normalizeText(s.name) === normalizeText(segment));
+  const getVisualIcon = (label: string) => pickVisualIcon(label);
 
   const handleAiSend = () => {
     if (!aiMessage.trim()) return;
