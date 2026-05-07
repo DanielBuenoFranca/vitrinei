@@ -494,7 +494,7 @@ const Landing = () => {
                                   </div>
                                   <div className="flex items-center gap-1 text-[10px] text-amber-300 mt-0.5">
                                     <Star className="w-2.5 h-2.5 fill-amber-300" />
-                                    <span>{(prov?.rating ?? data.services[0]?.rating ?? 4.8)}</span>
+                                    <span>{(data.services[0]?.rating ?? data.products[0]?.rating ?? 4.8)}</span>
                                     <span className="text-white/50">·</span>
                                     <MapPin className="w-2.5 h-2.5 text-white/50" />
                                     <span className="text-white/60 truncate">{data.services[0]?.distance || '2km'}</span>
