@@ -218,6 +218,14 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
             <Input value={form.name} onChange={e => { setForm(f => ({ ...f, name: e.target.value })); suggest(e.target.value, 'product', allProductNames); }} placeholder="Nome do produto" />
             <NameSuggestions suggestions={suggestions} loading={sugLoading} onSelect={(n) => { setForm(f => ({ ...f, name: n })); clearSuggestions(); }} />
           </div>
+          <ItemImagePicker
+            kind="product"
+            id={product?.id}
+            name={form.name}
+            segment={selectedSegments[0]}
+            imageUrl={imageUrl}
+            onChange={setImageUrl}
+          />
           <div className="grid grid-cols-3 gap-3">
             <div className="grid gap-2">
               <Label>Preço (R$)</Label>
