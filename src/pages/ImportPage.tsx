@@ -545,22 +545,52 @@ const validateBusinessRules = (
   });
 
   /* ── Item duplication within same provider group ──
-     Same name + unit for product/service in the same group = error. */
+     Regras (novas):
+     • Serviço repetido (mesmo nome+unidade) = mesma entidade — usado como
+       "agrupador" para receber novos produtos (NÃO é erro, é INFO).
+     • Produto repetido (mesmo nome+unidade) no mesmo prestador = erro,
+       a não ser que apareça em linhas com SERVIÇOS diferentes (vínculo
+       válido). Detectamos isso por chave (groupKey|product|name|unit|service).
+     • Linha sem serviço E sem produto = erro (já validado em validateFormat). */
   const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
-  const itemKeySeen = new Map<string, number>();
+  const serviceKeySeen = new Map<string, number>();
+  const productLinkSeen = new Map<string, number>();
   rows.forEach(row => {
     const groupKey = row._groupKey || computeGroupKey(row).key;
-    if (row.serviceName.trim()) {
-      const k = `${groupKey}|service|${norm(row.serviceName)}|${norm(row.serviceUnit || 'hr')}`;
-      if (itemKeySeen.has(k)) {
-        errors.push({ rowId: row._id, field: 'serviceName', message: `Serviço duplicado no mesmo prestador (linha ${itemKeySeen.get(k)}). Renomeie ou ajuste a unidade.`, severity: 'error' });
-      } else itemKeySeen.set(k, row._id);
+    const hasService = !!row.serviceName.trim();
+    const hasProduct = !!row.productName.trim();
+
+    if (hasService) {
+      const sk = `${groupKey}|service|${norm(row.serviceName)}|${norm(row.serviceUnit || 'hr')}`;
+      if (serviceKeySeen.has(sk)) {
+        errors.push({
+          rowId: row._id,
+          field: 'serviceName',
+          message: hasProduct
+            ? `Serviço já listado na linha ${serviceKeySeen.get(sk)} — produto desta linha será vinculado a ele.`
+            : `Serviço já listado na linha ${serviceKeySeen.get(sk)} — duplicata ignorada.`,
+          severity: 'info',
+        });
+      } else {
+        serviceKeySeen.set(sk, row._id);
+      }
     }
-    if (row.productName.trim()) {
-      const k = `${groupKey}|product|${norm(row.productName)}|${norm(row.productUnit || 'un')}`;
-      if (itemKeySeen.has(k)) {
-        errors.push({ rowId: row._id, field: 'productName', message: `Produto duplicado no mesmo prestador (linha ${itemKeySeen.get(k)}). Renomeie ou ajuste a unidade.`, severity: 'error' });
-      } else itemKeySeen.set(k, row._id);
+
+    if (hasProduct) {
+      const serviceTag = hasService ? norm(row.serviceName) + '|' + norm(row.serviceUnit || 'hr') : '__no_service__';
+      const pk = `${groupKey}|product|${norm(row.productName)}|${norm(row.productUnit || 'un')}|${serviceTag}`;
+      if (productLinkSeen.has(pk)) {
+        errors.push({
+          rowId: row._id,
+          field: 'productName',
+          message: hasService
+            ? `Produto já vinculado a este serviço na linha ${productLinkSeen.get(pk)}.`
+            : `Produto duplicado no mesmo prestador (linha ${productLinkSeen.get(pk)}). Renomeie ou ajuste a unidade.`,
+          severity: 'error',
+        });
+      } else {
+        productLinkSeen.set(pk, row._id);
+      }
     }
   });
 
