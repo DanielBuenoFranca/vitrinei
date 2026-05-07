@@ -629,12 +629,14 @@ const ImportPage = () => {
   const [fileName, setFileName] = useState('');
   const [editingCell, setEditingCell] = useState<{ rowId: number; field: string } | null>(null);
   const [existingSegments, setExistingSegments] = useState<Set<string>>(new Set());
+  const [segmentMetas, setSegmentMetas] = useState<{ name: string; tags: string[] }[]>([]);
   const [existingProviders, setExistingProviders] = useState<ExistingProvider[]>([]);
   const [dbLoaded, setDbLoaded] = useState(false);
   const [importedFileHashes, setImportedFileHashes] = useState<Set<string>>(new Set());
   const [importProgress, setImportProgress] = useState<{ step: string; percent: number } | null>(null);
   const [templateProgress, setTemplateProgress] = useState<{ step: string; percent: number } | null>(null);
   const [generatingTemplate, setGeneratingTemplate] = useState(false);
+  const [autoFillSummary, setAutoFillSummary] = useState<{ rows: number; fields: string[] } | null>(null);
 
   const handleGenerateTemplate = useCallback(async () => {
     setGeneratingTemplate(true);
@@ -663,10 +665,12 @@ const ImportPage = () => {
   useEffect(() => {
     const load = async () => {
       const [segRes, provRes] = await Promise.all([
-        supabase.from('segments').select('name'),
+        supabase.from('segments').select('name, suggested_tags'),
         supabase.from('providers').select('id, name, segment, phone, email, cpf_cnpj'),
       ]);
-      setExistingSegments(new Set((segRes.data || []).map(s => s.name)));
+      const segData = (segRes.data || []) as any[];
+      setExistingSegments(new Set(segData.map(s => s.name)));
+      setSegmentMetas(segData.map(s => ({ name: s.name, tags: s.suggested_tags || [] })));
       setExistingProviders((provRes.data || []) as ExistingProvider[]);
       setDbLoaded(true);
     };
