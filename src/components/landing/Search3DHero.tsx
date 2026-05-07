@@ -128,13 +128,30 @@ export function Search3DHero({
         }}
       >
         <div className="flex items-center gap-3">
-          <motion.img
-            src={viniAvatar}
-            alt="Vini"
-            className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 drop-shadow-[0_6px_22px_rgba(168,140,255,0.65)]"
-            animate={{ y: [0, -4, 0] }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-          />
+          <div className="relative shrink-0">
+            <motion.img
+              src={viniAvatar}
+              alt="Vini"
+              className="w-16 h-16 sm:w-20 sm:h-20 drop-shadow-[0_6px_22px_rgba(168,140,255,0.65)]"
+              animate={{ y: [0, -4, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            />
+            <AnimatePresence>
+              {thought && (
+                <motion.div
+                  key={thought}
+                  initial={{ opacity: 0, y: 6, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.95 }}
+                  transition={{ duration: 0.35 }}
+                  className="absolute left-[105%] top-1 z-20 max-w-[200px] rounded-2xl rounded-bl-sm bg-white/95 px-2.5 py-1.5 text-[10.5px] font-medium text-violet-900 shadow-[0_8px_22px_-10px_rgba(0,0,0,.6)] pointer-events-none"
+                  style={{ whiteSpace: 'normal' }}
+                >
+                  <span className="opacity-80">{thought}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-white font-display font-bold text-lg sm:text-2xl leading-tight text-center">
               Descreva o que <span className="text-violet-200">você precisa</span>
