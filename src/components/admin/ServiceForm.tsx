@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { X } from 'lucide-react';
 import { useNameSuggestion } from '@/hooks/useNameSuggestion';
 import { NameSuggestions } from '@/components/admin/NameSuggestions';
+import { ItemImagePicker } from '@/components/admin/ItemImagePicker';
 
 interface DynamicService {
   id: number;
@@ -69,6 +70,7 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
   const [availableProducts, setAvailableProducts] = useState<AvailableProduct[]>([]);
   const [saving, setSaving] = useState(false);
   const [allServiceNames, setAllServiceNames] = useState<string[]>([]);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const { suggestions, loading: sugLoading, suggest, clear: clearSuggestions } = useNameSuggestion();
 
   useEffect(() => {
@@ -97,9 +99,11 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
         quantity: (service as any).quantity ?? 0,
       });
       setLinkedProductIds(service.linked_product_ids || []);
+      setImageUrl((service as any).image_url || null);
     } else {
       setForm({ name: '', segment: segments[0]?.name || '', provider: '', provider_id: null, labor_cost: 0, rating: 4.5, distance: '2 km', time: '45 min', service_id: Math.floor(Math.random() * 9000) + 1000, unit: 'hr', quantity: 0 });
       setLinkedProductIds([]);
+      setImageUrl(null);
     }
   }, [service, open, segments]);
 
@@ -146,6 +150,7 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
       service_id: form.service_id, labor_cost: form.labor_cost,
       linked_product_ids: linkedProductIds,
       unit: form.unit, quantity: form.quantity,
+      image_url: imageUrl,
     };
     if (isEdit) {
       const { error } = await supabase.from('dynamic_services').update(data).eq('id', service!.id);
@@ -195,6 +200,14 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
             <Input value={form.name} onChange={e => { setForm(f => ({ ...f, name: e.target.value })); suggest(e.target.value, 'service', allServiceNames); }} placeholder="Nome do serviço" />
             <NameSuggestions suggestions={suggestions} loading={sugLoading} onSelect={(n) => { setForm(f => ({ ...f, name: n })); clearSuggestions(); }} />
           </div>
+          <ItemImagePicker
+            kind="service"
+            id={service?.id}
+            name={form.name}
+            segment={form.segment}
+            imageUrl={imageUrl}
+            onChange={setImageUrl}
+          />
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
               <Label>Segmento *</Label>

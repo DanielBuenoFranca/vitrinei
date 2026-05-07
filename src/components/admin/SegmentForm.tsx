@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, Sparkles, X, Plus, Pencil, Check } from 'lucide-react';
+import { ItemImagePicker } from '@/components/admin/ItemImagePicker';
 
 interface Segment {
   id: number;
@@ -32,6 +33,7 @@ export function SegmentForm({ open, onClose, onSaved, segment }: SegmentFormProp
   const [newTag, setNewTag] = useState('');
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -41,6 +43,7 @@ export function SegmentForm({ open, onClose, onSaved, segment }: SegmentFormProp
     setLoadingTags(false);
     setNewTag('');
     setEditingIdx(null);
+    setImageUrl((segment as any)?.image_url || null);
 
     // Auto-generate tags for new segments when name is provided via edit
     if (segment?.name && (!segment.suggested_tags || segment.suggested_tags.length === 0)) {
@@ -132,7 +135,7 @@ export function SegmentForm({ open, onClose, onSaved, segment }: SegmentFormProp
     const trimmed = name.trim().toLowerCase();
     if (!trimmed) { toast.error('Nome é obrigatório'); return; }
     setSaving(true);
-    const payload = { name: trimmed, suggested_tags: selectedTags };
+    const payload: any = { name: trimmed, suggested_tags: selectedTags, image_url: imageUrl };
     if (isEdit) {
       const { error } = await supabase.from('segments').update(payload).eq('id', segment!.id);
       if (error) { toast.error(error.message.includes('unique') ? 'Segmento já existe' : 'Erro ao atualizar'); setSaving(false); return; }
@@ -179,6 +182,14 @@ export function SegmentForm({ open, onClose, onSaved, segment }: SegmentFormProp
             </div>
             <p className="text-[10px] text-muted-foreground">Clique em "Gerar Tags" ou saia do campo para a IA sugerir tags de produtos para este segmento</p>
           </div>
+
+          <ItemImagePicker
+            kind="segment"
+            id={segment?.id}
+            name={name}
+            imageUrl={imageUrl}
+            onChange={setImageUrl}
+          />
 
           {/* Tags selecionadas */}
           {selectedTags.length > 0 && (

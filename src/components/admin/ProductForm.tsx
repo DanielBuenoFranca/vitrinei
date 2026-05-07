@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNameSuggestion } from '@/hooks/useNameSuggestion';
 import { NameSuggestions } from '@/components/admin/NameSuggestions';
+import { ItemImagePicker } from '@/components/admin/ItemImagePicker';
 import { X, Plus, Loader2, Sparkles } from 'lucide-react';
 
 interface DynamicProduct {
@@ -77,6 +78,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
   const [newTag, setNewTag] = useState('');
   const [saving, setSaving] = useState(false);
   const [allProductNames, setAllProductNames] = useState<string[]>([]);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const { suggestions, loading: sugLoading, suggest, clear: clearSuggestions } = useNameSuggestion();
 
   useEffect(() => {
@@ -98,6 +100,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
         quantity: (product as any).quantity ?? 0,
       });
       setSelectedTags(product.tags || []);
+      setImageUrl((product as any).image_url || null);
       if (product.provider_id) {
         const prov = providers.find(p => p.id === product.provider_id);
         if (prov) {
@@ -111,6 +114,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
       setSelectedTags([]);
       setSelectedSegments([]);
       setSegmentTags([]);
+      setImageUrl(null);
     }
   }, [product, open, providers]);
 
@@ -183,6 +187,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
       product_id: form.product_id, related_service_ids: [] as number[],
       unit: form.unit,
       quantity: form.quantity,
+      image_url: imageUrl,
     };
     if (isEdit) {
       const { error } = await supabase.from('dynamic_products').update(data).eq('id', product!.id);
@@ -213,6 +218,14 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
             <Input value={form.name} onChange={e => { setForm(f => ({ ...f, name: e.target.value })); suggest(e.target.value, 'product', allProductNames); }} placeholder="Nome do produto" />
             <NameSuggestions suggestions={suggestions} loading={sugLoading} onSelect={(n) => { setForm(f => ({ ...f, name: n })); clearSuggestions(); }} />
           </div>
+          <ItemImagePicker
+            kind="product"
+            id={product?.id}
+            name={form.name}
+            segment={selectedSegments[0]}
+            imageUrl={imageUrl}
+            onChange={setImageUrl}
+          />
           <div className="grid grid-cols-3 gap-3">
             <div className="grid gap-2">
               <Label>Preço (R$)</Label>
