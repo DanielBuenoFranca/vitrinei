@@ -2000,52 +2000,50 @@ const ImportPage = () => {
               </CardHeader>
               <CardContent>
                 <div
-                  className="border rounded-md import-preview-scroll flex flex-col"
-                  style={{ maxHeight: '50vh' }}
+                  className="border rounded-md import-preview-scroll"
+                  style={{
+                    overflow: 'auto',
+                    height: '50vh',
+                    scrollbarGutter: 'stable',
+                  }}
                 >
-                  {/* Wrapper externo: somente scroll horizontal, fixo na parte inferior do card */}
-                  <div style={{ overflowX: 'auto', overflowY: 'hidden', flex: '1 1 auto', minHeight: 0 }}>
-                    {/* Wrapper interno: somente scroll vertical da tabela */}
-                    <div style={{ overflowY: 'auto', maxHeight: '100%', height: '100%' }}>
-                      <Table>
-                        <TableHeader className="sticky top-0 bg-card z-10">
-                          <TableRow>
-                            <TableHead className="text-[10px] w-8">#</TableHead>
-                            <TableHead className="text-[10px] w-16">Status</TableHead>
-                            {COLUMNS.map(col => (
-                              <TableHead key={col} className="text-[10px] whitespace-nowrap">{FIELD_LABELS[col]}</TableHead>
-                            ))}
-                            <TableHead className="text-[10px] w-8"></TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {rows.map(row => (
-                            <TableRow
-                              key={row._id}
-                              className={
-                                row._aiFields && row._aiFields.size > 0
-                                  ? 'bg-purple-500/5'
-                                  : row._matchType !== 'new'
-                                    ? 'bg-blue-500/5'
-                                    : ''
-                              }
-                            >
-                              <TableCell className="text-[10px] text-muted-foreground font-mono">{row._id}</TableCell>
-                              <TableCell className="py-1 px-1">{matchBadge(row)}</TableCell>
-                              {COLUMNS.map(col => (
-                                <TableCell key={col} className="py-1 px-1">{renderCell(row, col)}</TableCell>
-                              ))}
-                              <TableCell className="py-1 px-0">
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeRow(row._id)}>
-                                  <Trash2 className="w-3 h-3 text-muted-foreground hover:text-destructive" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-card z-10">
+                      <TableRow>
+                        <TableHead className="text-[10px] w-8">#</TableHead>
+                        <TableHead className="text-[10px] w-16">Status</TableHead>
+                        {COLUMNS.map(col => (
+                          <TableHead key={col} className="text-[10px] whitespace-nowrap">{FIELD_LABELS[col]}</TableHead>
+                        ))}
+                        <TableHead className="text-[10px] w-8"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {rows.map(row => (
+                        <TableRow
+                          key={row._id}
+                          className={
+                            row._aiFields && row._aiFields.size > 0
+                              ? 'bg-purple-500/5'
+                              : row._matchType !== 'new'
+                                ? 'bg-blue-500/5'
+                                : ''
+                          }
+                        >
+                          <TableCell className="text-[10px] text-muted-foreground font-mono">{row._id}</TableCell>
+                          <TableCell className="py-1 px-1">{matchBadge(row)}</TableCell>
+                          {COLUMNS.map(col => (
+                            <TableCell key={col} className="py-1 px-1">{renderCell(row, col)}</TableCell>
                           ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
+                          <TableCell className="py-1 px-0">
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeRow(row._id)}>
+                              <Trash2 className="w-3 h-3 text-muted-foreground hover:text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               </CardContent>
             </Card>
