@@ -847,9 +847,40 @@ const ImportPage = () => {
         }
       }
 
-      setRows(matched);
-      setErrors(runValidation(matched));
-      setDedupPending(dedupItems);
+      // Auto-aplicar DEFAULTS DO SISTEMA (heurístico, sem IA): preenche
+      // campos obrigatórios vazios sem custo de créditos antes do preview.
+      const filledFieldsCount: Record<string, number> = {};
+      let rowsAffected = 0;
+      const withDefaults: ParsedRow[] = matched.map(r => {
+        const defaults = heuristicEnrich(r, segmentMetas);
+        const fields: Set<string> = new Set();
+        const next: any = { ...r };
+        for (const k of Object.keys(defaults)) {
+          if (k === '_id') continue;
+          const cur = String((r as any)[k] || '').trim();
+          const val = String(defaults[k] || '').trim();
+          if (!cur && val) {
+            next[k] = val;
+            fields.add(k);
+            filledFieldsCount[k] = (filledFieldsCount[k] || 0) + 1;
+          }
+        }
+        if (fields.size > 0) {
+          rowsAffected++;
+          next._aiFields = fields;
+        }
+        return next as ParsedRow;
+      });
+      setRows(withDefaults);
+      setErrors(runValidation(withDefaults));
+      if (rowsAffected > 0) {
+        setAutoFillSummary({
+          rows: rowsAffected,
+          fields: Object.entries(filledFieldsCount).map(([f, n]) => `${FIELD_LABELS[f as keyof typeof FIELD_LABELS] || f} (${n})`),
+        });
+      } else {
+        setAutoFillSummary(null);
+      }
 
       if (dedupItems.length > 0) {
         setShowDedupModal(true);
