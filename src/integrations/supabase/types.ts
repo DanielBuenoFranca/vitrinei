@@ -1214,6 +1214,7 @@ export type Database = {
         Returns: Json
       }
       current_ai_savings: { Args: never; Returns: Json }
+      get_public_display_name: { Args: { _user_id: string }; Returns: string }
       get_user_roles: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"][]
