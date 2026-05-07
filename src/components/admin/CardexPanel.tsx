@@ -33,6 +33,7 @@ type EntryRow = {
   unit_cost: number;
   applied_price: number;
   apply_choice: "keep" | "custom";
+  kind: "product" | "service";
 };
 
 export function CardexPanel() {
