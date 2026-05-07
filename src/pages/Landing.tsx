@@ -421,70 +421,42 @@ const Landing = () => {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background">
-      {/* Navbar */}
-      <nav className="fixed top-0 w-full z-50 bg-card/80 backdrop-blur-lg border-b border-border">
-        <div className="container mx-auto flex flex-wrap items-center justify-between h-auto min-h-[3.5rem] px-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Zap className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="font-display text-xl font-bold text-foreground">Vitrinei Connect</span>
-            <ThemeSwitcher />
-          </div>
-          <HeaderMarquee />
-          <div className="flex items-center gap-2">
-            {user ? (
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-foreground font-medium hidden sm:inline truncate max-w-[120px]">{displayName || user.email?.split('@')[0]}</span>
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 hidden sm:inline-flex">{profileLabel}</Badge>
-                <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => navigate('/carteira')}>
-                  💰 Carteira
-                </Button>
-                <Button variant="ghost" size="sm" className="text-xs" onClick={signOut}>Sair</Button>
-              </div>
-            ) : (
-              <Button variant="default" size="sm" className="text-xs" onClick={() => navigate('/auth')}>Entrar</Button>
-            )}
-            <div className="relative group">
-              <Button variant="ghost" size="icon" className="text-muted-foreground h-8 w-8">
-                <Plus className="w-4 h-4" />
-              </Button>
-              <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 min-w-[220px] z-50">
-                <div className="p-1.5 space-y-0.5">
-                  <button onClick={() => navigate('/demos')} className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors flex items-center gap-2">
-                    <span className="w-4 text-center">📱</span> Demonstrações
-                  </button>
-                  <button onClick={() => navigate('/processos')} className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors flex items-center gap-2">
-                    <span className="w-4 text-center">🔄</span> Fluxos
-                  </button>
-                  <button onClick={() => navigate('/gestao')} className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors flex items-center gap-2">
-                    <span className="w-4 text-center">🔧</span> Gestão
-                  </button>
-                  <button onClick={() => navigate('/jornada-cliente')} className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors flex items-center gap-2">
-                    <span className="w-4 text-center">🛒</span> Jornada
-                  </button>
-                  <button onClick={() => navigate('/mei-acompanhamento')} className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors flex items-center gap-2">
-                    <span className="w-4 text-center">📊</span> MEI
-                  </button>
-                  <button onClick={() => navigate('/dropshipping')} className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors flex items-center gap-2">
-                    <span className="w-4 text-center">🌐</span> Drop
-                  </button>
-                  <button onClick={() => navigate('/central-atendimento')} className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors flex items-center gap-2">
-                    <span className="w-4 text-center">🎧</span> Central
-                  </button>
-                  <div className="border-t border-border my-1" />
-                  <button onClick={() => navigate('/admin')} className="w-full text-left px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/10 rounded-md transition-colors flex items-center gap-2">
-                    <Settings className="w-3.5 h-3.5" /> Painel Administrativo
-                  </button>
-                </div>
-              </div>
+      {/* Cabeçalho oculto na tela de busca — acesso ao menu via botão flutuante */}
+      <div className="fixed top-2 right-2 z-50 flex items-center gap-1.5">
+        {user ? (
+          <>
+            <Button variant="secondary" size="sm" className="h-8 text-[11px] gap-1 backdrop-blur-md bg-card/70" onClick={() => navigate('/carteira')}>
+              💰
+            </Button>
+            <Button variant="ghost" size="sm" className="h-8 text-[11px] backdrop-blur-md bg-card/70" onClick={signOut}>Sair</Button>
+          </>
+        ) : (
+          <Button variant="default" size="sm" className="h-8 text-[11px]" onClick={() => navigate('/auth')}>Entrar</Button>
+        )}
+        <div className="relative group">
+          <Button variant="ghost" size="icon" className="h-8 w-8 backdrop-blur-md bg-card/70">
+            <Plus className="w-4 h-4" />
+          </Button>
+          <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 min-w-[200px] z-50">
+            <div className="p-1.5 space-y-0.5">
+              <button onClick={() => navigate('/demos')} className="w-full text-left px-3 py-1.5 text-xs hover:bg-muted rounded-md flex items-center gap-2">📱 Demonstrações</button>
+              <button onClick={() => navigate('/processos')} className="w-full text-left px-3 py-1.5 text-xs hover:bg-muted rounded-md flex items-center gap-2">🔄 Fluxos</button>
+              <button onClick={() => navigate('/gestao')} className="w-full text-left px-3 py-1.5 text-xs hover:bg-muted rounded-md flex items-center gap-2">🔧 Gestão</button>
+              <button onClick={() => navigate('/jornada-cliente')} className="w-full text-left px-3 py-1.5 text-xs hover:bg-muted rounded-md flex items-center gap-2">🛒 Jornada</button>
+              <button onClick={() => navigate('/mei-acompanhamento')} className="w-full text-left px-3 py-1.5 text-xs hover:bg-muted rounded-md flex items-center gap-2">📊 MEI</button>
+              <button onClick={() => navigate('/dropshipping')} className="w-full text-left px-3 py-1.5 text-xs hover:bg-muted rounded-md flex items-center gap-2">🌐 Drop</button>
+              <button onClick={() => navigate('/central-atendimento')} className="w-full text-left px-3 py-1.5 text-xs hover:bg-muted rounded-md flex items-center gap-2">🎧 Central</button>
+              <div className="border-t border-border my-1" />
+              <button onClick={() => navigate('/admin')} className="w-full text-left px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/10 rounded-md flex items-center gap-2">
+                <Settings className="w-3.5 h-3.5" /> Painel Admin
+              </button>
             </div>
           </div>
         </div>
-      </nav>
+      </div>
 
       {/* Main content area - fills remaining space */}
-      <main className="flex-1 flex flex-col overflow-hidden pt-14">
+      <main className="flex-1 flex flex-col overflow-hidden">
       {/* Access Banner for visitors/leads */}
       <AccessBanner />
 

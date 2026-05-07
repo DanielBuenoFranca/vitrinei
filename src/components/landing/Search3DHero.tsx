@@ -1,5 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useState, useRef, type ReactNode } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, Search, Sparkles, Star } from 'lucide-react';
 import {
   Wrench, Scissors, Droplets, Sprout, Truck, Hammer, Stethoscope,
@@ -59,6 +59,8 @@ export function Search3DHero({
   segments, activeSegments, toggleSegment, children,
 }: Props) {
   const [top, setTop] = useState<Top[]>([]);
+  const [thought, setThought] = useState<string | null>(null);
+  const thoughtTimer = useRef<number | null>(null);
 
   useEffect(() => {
     supabase.from('providers')
@@ -70,12 +72,40 @@ export function Search3DHero({
       .then(({ data }) => setTop((data as any) || []));
   }, []);
 
+  // Pensamentos aleatórios do Vini — aparecem discretamente e somem ao interagir
+  const thoughts = [
+    'Posso encontrar um prestador próximo de você ✨',
+    'Diga ou digite o que precisa — eu cuido do resto.',
+    'Mais de 2.450 profissionais prontos agora.',
+    'Quer economizar? Posso sugerir um combo.',
+    'Estou aqui se precisar — só falar comigo.',
+    'Vou organizar tudo na sua agenda.',
+  ];
+  useEffect(() => {
+    let i = 0;
+    const show = () => {
+      setThought(thoughts[Math.floor(Math.random() * thoughts.length)]);
+      if (thoughtTimer.current) window.clearTimeout(thoughtTimer.current);
+      thoughtTimer.current = window.setTimeout(() => setThought(null), 5000);
+    };
+    show();
+    const interval = window.setInterval(() => { i++; show(); }, 9000);
+    return () => {
+      clearInterval(interval);
+      if (thoughtTimer.current) window.clearTimeout(thoughtTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const dismissThought = () => setThought(null);
+
   // Mostra até 6 segmentos no grid principal (igual mockup: 5 + scroll horizontal)
   const segs = segments.slice(0, 10);
 
   return (
     <div
       className="relative h-full overflow-y-auto px-3 pt-3 pb-8"
+      onScroll={dismissThought}
+      onPointerDown={dismissThought}
       style={{
         background:
           'radial-gradient(ellipse at 50% 0%, hsl(255 60% 22%) 0%, transparent 55%),' +
@@ -98,13 +128,30 @@ export function Search3DHero({
         }}
       >
         <div className="flex items-center gap-3">
-          <motion.img
-            src={viniAvatar}
-            alt="Vini"
-            className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 drop-shadow-[0_6px_22px_rgba(168,140,255,0.65)]"
-            animate={{ y: [0, -4, 0] }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-          />
+          <div className="relative shrink-0">
+            <motion.img
+              src={viniAvatar}
+              alt="Vini"
+              className="w-16 h-16 sm:w-20 sm:h-20 drop-shadow-[0_6px_22px_rgba(168,140,255,0.65)]"
+              animate={{ y: [0, -4, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            />
+            <AnimatePresence>
+              {thought && (
+                <motion.div
+                  key={thought}
+                  initial={{ opacity: 0, y: 6, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.95 }}
+                  transition={{ duration: 0.35 }}
+                  className="absolute left-[105%] top-1 z-20 max-w-[200px] rounded-2xl rounded-bl-sm bg-white/95 px-2.5 py-1.5 text-[10.5px] font-medium text-violet-900 shadow-[0_8px_22px_-10px_rgba(0,0,0,.6)] pointer-events-none"
+                  style={{ whiteSpace: 'normal' }}
+                >
+                  <span className="opacity-80">{thought}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-white font-display font-bold text-lg sm:text-2xl leading-tight text-center">
               Descreva o que <span className="text-violet-200">você precisa</span>
@@ -185,13 +232,7 @@ export function Search3DHero({
         </div>
       )}
 
-      {/* ===================== BOLHA "POSSO TE AJUDAR..." ===================== */}
-      <div className="mt-3 mx-auto max-w-2xl flex items-center gap-2 rounded-2xl bg-white/95 px-3 py-2.5 shadow-[0_10px_24px_-12px_rgba(0,0,0,.6)]">
-        <img src={viniAvatar} alt="" className="w-6 h-6 shrink-0" />
-        <span className="text-[12.5px] text-violet-900/95 font-medium">
-          Posso te ajudar a encontrar um prestador de serviços próximo
-        </span>
-      </div>
+      {/* (bolha estática removida — sugestões agora aparecem como pensamento do Vini perto do avatar) */}
 
       {/* ===================== SEGMENTOS 3D ===================== */}
       <div className="mt-3 mx-auto max-w-2xl">

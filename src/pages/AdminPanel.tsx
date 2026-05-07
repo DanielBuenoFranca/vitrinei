@@ -630,7 +630,14 @@ const AdminPanel = () => {
                           return (
                             <TableRow key={seg.id}>
                               <TableCell className="font-medium">
-                                <Badge variant="outline">{seg.name}</Badge>
+                                <div className="flex items-center gap-2">
+                                  {(seg as any).image_url ? (
+                                    <img src={(seg as any).image_url} alt={seg.name} className="h-9 w-9 rounded-md object-cover border" />
+                                  ) : (
+                                    <div className="h-9 w-9 rounded-md bg-muted border flex items-center justify-center text-[9px] text-muted-foreground">s/img</div>
+                                  )}
+                                  <Badge variant="outline">{seg.name}</Badge>
+                                </div>
                               </TableCell>
                               <TableCell className="text-center">{segProviders}</TableCell>
                               <TableCell className="text-center">{segServices}</TableCell>
@@ -697,7 +704,16 @@ const AdminPanel = () => {
                       <TableBody>
                         {services.map((svc) => (
                           <TableRow key={svc.id}>
-                            <TableCell className="font-medium">{svc.name}</TableCell>
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2">
+                                {(svc as any).image_url ? (
+                                  <img src={(svc as any).image_url} alt={svc.name} className="h-9 w-9 rounded-md object-cover border" />
+                                ) : (
+                                  <div className="h-9 w-9 rounded-md bg-muted border flex items-center justify-center text-[9px] text-muted-foreground">s/img</div>
+                                )}
+                                <span>{svc.name}</span>
+                              </div>
+                            </TableCell>
                             <TableCell><Badge variant="secondary">{svc.segment}</Badge></TableCell>
                             <TableCell>
                               <span>{svc.provider}</span>
@@ -781,7 +797,16 @@ const AdminPanel = () => {
                       <TableBody>
                         {products.map((prod) => (
                           <TableRow key={prod.id}>
-                            <TableCell className="font-medium">{prod.name}</TableCell>
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2">
+                                {(prod as any).image_url ? (
+                                  <img src={(prod as any).image_url} alt={prod.name} className="h-9 w-9 rounded-md object-cover border" />
+                                ) : (
+                                  <div className="h-9 w-9 rounded-md bg-muted border flex items-center justify-center text-[9px] text-muted-foreground">s/img</div>
+                                )}
+                                <span>{prod.name}</span>
+                              </div>
+                            </TableCell>
                             <TableCell>
                               <span>{prod.provider}</span>
                               {prod.provider_id && <Badge variant="outline" className="ml-1 text-[10px]">ID:{prod.provider_id}</Badge>}
