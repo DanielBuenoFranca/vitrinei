@@ -552,12 +552,13 @@ export function CampaignForm() {
       </Card>
 
       {/* Referral Summary Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {[
           { icon: Users, label: 'Total Indicações', value: summary.total, color: 'bg-primary/10 text-primary' },
-          { icon: Clock, label: 'Pendentes', value: summary.pending + summary.partial, color: 'bg-amber-500/10 text-amber-600' },
-          { icon: TrendingUp, label: 'Ativados', value: summary.activated, color: 'bg-green-500/10 text-green-600' },
-          { icon: DollarSign, label: 'Total Pago', value: `R$ ${summary.totalPaid.toFixed(2)}`, color: 'bg-blue-500/10 text-blue-600' },
+          { icon: Clock, label: 'Pendentes (links ativos)', value: summary.pending, color: 'bg-amber-500/10 text-amber-600' },
+          { icon: TrendingUp, label: 'Ativados (Lead)', value: summary.activated, color: 'bg-green-500/10 text-green-600' },
+          { icon: DollarSign, label: 'Total Pago (assinaturas)', value: `R$ ${totalSubsPaid.toFixed(2)}`, color: 'bg-blue-500/10 text-blue-600' },
+          { icon: Gift, label: 'Bonificação Gerada', value: `R$ ${bonusGenerated.toFixed(2)}`, color: 'bg-purple-500/10 text-purple-600' },
         ].map((stat) => (
           <Card key={stat.label}>
             <CardContent className="p-3 flex items-center gap-3">
