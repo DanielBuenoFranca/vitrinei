@@ -357,7 +357,25 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
         setSaving(false); return;
       }
 
-      toast.success(isEdit ? 'Usuário atualizado' : 'Usuário criado e ativado');
+      // 4) Persistir/atualizar assinatura (jornada Lead → Ativo)
+      try {
+        const planObj = activePlans.find(p => p.id === selectedPlanId);
+        if (planObj && userId && !String(userId).startsWith('lead-')) {
+          const { data: existingSub } = await supabase
+            .from('subscriptions').select('id, plan').eq('user_id', userId).maybeSingle();
+          if (!existingSub) {
+            await supabase.from('subscriptions').insert({
+              user_id: userId, plan: planObj.id, price: planObj.price, status: 'active',
+            });
+          } else if (existingSub.plan !== planObj.id) {
+            await supabase.from('subscriptions').update({
+              plan: planObj.id, price: planObj.price, status: 'active',
+            }).eq('id', existingSub.id);
+          }
+        }
+      } catch (e) { console.warn('subscription persist:', e); }
+
+      toast.success(isEdit ? 'Usuário atualizado' : 'Usuário criado — jornada de Lead iniciada');
       onSaved();
       onClose();
     } catch (e: any) {
