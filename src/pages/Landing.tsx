@@ -9,10 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Search, ArrowRight, Zap, Sparkles, Clock, MapPin, DollarSign,
+  Search, Zap, Sparkles, Clock, MapPin, DollarSign,
   Headphones, ShoppingCart, BarChart3, Send, Star,
   Package, TrendingDown, Navigation, Users, Shield, MessageCircle,
-  ChevronDown, ShoppingBag, Wrench as WrenchIcon, Store, Plus, CheckCircle2, X, Trash2, Settings, CreditCard, AlertTriangle, Minus, Home
+  ChevronDown, ShoppingBag, Wrench as WrenchIcon, Store, Plus, CheckCircle2, X, Trash2, Settings, CreditCard, AlertTriangle, Minus, Home,
+  Scissors, Droplets, Sprout, Truck, Hammer, Stethoscope, GraduationCap, Car, Brush, Cpu, Heart, PawPrint, PartyPopper, Leaf, Monitor, Gem, Shirt, Music
 } from 'lucide-react';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
@@ -34,6 +35,12 @@ const aiSuggestions = [
   '✨ Assine e tenha acesso a serviços exclusivos com até 30% de economia.',
   '🤝 É prestador? Cadastre-se e conquiste novos clientes todo dia.',
 ];
+
+const normalizeText = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+const slugify = (value: string) => normalizeText(value).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+const visualIcons = [Scissors, Droplets, Sprout, Truck, Hammer, Stethoscope, GraduationCap, Car, Brush, Cpu, Heart, PawPrint, PartyPopper, Leaf, Monitor, Gem, Shirt, Music, WrenchIcon, ShoppingBag];
+const pickVisualIcon = (seed: string) => visualIcons[Math.abs([...normalizeText(seed)].reduce((acc, c) => acc + c.charCodeAt(0), 0)) % visualIcons.length];
 
 
 const Landing = () => {
@@ -321,6 +328,23 @@ const Landing = () => {
   const filteredResults = searchResult.services;
   const hasResults = searchExecuted && (filteredResults.length > 0 || searchResult.products.length > 0);
   const noResults = searchExecuted && executedQuery && !fallbackToAll && filteredResults.length === 0 && searchResult.products.length === 0;
+  const providerEntries = (() => {
+    const providerMap = new Map<string, { products: typeof searchResult.products; services: typeof filteredResults }>();
+    searchResult.products.forEach(p => {
+      if (!providerMap.has(p.provider)) providerMap.set(p.provider, { products: [], services: [] });
+      providerMap.get(p.provider)!.products.push(p);
+    });
+    filteredResults.forEach(s => {
+      if (!providerMap.has(s.provider)) providerMap.set(s.provider, { products: [], services: [] });
+      providerMap.get(s.provider)!.services.push(s);
+    });
+    return Array.from(providerMap.entries());
+  })();
+
+  const getSegmentVisual = (segment?: string) => segment
+    ? dbSegments.find(s => normalizeText(s.id) === normalizeText(segment) || normalizeText(s.name) === normalizeText(segment))
+    : undefined;
+  const getVisualIcon = (label: string) => pickVisualIcon(label);
 
   const handleAiSend = () => {
     if (!aiMessage.trim()) return;
@@ -464,8 +488,8 @@ const Landing = () => {
       {/* Access Banner for visitors/leads */}
       <AccessBanner />
 
-      {/* Hero 3D — só quando ainda não houve busca */}
-      {!searchExecuted && (
+      {/* Tela unificada 3D: busca e resultados no mesmo canvas */}
+      {(
         <section className="flex-1 overflow-hidden">
           <Search3DHero
             searchQuery={searchQuery}
@@ -477,12 +501,198 @@ const Landing = () => {
             segments={dbSegments}
             activeSegments={activeSegments}
             toggleSegment={toggleSegment}
-          />
+          >
+            {searchExecuted && (
+              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 pb-6">
+                <div className="rounded-[24px] border border-primary/20 bg-card/90 p-3 shadow-xl backdrop-blur-xl">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <Badge className={`${fallbackToAll ? 'bg-accent/10 text-accent border-accent/20' : 'bg-success/10 text-success border-success/20'} text-xs px-3 py-1`}>
+                        {fallbackToAll ? <Sparkles className="w-3.5 h-3.5 mr-1.5" /> : <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />}
+                        {fallbackToAll ? 'Catálogo completo' : 'Resultados na mesma tela'}
+                      </Badge>
+                      <p className="mt-1 text-[11px] text-muted-foreground truncate">
+                        {executedQuery ? `Busca: “${executedQuery}”` : 'Navegação por segmentos'} · {filteredResults.length} serviço(s) · {searchResult.products.length} produto(s)
+                      </p>
+                    </div>
+                    <label className="flex items-center gap-1.5 shrink-0 cursor-pointer select-none rounded-full border border-border bg-background/60 px-2 py-1">
+                      <Checkbox checked={showSimulated} onCheckedChange={(v) => setShowSimulated(!!v)} className="h-3.5 w-3.5" />
+                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">Incluir simulados</span>
+                    </label>
+                  </div>
+
+                  <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                    {dbSegments.map((seg) => {
+                      const isActive = activeSegments.includes(seg.id);
+                      const Icon = getVisualIcon(seg.label);
+                      return (
+                        <button
+                          key={seg.id}
+                          onClick={() => toggleSegment(seg.id)}
+                          className={`shrink-0 w-[72px] rounded-2xl p-1.5 text-left transition-all ${isActive ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted/60 text-foreground hover:bg-muted'}`}
+                        >
+                          <div className="aspect-square rounded-xl overflow-hidden bg-background/40 flex items-center justify-center">
+                            {seg.image_url ? <img src={seg.image_url} alt={seg.label} className="w-full h-full object-cover" /> : <Icon className="w-7 h-7" />}
+                          </div>
+                          <p className="mt-1 text-[9px] font-bold leading-tight truncate">{seg.label}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {hasResults && (
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {providerEntries.map(([providerName, data], idx) => {
+                      const prov = dbProviders.get(providerName);
+                      const segName = data.services[0]?.segment || data.products[0]?.tags?.[0] || providerName;
+                      const segVisual = getSegmentVisual(segName);
+                      const Icon = getVisualIcon(`${providerName}-${segName}`);
+                      const expanded = expandedProviders.has(providerName);
+                      const slug = slugify(providerName);
+                      return (
+                        <motion.div key={providerName} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }} className="overflow-hidden rounded-[24px] border border-border/70 bg-card/95 shadow-xl">
+                          <button onClick={() => toggleProviderExpanded(providerName)} className="block w-full text-left">
+                            <div className="relative aspect-[16/9] overflow-hidden bg-muted">
+                              {prov?.logo_url ? (
+                                <img src={prov.logo_url} alt={providerName} className="w-full h-full object-cover" />
+                              ) : segVisual?.image_url ? (
+                                <img src={segVisual.image_url} alt={segName} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-primary/10">
+                                  <Icon className="w-16 h-16 text-primary drop-shadow-lg" />
+                                </div>
+                              )}
+                              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background/95 via-background/50 to-transparent p-3">
+                                <div className="flex items-end justify-between gap-2">
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <h3 className="font-display text-sm font-bold text-foreground truncate">{providerName}</h3>
+                                      <TopProviderBadge active={prov?.is_top_provider} size="xs" />
+                                    </div>
+                                    <p className="text-[11px] text-muted-foreground truncate">{data.services.length} serviço(s) · {data.products.length} produto(s)</p>
+                                  </div>
+                                  <ChevronDown className={`w-4 h-4 text-foreground transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+
+                          <div className="p-3 flex items-center justify-between gap-2 border-t border-border/60">
+                            <div className="flex items-center gap-2 text-[11px] text-muted-foreground min-w-0">
+                              <MapPin className="w-3.5 h-3.5 shrink-0" />
+                              <span className="truncate">{data.services[0]?.distance || data.products[0]?.distance || 'Próximo'}</span>
+                              <Star className="w-3.5 h-3.5 fill-accent text-accent shrink-0" />
+                              <span>{data.services[0]?.rating || data.products[0]?.rating || '4.8'}</span>
+                            </div>
+                            {dbProviderNames.has(providerName) && (
+                              <Button variant="default" size="sm" className="h-7 px-2.5 text-[10px] gap-1" onClick={() => navigate(`/loja/${slug}`)}>
+                                <Store className="w-3.5 h-3.5" /> Loja
+                              </Button>
+                            )}
+                          </div>
+
+                          <AnimatePresence initial={false}>
+                            {expanded && (
+                              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                                <div className="p-3 pt-0 space-y-3">
+                                  {data.services.length > 0 && (
+                                    <div className="space-y-2">
+                                      <p className="text-[11px] font-semibold text-primary flex items-center gap-1"><WrenchIcon className="w-3.5 h-3.5" /> Serviços</p>
+                                      {data.services.map((result) => {
+                                        const seg = getSegmentVisual(result.segment);
+                                        const SIcon = getVisualIcon(result.name);
+                                        return (
+                                          <button key={result.id} onClick={() => {
+                                            if (accessLevel === 'visitor') { toast.info('Crie sua conta para adicionar serviços ao carrinho', { action: { label: 'Cadastrar', onClick: () => navigate('/auth') }, duration: 5000 }); return; }
+                                            if (accessLevel === 'lead') { toast.warning('Confirme seu e-mail para contratar serviços', { description: 'Verifique sua caixa de entrada e clique no link de confirmação.', action: { label: 'Ver status', onClick: () => navigate('/carteira') }, duration: 6000 }); return; }
+                                            toggleServiceInCart(result);
+                                          }} className={`w-full rounded-2xl border p-2 text-left transition-all ${isInServiceCart(result.id) ? 'border-primary bg-primary/10' : 'border-border/70 bg-background/50 hover:border-primary/40'}`}>
+                                            <div className="flex items-center gap-2">
+                                              <div className="w-14 h-14 rounded-xl overflow-hidden bg-primary/10 flex items-center justify-center shrink-0">
+                                                {seg?.image_url ? <img src={seg.image_url} alt={result.name} className="w-full h-full object-cover" /> : <SIcon className="w-7 h-7 text-primary" />}
+                                              </div>
+                                              <div className="min-w-0 flex-1">
+                                                <h4 className="font-semibold text-sm text-foreground truncate">{result.name}</h4>
+                                                <p className="text-[11px] text-muted-foreground truncate"><MaskedPrice value={result.price} /> · {result.time}</p>
+                                              </div>
+                                              {isInServiceCart(result.id) ? <CheckCircle2 className="w-4 h-4 text-primary" /> : <Plus className="w-4 h-4 text-primary" />}
+                                            </div>
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                  {data.products.length > 0 && (
+                                    <div className="space-y-2">
+                                      <p className="text-[11px] font-semibold text-success flex items-center gap-1"><ShoppingBag className="w-3.5 h-3.5" /> Produtos</p>
+                                      {data.products.map((product) => {
+                                        const PIcon = getVisualIcon(product.name);
+                                        return (
+                                          <button key={product.id} onClick={() => {
+                                            if (accessLevel === 'visitor') { toast.info('Crie sua conta para adicionar produtos ao carrinho', { action: { label: 'Cadastrar', onClick: () => navigate('/auth') }, duration: 5000 }); return; }
+                                            if (accessLevel === 'lead') { toast.warning('Confirme seu e-mail para comprar produtos', { description: 'Verifique sua caixa de entrada e clique no link de confirmação.', action: { label: 'Ver status', onClick: () => navigate('/carteira') }, duration: 6000 }); return; }
+                                            toggleProductInCart(product);
+                                          }} className={`w-full rounded-2xl border p-2 text-left transition-all ${isInProductCart(product.id) ? 'border-success bg-success/10' : 'border-border/70 bg-background/50 hover:border-success/40'}`}>
+                                            <div className="flex items-center gap-2">
+                                              <div className="w-14 h-14 rounded-xl overflow-hidden bg-success/10 flex items-center justify-center shrink-0">
+                                                {product.image_url ? <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" /> : <PIcon className="w-7 h-7 text-success" />}
+                                              </div>
+                                              <div className="min-w-0 flex-1">
+                                                <h4 className="font-semibold text-sm text-foreground truncate">{product.name}</h4>
+                                                <p className="text-[11px] text-muted-foreground truncate"><MaskedPrice value={product.price} /> · {product.stockType === 'fisico' ? 'Estoque' : 'Dropshipping'}</p>
+                                              </div>
+                                              {isInProductCart(product.id) ? <CheckCircle2 className="w-4 h-4 text-success" /> : <Plus className="w-4 h-4 text-success" />}
+                                            </div>
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {noResults && (() => {
+                  const ctxSuggestion = generateContextualSuggestions(executedQuery);
+                  return (
+                    <div className="rounded-[24px] border border-accent/30 bg-card/95 p-4 shadow-xl">
+                      <div className="flex items-center gap-3 mb-3">
+                        <AiAvatar size={40} speaking={true} onClick={() => setShowAiPanel(true)} />
+                        <div>
+                          <h3 className="font-display font-bold text-foreground text-sm">Sugestões da IA</h3>
+                          <p className="text-xs text-muted-foreground">Não encontrei “{executedQuery}” diretamente. Selecione alternativas ou refine a busca.</p>
+                        </div>
+                      </div>
+                      {ctxSuggestion && (
+                        <div className="flex flex-wrap gap-2">
+                          {[...ctxSuggestion.suggestedServices.map(s => s.name), ...ctxSuggestion.suggestedProducts.map(p => p.name)].map((name) => {
+                            const selected = selectedSuggestions.has(name);
+                            return <button key={name} onClick={() => toggleSuggestionSelection(name)} className={`rounded-full border px-3 py-2 text-xs font-medium ${selected ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/50 text-foreground border-border'}`}>{name}</button>;
+                          })}
+                        </div>
+                      )}
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {ctxSuggestion && selectedSuggestions.size > 0 && <Button className="gap-2" onClick={() => handleSendSelectedSuggestions(ctxSuggestion)}><Headphones className="w-4 h-4" /> Enviar para Central</Button>}
+                        <Button variant="outline" className="gap-2" onClick={handleRefineSearch}><Search className="w-4 h-4" /> Refinar</Button>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </motion.div>
+            )}
+          </Search3DHero>
         </section>
       )}
 
       {/* Search bar compacta — quando já houve busca */}
-      {searchExecuted && (
+      {false && searchExecuted && (
       <section className="shrink-0 px-4 py-2">
         <div className="container mx-auto max-w-5xl">
             <div className="relative">
@@ -530,7 +740,7 @@ const Landing = () => {
       </section>
       )}
             {/* Layout: Only show sidebar + results after search */}
-            {searchExecuted && (
+            {false && searchExecuted && (
             <div className="flex-1 overflow-hidden px-4">
             <div className="container mx-auto max-w-5xl h-full flex gap-3">
               {/* Segment sidebar */}

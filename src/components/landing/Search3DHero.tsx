@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { Mic, Search, Sparkles, Star } from 'lucide-react';
 import {
@@ -21,6 +21,7 @@ interface Props {
   segments: SegmentItem[];
   activeSegments: string[];
   toggleSegment: (id: string) => void;
+  children?: ReactNode;
 }
 
 const DEFAULT_ICONS: Record<string, any> = {
@@ -55,7 +56,7 @@ interface Top {
 
 export function Search3DHero({
   searchQuery, setSearchQuery, onSearch, onMic, micListening, micSupported,
-  segments, activeSegments, toggleSegment,
+  segments, activeSegments, toggleSegment, children,
 }: Props) {
   const [top, setTop] = useState<Top[]>([]);
 
@@ -271,6 +272,12 @@ export function Search3DHero({
               </motion.button>
             ))}
           </div>
+        </div>
+      )}
+
+      {children && (
+        <div className="mt-4 mx-auto max-w-2xl">
+          {children}
         </div>
       )}
     </div>
