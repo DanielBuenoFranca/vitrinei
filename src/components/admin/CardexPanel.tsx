@@ -48,7 +48,7 @@ export function CardexPanel() {
   const [docNumber, setDocNumber] = useState("");
   const [supplier, setSupplier] = useState("");
   const [items, setItems] = useState<EntryRow[]>([
-    { raw_name: "", matched_product_id: null, create_new: true, quantity: 1, unit_cost: 0, applied_price: 0, apply_choice: "custom" },
+    { raw_name: "", matched_product_id: null, create_new: true, quantity: 1, unit_cost: 0, applied_price: 0, apply_choice: "custom", kind: "product" },
   ]);
   const [saving, setSaving] = useState(false);
 
@@ -74,7 +74,7 @@ export function CardexPanel() {
     return [r.item_name, r.reference_label, r.movement_type].some((v) => (v || "").toLowerCase().includes(q));
   });
 
-  const addItemRow = () => setItems((it) => [...it, { raw_name: "", matched_product_id: null, create_new: true, quantity: 1, unit_cost: 0, applied_price: 0, apply_choice: "custom" }]);
+  const addItemRow = () => setItems((it) => [...it, { raw_name: "", matched_product_id: null, create_new: true, quantity: 1, unit_cost: 0, applied_price: 0, apply_choice: "custom", kind: "product" }]);
   const removeItemRow = (idx: number) => setItems((it) => it.filter((_, i) => i !== idx));
   const updateItem = (idx: number, patch: Partial<EntryRow>) => setItems((it) => it.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
 
@@ -125,7 +125,7 @@ export function CardexPanel() {
 
       toast.success("Entrada aplicada — saldos atualizados.");
       setOpen(false);
-      setItems([{ raw_name: "", matched_product_id: null, create_new: true, quantity: 1, unit_cost: 0, applied_price: 0, apply_choice: "custom" }]);
+      setItems([{ raw_name: "", matched_product_id: null, create_new: true, quantity: 1, unit_cost: 0, applied_price: 0, apply_choice: "custom", kind: "product" }]);
       setDocNumber(""); setSupplier("");
       await Promise.all([load(), loadOptions()]);
     } catch (err: any) {
