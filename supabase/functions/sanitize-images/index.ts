@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
     } else if (kind === "service") {
       prompt = `Premium 3D render icon representing the service "${name}" (category: ${segment || 'services'}). Glossy 3D illustration, vibrant colors, clean white background, no text, app-icon style, soft shadow.`;
     } else if (kind === "segment") {
-      prompt = `Premium 3D render icon for the category "${name}". Glossy 3D illustration, vibrant gradient colors, clean white background, no text or watermarks, app-icon style with soft shadow, suitable as catalog tile.`;
+      prompt = `Hyper-realistic premium 3D render app icon representing the category "${name}". Pixar/Disney style, glossy materials, vibrant colorful objects floating with soft realistic lighting and ambient occlusion, subtle metallic and plastic reflections, depth of field, beveled edges, soft drop shadow, clean white seamless background, centered composition, no text, no watermarks, square app-icon framing, ultra-detailed 8k quality.`;
     } else {
       return new Response(JSON.stringify({ error: "invalid kind" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
