@@ -217,19 +217,46 @@ export function ClearDataDialog({ open, onClose, onCleared }: ClearDataDialogPro
           </DialogDescription>
         </DialogHeader>
 
-        {/* Step 1 — categorias */}
-        <div className="grid sm:grid-cols-2 gap-2">
-          {CATEGORIES.map(cat => (
-            <div key={cat.key} className="flex items-start gap-3 p-2.5 rounded-lg border bg-card">
-              <Checkbox id={cat.key} checked={!!selectedCats[cat.key]} onCheckedChange={() => toggleCat(cat.key)} />
-              <div className="grid gap-0.5 flex-1">
-                <Label htmlFor={cat.key} className="cursor-pointer text-sm">{cat.label}</Label>
-                {cat.warn && selectedCats[cat.key] && (
-                  <p className="text-[10px] text-destructive">{cat.warn}</p>
-                )}
+        {/* Step 1 — categorias agrupadas */}
+        <div className="space-y-3">
+          {(['movements', 'system'] as const).map(group => {
+            const cats = CATEGORIES.filter(c => c.group === group);
+            const allSelected = cats.every(c => selectedCats[c.key]);
+            const meta = GROUP_META[group];
+            return (
+              <div key={group} className={`rounded-lg border-2 ${meta.tone} p-3 bg-card/50`}>
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div>
+                    <div className="text-sm font-semibold">{meta.title}</div>
+                    <div className="text-[11px] text-muted-foreground">{meta.description}</div>
+                  </div>
+                  <Button
+                    variant="ghost" size="sm" className="h-6 text-[10px]"
+                    onClick={() => setSelectedCats(s => {
+                      const next = { ...s };
+                      cats.forEach(c => { next[c.key] = !allSelected; });
+                      return next;
+                    })}
+                  >
+                    {allSelected ? 'desmarcar grupo' : 'marcar grupo'}
+                  </Button>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-2">
+                  {cats.map(cat => (
+                    <div key={cat.key} className="flex items-start gap-3 p-2.5 rounded-lg border bg-background">
+                      <Checkbox id={cat.key} checked={!!selectedCats[cat.key]} onCheckedChange={() => toggleCat(cat.key)} />
+                      <div className="grid gap-0.5 flex-1">
+                        <Label htmlFor={cat.key} className="cursor-pointer text-sm">{cat.label}</Label>
+                        {cat.warn && selectedCats[cat.key] && (
+                          <p className="text-[10px] text-destructive">{cat.warn}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Step 2 — visualizar */}
