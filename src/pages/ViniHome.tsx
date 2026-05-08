@@ -22,6 +22,7 @@ import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { semanticSearch } from '@/data/searchData';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { useAiSession } from '@/contexts/AiSessionContext';
 
 /**
  * Toda sugestão do Vini pode carregar uma `action` clicável.
@@ -58,6 +59,7 @@ const ViniHome = () => {
   const navigate = useNavigate();
   const { user, signOut, displayName } = useAuth();
   const { profileLabel } = usePermissions();
+  const { session, update: updateAiSession } = useAiSession();
   const { totalCartItems, totalCartValue, productCart, serviceCart, clearCart } = useCart();
   const { supported, listening, transcript, start, stop } = useSpeechRecognition();
 
@@ -387,7 +389,7 @@ const ViniHome = () => {
     setText('');
     emitEmotion('thinking');
 
-    setTimeout(() => {
+    setTimeout(async () => {
       const intent = analyzeAndRoute(query);
       if (intent) {
         emitEmotion('happy');
@@ -395,6 +397,28 @@ const ViniHome = () => {
         setTimeout(() => navigate(intent.route), 1100);
         return;
       }
+
+      try {
+        const { data: routed } = await supabase.functions.invoke('ai-router', { body: { message: query, session } });
+        if (routed && !routed.error) {
+          updateAiSession({ tags: routed.tags || [], segments: routed.segments || [], lastIntent: routed.intent, lastQuery: routed.query || query });
+          if (routed.needs_more_info || routed.intent !== 'search') {
+            emitEmotion('thinking');
+            pushBubble({
+              role: 'vini',
+              text: routed.follow_up_question || 'Me conte mais um detalhe para eu buscar com precisão.',
+              action: (routed.suggestions || [])[0] ? { label: routed.suggestions[0], intent: 'search', payload: `${query} ${routed.suggestions[0]}` } : undefined,
+            });
+            return;
+          }
+          const params = new URLSearchParams({ q: routed.query || query, type: routed.item_type || 'both' });
+          if ((routed.segments || []).length) params.set('segments', routed.segments.join(','));
+          emitEmotion('happy');
+          pushBubble({ role: 'vini', text: routed.transition_message || `Entendi o que você precisa. Já estou abrindo a busca filtrada.` });
+          setTimeout(() => navigate(`/buscar?${params.toString()}`), 900);
+          return;
+        }
+      } catch {}
 
       const result = semanticSearch(query, history);
       const total = (result.products?.length || 0) + (result.services?.length || 0);
