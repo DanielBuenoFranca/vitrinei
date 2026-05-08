@@ -57,7 +57,7 @@ const CATEGORIES: CatDef[] = [
   { key: 'users',             label: 'Usuários (exceto Master)', table: 'profiles',       warn: 'Apaga conta de auth, perfil, carteira, assinatura e indicações. Master é preservado.', group: 'users' },
 ];
 
-const GROUP_META: Record<'movements' | 'system', { title: string; description: string; tone: string }> = {
+const GROUP_META: Record<'movements' | 'system' | 'users', { title: string; description: string; tone: string }> = {
   movements: {
     title: 'Cadastros de movimentações',
     description: 'Registros criados na operação diária da ferramenta.',
@@ -67,6 +67,11 @@ const GROUP_META: Record<'movements' | 'system', { title: string; description: s
     title: 'Cadastros do sistema',
     description: 'Atenção — apagar pode gerar falhas ou inconsistências nos fluxos.',
     tone: 'border-destructive/40',
+  },
+  users: {
+    title: 'Usuários do sistema',
+    description: 'Apaga contas de auth + perfis. Contas Master sempre são preservadas.',
+    tone: 'border-destructive/60',
   },
 };
 
