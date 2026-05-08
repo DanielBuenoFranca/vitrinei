@@ -35,14 +35,14 @@ const buildContingencyReply = (text: string, userName?: string | null) => {
   const q = text.toLowerCase();
   const name = first ? `${first}, ` : '';
 
-  if (/(o que voc[eê] pode|me ajuda|como funciona|quem é voc[eê])/.test(q)) {
-    return `${name}eu posso conversar com você, entender o que precisa, organizar buscas por produtos e serviços, lembrar o contexto do papo e te levar para a área certa do Vitrinei. Me diga em uma frase o que quer resolver agora.`;
-  }
   if (/(carrinho|comprar|checkout|pagamento|finalizar)/.test(q)) {
     return `${name}entendi que você quer avançar com compra ou pagamento. Posso te orientar no carrinho e, quando quiser, te levo para finalizar com segurança.`;
   }
   if (/(buscar|preciso|quero|procur|servi[cç]o|produto|profissional|prestador)/.test(q)) {
     return `${name}entendi sua necessidade. Posso transformar isso em uma busca mais precisa por prestadores, serviços, kits ou produtos próximos. Se quiser, diga também bairro, urgência e faixa de preço.`;
+  }
+  if (/(o que voc[eê] pode|me ajuda|como funciona|quem é voc[eê])/.test(q)) {
+    return `${name}eu posso conversar com você, entender o que precisa, organizar buscas por produtos e serviços, lembrar o contexto do papo e te levar para a área certa do Vitrinei. Me diga em uma frase o que quer resolver agora.`;
   }
   if (/(loja|minha loja|vitrine|prestador|vender)/.test(q)) {
     return `${name}posso ajudar com sua vitrine: apresentação, serviços, kits, produtos, preços e próximos passos para vender melhor no marketplace.`;
@@ -127,7 +127,7 @@ export function ViniConversationModal({
       if (user?.id) {
         const { data } = await supabase
           .from('vini_conversations')
-          .select('id, role, content, created_at')
+          .select('id, role, content, created_at, intent')
           .eq('user_id', user.id)
           .in('role', ['user', 'assistant'])
           .order('created_at', { ascending: false })
@@ -135,6 +135,7 @@ export function ViniConversationModal({
         if (data && data.length) {
           history = data
             .reverse()
+            .filter((r) => r.intent !== 'welcome')
             .map((r) => ({ role: r.role as 'user' | 'assistant', content: r.content, id: r.id }));
         }
       }
@@ -144,8 +145,6 @@ export function ViniConversationModal({
       const welcomeMsg: Msg = { role: 'assistant', content: welcome, id: `${Date.now()}-w` };
       setMessages([...history, welcomeMsg]);
       setHistoryReady(true);
-      // welcome message is contextual but we still register it as a system marker
-      void persistMessage('assistant', welcome, 'text', 'welcome');
     })();
 
     setTimeout(() => inputRef.current?.focus(), 250);
