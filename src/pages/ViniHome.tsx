@@ -98,7 +98,10 @@ const ViniHome = () => {
   const [lastTranscript, setLastTranscript] = useState<string>('');
   const [storyOpen, setStoryOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [modalInitialMessage, setModalInitialMessage] = useState<string | null>(null);
+  const [modalInitialModality, setModalInitialModality] = useState<'voice' | 'text'>('text');
   const [searchBarVisible, setSearchBarVisible] = useState(false);
+  const [searchBarMode, setSearchBarMode] = useState<'chat' | 'search'>('chat');
   const [radarActive, setRadarActive] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -121,9 +124,9 @@ const ViniHome = () => {
       const final = lastSpokenRef.current.trim();
       if (final && listening) {
         try { stop(); } catch {}
-        sendQuery(final);
+        openConversationWith(final, 'voice');
       } else if (final && !listening) {
-        sendQuery(final);
+        openConversationWith(final, 'voice');
       }
     }, 1200);
 
@@ -310,6 +313,15 @@ const ViniHome = () => {
     resetIdleTimer();
   };
 
+  const openConversationWith = (message?: string, modality: 'voice' | 'text' = 'text') => {
+    wakeUp();
+    setSideOpen(false);
+    setSearchBarVisible(false);
+    setModalInitialModality(modality);
+    setModalInitialMessage(message?.trim() || null);
+    setChatOpen(true);
+  };
+
   const clearChat = () => {
     setBubbles([]);
     try { sessionStorage.removeItem(CHAT_STORAGE_KEY); } catch {}
@@ -347,13 +359,14 @@ const ViniHome = () => {
 
   const handleVoiceTap = () => {
     wakeUp();
-    setSearchBarVisible(true);
     if (listening) {
       stop();
-      if (text.trim()) sendQuery(text);
+      if (text.trim()) openConversationWith(text, 'voice');
       return;
     }
     if (supported) {
+      setSearchBarVisible(true);
+      setSearchBarMode('chat');
       start();
       setTimeout(() => pushBubble({ role: 'vini', text: 'Estou ouvindo… 🎙️' }), 200);
     } else {
@@ -448,20 +461,22 @@ const ViniHome = () => {
 
   const handleTextSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    sendQuery(text);
+    if (searchBarMode === 'search') sendQuery(text);
+    else openConversationWith(text, 'text');
+    setText('');
     setSearchBarVisible(false);
   };
 
   const handleSideSearch = () => {
     wakeUp();
     setSideOpen(false);
+    setSearchBarMode('search');
     setSearchBarVisible(true);
     setTimeout(() => inputRef.current?.focus(), 80);
   };
 
   const handleSideConverse = () => {
-    setSideOpen(false);
-    setChatOpen(true);
+    openConversationWith();
   };
 
   const handleSideStory = () => {
@@ -875,6 +890,9 @@ const ViniHome = () => {
         open={chatOpen}
         onClose={() => setChatOpen(false)}
         userName={displayName}
+        initialMessage={modalInitialMessage}
+        initialModality={modalInitialModality}
+        onInitialConsumed={() => setModalInitialMessage(null)}
       />
       <FavoritesModal open={favoritesOpen} onOpenChange={setFavoritesOpen} />
     </div>

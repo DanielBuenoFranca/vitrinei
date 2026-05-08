@@ -30,23 +30,61 @@ const WELCOMES = [
 
 const FAREWELL_RX = /\b(tchau|bye|valeu|obrigad[ao]|fui|até logo|at[ée] mais|encerrar)\b/i;
 
+const buildContingencyReply = (text: string, userName?: string | null) => {
+  const first = userName?.split(' ')[0] || '';
+  const q = text.toLowerCase();
+  const name = first ? `${first}, ` : '';
+
+  if (/(carrinho|comprar|checkout|pagamento|finalizar)/.test(q)) {
+    return `${name}entendi que você quer avançar com compra ou pagamento. Posso te orientar no carrinho e, quando quiser, te levo para finalizar com segurança.`;
+  }
+  if (/(buscar|preciso|quero|procur|servi[cç]o|produto|profissional|prestador)/.test(q)) {
+    return `${name}entendi sua necessidade. Posso transformar isso em uma busca mais precisa por prestadores, serviços, kits ou produtos próximos. Se quiser, diga também bairro, urgência e faixa de preço.`;
+  }
+  if (/(o que voc[eê] pode|me ajuda|como funciona|quem é voc[eê])/.test(q)) {
+    return `${name}eu posso conversar com você, entender o que precisa, organizar buscas por produtos e serviços, lembrar o contexto do papo e te levar para a área certa do Vitrinei. Me diga em uma frase o que quer resolver agora.`;
+  }
+  if (/(loja|minha loja|vitrine|prestador|vender)/.test(q)) {
+    return `${name}posso ajudar com sua vitrine: apresentação, serviços, kits, produtos, preços e próximos passos para vender melhor no marketplace.`;
+  }
+  if (/(saldo|carteira|cashback|assinatura|plano)/.test(q)) {
+    return `${name}posso te ajudar a entender carteira, cashback, assinatura e benefícios. Me diga qual ponto você quer conferir primeiro.`;
+  }
+
+  return `${name}estou te acompanhando. Posso responder, resumir, sugerir caminhos e conectar sua conversa com busca, loja, carrinho ou suporte. Me conte mais um detalhe para eu agir com precisão.`;
+};
+
 interface ViniConversationModalProps {
   open: boolean;
   onClose: () => void;
   userName?: string | null;
+  initialMessage?: string | null;
+  initialModality?: 'voice' | 'text';
+  onInitialConsumed?: () => void;
 }
 
-export function ViniConversationModal({ open, onClose, userName }: ViniConversationModalProps) {
+export function ViniConversationModal({
+  open,
+  onClose,
+  userName,
+  initialMessage,
+  initialModality = 'text',
+  onInitialConsumed,
+}: ViniConversationModalProps) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [historyReady, setHistoryReady] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const sessionIdRef = useRef<string>(crypto.randomUUID());
   const userIdRef = useRef<string | null>(null);
   const lastModalityRef = useRef<'voice' | 'text'>('text');
+  const voiceSubmitTimerRef = useRef<number | null>(null);
+  const lastVoiceSubmissionRef = useRef('');
+  const initialMessageKeyRef = useRef<string | null>(null);
   const navigate = useNavigate();
   const { session, update } = useAiSession();
 
@@ -79,6 +117,7 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
     sessionIdRef.current = crypto.randomUUID();
     setInput('');
     setError(null);
+    setHistoryReady(false);
 
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -88,7 +127,7 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
       if (user?.id) {
         const { data } = await supabase
           .from('vini_conversations')
-          .select('id, role, content, created_at')
+          .select('id, role, content, created_at, intent')
           .eq('user_id', user.id)
           .in('role', ['user', 'assistant'])
           .order('created_at', { ascending: false })
@@ -96,6 +135,7 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
         if (data && data.length) {
           history = data
             .reverse()
+            .filter((r) => r.intent !== 'welcome')
             .map((r) => ({ role: r.role as 'user' | 'assistant', content: r.content, id: r.id }));
         }
       }
@@ -104,22 +144,17 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
       const welcome = WELCOMES[Math.floor(Math.random() * WELCOMES.length)](first);
       const welcomeMsg: Msg = { role: 'assistant', content: welcome, id: `${Date.now()}-w` };
       setMessages([...history, welcomeMsg]);
-      // welcome message is contextual but we still register it as a system marker
-      void persistMessage('assistant', welcome, 'text', 'welcome');
+      setHistoryReady(true);
     })();
 
     setTimeout(() => inputRef.current?.focus(), 250);
     return () => {
       abortRef.current?.abort();
+      if (voiceSubmitTimerRef.current) window.clearTimeout(voiceSubmitTimerRef.current);
       try { stop(); } catch {}
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
-
-  // Push voice transcript into the input live
-  useEffect(() => {
-    if (transcript) setInput(transcript);
-  }, [transcript]);
 
   // Auto-scroll on new content
   useEffect(() => {
@@ -160,18 +195,28 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
       const controller = new AbortController();
       abortRef.current = controller;
 
+      let routedIntent = 'chat';
+
       // 1) Router: classifica intenção e contexto antes de chamar o vini-chat
       try {
         const { data: routed } = await supabase.functions.invoke('ai-router', {
           body: { message: text, session },
         });
         if (routed && !routed.error) {
+          routedIntent = routed.intent || 'chat';
           update({
             tags: routed.tags || [],
             segments: routed.segments || [],
             lastIntent: routed.intent,
             lastQuery: routed.query || text,
           });
+          if (routed.needs_more_info) {
+            const followUp = routed.follow_up_question || 'Me conte mais um detalhe para eu entender melhor.';
+            setMessages((m) => [...m, { role: 'assistant', content: followUp, id: `${Date.now()}-f` }]);
+            void persistMessage('assistant', followUp, modality, routed.intent || 'follow_up');
+            setIsStreaming(false);
+            return;
+          }
           if (routed.intent && routed.intent !== 'chat' && routed.next_agent !== 'vini') {
             const transition = routed.transition_message || 'Vou redirecionar você para a área certa...';
             setMessages((m) => [...m, { role: 'assistant', content: transition, id: `${Date.now()}-t` }]);
@@ -203,6 +248,7 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
           signal: controller.signal,
@@ -211,7 +257,15 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
 
         if (!resp.ok || !resp.body) {
           if (resp.status === 429) throw new Error('Muitas mensagens em pouco tempo. Aguarde alguns segundos.');
-          if (resp.status === 402) throw new Error('Créditos insuficientes para o Vini conversar agora.');
+          if (resp.status === 402) {
+            const fallback = buildContingencyReply(text, userName);
+            accumulated = fallback;
+            setMessages((m) =>
+              m.map((msg) => (msg.id === assistantId ? { ...msg, content: fallback } : msg)),
+            );
+            void persistMessage('assistant', fallback, modality, `${routedIntent}:contingency`);
+            return;
+          }
           const errBody = await resp.text();
           throw new Error(errBody || 'Falha na conexão com o Vini');
         }
@@ -253,7 +307,7 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
 
         // Persist final assistant response
         if (accumulated.trim()) {
-          void persistMessage('assistant', accumulated, modality, 'chat');
+          void persistMessage('assistant', accumulated, modality, routedIntent);
         }
       } catch (e: any) {
         if (e?.name === 'AbortError') return;
@@ -268,6 +322,39 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
     },
     [messages, isStreaming, listening, stop, userName, onClose, navigate, session, update, persistMessage],
   );
+
+  // Push voice transcript into the input live and auto-send after the user pauses.
+  useEffect(() => {
+    if (!open || !transcript) return;
+    setInput(transcript);
+    if (!listening) return;
+
+    if (voiceSubmitTimerRef.current) window.clearTimeout(voiceSubmitTimerRef.current);
+    voiceSubmitTimerRef.current = window.setTimeout(() => {
+      const final = transcript.trim();
+      if (!final || final === lastVoiceSubmissionRef.current) return;
+      lastVoiceSubmissionRef.current = final;
+      lastModalityRef.current = 'voice';
+      try { stop(); } catch {}
+      void sendMessage(final, 'voice');
+    }, 1250);
+
+    return () => {
+      if (voiceSubmitTimerRef.current) window.clearTimeout(voiceSubmitTimerRef.current);
+    };
+  }, [open, transcript, listening, stop, sendMessage]);
+
+  // Accept voice/text captured outside the modal and run it through the same intelligence.
+  useEffect(() => {
+    const text = initialMessage?.trim();
+    if (!open || !historyReady || !text) return;
+    const key = `${initialModality}:${text}`;
+    if (initialMessageKeyRef.current === key) return;
+    initialMessageKeyRef.current = key;
+    lastModalityRef.current = initialModality;
+    void sendMessage(text, initialModality);
+    onInitialConsumed?.();
+  }, [open, historyReady, initialMessage, initialModality, sendMessage, onInitialConsumed]);
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -315,8 +402,8 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
               filter: 'blur(8px)',
             }}
           />
-          {/* Backdrop sutil */}
-          <div className="absolute inset-0 bg-background/25 backdrop-blur-[6px] pointer-events-none" />
+          {/* Backdrop transparente: mantém a sala visível atrás da conversa */}
+          <div className="absolute inset-0 bg-transparent pointer-events-none" />
 
           <motion.div
             initial={{ y: 60, opacity: 0, scale: 0.85, rotateX: 18, z: -200 }}
@@ -329,7 +416,7 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
               boxShadow:
                 '0 40px 90px -20px hsl(var(--vini-glow) / 0.45), 0 0 80px hsl(var(--primary) / 0.25), inset 0 1px 0 hsl(var(--vini-glow) / 0.35), inset 0 0 40px hsl(var(--primary) / 0.06)',
             }}
-            className="relative w-full max-w-lg rounded-3xl border border-[hsl(var(--vini-glow)/0.55)] overflow-hidden flex flex-col max-h-[80vh] bg-gradient-to-br from-white/[0.10] via-white/[0.04] to-white/[0.02] backdrop-blur-2xl"
+            className="relative w-full max-w-lg rounded-3xl border border-[hsl(var(--vini-glow)/0.45)] overflow-hidden flex flex-col max-h-[80vh] bg-background/[0.08] backdrop-blur-md"
           >
             {/* Reflexo holográfico superior */}
             <div
@@ -349,7 +436,7 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
               }}
             />
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border/40">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--vini-glow)/0.18)] bg-background/[0.06]">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
                 <h3 className="font-display font-bold text-base">Conversar com o Vini</h3>
@@ -371,10 +458,10 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   className={cn(
-                    'max-w-[85%] px-3.5 py-2 rounded-2xl text-sm leading-snug',
+                    'max-w-[85%] px-3.5 py-2 rounded-2xl text-sm leading-snug backdrop-blur-md',
                     m.role === 'user'
-                      ? 'self-end bg-primary text-primary-foreground rounded-br-sm'
-                      : 'self-start bg-card/80 text-foreground border border-border/50 rounded-bl-sm',
+                      ? 'self-end bg-primary/70 text-primary-foreground rounded-br-sm border border-primary/25'
+                      : 'self-start bg-background/[0.12] text-foreground border border-[hsl(var(--vini-glow)/0.22)] rounded-bl-sm',
                   )}
                 >
                   {m.content || (
@@ -396,7 +483,7 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
             )}
 
             {/* Composer */}
-            <form onSubmit={handleSubmit} className="border-t border-border/40 p-3 flex items-center gap-2">
+            <form onSubmit={handleSubmit} className="border-t border-[hsl(var(--vini-glow)/0.18)] bg-background/[0.06] p-3 flex items-center gap-2">
               <Button
                 type="button"
                 size="icon"
@@ -414,7 +501,7 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={listening ? 'Fale ou digite…' : 'Diga qualquer coisa ao Vini…'}
-                className="flex-1 bg-background/40 border-border/60"
+                className="flex-1 bg-background/[0.10] border-[hsl(var(--vini-glow)/0.22)] backdrop-blur-md"
                 disabled={isStreaming}
               />
               <Button
