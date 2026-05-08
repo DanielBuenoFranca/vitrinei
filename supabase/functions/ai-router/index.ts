@@ -1,3 +1,5 @@
+import { getAiMode, autoOffOnFailure, logAiSavings } from "../_shared/aiCredits.ts";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -53,6 +55,15 @@ Deno.serve(async (req) => {
       });
     }
 
+    // [Economia de Crédito] Honor the global toggle.
+    const { mode } = await getAiMode();
+    if (mode === 'off') {
+      void logAiSavings('ai-router', 'fallback_static', 1, { length: message.length });
+      return new Response(JSON.stringify({ ...FALLBACK, _degraded: true, query: message }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const sys = `Você é o roteador de intenção do Vitrinei Connect (ecossistema de MEIs).
 Classifique a mensagem do usuário e retorne APENAS JSON válido com:
 - intent: "chat" (conversa geral), "search" (busca produto/serviço), "support" (suporte/dúvida sobre item ausente), "cart" (mexer em carrinho), "story" (contar história/explicar segmento).
@@ -82,7 +93,9 @@ Só mande para search quando houver necessidade, segmento e tipo suficientemente
     });
 
     if (res.status === 429 || res.status === 402) {
-      return new Response(JSON.stringify({ ...FALLBACK, _degraded: true }), {
+      await autoOffOnFailure(res.status === 402 ? 'no_credits' : 'rate_limited');
+      void logAiSavings('ai-router', `gateway_${res.status}`, 1, { auto_off: true });
+      return new Response(JSON.stringify({ ...FALLBACK, _degraded: true, query: message }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

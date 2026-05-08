@@ -1,3 +1,5 @@
+import { getAiMode, autoOffOnFailure, logAiSavings } from "../_shared/aiCredits.ts";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -18,6 +20,15 @@ Deno.serve(async (req) => {
     }
 
     const { rows, existingSegments } = await req.json()
+
+    // [Economia de Crédito] Honor the global toggle.
+    const { mode } = await getAiMode();
+    if (mode === 'off') {
+      void logAiSavings('enrich-import-data', 'pass_through', Array.isArray(rows) ? rows.length : 1, { reason: 'saving_mode' });
+      return new Response(JSON.stringify({ enriched: rows, _degraded: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const prompt = `Você é um assistente de dados para um marketplace de serviços e produtos.
 Recebeu linhas de uma planilha de importação com campos possivelmente vazios.
@@ -99,15 +110,12 @@ Retorne um JSON com a chave "enriched" contendo o array de linhas com os campos 
     if (!response.ok) {
       const errorText = await response.text()
       console.error('AI gateway error:', response.status, errorText)
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: 'Limite de requisições atingido. Tente novamente em alguns segundos.' }), {
-          status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: 'Créditos de IA esgotados.' }), {
-          status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+      if (response.status === 429 || response.status === 402) {
+        await autoOffOnFailure(response.status === 402 ? 'no_credits' : 'rate_limited');
+        void logAiSavings('enrich-import-data', `gateway_${response.status}`, Array.isArray(rows) ? rows.length : 1, { auto_off: true });
+        return new Response(JSON.stringify({ enriched: rows, _degraded: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
       return new Response(JSON.stringify({ error: 'Erro ao enriquecer dados' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },

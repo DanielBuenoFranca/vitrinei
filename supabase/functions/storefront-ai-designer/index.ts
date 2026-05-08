@@ -1,4 +1,20 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { getAiMode, autoOffOnFailure, logAiSavings } from "../_shared/aiCredits.ts";
+
+function streamText(text: string) {
+  return new ReadableStream({
+    start(controller) {
+      const enc = new TextEncoder();
+      const chunk = { choices: [{ delta: { content: text }, index: 0, finish_reason: null }] };
+      controller.enqueue(enc.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+      controller.enqueue(enc.encode(`data: [DONE]\n\n`));
+      controller.close();
+    },
+  });
+}
+
+const SAVING_MSG = "🎨 O designer da sua loja está em modo economia agora. Posso te orientar manualmente: escolha cores no painel ou descreva a mudança que faria, e quando o modo voltar a ficar ativo eu aplico tudo automaticamente. ";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -51,6 +67,15 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
+    // [Economia de Crédito] Honor the global toggle.
+    const { mode } = await getAiMode();
+    if (mode === "off") {
+      void logAiSavings("storefront-ai-designer", "saving_message", 1, { provider: providerName });
+      return new Response(streamText(SAVING_MSG), {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      });
+    }
+
     const contextMessage = `Contexto atual da loja de "${providerName}":
 Config atual: ${JSON.stringify(currentConfig)}
 Ajude o prestador a personalizar sua loja visualmente.`;
@@ -73,20 +98,17 @@ Ajude o prestador a personalizar sua loja visualmente.`;
     });
 
     if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns instantes." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos insuficientes." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      if (response.status === 429 || response.status === 402) {
+        await autoOffOnFailure(response.status === 402 ? "no_credits" : "rate_limited");
+        void logAiSavings("storefront-ai-designer", `gateway_${response.status}`, 1, { auto_off: true });
+        return new Response(streamText(SAVING_MSG), {
+          headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
         });
       }
       const t = await response.text();
       console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "Erro no serviço de IA" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(streamText(SAVING_MSG), {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
       });
     }
 

@@ -1,9 +1,28 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getAiMode, autoOffOnFailure, logAiSavings } from "../_shared/aiCredits.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
+
+async function callFreeFallback(payload: any) {
+  const url = `${Deno.env.get('SUPABASE_URL')}/functions/v1/fetch-free-image`;
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) return null;
+    const d = await r.json();
+    return d?.imageUrl || d?.url || null;
+  } catch { return null; }
+}
+
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -25,6 +44,16 @@ Deno.serve(async (req) => {
       })
     }
 
+    // [Economia de Crédito] Honor the global toggle.
+    const { mode } = await getAiMode();
+    if (mode === 'off') {
+      const free = await callFreeFallback({ name: productName, segment, kind: itemType });
+      void logAiSavings('search-product-image', 'fetch-free-image', 1, { productName, segment });
+      return new Response(JSON.stringify({ imageUrl: free }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Priority 1: Try to find a professional image via AI description
     // Priority 2: Generate one via AI image generation
     const searchPrompt = `Generate a professional, clean product photo for: "${productName}" (category: ${segment || 'general'}, type: ${itemType || 'product'}). The image should be a high-quality studio photo on a clean white background, suitable for an e-commerce catalog. No text or watermarks.`
@@ -41,6 +70,16 @@ Deno.serve(async (req) => {
         modalities: ['image', 'text'],
       }),
     })
+
+    if (response.status === 402 || response.status === 429) {
+      await autoOffOnFailure(response.status === 402 ? 'no_credits' : 'rate_limited');
+      const free = await callFreeFallback({ name: productName, segment, kind: itemType });
+      void logAiSavings('search-product-image', `gateway_${response.status}`, 1, { auto_off: true });
+      return new Response(JSON.stringify({ imageUrl: free }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
 
     if (!response.ok) {
       const errText = await response.text()

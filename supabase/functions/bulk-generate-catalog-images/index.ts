@@ -2,6 +2,7 @@
 // e faz upload no storage. Idempotente: só gera para itens sem imagem
 // (a menos que `force=true`).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { getAiMode, autoOffOnFailure, logAiSavings } from "../_shared/aiCredits.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,6 +29,11 @@ async function genImage(prompt: string): Promise<Uint8Array | null> {
         modalities: ["image", "text"],
       }),
     });
+    if (r.status === 402 || r.status === 429) {
+      await autoOffOnFailure(r.status === 402 ? "no_credits" : "rate_limited");
+      void logAiSavings("bulk-generate-catalog-images", `gateway_${r.status}`, 1, { auto_off: true });
+      return null;
+    }
     if (!r.ok) {
       console.error("AI gen failed", r.status, await r.text());
       return null;
@@ -71,6 +77,21 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const force = !!body.force;
     const target: "all" | "segments" | "providers" = body.target ?? "all";
+
+    // [Economia de Crédito] Block bulk image generation entirely while saving.
+    const { mode } = await getAiMode();
+    if (mode === "off") {
+      void logAiSavings("bulk-generate-catalog-images", "skipped_saving_mode", 1, { target, force });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          skipped: true,
+          reason: "ai_credits_mode=off",
+          message: "Geração em lote pausada pelo modo Economia de Crédito.",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     const result = { segments: { ok: 0, skip: 0, fail: 0 }, providers: { ok: 0, skip: 0, fail: 0 } };
 
