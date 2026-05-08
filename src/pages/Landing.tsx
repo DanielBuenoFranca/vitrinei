@@ -585,7 +585,7 @@ const Landing = () => {
                           if (accessLevel === 'lead') { toast.warning('Confirme seu e-mail para contratar serviços', { duration: 6000 }); return; }
                           toggleServiceInCart(result);
                         }}
-                        className={`rounded-2xl overflow-hidden text-left relative group ${extraClass}`}
+                        className={`rounded-2xl overflow-hidden text-left relative group w-full ${extraClass}`}
                         style={{
                           background: 'linear-gradient(160deg, hsl(225 35% 16%), hsl(225 50% 7%))',
                           border: inCart ? '1px solid hsl(265 80% 60%)' : '1px solid hsl(225 30% 30% / 0.5)',

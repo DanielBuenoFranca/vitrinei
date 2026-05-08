@@ -17,6 +17,7 @@ import {
   Image as ImageIcon, Send, Undo2, RotateCcw, ChevronLeft, ChevronRight,
   MessageCircle, Download, RefreshCw, Upload
 } from 'lucide-react';
+import { FavoriteButton } from '@/components/FavoriteButton';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { segments as staticSegments, getAllServices, getAllProducts, reloadDynamicEntries, loadSegmentTagsCache, type ProductItem } from '@/data/searchData';
 import { supabase } from '@/integrations/supabase/client';
@@ -134,7 +135,7 @@ const ProviderStorefront = () => {
   const [providerServices, setProviderServices] = useState<any[]>([]);
   const [providerProducts, setProviderProducts] = useState<ProductItem[]>([]);
   const [segmentTags, setSegmentTags] = useState<string[]>([]);
-  const [dbSegments, setDbSegments] = useState<{ id: number; name: string }[]>([]);
+  const [dbSegments, setDbSegments] = useState<{ id: number; name: string; image_url?: string | null }[]>([]);
   const [allProviders, setAllProviders] = useState<{ id: number; name: string; segment: string[] }[]>([]);
 
   // Forms
@@ -167,11 +168,11 @@ const ProviderStorefront = () => {
       await Promise.all([reloadDynamicEntries(), loadSegmentTagsCache()]);
 
       const [{ data: segsData }, { data: providers }, { data: allProvs }] = await Promise.all([
-        supabase.from('segments').select('id, name').order('name'),
+        supabase.from('segments').select('id, name, image_url').order('name'),
         supabase.from('providers').select('*'),
         supabase.from('providers').select('id, name, segment'),
       ]);
-      setDbSegments((segsData || []) as { id: number; name: string }[]);
+      setDbSegments((segsData || []) as { id: number; name: string; image_url?: string | null }[]);
       setAllProviders((allProvs || []).map((p: any) => ({ id: p.id, name: p.name, segment: p.segment || [] })));
 
       if (providers) {
@@ -860,175 +861,217 @@ const ProviderStorefront = () => {
   );
 
   function renderCatalog() {
+    const norm = (v: string) => v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+    const segImage = (segName?: string) =>
+      segName ? dbSegments.find(s => norm(s.name) === norm(segName))?.image_url || null : null;
+
     return (
       <div className="space-y-6">
-        <div className="relative flex items-center bg-card border border-border rounded-xl overflow-hidden">
-          <Search className="w-4 h-4 text-muted-foreground absolute left-3" />
+        {/* Search bar — marketplace style */}
+        <div className="relative flex items-center bg-card/80 backdrop-blur border border-border/60 rounded-2xl overflow-hidden shadow-sm hover:border-primary/40 transition-colors">
+          <Search className="w-4 h-4 text-muted-foreground absolute left-4" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={`Buscar em ${provider?.name}...`}
-            className="border-0 pl-9 pr-4 py-5 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
+            className="border-0 pl-11 pr-4 py-5 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
           />
         </div>
 
+        {/* === SERVIÇOS === */}
         {filteredServices.length > 0 && (
-          <div>
-            <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5 mb-3">
-              <WrenchIcon className="w-4 h-4 text-primary" /> Serviços ({filteredServices.length})
-            </h2>
-            <div className="grid sm:grid-cols-2 gap-3">
+          <section>
+            <div className="flex items-center justify-between mb-3 px-0.5">
+              <h2 className="text-[11px] font-semibold tracking-[0.14em] uppercase text-muted-foreground flex items-center gap-1.5">
+                <WrenchIcon className="w-3.5 h-3.5 text-primary" /> Serviços
+                <span className="ml-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold px-1.5 py-0.5">{filteredServices.length}</span>
+              </h2>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {filteredServices.map((svc: any) => {
-                const seg = staticSegments.find(s => s.id === svc.segment);
-                const SIcon = seg?.icon || Sparkles;
+                const inCart = isInServiceCart(svc.id);
+                const img = segImage(svc.segment);
                 return (
-                  <Card key={svc.id}
-                    className={`transition-all group relative ${
-                      isInServiceCart(svc.id)
-                        ? 'border-primary bg-primary/5 shadow-sm'
-                        : 'border-border/50 hover:border-primary/30 hover:shadow-md'
-                    }`}>
-                    <CardContent className="p-4 cursor-pointer" onClick={() => {
+                  <motion.div
+                    key={svc.id}
+                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                    whileHover={{ y: -3 }}
+                    className={`group relative rounded-2xl overflow-hidden cursor-pointer border transition-all ${
+                      inCart
+                        ? 'border-primary shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.5)]'
+                        : 'border-border/40 bg-card hover:border-primary/40 hover:shadow-lg'
+                    }`}
+                    onClick={() => {
                       if (editMode) return;
                       if (accessLevel === 'visitor') {
-                        toast.info('Crie sua conta para contratar serviços', {
-                          action: { label: 'Cadastrar', onClick: () => navigate('/auth') }, duration: 5000,
-                        }); return;
+                        toast.info('Crie sua conta para contratar serviços', { action: { label: 'Cadastrar', onClick: () => navigate('/auth') }, duration: 5000 }); return;
                       }
                       if (accessLevel === 'lead') {
-                        toast.warning('Confirme seu e-mail para contratar serviços', {
-                          description: 'Verifique sua caixa de entrada e clique no link de confirmação.',
-                          action: { label: 'Ver status', onClick: () => navigate('/carteira') }, duration: 6000,
-                        }); return;
+                        toast.warning('Confirme seu e-mail para contratar serviços', { duration: 6000 }); return;
                       }
                       toggleServiceInCart(svc);
-                    }}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isInServiceCart(svc.id) ? 'bg-primary/20' : 'bg-primary/10'}`}>
-                          {isInServiceCart(svc.id) ? <CheckCircle2 className="w-4 h-4 text-primary" /> : <SIcon className="w-4 h-4 text-primary" />}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h4 className="font-semibold text-sm text-foreground">{svc.name}</h4>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> <MaskedPrice value={`${svc.price}/${svc.unit || 'hr'}`} /></span>
-                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {svc.time}</span>
-                      </div>
-                      {svc.products && svc.products.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {svc.products.slice(0, 3).map((p: string) => (
-                            <Badge key={p} variant="secondary" className="text-[10px] px-1.5 py-0">
-                              <Package className="w-2.5 h-2.5 mr-0.5" />{p}
-                            </Badge>
-                          ))}
+                    }}
+                  >
+                    {/* Image */}
+                    <div className="aspect-[4/3] relative overflow-hidden bg-gradient-to-br from-primary/15 via-card to-card">
+                      {img ? (
+                        <img src={img} alt={svc.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <WrenchIcon className="w-9 h-9 text-primary/40" />
                         </div>
                       )}
+                      {/* Gradient overlay for legibility */}
+                      <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                      {/* Top-left favorite */}
                       {!editMode && (
-                        <div className="mt-2 text-[10px] font-medium">
-                          {isInServiceCart(svc.id)
-                            ? <span className="text-primary flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> No carrinho</span>
-                            : <span className="text-primary opacity-0 group-hover:opacity-100 flex items-center gap-1"><Plus className="w-3 h-3" /> Adicionar</span>}
+                        <div className="absolute top-1.5 left-1.5 z-10">
+                          <FavoriteButton kind="service" id={svc.id} name={svc.name} image={img} provider={provider?.name} />
                         </div>
                       )}
-                    </CardContent>
-                    {editMode && (
-                      <div className="absolute top-2 right-2 flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditService(svc); setServiceFormOpen(true); }}>
-                          <Pencil className="w-3 h-3" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteConfirm({ open: true, type: 'service', id: svc.id, name: svc.name })}>
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
+                      {/* Top-right cart badge */}
+                      {!editMode && (
+                        <div className="absolute top-1.5 right-1.5 rounded-full bg-black/70 backdrop-blur px-1.5 py-0.5 flex items-center gap-0.5 z-10">
+                          {inCart ? <CheckCircle2 className="w-3 h-3 text-primary" /> : <Plus className="w-3 h-3 text-white" />}
+                        </div>
+                      )}
+                      {/* Edit buttons */}
+                      {editMode && (
+                        <div className="absolute top-1.5 right-1.5 flex gap-1 z-10">
+                          <Button variant="secondary" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setEditService(svc); setServiceFormOpen(true); }}>
+                            <Pencil className="w-3 h-3" />
+                          </Button>
+                          <Button variant="secondary" size="icon" className="h-6 w-6 text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ open: true, type: 'service', id: svc.id, name: svc.name }); }}>
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      )}
+                      {/* Bottom info overlay */}
+                      <div className="absolute inset-x-0 bottom-0 p-2 z-[5]">
+                        <h4 className="text-[12px] font-bold text-white leading-tight truncate drop-shadow-md">{svc.name}</h4>
+                        <div className="flex items-center justify-between mt-0.5">
+                          <span className="text-[11px] font-bold text-white drop-shadow"><MaskedPrice value={svc.price} /></span>
+                          <span className="flex items-center gap-0.5 text-[10px] text-amber-300">
+                            <Star className="w-2.5 h-2.5 fill-amber-300" /> {svc.rating ?? provider?.rating ?? 4.8}
+                          </span>
+                        </div>
                       </div>
-                    )}
-                  </Card>
+                    </div>
+                    {/* Footer meta */}
+                    <div className="px-2 py-1.5 bg-card/95 flex items-center justify-between gap-1.5">
+                      <span className="flex items-center gap-1 text-[10px] text-muted-foreground truncate">
+                        <Clock className="w-2.5 h-2.5 shrink-0" /> {svc.time || '—'}
+                      </span>
+                      {svc.products && svc.products.length > 0 && (
+                        <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground shrink-0">
+                          <Package className="w-2.5 h-2.5" /> {svc.products.length}
+                        </span>
+                      )}
+                    </div>
+                  </motion.div>
                 );
               })}
             </div>
-          </div>
+          </section>
         )}
 
+        {/* === PRODUTOS === */}
         {filteredProducts.length > 0 && (
-          <div>
-            <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5 mb-3">
-              <ShoppingBag className="w-4 h-4 text-success" /> Produtos ({filteredProducts.length})
-            </h2>
-            <div className="grid sm:grid-cols-2 gap-3">
-              {filteredProducts.map((product: any) => (
-                <Card key={product.id}
-                  className={`transition-all group relative ${
-                    isInProductCart(product.id)
-                      ? 'border-success bg-success/5 shadow-sm'
-                      : 'border-border/50 hover:border-success/40 hover:shadow-md'
-                  }`}>
-                  <CardContent className="p-4 cursor-pointer" onClick={() => {
-                    if (editMode) return;
-                    if (accessLevel === 'visitor') {
-                      toast.info('Crie sua conta para adicionar produtos ao carrinho', {
-                        action: { label: 'Cadastrar', onClick: () => navigate('/auth') }, duration: 5000,
-                      }); return;
-                    }
-                    if (accessLevel === 'lead') {
-                      toast.warning('Confirme seu e-mail para comprar produtos', {
-                        description: 'Verifique sua caixa de entrada e clique no link de confirmação.',
-                        action: { label: 'Ver status', onClick: () => navigate('/carteira') }, duration: 6000,
-                      }); return;
-                    }
-                    toggleProductInCart(product);
-                  }}>
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isInProductCart(product.id) ? 'bg-success/20' : 'bg-success/10'}`}>
-                          {isInProductCart(product.id) ? <CheckCircle2 className="w-4 h-4 text-success" /> : <Package className="w-4 h-4 text-success" />}
+          <section>
+            <div className="flex items-center justify-between mb-3 px-0.5">
+              <h2 className="text-[11px] font-semibold tracking-[0.14em] uppercase text-muted-foreground flex items-center gap-1.5">
+                <ShoppingBag className="w-3.5 h-3.5 text-emerald-500" /> Produtos
+                <span className="ml-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-bold px-1.5 py-0.5">{filteredProducts.length}</span>
+              </h2>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {filteredProducts.map((product: any) => {
+                const inCart = isInProductCart(product.id);
+                const img = product.image_url || segImage(product.segment);
+                return (
+                  <motion.div
+                    key={product.id}
+                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                    whileHover={{ y: -3 }}
+                    className={`group relative rounded-2xl overflow-hidden cursor-pointer border transition-all ${
+                      inCart
+                        ? 'border-emerald-500 shadow-[0_8px_24px_-8px_hsl(160_70%_45%/0.5)]'
+                        : 'border-border/40 bg-card hover:border-emerald-400/50 hover:shadow-lg'
+                    }`}
+                    onClick={() => {
+                      if (editMode) return;
+                      if (accessLevel === 'visitor') {
+                        toast.info('Crie sua conta para adicionar produtos ao carrinho', { action: { label: 'Cadastrar', onClick: () => navigate('/auth') }, duration: 5000 }); return;
+                      }
+                      if (accessLevel === 'lead') {
+                        toast.warning('Confirme seu e-mail para comprar produtos', { duration: 6000 }); return;
+                      }
+                      toggleProductInCart(product);
+                    }}
+                  >
+                    <div className="aspect-[4/3] relative overflow-hidden bg-gradient-to-br from-emerald-500/15 via-card to-card">
+                      {img ? (
+                        <img src={img} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package className="w-9 h-9 text-emerald-500/40" />
                         </div>
-                        <div>
-                          <h4 className="font-semibold text-sm text-foreground">{product.name}</h4>
-                          <Badge variant={product.stockType === 'fisico' ? 'default' : 'secondary'} className="text-[9px] px-1.5 py-0 mt-0.5">
-                            {product.stockType === 'fisico' ? '📦 Estoque' : '🌍 Drop'}
-                          </Badge>
+                      )}
+                      <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+
+                      {/* Stock type chip */}
+                      <div className="absolute top-1.5 left-1.5 rounded-full bg-emerald-500/85 backdrop-blur px-1.5 py-0.5 z-10">
+                        <span className="text-[8px] font-bold text-white">{product.stockType === 'fisico' ? 'Estoque' : 'Drop'}</span>
+                      </div>
+                      {/* Top-right cart */}
+                      {!editMode && (
+                        <div className="absolute top-1.5 right-1.5 rounded-full bg-black/70 backdrop-blur px-1.5 py-0.5 flex items-center gap-0.5 z-10">
+                          {inCart ? <CheckCircle2 className="w-3 h-3 text-emerald-300" /> : <Plus className="w-3 h-3 text-white" />}
+                        </div>
+                      )}
+                      {/* Bottom-right favorite */}
+                      {!editMode && (
+                        <div className="absolute bottom-9 right-1.5 z-10">
+                          <FavoriteButton kind="product" id={product.id} name={product.name} image={img} provider={provider?.name} />
+                        </div>
+                      )}
+                      {editMode && (
+                        <div className="absolute top-1.5 right-1.5 flex gap-1 z-10">
+                          <Button variant="secondary" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setEditProduct(product); setProductFormOpen(true); }}>
+                            <Pencil className="w-3 h-3" />
+                          </Button>
+                          <Button variant="secondary" size="icon" className="h-6 w-6 text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ open: true, type: 'product', id: product.id, name: product.name }); }}>
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      )}
+                      <div className="absolute inset-x-0 bottom-0 p-2 z-[5]">
+                        <h4 className="text-[12px] font-bold text-white leading-tight truncate drop-shadow-md">{product.name}</h4>
+                        <div className="flex items-center justify-between mt-0.5">
+                          <span className="text-[11px] font-bold text-white drop-shadow"><MaskedPrice value={product.price} /></span>
+                          <span className="flex items-center gap-0.5 text-[10px] text-amber-300">
+                            <Star className="w-2.5 h-2.5 fill-amber-300" /> {product.rating ?? 4.8}
+                          </span>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <MaskedPrice value={product.price} className="font-semibold text-foreground" />
-                      <span>/{product.unit || 'un'}</span>
-                      <span className="flex items-center gap-0.5"><Star className="w-2.5 h-2.5 fill-accent text-accent" /> {product.rating}</span>
-                    </div>
                     {product.tags && product.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {product.tags.slice(0, 3).map((t: string) => (
-                          <span key={t} className="text-[9px] text-muted-foreground bg-muted/40 px-1.5 rounded">{t}</span>
+                      <div className="px-2 py-1.5 bg-card/95 flex items-center gap-1 overflow-hidden">
+                        {product.tags.slice(0, 2).map((t: string) => (
+                          <span key={t} className="text-[9px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full truncate">{t}</span>
                         ))}
                       </div>
                     )}
-                    {!editMode && (
-                      <div className="mt-2 text-[10px] font-medium">
-                        {isInProductCart(product.id)
-                          ? <span className="text-success flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> No carrinho</span>
-                          : <span className="text-success opacity-0 group-hover:opacity-100 flex items-center gap-1"><Plus className="w-3 h-3" /> Adicionar</span>}
-                      </div>
-                    )}
-                  </CardContent>
-                  {editMode && (
-                    <div className="absolute top-2 right-2 flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditProduct(product); setProductFormOpen(true); }}>
-                        <Pencil className="w-3 h-3" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteConfirm({ open: true, type: 'product', id: product.id, name: product.name })}>
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  )}
-                </Card>
-              ))}
+                  </motion.div>
+                );
+              })}
             </div>
-          </div>
+          </section>
         )}
 
         {filteredServices.length === 0 && filteredProducts.length === 0 && (
-          <div className="text-center py-12">
-            <Store className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+          <div className="text-center py-16 rounded-2xl border border-dashed border-border bg-card/30">
+            <Store className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
             <p className="text-sm text-muted-foreground">
               {searchQuery ? `Nenhum resultado para "${searchQuery}" nesta loja.` : 'Este prestador ainda não possui itens cadastrados.'}
             </p>
