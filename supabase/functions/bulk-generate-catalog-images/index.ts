@@ -29,6 +29,11 @@ async function genImage(prompt: string): Promise<Uint8Array | null> {
         modalities: ["image", "text"],
       }),
     });
+    if (r.status === 402 || r.status === 429) {
+      await autoOffOnFailure(r.status === 402 ? "no_credits" : "rate_limited");
+      void logAiSavings("bulk-generate-catalog-images", `gateway_${r.status}`, 1, { auto_off: true });
+      return null;
+    }
     if (!r.ok) {
       console.error("AI gen failed", r.status, await r.text());
       return null;
