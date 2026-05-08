@@ -983,6 +983,7 @@ const ViniHome = () => {
         onClose={() => setChatOpen(false)}
         userName={displayName}
       />
+      <FavoritesModal open={favoritesOpen} onOpenChange={setFavoritesOpen} />
     </div>
   );
 };
