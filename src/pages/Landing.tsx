@@ -537,8 +537,8 @@ const Landing = () => {
                 {/* === MARKETPLACE: SERVIÇOS === */}
                 {hasResults && filteredResults.length > 0 && (
                   <div>
-                    <h3 className="text-white text-sm font-bold mb-2 px-1 flex items-center gap-1.5">
-                      <WrenchIcon className="w-3.5 h-3.5 text-violet-300" /> Serviços ({filteredResults.length})
+                    <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-white/55 mb-1.5 px-1 flex items-center gap-1.5">
+                      <WrenchIcon className="w-3 h-3 text-violet-300/80" /> Serviços ({filteredResults.length})
                     </h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                       {filteredResults.map((result, idx) => {
