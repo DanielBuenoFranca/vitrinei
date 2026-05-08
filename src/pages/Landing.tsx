@@ -1694,7 +1694,7 @@ const Landing = () => {
       {/* Cart is now rendered globally via CartBar */}
 
       {/* Footer - Quick actions (Home, Urgência, Perfil, Indicação) */}
-      <footer className="shrink-0 border-t border-border bg-card/60 backdrop-blur-md px-2 py-1">
+      <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/80 backdrop-blur-md px-2 py-1 pb-[calc(0.25rem+env(safe-area-inset-bottom))]">
         <div className="container mx-auto max-w-2xl grid grid-cols-4 gap-1.5">
           {[
             { label: 'Home', icon: Home, onClick: () => navigate('/') },
