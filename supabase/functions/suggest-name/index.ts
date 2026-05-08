@@ -1,20 +1,40 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { getAiMode, autoOffOnFailure, logAiSavings } from "../_shared/aiCredits.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function heuristic(input: string, existing: string[]): { suggestions: string[]; duplicate: boolean; match?: string } {
+  const norm = (s: string) => (s || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const ni = norm(input);
+  const exact = existing.find((e) => norm(e) === ni);
+  if (exact) return { suggestions: [exact], duplicate: true, match: exact };
+  const tidy = (input || "").trim().replace(/\s+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const similar = existing
+    .filter((e) => norm(e).includes(ni) || ni.includes(norm(e)))
+    .slice(0, 2);
+  return { suggestions: [tidy, ...similar].filter(Boolean).slice(0, 3), duplicate: false };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const { input, type, existing } = await req.json();
-    // type: 'product' | 'service'
-    // input: what user typed
-    // existing: array of existing names
+    const existingArr: string[] = Array.isArray(existing) ? existing : [];
 
-    const existingList = (existing || []).slice(0, 50).join(", ");
+    // [Economia de Crédito] Honor the global toggle.
+    const { mode } = await getAiMode();
+    if (mode === "off") {
+      void logAiSavings("suggest-name", "heuristic_local", 1, { type });
+      return new Response(JSON.stringify(heuristic(input, existingArr)), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const existingList = existingArr.slice(0, 50).join(", ");
     const prompt = `Você é um assistente de padronização de cadastros para uma plataforma de serviços e produtos.
 
 O usuário está cadastrando um ${type === 'product' ? 'PRODUTO' : 'SERVIÇO'} e digitou: "${input}"
@@ -40,10 +60,17 @@ Responda APENAS em JSON: {"suggestions": ["Nome 1", "Nome 2", "Nome 3"], "duplic
       }),
     });
 
+    if (res.status === 402 || res.status === 429) {
+      await autoOffOnFailure(res.status === 402 ? "no_credits" : "rate_limited");
+      void logAiSavings("suggest-name", `gateway_${res.status}`, 1, { auto_off: true });
+      return new Response(JSON.stringify(heuristic(input, existingArr)), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const data = await res.json();
     const content = data.choices?.[0]?.message?.content || "{}";
     const parsed = JSON.parse(content);
-
     return new Response(JSON.stringify(parsed), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
     return new Response(JSON.stringify({ suggestions: [], duplicate: false }), {
