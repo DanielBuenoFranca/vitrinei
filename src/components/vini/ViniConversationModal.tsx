@@ -370,8 +370,8 @@ export function ViniConversationModal({
               filter: 'blur(8px)',
             }}
           />
-          {/* Backdrop sutil */}
-          <div className="absolute inset-0 bg-background/25 backdrop-blur-[6px] pointer-events-none" />
+          {/* Backdrop transparente: mantém a sala visível atrás da conversa */}
+          <div className="absolute inset-0 bg-transparent pointer-events-none" />
 
           <motion.div
             initial={{ y: 60, opacity: 0, scale: 0.85, rotateX: 18, z: -200 }}
@@ -384,7 +384,7 @@ export function ViniConversationModal({
               boxShadow:
                 '0 40px 90px -20px hsl(var(--vini-glow) / 0.45), 0 0 80px hsl(var(--primary) / 0.25), inset 0 1px 0 hsl(var(--vini-glow) / 0.35), inset 0 0 40px hsl(var(--primary) / 0.06)',
             }}
-            className="relative w-full max-w-lg rounded-3xl border border-[hsl(var(--vini-glow)/0.55)] overflow-hidden flex flex-col max-h-[80vh] bg-gradient-to-br from-white/[0.10] via-white/[0.04] to-white/[0.02] backdrop-blur-2xl"
+            className="relative w-full max-w-lg rounded-3xl border border-[hsl(var(--vini-glow)/0.45)] overflow-hidden flex flex-col max-h-[80vh] bg-background/[0.08] backdrop-blur-md"
           >
             {/* Reflexo holográfico superior */}
             <div
@@ -404,7 +404,7 @@ export function ViniConversationModal({
               }}
             />
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border/40">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--vini-glow)/0.18)] bg-background/[0.06]">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
                 <h3 className="font-display font-bold text-base">Conversar com o Vini</h3>
@@ -426,10 +426,10 @@ export function ViniConversationModal({
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   className={cn(
-                    'max-w-[85%] px-3.5 py-2 rounded-2xl text-sm leading-snug',
+                    'max-w-[85%] px-3.5 py-2 rounded-2xl text-sm leading-snug backdrop-blur-md',
                     m.role === 'user'
-                      ? 'self-end bg-primary text-primary-foreground rounded-br-sm'
-                      : 'self-start bg-card/80 text-foreground border border-border/50 rounded-bl-sm',
+                      ? 'self-end bg-primary/70 text-primary-foreground rounded-br-sm border border-primary/25'
+                      : 'self-start bg-background/[0.12] text-foreground border border-[hsl(var(--vini-glow)/0.22)] rounded-bl-sm',
                   )}
                 >
                   {m.content || (
@@ -451,7 +451,7 @@ export function ViniConversationModal({
             )}
 
             {/* Composer */}
-            <form onSubmit={handleSubmit} className="border-t border-border/40 p-3 flex items-center gap-2">
+            <form onSubmit={handleSubmit} className="border-t border-[hsl(var(--vini-glow)/0.18)] bg-background/[0.06] p-3 flex items-center gap-2">
               <Button
                 type="button"
                 size="icon"
@@ -469,7 +469,7 @@ export function ViniConversationModal({
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={listening ? 'Fale ou digite…' : 'Diga qualquer coisa ao Vini…'}
-                className="flex-1 bg-background/40 border-border/60"
+                className="flex-1 bg-background/[0.10] border-[hsl(var(--vini-glow)/0.22)] backdrop-blur-md"
                 disabled={isStreaming}
               />
               <Button
