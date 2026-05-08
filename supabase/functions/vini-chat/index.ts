@@ -56,23 +56,32 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
+      const first = (userName || "").split(" ")[0];
+      const prefix = first ? `${first}, ` : "";
+      let fallback = `${prefix}estou aqui com você. Posso te orientar sobre busca, loja, carrinho, carteira ou suporte — me conte o que precisa resolver agora.`;
       if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Muitas mensagens em pouco tempo. Aguarde alguns segundos." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
+        fallback = `${prefix}recebi muitas mensagens em sequência. Vamos respirar 1 segundinho e já te respondo. Enquanto isso, me diga em uma frase o que você quer.`;
+      } else if (response.status === 402) {
+        fallback = `${prefix}meu canal de conversa livre está em manutenção agora, mas continuo te ajudando: posso te levar para busca, loja, carrinho, carteira ou suporte. O que você quer fazer?`;
+      } else {
+        const t = await response.text().catch(() => "");
+        console.error("AI gateway error:", response.status, t);
       }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Créditos insuficientes para o Vini conversar agora." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "Erro no serviço do Vini" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+
+      // Return as SSE stream so the client's streaming reader handles it transparently
+      const sse = new ReadableStream({
+        start(controller) {
+          const enc = new TextEncoder();
+          const chunk = {
+            choices: [{ delta: { content: fallback }, index: 0, finish_reason: null }],
+          };
+          controller.enqueue(enc.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+          controller.enqueue(enc.encode(`data: [DONE]\n\n`));
+          controller.close();
+        },
+      });
+      return new Response(sse, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
       });
     }
 
