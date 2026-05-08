@@ -258,7 +258,15 @@ export function ViniConversationModal({
 
         if (!resp.ok || !resp.body) {
           if (resp.status === 429) throw new Error('Muitas mensagens em pouco tempo. Aguarde alguns segundos.');
-          if (resp.status === 402) throw new Error('Créditos insuficientes para o Vini conversar agora.');
+          if (resp.status === 402) {
+            const fallback = buildContingencyReply(text, userName);
+            accumulated = fallback;
+            setMessages((m) =>
+              m.map((msg) => (msg.id === assistantId ? { ...msg, content: fallback } : msg)),
+            );
+            void persistMessage('assistant', fallback, modality, `${routedIntent}:contingency`);
+            return;
+          }
           const errBody = await resp.text();
           throw new Error(errBody || 'Falha na conexão com o Vini');
         }
