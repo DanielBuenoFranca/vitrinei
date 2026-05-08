@@ -757,7 +757,7 @@ const Landing = () => {
                           {searchResult.products.slice(0, 3).map((p, i) => (
                             <div
                               key={p.id}
-                              className="absolute left-1/2 top-0 w-[42%] rounded-2xl shadow-2xl"
+                              className="absolute left-1/2 top-0 w-[120px] rounded-2xl shadow-2xl"
                               style={{
                                 transform: `translateX(calc(-50% + ${(i - 1) * 12}px)) rotate(${(i - 1) * 3}deg) scale(${1 - i * 0.035})`,
                                 zIndex: 10 - i,
@@ -775,7 +775,7 @@ const Landing = () => {
                       ) : productsCarouselOpen && searchResult.products.length > 2 ? (
                         <ScrollableRow>
                           {searchResult.products.map((p, i) => (
-                            <div key={p.id} className="snap-start shrink-0 w-[150px]">{renderCard(p, i)}</div>
+                            <div key={p.id} className="snap-start shrink-0 w-[120px]">{renderCard(p, i)}</div>
                           ))}
                         </ScrollableRow>
                       ) : (
