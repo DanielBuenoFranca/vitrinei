@@ -444,60 +444,11 @@ const Landing = () => {
   const handleAiSend = () => {
     if (!aiMessage.trim()) return;
     const msg = aiMessage.trim();
-    setAiChat((prev) => [...prev, { role: 'user', text: msg }]);
     setAiSpeaking(true);
-
-    // Build conversation context from previous user messages
-    const userMsgs = aiChat.filter(m => m.role === 'user').map(m => m.text);
-    const searchResult = semanticSearch(msg, [...userMsgs, msg]);
-
-    setTimeout(() => {
-      const hasResults = searchResult.products.length > 0 || searchResult.services.length > 0;
-
-      if (hasResults) {
-        const contextMsg = searchResult.followUp || 'Entendi sua necessidade! 🧠';
-        const parts: string[] = [contextMsg];
-
-        if (searchResult.needLabel) {
-          parts.push(`\n\n🔍 Necessidade identificada: ${searchResult.needLabel}`);
-        }
-        if (searchResult.products.length > 0) {
-          const physCount = searchResult.products.filter(p => p.stockType === 'fisico').length;
-          const dropCount = searchResult.products.filter(p => p.stockType === 'drop').length;
-          parts.push(`\n\n📦 ${searchResult.products.length} produto(s) disponíveis (${physCount} estoque, ${dropCount} drop):`);
-        }
-        if (searchResult.services.length > 0) {
-          parts.push(`\n\n🔧 ${searchResult.services.length} serviço(s) relevantes:`);
-        }
-        if (searchResult.suggestedServices && searchResult.suggestedServices.length > 0) {
-          parts.push(`\n\n💡 Sugestão IA: ${searchResult.suggestedServices.length} serviço(s) relacionados:`);
-        }
-
-        setAiChat((prev) => [...prev, { role: 'ai', text: parts.join(''), searchResult }]);
-        setSearchQuery(msg);
-      } else {
-        // ── CONTEXTUAL SUGGESTIONS ──
-        const contextSuggestion = generateContextualSuggestions(msg);
-        if (contextSuggestion) {
-          const text = `🧠 Não encontrei "${msg}" diretamente no hub, mas analisei o contexto!\n\n${contextSuggestion.derivedContext}\n\n📂 **Segmento:** ${contextSuggestion.segmentLabel}\n\nSelecione abaixo os serviços e produtos que correspondem ao que você precisa, ou escreva com mais detalhes:`;
-          setAiChat((prev) => [...prev, {
-            role: 'ai',
-            text,
-            contextualSuggestion: contextSuggestion,
-            searchResult: { products: [], services: [] } as SearchResult,
-          }]);
-        } else {
-          const summary = buildSupportSummary([...aiChat, { role: 'user', text: msg }], msg);
-          setAiChat((prev) => [...prev, {
-            role: 'ai',
-            text: `Não encontrei resultados para "${msg}" no hub atual. 😔\n\nAcione a Central abaixo para buscar profissionais (SLA: 24h).`,
-            searchResult: { products: [], services: [], _noResults: true, _query: msg, _summary: summary } as any
-          }]);
-        }
-      }
-      setTimeout(() => setAiSpeaking(false), 2000);
-    }, 1200);
-    setAiMessage('');
+    refineWithVini(msg, { openPanel: true, autoApply: true }).finally(() => {
+      setAiSpeaking(false);
+      setAiMessage('');
+    });
   };
 
   const navigateToDemo = (result: typeof mockResults[0]) => {
