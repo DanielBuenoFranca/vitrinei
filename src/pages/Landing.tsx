@@ -87,6 +87,8 @@ const Landing = () => {
   const { count: favoritesCount } = useFavorites();
   const [expandedServices, setExpandedServices] = useState<number | null>(null);
   const [showSearchProducts, setShowSearchProducts] = useState(false);
+  const [servicesCarouselOpen, setServicesCarouselOpen] = useState(false);
+  const [productsCarouselOpen, setProductsCarouselOpen] = useState(false);
   const [pendingChatSuggestions, setPendingChatSuggestions] = useState<Map<number, Set<string>>>(new Map());
   const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
   const [dbSegments, setDbSegments] = useState<{ id: string; label: string; name: string; tags: string[]; image_url?: string | null }[]>([]);
