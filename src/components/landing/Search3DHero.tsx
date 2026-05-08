@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Search, Sparkles, Star, Wrench as WrenchIcon, Package as PackageIcon, LayoutGrid } from 'lucide-react';
+import { Mic, Search, Sparkles, Star, Store, Wrench as WrenchIcon, Package as PackageIcon, LayoutGrid } from 'lucide-react';
 import {
   Wrench, Scissors, Droplets, Sprout, Truck, Hammer, Stethoscope,
   GraduationCap, Car, Home, Brush, ShoppingBag,
@@ -60,9 +61,11 @@ export function Search3DHero({
   searchQuery, setSearchQuery, onSearch, onMic, micListening, micSupported,
   segments, activeSegments, toggleSegment, typeFilter = 'all', setTypeFilter, children,
 }: Props) {
+  const navigate = useNavigate();
   const [top, setTop] = useState<Top[]>([]);
   const [thought, setThought] = useState<string | null>(null);
   const thoughtTimer = useRef<number | null>(null);
+  const slugify = (v: string) => v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
   useEffect(() => {
     supabase.from('providers')
@@ -211,47 +214,57 @@ export function Search3DHero({
         </div>
       </div>
 
-      {/* ===================== MAIS PROCURADOS — carrossel compacto ===================== */}
+      {/* ===================== PRESTADORES / FORNECEDORES — carrossel ordenado por ranking ===================== */}
       {top.length > 0 && (
         <div className="mt-4 mx-auto max-w-2xl">
           <SectionTitle action={<button onClick={onSearch} className="text-[10px] text-violet-300/80 hover:text-violet-200">Ver todos</button>}>
-            Mais procurados perto de você
+            Prestadores / Fornecedores
           </SectionTitle>
           <div className="flex gap-2 overflow-x-auto no-scrollbar snap-x pb-1 -mx-1 px-1">
-            {top.map((p) => (
-              <motion.button
-                key={p.id}
-                whileHover={{ y: -2 }}
-                onClick={onSearch}
-                className="snap-start shrink-0 w-[96px] rounded-xl overflow-hidden text-left"
-                style={{
-                  background: 'hsl(225 30% 14%)',
-                  border: '1px solid rgba(255,255,255,.06)',
-                  boxShadow: '0 8px 20px -10px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.05)',
-                }}
-              >
-                <div className="aspect-square bg-gradient-to-br from-violet-900/40 to-slate-900 overflow-hidden relative">
-                  {p.logo_url ? (
-                    <img src={p.logo_url} alt={p.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Sparkles className="w-7 h-7 text-violet-300/40" />
+            {top.map((p) => {
+              const slug = slugify(p.name);
+              return (
+                <motion.div
+                  key={p.id}
+                  whileHover={{ y: -2 }}
+                  className="snap-start shrink-0 w-[104px] rounded-xl overflow-hidden text-left relative"
+                  style={{
+                    background: 'hsl(225 30% 14%)',
+                    border: '1px solid rgba(255,255,255,.06)',
+                    boxShadow: '0 8px 20px -10px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.05)',
+                  }}
+                >
+                  <button onClick={() => navigate(`/loja/${slug}`)} className="block w-full text-left">
+                    <div className="aspect-square bg-gradient-to-br from-violet-900/40 to-slate-900 overflow-hidden relative">
+                      {p.logo_url ? (
+                        <img src={p.logo_url} alt={p.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Sparkles className="w-7 h-7 text-violet-300/40" />
+                        </div>
+                      )}
+                      {p.is_top_provider && (
+                        <div className="absolute top-1 right-1">
+                          <TopProviderBadge active size="xs" label="TOP" />
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {p.is_top_provider && (
-                    <div className="absolute top-1 right-1">
-                      <TopProviderBadge active size="xs" label="TOP" />
+                    <div className="px-1.5 pt-1">
+                      <p className="text-[10px] font-bold text-white truncate leading-tight">{p.name}</p>
+                      <span className="flex items-center gap-0.5 text-[9px] text-amber-300 mt-0.5">
+                        <Star className="w-2 h-2 fill-amber-300" /> {(p.rating ?? 4.5).toFixed(1)}
+                      </span>
                     </div>
-                  )}
-                </div>
-                <div className="px-1.5 py-1">
-                  <p className="text-[10px] font-bold text-white truncate leading-tight">{p.name}</p>
-                  <span className="flex items-center gap-0.5 text-[9px] text-amber-300 mt-0.5">
-                    <Star className="w-2 h-2 fill-amber-300" /> {(p.rating ?? 4.5).toFixed(1)}
-                  </span>
-                </div>
-              </motion.button>
-            ))}
+                  </button>
+                  <button
+                    onClick={() => navigate(`/loja/${slug}`)}
+                    className="mt-1 w-full py-1 text-[9px] font-bold text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 flex items-center justify-center gap-0.5 transition-all"
+                  >
+                    <Store className="w-2.5 h-2.5" /> Loja
+                  </button>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       )}

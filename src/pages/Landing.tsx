@@ -12,7 +12,7 @@ import {
   Search, Zap, Sparkles, Clock, MapPin, DollarSign,
   Headphones, ShoppingCart, BarChart3, Send, Star,
   Package, TrendingDown, Navigation, Users, Shield, MessageCircle,
-  ChevronDown, ShoppingBag, Wrench as WrenchIcon, Store, Plus, CheckCircle2, X, Trash2, Settings, CreditCard, AlertTriangle, Minus, Home,
+  ChevronDown, ChevronRight, ShoppingBag, Wrench as WrenchIcon, Store, Plus, CheckCircle2, X, Trash2, Settings, CreditCard, AlertTriangle, Minus, Home, Layers,
   Scissors, Droplets, Sprout, Truck, Hammer, Stethoscope, GraduationCap, Car, Brush, Cpu, Heart, PawPrint, PartyPopper, Leaf, Monitor, Gem, Shirt, Music
 } from 'lucide-react';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
@@ -87,6 +87,8 @@ const Landing = () => {
   const { count: favoritesCount } = useFavorites();
   const [expandedServices, setExpandedServices] = useState<number | null>(null);
   const [showSearchProducts, setShowSearchProducts] = useState(false);
+  const [servicesCarouselOpen, setServicesCarouselOpen] = useState(false);
+  const [productsCarouselOpen, setProductsCarouselOpen] = useState(false);
   const [pendingChatSuggestions, setPendingChatSuggestions] = useState<Map<number, Set<string>>>(new Map());
   const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
   const [dbSegments, setDbSegments] = useState<{ id: string; label: string; name: string; tags: string[]; image_url?: string | null }[]>([]);
@@ -531,231 +533,225 @@ const Landing = () => {
                   </div>
                 )}
 
-                {/* === FAIXA ROLANTE: PRESTADORES === */}
-                {hasResults && providerEntries.length > 0 && (
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5 px-1">
-                      <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-white/55">Prestadores próximos</h3>
-                      <label className="flex items-center gap-1.5 cursor-pointer select-none rounded-full border border-white/15 bg-white/5 px-2 py-0.5">
-                        <Checkbox checked={showSimulated} onCheckedChange={(v) => setShowSimulated(!!v)} className="h-3 w-3" />
-                        <span className="text-[10px] text-white/70 whitespace-nowrap">Incluir simulados</span>
-                      </label>
-                    </div>
-                    <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 -mx-1 px-1 snap-x">
-                      {providerEntries
-                        .slice()
-                        .sort(([an, ad], [bn, bd]) => {
-                          const aTop = dbProviders.get(an)?.is_top_provider ? 1 : 0;
-                          const bTop = dbProviders.get(bn)?.is_top_provider ? 1 : 0;
-                          if (bTop !== aTop) return bTop - aTop;
-                          const aR = ad.services[0]?.rating ?? ad.products[0]?.rating ?? 0;
-                          const bR = bd.services[0]?.rating ?? bd.products[0]?.rating ?? 0;
-                          return bR - aR;
-                        })
-                        .map(([providerName, data], idx) => {
-                        const prov = dbProviders.get(providerName);
-                        const segName = data.services[0]?.segment || data.products[0]?.tags?.[0] || providerName;
-                        const segVisual = getSegmentVisual(segName);
-                        const Icon = getVisualIcon(`${providerName}-${segName}`);
-                        const slug = slugify(providerName);
-                        return (
-                          <motion.div
-                            key={providerName}
-                            initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: idx * 0.04 }}
-                            className="snap-start shrink-0 w-[160px] rounded-2xl overflow-hidden relative"
-                            style={{
-                              background: 'linear-gradient(160deg, hsl(225 40% 18%), hsl(225 55% 8%))',
-                              border: '1px solid hsl(265 50% 50% / 0.35)',
-                              boxShadow: '0 14px 32px -16px hsl(265 80% 40% / 0.6), inset 0 1px 0 rgba(255,255,255,.08)',
-                            }}
-                          >
-                            <div className="absolute top-1.5 right-1.5 z-10">
-                              <FavoriteButton
-                                kind="provider"
-                                id={(prov as any)?.id ?? slug}
-                                name={providerName}
-                                slug={slug}
-                                image={prov?.logo_url ?? null}
-                              />
-                            </div>
-                            <button onClick={() => toggleProviderExpanded(providerName)} className="block w-full text-left">
-                              <div className="relative aspect-[3/4] overflow-hidden">
-                                {prov?.logo_url ? (
-                                  <img src={prov.logo_url} alt={providerName} className="w-full h-full object-cover" />
-                                ) : segVisual?.image_url ? (
-                                  <img src={segVisual.image_url} alt={segName} className="w-full h-full object-cover" />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-violet-900/60 to-slate-900">
-                                    <Icon className="w-14 h-14 text-violet-200/70 drop-shadow-[0_4px_10px_rgba(0,0,0,.6)]" />
-                                  </div>
-                                )}
-                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-2">
-                                  <div className="flex items-center gap-1">
-                                    <h4 className="text-[12px] font-bold text-white truncate flex-1 drop-shadow">{providerName}</h4>
-                                    <TopProviderBadge active={prov?.is_top_provider} size="xs" />
-                                  </div>
-                                  <div className="flex items-center gap-1 text-[10px] text-amber-300 mt-0.5">
-                                    <Star className="w-2.5 h-2.5 fill-amber-300" />
-                                    <span>{(data.services[0]?.rating ?? data.products[0]?.rating ?? 4.8)}</span>
-                                    <span className="text-white/50">·</span>
-                                    <MapPin className="w-2.5 h-2.5 text-white/50" />
-                                    <span className="text-white/60 truncate">{data.services[0]?.distance || '2km'}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </button>
-                            {dbProviderNames.has(providerName) && (
-                              <button
-                                onClick={() => navigate(`/loja/${slug}`)}
-                                className="w-full py-1.5 text-[10px] font-bold text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 flex items-center justify-center gap-1 transition-all"
-                              >
-                                <Store className="w-3 h-3" /> Visitar Loja
-                              </button>
-                            )}
-                          </motion.div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                {/* Bloco "Prestadores próximos" removido — substituído pela seção "Prestadores / Fornecedores" no hero. */}
 
                 {/* === MARKETPLACE: SERVIÇOS === */}
-                {hasResults && filteredResults.length > 0 && (
-                  <div>
-                    <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-white/55 mb-1.5 px-1 flex items-center gap-1.5">
-                      <WrenchIcon className="w-3 h-3 text-violet-300/80" /> Serviços ({filteredResults.length})
-                    </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                      {filteredResults.map((result, idx) => {
-                        const seg = getSegmentVisual(result.segment);
-                        const SIcon = getVisualIcon(result.name);
-                        const inCart = isInServiceCart(result.id);
-                        const prov = dbProviders.get(result.provider);
-                        return (
-                          <motion.button
-                            key={result.id}
-                            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: idx * 0.03 }}
-                            whileHover={{ y: -2 }}
-                            onClick={() => {
-                              if (accessLevel === 'visitor') { toast.info('Crie sua conta para adicionar serviços ao carrinho', { action: { label: 'Cadastrar', onClick: () => navigate('/auth') }, duration: 5000 }); return; }
-                              if (accessLevel === 'lead') { toast.warning('Confirme seu e-mail para contratar serviços', { duration: 6000 }); return; }
-                              toggleServiceInCart(result);
-                            }}
-                            className="rounded-2xl overflow-hidden text-left relative group"
-                            style={{
-                              background: 'linear-gradient(160deg, hsl(225 35% 16%), hsl(225 50% 7%))',
-                              border: inCart ? '1px solid hsl(265 80% 60%)' : '1px solid hsl(225 30% 30% / 0.5)',
-                              boxShadow: inCart
-                                ? '0 12px 30px -10px hsl(265 80% 50% / 0.8), inset 0 1px 0 rgba(255,255,255,.1)'
-                                : '0 10px 24px -12px hsl(225 60% 0% / 0.7), inset 0 1px 0 rgba(255,255,255,.06)',
-                            }}
+                {hasResults && filteredResults.length > 0 && (() => {
+                  const useStack = filteredResults.length > 2 && !servicesCarouselOpen;
+                  const renderCard = (result: any, idx: number, extraClass = '') => {
+                    const seg = getSegmentVisual(result.segment);
+                    const SIcon = getVisualIcon(result.name);
+                    const inCart = isInServiceCart(result.id);
+                    return (
+                      <motion.button
+                        key={result.id}
+                        initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.03 }}
+                        whileHover={{ y: -2 }}
+                        onClick={() => {
+                          if (accessLevel === 'visitor') { toast.info('Crie sua conta para adicionar serviços ao carrinho', { action: { label: 'Cadastrar', onClick: () => navigate('/auth') }, duration: 5000 }); return; }
+                          if (accessLevel === 'lead') { toast.warning('Confirme seu e-mail para contratar serviços', { duration: 6000 }); return; }
+                          toggleServiceInCart(result);
+                        }}
+                        className={`rounded-2xl overflow-hidden text-left relative group ${extraClass}`}
+                        style={{
+                          background: 'linear-gradient(160deg, hsl(225 35% 16%), hsl(225 50% 7%))',
+                          border: inCart ? '1px solid hsl(265 80% 60%)' : '1px solid hsl(225 30% 30% / 0.5)',
+                          boxShadow: inCart
+                            ? '0 12px 30px -10px hsl(265 80% 50% / 0.8), inset 0 1px 0 rgba(255,255,255,.1)'
+                            : '0 10px 24px -12px hsl(225 60% 0% / 0.7), inset 0 1px 0 rgba(255,255,255,.06)',
+                        }}
+                      >
+                        <div className="aspect-[4/3] overflow-hidden bg-gradient-to-br from-violet-900/40 to-slate-900 relative">
+                          {seg?.image_url ? (
+                            <img src={seg.image_url} alt={result.name} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center"><SIcon className="w-10 h-10 text-violet-300/60" /></div>
+                          )}
+                          <div className="absolute top-1.5 right-1.5 rounded-full bg-black/70 backdrop-blur px-1.5 py-0.5 flex items-center gap-0.5">
+                            {inCart ? <CheckCircle2 className="w-3 h-3 text-violet-300" /> : <Plus className="w-3 h-3 text-white" />}
+                          </div>
+                          <div className="absolute top-1.5 left-1.5">
+                            <FavoriteButton kind="service" id={result.id} name={result.name} image={seg?.image_url ?? null} provider={result.provider} />
+                          </div>
+                        </div>
+                        <div className="p-2">
+                          <h4 className="text-[11px] font-bold text-white truncate">{result.name}</h4>
+                          <p className="text-[9px] text-white/50 truncate">{result.provider}</p>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="text-[11px] font-bold text-violet-200"><MaskedPrice value={result.price} /></span>
+                            <span className="flex items-center gap-0.5 text-[9px] text-amber-300">
+                              <Star className="w-2 h-2 fill-amber-300" /> {result.rating ?? 4.8}
+                            </span>
+                          </div>
+                        </div>
+                      </motion.button>
+                    );
+                  };
+                  return (
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5 px-1">
+                        <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-white/55 flex items-center gap-1.5">
+                          <WrenchIcon className="w-3 h-3 text-violet-300/80" /> Serviços ({filteredResults.length})
+                        </h3>
+                        {filteredResults.length > 2 && (
+                          <button
+                            onClick={() => setServicesCarouselOpen(v => !v)}
+                            className="flex items-center gap-1 rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[10px] text-white/75 hover:bg-white/10"
+                            title={servicesCarouselOpen ? 'Empilhar cards' : 'Abrir carrossel'}
                           >
-                            <div className="aspect-[4/3] overflow-hidden bg-gradient-to-br from-violet-900/40 to-slate-900 relative">
-                              {seg?.image_url ? (
-                                <img src={seg.image_url} alt={result.name} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center"><SIcon className="w-10 h-10 text-violet-300/60" /></div>
-                              )}
-                              <div className="absolute top-1.5 right-1.5 rounded-full bg-black/70 backdrop-blur px-1.5 py-0.5 flex items-center gap-0.5">
-                                {inCart ? <CheckCircle2 className="w-3 h-3 text-violet-300" /> : <Plus className="w-3 h-3 text-white" />}
-                              </div>
-                              <div className="absolute top-1.5 left-1.5">
-                                <FavoriteButton
-                                  kind="service"
-                                  id={result.id}
-                                  name={result.name}
-                                  image={seg?.image_url ?? null}
-                                  provider={result.provider}
-                                />
-                              </div>
+                            {servicesCarouselOpen ? <Layers className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                            {servicesCarouselOpen ? 'Empilhar' : 'Abrir'}
+                          </button>
+                        )}
+                      </div>
+                      {useStack ? (
+                        <button
+                          onClick={() => setServicesCarouselOpen(true)}
+                          className="relative block w-full h-[170px] mx-auto"
+                          aria-label="Abrir carrossel de serviços"
+                        >
+                          {filteredResults.slice(0, 3).map((r, i) => (
+                            <div
+                              key={r.id}
+                              className="absolute left-1/2 top-0 w-[55%]"
+                              style={{
+                                transform: `translateX(calc(-50% + ${(i - 1) * 18}px)) rotate(${(i - 1) * 4}deg) scale(${1 - i * 0.04})`,
+                                zIndex: 10 - i,
+                                opacity: 1 - i * 0.15,
+                              }}
+                            >
+                              {renderCard(r, i)}
                             </div>
-                            <div className="p-2">
-                              <h4 className="text-[11px] font-bold text-white truncate">{result.name}</h4>
-                              <p className="text-[9px] text-white/50 truncate">{result.provider}</p>
-                              <div className="flex items-center justify-between mt-1">
-                                <span className="text-[11px] font-bold text-violet-200"><MaskedPrice value={result.price} /></span>
-                                <span className="flex items-center gap-0.5 text-[9px] text-amber-300">
-                                  <Star className="w-2 h-2 fill-amber-300" /> {result.rating ?? 4.8}
-                                </span>
-                              </div>
-                            </div>
-                          </motion.button>
-                        );
-                      })}
+                          ))}
+                          <span className="absolute bottom-1 right-2 z-20 flex items-center gap-1 rounded-full bg-violet-600/90 px-2 py-1 text-[10px] font-bold text-white shadow-lg">
+                            <ChevronRight className="w-3 h-3" /> {filteredResults.length} itens
+                          </span>
+                        </button>
+                      ) : servicesCarouselOpen && filteredResults.length > 2 ? (
+                        <div className="flex gap-2.5 overflow-x-auto no-scrollbar snap-x pb-2 -mx-1 px-1">
+                          {filteredResults.map((r, i) => (
+                            <div key={r.id} className="snap-start shrink-0 w-[150px]">{renderCard(r, i)}</div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                          {filteredResults.map((r, i) => renderCard(r, i))}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* === MARKETPLACE: PRODUTOS === */}
-                {hasResults && searchResult.products.length > 0 && (
-                  <div>
-                    <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-white/55 mb-1.5 px-1 flex items-center gap-1.5">
-                      <ShoppingBag className="w-3 h-3 text-emerald-300/80" /> Produtos ({searchResult.products.length})
-                    </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                      {searchResult.products.map((product, idx) => {
-                        const PIcon = getVisualIcon(product.name);
-                        const inCart = isInProductCart(product.id);
-                        return (
-                          <motion.button
-                            key={product.id}
-                            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: idx * 0.03 }}
-                            whileHover={{ y: -2 }}
-                            onClick={() => {
-                              if (accessLevel === 'visitor') { toast.info('Crie sua conta para adicionar produtos ao carrinho', { action: { label: 'Cadastrar', onClick: () => navigate('/auth') }, duration: 5000 }); return; }
-                              if (accessLevel === 'lead') { toast.warning('Confirme seu e-mail para comprar produtos', { duration: 6000 }); return; }
-                              toggleProductInCart(product);
-                            }}
-                            className="rounded-2xl overflow-hidden text-left relative group"
-                            style={{
-                              background: 'linear-gradient(160deg, hsl(160 35% 14%), hsl(160 50% 6%))',
-                              border: inCart ? '1px solid hsl(160 70% 50%)' : '1px solid hsl(160 25% 28% / 0.5)',
-                              boxShadow: inCart
-                                ? '0 12px 30px -10px hsl(160 80% 40% / 0.7), inset 0 1px 0 rgba(255,255,255,.1)'
-                                : '0 10px 24px -12px hsl(160 60% 0% / 0.7), inset 0 1px 0 rgba(255,255,255,.06)',
-                            }}
+                {hasResults && searchResult.products.length > 0 && (() => {
+                  const useStack = searchResult.products.length > 2 && !productsCarouselOpen;
+                  const renderCard = (product: any, idx: number) => {
+                    const PIcon = getVisualIcon(product.name);
+                    const inCart = isInProductCart(product.id);
+                    return (
+                      <motion.button
+                        key={product.id}
+                        initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.03 }}
+                        whileHover={{ y: -2 }}
+                        onClick={() => {
+                          if (accessLevel === 'visitor') { toast.info('Crie sua conta para adicionar produtos ao carrinho', { action: { label: 'Cadastrar', onClick: () => navigate('/auth') }, duration: 5000 }); return; }
+                          if (accessLevel === 'lead') { toast.warning('Confirme seu e-mail para comprar produtos', { duration: 6000 }); return; }
+                          toggleProductInCart(product);
+                        }}
+                        className="rounded-2xl overflow-hidden text-left relative group w-full"
+                        style={{
+                          background: 'linear-gradient(160deg, hsl(160 35% 14%), hsl(160 50% 6%))',
+                          border: inCart ? '1px solid hsl(160 70% 50%)' : '1px solid hsl(160 25% 28% / 0.5)',
+                          boxShadow: inCart
+                            ? '0 12px 30px -10px hsl(160 80% 40% / 0.7), inset 0 1px 0 rgba(255,255,255,.1)'
+                            : '0 10px 24px -12px hsl(160 60% 0% / 0.7), inset 0 1px 0 rgba(255,255,255,.06)',
+                        }}
+                      >
+                        <div className="aspect-[4/3] overflow-hidden bg-gradient-to-br from-emerald-900/40 to-slate-900 relative">
+                          {product.image_url ? (
+                            <img src={product.image_url} alt={product.name} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center"><PIcon className="w-10 h-10 text-emerald-300/60" /></div>
+                          )}
+                          <div className="absolute top-1.5 right-1.5 rounded-full bg-black/70 backdrop-blur px-1.5 py-0.5 flex items-center gap-0.5">
+                            {inCart ? <CheckCircle2 className="w-3 h-3 text-emerald-300" /> : <Plus className="w-3 h-3 text-white" />}
+                          </div>
+                          <div className="absolute top-1.5 left-1.5 rounded-full bg-emerald-500/80 backdrop-blur px-1.5 py-0.5">
+                            <span className="text-[8px] font-bold text-white">{product.stockType === 'fisico' ? 'Estoque' : 'Drop'}</span>
+                          </div>
+                          <div className="absolute bottom-1.5 right-1.5">
+                            <FavoriteButton kind="product" id={product.id} name={product.name} image={product.image_url ?? null} provider={(product as any).provider} />
+                          </div>
+                        </div>
+                        <div className="p-2">
+                          <h4 className="text-[11px] font-bold text-white truncate">{product.name}</h4>
+                          <p className="text-[9px] text-white/50 truncate">{product.provider}</p>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="text-[11px] font-bold text-emerald-200"><MaskedPrice value={product.price} /></span>
+                            <span className="flex items-center gap-0.5 text-[9px] text-amber-300">
+                              <Star className="w-2 h-2 fill-amber-300" /> {product.rating ?? 4.8}
+                            </span>
+                          </div>
+                        </div>
+                      </motion.button>
+                    );
+                  };
+                  return (
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5 px-1">
+                        <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-white/55 flex items-center gap-1.5">
+                          <ShoppingBag className="w-3 h-3 text-emerald-300/80" /> Produtos ({searchResult.products.length})
+                        </h3>
+                        {searchResult.products.length > 2 && (
+                          <button
+                            onClick={() => setProductsCarouselOpen(v => !v)}
+                            className="flex items-center gap-1 rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[10px] text-white/75 hover:bg-white/10"
+                            title={productsCarouselOpen ? 'Empilhar cards' : 'Abrir carrossel'}
                           >
-                            <div className="aspect-[4/3] overflow-hidden bg-gradient-to-br from-emerald-900/40 to-slate-900 relative">
-                              {product.image_url ? (
-                                <img src={product.image_url} alt={product.name} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center"><PIcon className="w-10 h-10 text-emerald-300/60" /></div>
-                              )}
-                              <div className="absolute top-1.5 right-1.5 rounded-full bg-black/70 backdrop-blur px-1.5 py-0.5 flex items-center gap-0.5">
-                                {inCart ? <CheckCircle2 className="w-3 h-3 text-emerald-300" /> : <Plus className="w-3 h-3 text-white" />}
-                              </div>
-                              <div className="absolute top-1.5 left-1.5 rounded-full bg-emerald-500/80 backdrop-blur px-1.5 py-0.5">
-                                <span className="text-[8px] font-bold text-white">{product.stockType === 'fisico' ? 'Estoque' : 'Drop'}</span>
-                              </div>
-                              <div className="absolute bottom-1.5 right-1.5">
-                                <FavoriteButton
-                                  kind="product"
-                                  id={product.id}
-                                  name={product.name}
-                                  image={product.image_url ?? null}
-                                  provider={(product as any).provider}
-                                />
-                              </div>
+                            {productsCarouselOpen ? <Layers className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                            {productsCarouselOpen ? 'Empilhar' : 'Abrir'}
+                          </button>
+                        )}
+                      </div>
+                      {useStack ? (
+                        <button
+                          onClick={() => setProductsCarouselOpen(true)}
+                          className="relative block w-full h-[170px] mx-auto"
+                          aria-label="Abrir carrossel de produtos"
+                        >
+                          {searchResult.products.slice(0, 3).map((p, i) => (
+                            <div
+                              key={p.id}
+                              className="absolute left-1/2 top-0 w-[55%]"
+                              style={{
+                                transform: `translateX(calc(-50% + ${(i - 1) * 18}px)) rotate(${(i - 1) * 4}deg) scale(${1 - i * 0.04})`,
+                                zIndex: 10 - i,
+                                opacity: 1 - i * 0.15,
+                              }}
+                            >
+                              {renderCard(p, i)}
                             </div>
-                            <div className="p-2">
-                              <h4 className="text-[11px] font-bold text-white truncate">{product.name}</h4>
-                              <p className="text-[9px] text-white/50 truncate">{product.provider}</p>
-                              <div className="flex items-center justify-between mt-1">
-                                <span className="text-[11px] font-bold text-emerald-200"><MaskedPrice value={product.price} /></span>
-                                <span className="flex items-center gap-0.5 text-[9px] text-amber-300">
-                                  <Star className="w-2 h-2 fill-amber-300" /> {product.rating ?? 4.8}
-                                </span>
-                              </div>
-                            </div>
-                          </motion.button>
-                        );
-                      })}
+                          ))}
+                          <span className="absolute bottom-1 right-2 z-20 flex items-center gap-1 rounded-full bg-emerald-600/90 px-2 py-1 text-[10px] font-bold text-white shadow-lg">
+                            <ChevronRight className="w-3 h-3" /> {searchResult.products.length} itens
+                          </span>
+                        </button>
+                      ) : productsCarouselOpen && searchResult.products.length > 2 ? (
+                        <div className="flex gap-2.5 overflow-x-auto no-scrollbar snap-x pb-2 -mx-1 px-1">
+                          {searchResult.products.map((p, i) => (
+                            <div key={p.id} className="snap-start shrink-0 w-[150px]">{renderCard(p, i)}</div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                          {searchResult.products.map((p, i) => renderCard(p, i))}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {noResults && (() => {
                   const ctxSuggestion = generateContextualSuggestions(executedQuery);
