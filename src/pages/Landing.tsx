@@ -646,7 +646,7 @@ const Landing = () => {
                           {filteredResults.slice(0, 3).map((r, i) => (
                             <div
                               key={r.id}
-                              className="absolute left-1/2 top-0 w-[42%] rounded-2xl shadow-2xl"
+                              className="absolute left-1/2 top-0 w-[120px] rounded-2xl shadow-2xl"
                               style={{
                                 transform: `translateX(calc(-50% + ${(i - 1) * 12}px)) rotate(${(i - 1) * 3}deg) scale(${1 - i * 0.035})`,
                                 zIndex: 10 - i,
@@ -664,7 +664,7 @@ const Landing = () => {
                       ) : servicesCarouselOpen && filteredResults.length > 2 ? (
                         <ScrollableRow>
                           {filteredResults.map((r, i) => (
-                            <div key={r.id} className="snap-start shrink-0 w-[150px]">{renderCard(r, i)}</div>
+                            <div key={r.id} className="snap-start shrink-0 w-[120px]">{renderCard(r, i)}</div>
                           ))}
                         </ScrollableRow>
                       ) : (
