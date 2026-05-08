@@ -226,7 +226,7 @@ export function ClearDataDialog({ open, onClose, onCleared }: ClearDataDialogPro
 
         {/* Step 1 — categorias agrupadas */}
         <div className="space-y-3">
-          {(['movements', 'system'] as const).map(group => {
+          {(['movements', 'system', 'users'] as const).map(group => {
             const cats = CATEGORIES.filter(c => c.group === group);
             const allSelected = cats.every(c => selectedCats[c.key]);
             const meta = GROUP_META[group];
