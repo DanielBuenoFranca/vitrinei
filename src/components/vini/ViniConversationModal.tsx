@@ -44,10 +44,34 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const sessionIdRef = useRef<string>(crypto.randomUUID());
+  const userIdRef = useRef<string | null>(null);
+  const lastModalityRef = useRef<'voice' | 'text'>('text');
   const navigate = useNavigate();
   const { session, update } = useAiSession();
 
   const { supported, listening, transcript, start, stop } = useSpeechRecognition();
+
+  // Persist a single message in vini_conversations (silent on failure)
+  const persistMessage = useCallback(
+    async (role: 'user' | 'assistant', content: string, modality: 'voice' | 'text', intent?: string) => {
+      const uid = userIdRef.current;
+      if (!uid || !content.trim()) return;
+      try {
+        await supabase.from('vini_conversations').insert({
+          user_id: uid,
+          session_id: sessionIdRef.current,
+          role,
+          content,
+          modality,
+          intent: intent ?? null,
+        });
+      } catch {
+        // silent — não bloqueia a conversa
+      }
+    },
+    [],
+  );
 
   // Greet on open
   useEffect(() => {
