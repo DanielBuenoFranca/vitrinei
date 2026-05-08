@@ -890,6 +890,9 @@ const ViniHome = () => {
         open={chatOpen}
         onClose={() => setChatOpen(false)}
         userName={displayName}
+        initialMessage={modalInitialMessage}
+        initialModality={modalInitialModality}
+        onInitialConsumed={() => setModalInitialMessage(null)}
       />
       <FavoritesModal open={favoritesOpen} onOpenChange={setFavoritesOpen} />
     </div>
