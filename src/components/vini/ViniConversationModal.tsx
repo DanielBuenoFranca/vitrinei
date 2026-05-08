@@ -34,19 +34,33 @@ interface ViniConversationModalProps {
   open: boolean;
   onClose: () => void;
   userName?: string | null;
+  initialMessage?: string | null;
+  initialModality?: 'voice' | 'text';
+  onInitialConsumed?: () => void;
 }
 
-export function ViniConversationModal({ open, onClose, userName }: ViniConversationModalProps) {
+export function ViniConversationModal({
+  open,
+  onClose,
+  userName,
+  initialMessage,
+  initialModality = 'text',
+  onInitialConsumed,
+}: ViniConversationModalProps) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [historyReady, setHistoryReady] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const sessionIdRef = useRef<string>(crypto.randomUUID());
   const userIdRef = useRef<string | null>(null);
   const lastModalityRef = useRef<'voice' | 'text'>('text');
+  const voiceSubmitTimerRef = useRef<number | null>(null);
+  const lastVoiceSubmissionRef = useRef('');
+  const initialMessageKeyRef = useRef<string | null>(null);
   const navigate = useNavigate();
   const { session, update } = useAiSession();
 
@@ -79,6 +93,7 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
     sessionIdRef.current = crypto.randomUUID();
     setInput('');
     setError(null);
+    setHistoryReady(false);
 
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -104,6 +119,7 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
       const welcome = WELCOMES[Math.floor(Math.random() * WELCOMES.length)](first);
       const welcomeMsg: Msg = { role: 'assistant', content: welcome, id: `${Date.now()}-w` };
       setMessages([...history, welcomeMsg]);
+      setHistoryReady(true);
       // welcome message is contextual but we still register it as a system marker
       void persistMessage('assistant', welcome, 'text', 'welcome');
     })();
@@ -111,15 +127,11 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
     setTimeout(() => inputRef.current?.focus(), 250);
     return () => {
       abortRef.current?.abort();
+      if (voiceSubmitTimerRef.current) window.clearTimeout(voiceSubmitTimerRef.current);
       try { stop(); } catch {}
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
-
-  // Push voice transcript into the input live
-  useEffect(() => {
-    if (transcript) setInput(transcript);
-  }, [transcript]);
 
   // Auto-scroll on new content
   useEffect(() => {
