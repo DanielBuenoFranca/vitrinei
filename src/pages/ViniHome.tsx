@@ -798,15 +798,37 @@ const ViniHome = () => {
         )}
       </AnimatePresence>
 
-      {/* ─── Conversation history panel (holographic, no scrollbar) ─── */}
+      {/* ─── Conversation history panel (holographic, 3D emerging from room center) ─── */}
       {hasInteracted && bubbles.length > 0 && (
-        <div className="absolute right-2 sm:right-3 top-24 sm:top-28 z-30 w-[78%] sm:w-[300px] max-w-sm pointer-events-auto">
+        <div
+          className="absolute right-2 sm:right-3 top-24 sm:top-28 z-30 w-[78%] sm:w-[300px] max-w-sm pointer-events-auto vini-chat-stage"
+          style={{ perspective: '1400px', perspectiveOrigin: '20% 70%' }}
+        >
+          {/* Soft volumetric light that appears to push the panel out of the room */}
           <div
+            aria-hidden
+            className="absolute -inset-6 -z-10 rounded-[2rem] pointer-events-none"
+            style={{
+              background:
+                'radial-gradient(ellipse at 15% 75%, hsl(var(--vini-glow) / 0.28) 0%, hsl(var(--vini-glow) / 0.10) 35%, transparent 70%)',
+              filter: 'blur(22px)',
+              animation: 'vini-chat-breath 6s ease-in-out infinite',
+            }}
+          />
+          <motion.div
+            initial={{ opacity: 0, rotateY: 18, x: -30, scale: 0.92 }}
+            animate={{ opacity: 1, rotateY: -8, x: 0, scale: 1 }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+            style={{
+              transformStyle: 'preserve-3d',
+              transformOrigin: '0% 80%',
+              boxShadow:
+                '0 30px 60px -25px hsl(var(--vini-glow) / 0.45), 0 0 40px hsl(var(--vini-glow) / 0.20), inset 0 1px 0 hsl(0 0% 100% / 0.18)',
+            }}
             className={cn(
-              'rounded-2xl overflow-hidden',
-              'bg-white/[0.06] backdrop-blur-xl',
-              'border-[0.5px] border-[hsl(var(--vini-glow)/0.4)]',
-              'shadow-[0_0_24px_hsl(var(--vini-glow)/0.18)]',
+              'relative rounded-2xl overflow-hidden',
+              'bg-gradient-to-br from-white/[0.10] via-white/[0.05] to-white/[0.02] backdrop-blur-2xl',
+              'border-[0.5px] border-[hsl(var(--vini-glow)/0.45)]',
             )}
           >
             <button
@@ -896,7 +918,16 @@ const ViniHome = () => {
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
+          </motion.div>
+          <style>{`
+            @keyframes vini-chat-breath {
+              0%, 100% { opacity: 0.55; transform: scale(1); }
+              50% { opacity: 1; transform: scale(1.04); }
+            }
+            @media (prefers-reduced-motion: reduce) {
+              .vini-chat-stage > div[aria-hidden] { animation: none !important; }
+            }
+          `}</style>
         </div>
       )}
 

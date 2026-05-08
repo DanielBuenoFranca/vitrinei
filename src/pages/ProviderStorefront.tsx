@@ -866,40 +866,55 @@ const ProviderStorefront = () => {
       segName ? dbSegments.find(s => norm(s.name) === norm(segName))?.image_url || null : null;
 
     return (
-      <div className="space-y-6">
-        {/* Search bar — marketplace style */}
-        <div className="relative flex items-center bg-card/80 backdrop-blur border border-border/60 rounded-2xl overflow-hidden shadow-sm hover:border-primary/40 transition-colors">
-          <Search className="w-4 h-4 text-muted-foreground absolute left-4" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={`Buscar em ${provider?.name}...`}
-            className="border-0 pl-11 pr-4 py-5 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
-          />
+      <div className="space-y-8">
+        {/* Search bar — Airbnb-inspired hero search */}
+        <div className="relative group">
+          <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-primary/30 via-accent/20 to-primary/30 opacity-0 group-focus-within:opacity-100 blur-md transition-opacity" />
+          <div className="relative flex items-center bg-card/70 backdrop-blur-xl border border-border/60 rounded-2xl overflow-hidden shadow-[0_8px_30px_-12px_hsl(var(--primary)/0.25)] hover:border-primary/50 transition-colors">
+            <Search className="w-4 h-4 text-muted-foreground absolute left-5" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={`O que você precisa em ${provider?.name}?`}
+              className="border-0 pl-12 pr-4 py-6 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-sm placeholder:text-muted-foreground/70"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="absolute right-4 text-muted-foreground hover:text-foreground">
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* === SERVIÇOS === */}
+        {/* === SERVIÇOS — Fiverr-style gigs === */}
         {filteredServices.length > 0 && (
           <section>
-            <div className="flex items-center justify-between mb-3 px-0.5">
-              <h2 className="text-[11px] font-semibold tracking-[0.14em] uppercase text-muted-foreground flex items-center gap-1.5">
-                <WrenchIcon className="w-3.5 h-3.5 text-primary" /> Serviços
-                <span className="ml-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold px-1.5 py-0.5">{filteredServices.length}</span>
-              </h2>
+            <div className="flex items-end justify-between mb-4 px-0.5">
+              <div>
+                <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-primary/80 mb-1">Marketplace</p>
+                <h2 className="font-display text-lg font-bold text-foreground flex items-center gap-2">
+                  Serviços profissionais
+                  <span className="rounded-full bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5">{filteredServices.length}</span>
+                </h2>
+              </div>
+              <span className="hidden sm:flex items-center gap-1 text-[10px] text-muted-foreground">
+                <Sparkles className="w-3 h-3 text-primary" /> Selecionados pelo prestador
+              </span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {filteredServices.map((svc: any) => {
                 const inCart = isInServiceCart(svc.id);
                 const img = segImage(svc.segment);
                 return (
                   <motion.div
                     key={svc.id}
-                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                    whileHover={{ y: -3 }}
-                    className={`group relative rounded-2xl overflow-hidden cursor-pointer border transition-all ${
+                    initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                    whileHover={{ y: -6 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+                    className={`group relative rounded-2xl overflow-hidden cursor-pointer border backdrop-blur-sm transition-all duration-300 ${
                       inCart
-                        ? 'border-primary shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.5)]'
-                        : 'border-border/40 bg-card hover:border-primary/40 hover:shadow-lg'
+                        ? 'border-primary/70 shadow-[0_18px_40px_-18px_hsl(var(--primary)/0.55)] ring-1 ring-primary/30'
+                        : 'border-border/40 bg-card/80 hover:border-primary/50 hover:shadow-[0_18px_40px_-18px_hsl(var(--primary)/0.35)]'
                     }`}
                     onClick={() => {
                       if (editMode) return;
@@ -912,32 +927,35 @@ const ProviderStorefront = () => {
                       toggleServiceInCart(svc);
                     }}
                   >
-                    {/* Image */}
-                    <div className="aspect-[4/3] relative overflow-hidden bg-gradient-to-br from-primary/15 via-card to-card">
+                    {/* Hero image — Airbnb feel */}
+                    <div className="aspect-[4/3] relative overflow-hidden bg-gradient-to-br from-primary/20 via-card to-card">
                       {img ? (
-                        <img src={img} alt={svc.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                        <img src={img} alt={svc.name} loading="lazy" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.12]" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <WrenchIcon className="w-9 h-9 text-primary/40" />
+                          <WrenchIcon className="w-10 h-10 text-primary/40" />
                         </div>
                       )}
-                      {/* Gradient overlay for legibility */}
-                      <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                      {/* Subtle gloss */}
+                      <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/0 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                       {/* Top-left favorite */}
                       {!editMode && (
-                        <div className="absolute top-1.5 left-1.5 z-10">
+                        <div className="absolute top-2 left-2 z-10">
                           <FavoriteButton kind="service" id={svc.id} name={svc.name} image={img} provider={provider?.name} />
                         </div>
                       )}
-                      {/* Top-right cart badge */}
+                      {/* Pro badge */}
+                      <div className="absolute top-2 right-2 z-10 rounded-md bg-black/60 backdrop-blur-md px-1.5 py-0.5 border border-white/10">
+                        <span className="text-[8.5px] font-bold uppercase tracking-wider text-white/90">Pro</span>
+                      </div>
+                      {/* Cart marker */}
                       {!editMode && (
-                        <div className="absolute top-1.5 right-1.5 rounded-full bg-black/70 backdrop-blur px-1.5 py-0.5 flex items-center gap-0.5 z-10">
-                          {inCart ? <CheckCircle2 className="w-3 h-3 text-primary" /> : <Plus className="w-3 h-3 text-white" />}
+                        <div className={`absolute bottom-2 right-2 rounded-full backdrop-blur-md px-1.5 py-1 flex items-center gap-0.5 z-10 border transition-all ${inCart ? 'bg-primary border-primary' : 'bg-black/60 border-white/10 group-hover:bg-primary/80 group-hover:border-primary'}`}>
+                          {inCart ? <CheckCircle2 className="w-3 h-3 text-primary-foreground" /> : <Plus className="w-3 h-3 text-white" />}
                         </div>
                       )}
-                      {/* Edit buttons */}
                       {editMode && (
-                        <div className="absolute top-1.5 right-1.5 flex gap-1 z-10">
+                        <div className="absolute bottom-2 right-2 flex gap-1 z-10">
                           <Button variant="secondary" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setEditService(svc); setServiceFormOpen(true); }}>
                             <Pencil className="w-3 h-3" />
                           </Button>
@@ -946,27 +964,32 @@ const ProviderStorefront = () => {
                           </Button>
                         </div>
                       )}
-                      {/* Bottom info overlay */}
-                      <div className="absolute inset-x-0 bottom-0 p-2 z-[5]">
-                        <h4 className="text-[12px] font-bold text-white leading-tight truncate drop-shadow-md">{svc.name}</h4>
-                        <div className="flex items-center justify-between mt-0.5">
-                          <span className="text-[11px] font-bold text-white drop-shadow"><MaskedPrice value={svc.price} /></span>
-                          <span className="flex items-center gap-0.5 text-[10px] text-amber-300">
-                            <Star className="w-2.5 h-2.5 fill-amber-300" /> {svc.rating ?? provider?.rating ?? 4.8}
-                          </span>
+                    </div>
+                    {/* Info — Fiverr-style */}
+                    <div className="p-3 space-y-1.5">
+                      <div className="flex items-center gap-1.5">
+                        {provider?.logo_url ? (
+                          <img src={provider.logo_url} alt="" className="w-5 h-5 rounded-full object-cover border border-border" />
+                        ) : (
+                          <div className="w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center">
+                            <SegIcon className="w-3 h-3 text-primary" />
+                          </div>
+                        )}
+                        <span className="text-[10px] text-muted-foreground truncate flex-1">{provider?.name}</span>
+                        <span className="flex items-center gap-0.5 text-[10px] font-semibold text-foreground shrink-0">
+                          <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" /> {svc.rating ?? provider?.rating ?? 4.8}
+                        </span>
+                      </div>
+                      <h4 className="text-[12.5px] font-semibold text-foreground leading-snug line-clamp-2 min-h-[2.4em]">{svc.name}</h4>
+                      <div className="flex items-center justify-between pt-1 border-t border-border/40">
+                        <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                          <Clock className="w-2.5 h-2.5" /> {svc.time || '—'}
+                        </span>
+                        <div className="text-right">
+                          <span className="block text-[8.5px] uppercase tracking-wider text-muted-foreground/80">A partir de</span>
+                          <span className="text-[13px] font-bold text-foreground"><MaskedPrice value={svc.price} /></span>
                         </div>
                       </div>
-                    </div>
-                    {/* Footer meta */}
-                    <div className="px-2 py-1.5 bg-card/95 flex items-center justify-between gap-1.5">
-                      <span className="flex items-center gap-1 text-[10px] text-muted-foreground truncate">
-                        <Clock className="w-2.5 h-2.5 shrink-0" /> {svc.time || '—'}
-                      </span>
-                      {svc.products && svc.products.length > 0 && (
-                        <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground shrink-0">
-                          <Package className="w-2.5 h-2.5" /> {svc.products.length}
-                        </span>
-                      )}
                     </div>
                   </motion.div>
                 );
@@ -978,25 +1001,29 @@ const ProviderStorefront = () => {
         {/* === PRODUTOS === */}
         {filteredProducts.length > 0 && (
           <section>
-            <div className="flex items-center justify-between mb-3 px-0.5">
-              <h2 className="text-[11px] font-semibold tracking-[0.14em] uppercase text-muted-foreground flex items-center gap-1.5">
-                <ShoppingBag className="w-3.5 h-3.5 text-emerald-500" /> Produtos
-                <span className="ml-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-bold px-1.5 py-0.5">{filteredProducts.length}</span>
-              </h2>
+            <div className="flex items-end justify-between mb-4 px-0.5">
+              <div>
+                <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-emerald-600/80 mb-1">Catálogo</p>
+                <h2 className="font-display text-lg font-bold text-foreground flex items-center gap-2">
+                  Produtos disponíveis
+                  <span className="rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-bold px-2 py-0.5">{filteredProducts.length}</span>
+                </h2>
+              </div>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {filteredProducts.map((product: any) => {
                 const inCart = isInProductCart(product.id);
                 const img = product.image_url || segImage(product.segment);
                 return (
                   <motion.div
                     key={product.id}
-                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                    whileHover={{ y: -3 }}
-                    className={`group relative rounded-2xl overflow-hidden cursor-pointer border transition-all ${
+                    initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                    whileHover={{ y: -6 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+                    className={`group relative rounded-2xl overflow-hidden cursor-pointer border backdrop-blur-sm transition-all duration-300 ${
                       inCart
-                        ? 'border-emerald-500 shadow-[0_8px_24px_-8px_hsl(160_70%_45%/0.5)]'
-                        : 'border-border/40 bg-card hover:border-emerald-400/50 hover:shadow-lg'
+                        ? 'border-emerald-500/70 shadow-[0_18px_40px_-18px_hsl(160_70%_45%/0.55)] ring-1 ring-emerald-500/30'
+                        : 'border-border/40 bg-card/80 hover:border-emerald-400/60 hover:shadow-[0_18px_40px_-18px_hsl(160_70%_45%/0.35)]'
                     }`}
                     onClick={() => {
                       if (editMode) return;
@@ -1009,34 +1036,32 @@ const ProviderStorefront = () => {
                       toggleProductInCart(product);
                     }}
                   >
-                    <div className="aspect-[4/3] relative overflow-hidden bg-gradient-to-br from-emerald-500/15 via-card to-card">
+                    <div className="aspect-square relative overflow-hidden bg-gradient-to-br from-emerald-500/15 via-card to-card">
                       {img ? (
-                        <img src={img} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                        <img src={img} alt={product.name} loading="lazy" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.12]" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <Package className="w-9 h-9 text-emerald-500/40" />
+                          <Package className="w-10 h-10 text-emerald-500/40" />
                         </div>
                       )}
-                      <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/0 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
 
-                      {/* Stock type chip */}
-                      <div className="absolute top-1.5 left-1.5 rounded-full bg-emerald-500/85 backdrop-blur px-1.5 py-0.5 z-10">
-                        <span className="text-[8px] font-bold text-white">{product.stockType === 'fisico' ? 'Estoque' : 'Drop'}</span>
+                      {/* Stock chip */}
+                      <div className="absolute top-2 left-2 rounded-md bg-emerald-500/90 backdrop-blur-md px-1.5 py-0.5 z-10 border border-white/10">
+                        <span className="text-[8.5px] font-bold uppercase tracking-wider text-white">{product.stockType === 'fisico' ? 'Estoque' : 'Drop'}</span>
                       </div>
-                      {/* Top-right cart */}
                       {!editMode && (
-                        <div className="absolute top-1.5 right-1.5 rounded-full bg-black/70 backdrop-blur px-1.5 py-0.5 flex items-center gap-0.5 z-10">
-                          {inCart ? <CheckCircle2 className="w-3 h-3 text-emerald-300" /> : <Plus className="w-3 h-3 text-white" />}
-                        </div>
-                      )}
-                      {/* Bottom-right favorite */}
-                      {!editMode && (
-                        <div className="absolute bottom-9 right-1.5 z-10">
+                        <div className="absolute top-2 right-2 z-10">
                           <FavoriteButton kind="product" id={product.id} name={product.name} image={img} provider={provider?.name} />
                         </div>
                       )}
+                      {!editMode && (
+                        <div className={`absolute bottom-2 right-2 rounded-full backdrop-blur-md px-1.5 py-1 flex items-center gap-0.5 z-10 border transition-all ${inCart ? 'bg-emerald-500 border-emerald-500' : 'bg-black/60 border-white/10 group-hover:bg-emerald-500/80 group-hover:border-emerald-500'}`}>
+                          {inCart ? <CheckCircle2 className="w-3 h-3 text-white" /> : <Plus className="w-3 h-3 text-white" />}
+                        </div>
+                      )}
                       {editMode && (
-                        <div className="absolute top-1.5 right-1.5 flex gap-1 z-10">
+                        <div className="absolute bottom-2 right-2 flex gap-1 z-10">
                           <Button variant="secondary" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setEditProduct(product); setProductFormOpen(true); }}>
                             <Pencil className="w-3 h-3" />
                           </Button>
@@ -1045,23 +1070,23 @@ const ProviderStorefront = () => {
                           </Button>
                         </div>
                       )}
-                      <div className="absolute inset-x-0 bottom-0 p-2 z-[5]">
-                        <h4 className="text-[12px] font-bold text-white leading-tight truncate drop-shadow-md">{product.name}</h4>
-                        <div className="flex items-center justify-between mt-0.5">
-                          <span className="text-[11px] font-bold text-white drop-shadow"><MaskedPrice value={product.price} /></span>
-                          <span className="flex items-center gap-0.5 text-[10px] text-amber-300">
-                            <Star className="w-2.5 h-2.5 fill-amber-300" /> {product.rating ?? 4.8}
-                          </span>
-                        </div>
-                      </div>
                     </div>
-                    {product.tags && product.tags.length > 0 && (
-                      <div className="px-2 py-1.5 bg-card/95 flex items-center gap-1 overflow-hidden">
-                        {product.tags.slice(0, 2).map((t: string) => (
-                          <span key={t} className="text-[9px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full truncate">{t}</span>
-                        ))}
+                    <div className="p-3 space-y-1.5">
+                      <h4 className="text-[12.5px] font-semibold text-foreground leading-snug line-clamp-2 min-h-[2.4em]">{product.name}</h4>
+                      <div className="flex items-center justify-between pt-1 border-t border-border/40">
+                        <span className="flex items-center gap-0.5 text-[10px] font-semibold text-foreground">
+                          <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" /> {product.rating ?? 4.8}
+                        </span>
+                        <span className="text-[13px] font-bold text-foreground"><MaskedPrice value={product.price} /></span>
                       </div>
-                    )}
+                      {product.tags && product.tags.length > 0 && (
+                        <div className="flex items-center gap-1 overflow-hidden pt-0.5">
+                          {product.tags.slice(0, 2).map((t: string) => (
+                            <span key={t} className="text-[9px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full truncate">{t}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </motion.div>
                 );
               })}
@@ -1070,8 +1095,8 @@ const ProviderStorefront = () => {
         )}
 
         {filteredServices.length === 0 && filteredProducts.length === 0 && (
-          <div className="text-center py-16 rounded-2xl border border-dashed border-border bg-card/30">
-            <Store className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+          <div className="text-center py-20 rounded-3xl border border-dashed border-border bg-gradient-to-br from-card/40 to-card/10 backdrop-blur-sm">
+            <Store className="w-14 h-14 text-muted-foreground/60 mx-auto mb-3" />
             <p className="text-sm text-muted-foreground">
               {searchQuery ? `Nenhum resultado para "${searchQuery}" nesta loja.` : 'Este prestador ainda não possui itens cadastrados.'}
             </p>
