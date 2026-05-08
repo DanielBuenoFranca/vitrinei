@@ -218,33 +218,33 @@ export function Search3DHero({
       {/* ===================== SEGMENTOS — carrossel horizontal compacto ===================== */}
       <div className="mt-3 mx-auto max-w-2xl">
         <SectionTitle>Segmentos</SectionTitle>
-        <div className="flex gap-2 overflow-x-auto no-scrollbar snap-x pb-1 -mx-1 px-1">
-          {setTypeFilter && (
-            <>
-              <CarouselTile>
-                <TypeFilterCard label="Tudo" icon={LayoutGrid}
-                  gradient="linear-gradient(160deg, hsl(255 60% 35%), hsl(225 65% 18%))"
-                  active={typeFilter === 'all'} onClick={() => setTypeFilter('all')} />
-              </CarouselTile>
-              <CarouselTile>
-                <TypeFilterCard label="Serviços" icon={WrenchIcon}
-                  gradient="linear-gradient(160deg, hsl(210 80% 45%), hsl(220 70% 22%))"
-                  active={typeFilter === 'service'} onClick={() => setTypeFilter('service')} />
-              </CarouselTile>
-              <CarouselTile>
-                <TypeFilterCard label="Produtos" icon={PackageIcon}
-                  gradient="linear-gradient(160deg, hsl(160 70% 40%), hsl(170 75% 20%))"
-                  active={typeFilter === 'product'} onClick={() => setTypeFilter('product')} />
-              </CarouselTile>
-            </>
-          )}
-          {segs.map((seg) => (
-            <CarouselTile key={seg.id}>
-              <SegmentCard seg={seg} active={activeSegments.includes(seg.id)}
-                onClick={() => toggleSegment(seg.id)} />
+      <ScrollableRow>
+        {setTypeFilter && (
+          <>
+            <CarouselTile>
+              <TypeFilterCard label="Tudo" icon={LayoutGrid}
+                gradient="linear-gradient(160deg, hsl(255 60% 35%), hsl(225 65% 18%))"
+                active={typeFilter === 'all'} onClick={() => setTypeFilter('all')} />
             </CarouselTile>
-          ))}
-        </div>
+            <CarouselTile>
+              <TypeFilterCard label="Serviços" icon={WrenchIcon}
+                gradient="linear-gradient(160deg, hsl(210 80% 45%), hsl(220 70% 22%))"
+                active={typeFilter === 'service'} onClick={() => setTypeFilter('service')} />
+            </CarouselTile>
+            <CarouselTile>
+              <TypeFilterCard label="Produtos" icon={PackageIcon}
+                gradient="linear-gradient(160deg, hsl(160 70% 40%), hsl(170 75% 20%))"
+                active={typeFilter === 'product'} onClick={() => setTypeFilter('product')} />
+            </CarouselTile>
+          </>
+        )}
+        {segs.map((seg) => (
+          <CarouselTile key={seg.id}>
+            <SegmentCard seg={seg} active={activeSegments.includes(seg.id)}
+              onClick={() => toggleSegment(seg.id)} />
+          </CarouselTile>
+        ))}
+      </ScrollableRow>
       </div>
 
       {/* ===================== PRESTADORES / FORNECEDORES — carrossel ordenado por ranking ===================== */}
@@ -253,7 +253,7 @@ export function Search3DHero({
           <SectionTitle action={<button onClick={onSearch} className="text-[10px] text-violet-300/80 hover:text-violet-200">Ver todos</button>}>
             Prestadores / Fornecedores
           </SectionTitle>
-          <div className="flex gap-2 overflow-x-auto no-scrollbar snap-x pb-1 -mx-1 px-1">
+          <ScrollableRow>
             {top.map((p) => {
               const slug = slugify(p.name);
               return (
@@ -298,7 +298,7 @@ export function Search3DHero({
                 </motion.div>
               );
             })}
-          </div>
+          </ScrollableRow>
         </div>
       )}
 
