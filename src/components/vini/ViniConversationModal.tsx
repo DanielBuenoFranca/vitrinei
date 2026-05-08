@@ -172,18 +172,28 @@ export function ViniConversationModal({
       const controller = new AbortController();
       abortRef.current = controller;
 
+      let routedIntent = 'chat';
+
       // 1) Router: classifica intenção e contexto antes de chamar o vini-chat
       try {
         const { data: routed } = await supabase.functions.invoke('ai-router', {
           body: { message: text, session },
         });
         if (routed && !routed.error) {
+          routedIntent = routed.intent || 'chat';
           update({
             tags: routed.tags || [],
             segments: routed.segments || [],
             lastIntent: routed.intent,
             lastQuery: routed.query || text,
           });
+          if (routed.needs_more_info) {
+            const followUp = routed.follow_up_question || 'Me conte mais um detalhe para eu entender melhor.';
+            setMessages((m) => [...m, { role: 'assistant', content: followUp, id: `${Date.now()}-f` }]);
+            void persistMessage('assistant', followUp, modality, routed.intent || 'follow_up');
+            setIsStreaming(false);
+            return;
+          }
           if (routed.intent && routed.intent !== 'chat' && routed.next_agent !== 'vini') {
             const transition = routed.transition_message || 'Vou redirecionar você para a área certa...';
             setMessages((m) => [...m, { role: 'assistant', content: transition, id: `${Date.now()}-t` }]);
@@ -265,7 +275,7 @@ export function ViniConversationModal({
 
         // Persist final assistant response
         if (accumulated.trim()) {
-          void persistMessage('assistant', accumulated, modality, 'chat');
+          void persistMessage('assistant', accumulated, modality, routedIntent);
         }
       } catch (e: any) {
         if (e?.name === 'AbortError') return;
@@ -280,6 +290,39 @@ export function ViniConversationModal({
     },
     [messages, isStreaming, listening, stop, userName, onClose, navigate, session, update, persistMessage],
   );
+
+  // Push voice transcript into the input live and auto-send after the user pauses.
+  useEffect(() => {
+    if (!open || !transcript) return;
+    setInput(transcript);
+    if (!listening) return;
+
+    if (voiceSubmitTimerRef.current) window.clearTimeout(voiceSubmitTimerRef.current);
+    voiceSubmitTimerRef.current = window.setTimeout(() => {
+      const final = transcript.trim();
+      if (!final || final === lastVoiceSubmissionRef.current) return;
+      lastVoiceSubmissionRef.current = final;
+      lastModalityRef.current = 'voice';
+      try { stop(); } catch {}
+      void sendMessage(final, 'voice');
+    }, 1250);
+
+    return () => {
+      if (voiceSubmitTimerRef.current) window.clearTimeout(voiceSubmitTimerRef.current);
+    };
+  }, [open, transcript, listening, stop, sendMessage]);
+
+  // Accept voice/text captured outside the modal and run it through the same intelligence.
+  useEffect(() => {
+    const text = initialMessage?.trim();
+    if (!open || !historyReady || !text) return;
+    const key = `${initialModality}:${text}`;
+    if (initialMessageKeyRef.current === key) return;
+    initialMessageKeyRef.current = key;
+    lastModalityRef.current = initialModality;
+    void sendMessage(text, initialModality);
+    onInitialConsumed?.();
+  }, [open, historyReady, initialMessage, initialModality, sendMessage, onInitialConsumed]);
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
