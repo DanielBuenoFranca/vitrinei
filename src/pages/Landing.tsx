@@ -536,72 +536,112 @@ const Landing = () => {
                 {/* Bloco "Prestadores próximos" removido — substituído pela seção "Prestadores / Fornecedores" no hero. */}
 
                 {/* === MARKETPLACE: SERVIÇOS === */}
-                {hasResults && filteredResults.length > 0 && (
-                  <div>
-                    <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-white/55 mb-1.5 px-1 flex items-center gap-1.5">
-                      <WrenchIcon className="w-3 h-3 text-violet-300/80" /> Serviços ({filteredResults.length})
-                    </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                      {filteredResults.map((result, idx) => {
-                        const seg = getSegmentVisual(result.segment);
-                        const SIcon = getVisualIcon(result.name);
-                        const inCart = isInServiceCart(result.id);
-                        const prov = dbProviders.get(result.provider);
-                        return (
-                          <motion.button
-                            key={result.id}
-                            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: idx * 0.03 }}
-                            whileHover={{ y: -2 }}
-                            onClick={() => {
-                              if (accessLevel === 'visitor') { toast.info('Crie sua conta para adicionar serviços ao carrinho', { action: { label: 'Cadastrar', onClick: () => navigate('/auth') }, duration: 5000 }); return; }
-                              if (accessLevel === 'lead') { toast.warning('Confirme seu e-mail para contratar serviços', { duration: 6000 }); return; }
-                              toggleServiceInCart(result);
-                            }}
-                            className="rounded-2xl overflow-hidden text-left relative group"
-                            style={{
-                              background: 'linear-gradient(160deg, hsl(225 35% 16%), hsl(225 50% 7%))',
-                              border: inCart ? '1px solid hsl(265 80% 60%)' : '1px solid hsl(225 30% 30% / 0.5)',
-                              boxShadow: inCart
-                                ? '0 12px 30px -10px hsl(265 80% 50% / 0.8), inset 0 1px 0 rgba(255,255,255,.1)'
-                                : '0 10px 24px -12px hsl(225 60% 0% / 0.7), inset 0 1px 0 rgba(255,255,255,.06)',
-                            }}
+                {hasResults && filteredResults.length > 0 && (() => {
+                  const useStack = filteredResults.length > 2 && !servicesCarouselOpen;
+                  const renderCard = (result: any, idx: number, extraClass = '') => {
+                    const seg = getSegmentVisual(result.segment);
+                    const SIcon = getVisualIcon(result.name);
+                    const inCart = isInServiceCart(result.id);
+                    return (
+                      <motion.button
+                        key={result.id}
+                        initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.03 }}
+                        whileHover={{ y: -2 }}
+                        onClick={() => {
+                          if (accessLevel === 'visitor') { toast.info('Crie sua conta para adicionar serviços ao carrinho', { action: { label: 'Cadastrar', onClick: () => navigate('/auth') }, duration: 5000 }); return; }
+                          if (accessLevel === 'lead') { toast.warning('Confirme seu e-mail para contratar serviços', { duration: 6000 }); return; }
+                          toggleServiceInCart(result);
+                        }}
+                        className={`rounded-2xl overflow-hidden text-left relative group ${extraClass}`}
+                        style={{
+                          background: 'linear-gradient(160deg, hsl(225 35% 16%), hsl(225 50% 7%))',
+                          border: inCart ? '1px solid hsl(265 80% 60%)' : '1px solid hsl(225 30% 30% / 0.5)',
+                          boxShadow: inCart
+                            ? '0 12px 30px -10px hsl(265 80% 50% / 0.8), inset 0 1px 0 rgba(255,255,255,.1)'
+                            : '0 10px 24px -12px hsl(225 60% 0% / 0.7), inset 0 1px 0 rgba(255,255,255,.06)',
+                        }}
+                      >
+                        <div className="aspect-[4/3] overflow-hidden bg-gradient-to-br from-violet-900/40 to-slate-900 relative">
+                          {seg?.image_url ? (
+                            <img src={seg.image_url} alt={result.name} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center"><SIcon className="w-10 h-10 text-violet-300/60" /></div>
+                          )}
+                          <div className="absolute top-1.5 right-1.5 rounded-full bg-black/70 backdrop-blur px-1.5 py-0.5 flex items-center gap-0.5">
+                            {inCart ? <CheckCircle2 className="w-3 h-3 text-violet-300" /> : <Plus className="w-3 h-3 text-white" />}
+                          </div>
+                          <div className="absolute top-1.5 left-1.5">
+                            <FavoriteButton kind="service" id={result.id} name={result.name} image={seg?.image_url ?? null} provider={result.provider} />
+                          </div>
+                        </div>
+                        <div className="p-2">
+                          <h4 className="text-[11px] font-bold text-white truncate">{result.name}</h4>
+                          <p className="text-[9px] text-white/50 truncate">{result.provider}</p>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="text-[11px] font-bold text-violet-200"><MaskedPrice value={result.price} /></span>
+                            <span className="flex items-center gap-0.5 text-[9px] text-amber-300">
+                              <Star className="w-2 h-2 fill-amber-300" /> {result.rating ?? 4.8}
+                            </span>
+                          </div>
+                        </div>
+                      </motion.button>
+                    );
+                  };
+                  return (
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5 px-1">
+                        <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-white/55 flex items-center gap-1.5">
+                          <WrenchIcon className="w-3 h-3 text-violet-300/80" /> Serviços ({filteredResults.length})
+                        </h3>
+                        {filteredResults.length > 2 && (
+                          <button
+                            onClick={() => setServicesCarouselOpen(v => !v)}
+                            className="flex items-center gap-1 rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[10px] text-white/75 hover:bg-white/10"
+                            title={servicesCarouselOpen ? 'Empilhar cards' : 'Abrir carrossel'}
                           >
-                            <div className="aspect-[4/3] overflow-hidden bg-gradient-to-br from-violet-900/40 to-slate-900 relative">
-                              {seg?.image_url ? (
-                                <img src={seg.image_url} alt={result.name} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center"><SIcon className="w-10 h-10 text-violet-300/60" /></div>
-                              )}
-                              <div className="absolute top-1.5 right-1.5 rounded-full bg-black/70 backdrop-blur px-1.5 py-0.5 flex items-center gap-0.5">
-                                {inCart ? <CheckCircle2 className="w-3 h-3 text-violet-300" /> : <Plus className="w-3 h-3 text-white" />}
-                              </div>
-                              <div className="absolute top-1.5 left-1.5">
-                                <FavoriteButton
-                                  kind="service"
-                                  id={result.id}
-                                  name={result.name}
-                                  image={seg?.image_url ?? null}
-                                  provider={result.provider}
-                                />
-                              </div>
+                            {servicesCarouselOpen ? <Layers className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                            {servicesCarouselOpen ? 'Empilhar' : 'Abrir'}
+                          </button>
+                        )}
+                      </div>
+                      {useStack ? (
+                        <button
+                          onClick={() => setServicesCarouselOpen(true)}
+                          className="relative block w-full h-[170px] mx-auto"
+                          aria-label="Abrir carrossel de serviços"
+                        >
+                          {filteredResults.slice(0, 3).map((r, i) => (
+                            <div
+                              key={r.id}
+                              className="absolute left-1/2 top-0 w-[55%]"
+                              style={{
+                                transform: `translateX(calc(-50% + ${(i - 1) * 18}px)) rotate(${(i - 1) * 4}deg) scale(${1 - i * 0.04})`,
+                                zIndex: 10 - i,
+                                opacity: 1 - i * 0.15,
+                              }}
+                            >
+                              {renderCard(r, i)}
                             </div>
-                            <div className="p-2">
-                              <h4 className="text-[11px] font-bold text-white truncate">{result.name}</h4>
-                              <p className="text-[9px] text-white/50 truncate">{result.provider}</p>
-                              <div className="flex items-center justify-between mt-1">
-                                <span className="text-[11px] font-bold text-violet-200"><MaskedPrice value={result.price} /></span>
-                                <span className="flex items-center gap-0.5 text-[9px] text-amber-300">
-                                  <Star className="w-2 h-2 fill-amber-300" /> {result.rating ?? 4.8}
-                                </span>
-                              </div>
-                            </div>
-                          </motion.button>
-                        );
-                      })}
+                          ))}
+                          <span className="absolute bottom-1 right-2 z-20 flex items-center gap-1 rounded-full bg-violet-600/90 px-2 py-1 text-[10px] font-bold text-white shadow-lg">
+                            <ChevronRight className="w-3 h-3" /> {filteredResults.length} itens
+                          </span>
+                        </button>
+                      ) : servicesCarouselOpen && filteredResults.length > 2 ? (
+                        <div className="flex gap-2.5 overflow-x-auto no-scrollbar snap-x pb-2 -mx-1 px-1">
+                          {filteredResults.map((r, i) => (
+                            <div key={r.id} className="snap-start shrink-0 w-[150px]">{renderCard(r, i)}</div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                          {filteredResults.map((r, i) => renderCard(r, i))}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* === MARKETPLACE: PRODUTOS === */}
                 {hasResults && searchResult.products.length > 0 && (
