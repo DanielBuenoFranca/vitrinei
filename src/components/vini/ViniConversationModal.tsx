@@ -271,17 +271,22 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
-    sendMessage(input);
+    lastModalityRef.current = 'text';
+    sendMessage(input, 'text');
   };
 
   const toggleMic = () => {
     if (!supported) return;
     if (listening) {
       stop();
-      // If we have transcript, send it
-      if (input.trim()) sendMessage(input);
+      // If we have transcript, send it as voice
+      if (input.trim()) {
+        lastModalityRef.current = 'voice';
+        sendMessage(input, 'voice');
+      }
     } else {
       setInput('');
+      lastModalityRef.current = 'voice';
       start();
     }
   };
