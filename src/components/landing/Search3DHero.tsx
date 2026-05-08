@@ -265,6 +265,21 @@ export function Search3DHero({
   );
 }
 
+/* Título discreto de seção */
+function SectionTitle({ children, action }: { children: ReactNode; action?: ReactNode }) {
+  return (
+    <div className="flex items-center justify-between mb-1.5 px-1">
+      <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-white/55">{children}</h3>
+      {action}
+    </div>
+  );
+}
+
+/* Wrapper para manter tamanho fixo dentro do carrossel */
+function CarouselTile({ children }: { children: ReactNode }) {
+  return <div className="snap-start shrink-0 w-[84px]">{children}</div>;
+}
+
 /* ============================================================
    Card de segmento 3D (igual mockup)
    ============================================================ */
