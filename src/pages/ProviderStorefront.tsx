@@ -17,6 +17,7 @@ import {
   Image as ImageIcon, Send, Undo2, RotateCcw, ChevronLeft, ChevronRight,
   MessageCircle, Download, RefreshCw, Upload
 } from 'lucide-react';
+import { FavoriteButton } from '@/components/FavoriteButton';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { segments as staticSegments, getAllServices, getAllProducts, reloadDynamicEntries, loadSegmentTagsCache, type ProductItem } from '@/data/searchData';
 import { supabase } from '@/integrations/supabase/client';
