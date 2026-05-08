@@ -640,23 +640,24 @@ const Landing = () => {
                       {useStack ? (
                         <button
                           onClick={() => setServicesCarouselOpen(true)}
-                          className="relative block w-full h-[170px] mx-auto"
+                          className="relative block w-full h-[130px] mx-auto"
                           aria-label="Abrir carrossel de serviços"
                         >
                           {filteredResults.slice(0, 3).map((r, i) => (
                             <div
                               key={r.id}
-                              className="absolute left-1/2 top-0 w-[55%]"
+                              className="absolute left-1/2 top-0 w-[42%] rounded-2xl shadow-2xl"
                               style={{
-                                transform: `translateX(calc(-50% + ${(i - 1) * 18}px)) rotate(${(i - 1) * 4}deg) scale(${1 - i * 0.04})`,
+                                transform: `translateX(calc(-50% + ${(i - 1) * 12}px)) rotate(${(i - 1) * 3}deg) scale(${1 - i * 0.035})`,
                                 zIndex: 10 - i,
-                                opacity: 1 - i * 0.15,
+                                opacity: 1 - i * 0.12,
+                                filter: i > 0 ? `brightness(${1 - i * 0.08})` : undefined,
                               }}
                             >
                               {renderCard(r, i)}
                             </div>
                           ))}
-                          <span className="absolute bottom-1 right-2 z-20 flex items-center gap-1 rounded-full bg-violet-600/90 px-2 py-1 text-[10px] font-bold text-white shadow-lg">
+                          <span className="absolute bottom-0 right-2 z-20 flex items-center gap-1 rounded-full bg-violet-600/90 px-2.5 py-1 text-[10px] font-bold text-white shadow-lg backdrop-blur-sm">
                             <ChevronRight className="w-3 h-3" /> {filteredResults.length} itens
                           </span>
                         </button>
@@ -750,23 +751,24 @@ const Landing = () => {
                       {useStack ? (
                         <button
                           onClick={() => setProductsCarouselOpen(true)}
-                          className="relative block w-full h-[170px] mx-auto"
+                          className="relative block w-full h-[130px] mx-auto"
                           aria-label="Abrir carrossel de produtos"
                         >
                           {searchResult.products.slice(0, 3).map((p, i) => (
                             <div
                               key={p.id}
-                              className="absolute left-1/2 top-0 w-[55%]"
+                              className="absolute left-1/2 top-0 w-[42%] rounded-2xl shadow-2xl"
                               style={{
-                                transform: `translateX(calc(-50% + ${(i - 1) * 18}px)) rotate(${(i - 1) * 4}deg) scale(${1 - i * 0.04})`,
+                                transform: `translateX(calc(-50% + ${(i - 1) * 12}px)) rotate(${(i - 1) * 3}deg) scale(${1 - i * 0.035})`,
                                 zIndex: 10 - i,
-                                opacity: 1 - i * 0.15,
+                                opacity: 1 - i * 0.12,
+                                filter: i > 0 ? `brightness(${1 - i * 0.08})` : undefined,
                               }}
                             >
                               {renderCard(p, i)}
                             </div>
                           ))}
-                          <span className="absolute bottom-1 right-2 z-20 flex items-center gap-1 rounded-full bg-emerald-600/90 px-2 py-1 text-[10px] font-bold text-white shadow-lg">
+                          <span className="absolute bottom-0 right-2 z-20 flex items-center gap-1 rounded-full bg-emerald-600/90 px-2.5 py-1 text-[10px] font-bold text-white shadow-lg backdrop-blur-sm">
                             <ChevronRight className="w-3 h-3" /> {searchResult.products.length} itens
                           </span>
                         </button>
