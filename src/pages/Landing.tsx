@@ -573,7 +573,7 @@ const Landing = () => {
                             <div className="absolute top-1.5 right-1.5 z-10">
                               <FavoriteButton
                                 kind="provider"
-                                id={prov?.id ?? providerName}
+                                id={(prov as any)?.id ?? slug}
                                 name={providerName}
                                 slug={slug}
                                 image={prov?.logo_url ?? null}
