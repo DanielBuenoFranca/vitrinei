@@ -129,9 +129,11 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
   }, [messages, isStreaming]);
 
   const sendMessage = useCallback(
-    async (raw: string) => {
+    async (raw: string, modalityOverride?: 'voice' | 'text') => {
       const text = raw.trim();
       if (!text || isStreaming) return;
+
+      const modality = modalityOverride ?? lastModalityRef.current ?? 'text';
 
       // Stop voice if active
       if (listening) try { stop(); } catch {}
@@ -142,10 +144,14 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
       setInput('');
       setError(null);
 
+      // Persist user message
+      void persistMessage('user', text, modality);
+
       // Farewell shortcut
       if (FAREWELL_RX.test(text)) {
         const bye = 'Foi ótimo conversar com você! Me chama quando quiser. 👋';
         setMessages((m) => [...m, { role: 'assistant', content: bye, id: `${Date.now()}-bye` }]);
+        void persistMessage('assistant', bye, modality, 'farewell');
         setTimeout(onClose, 1400);
         return;
       }
@@ -169,6 +175,7 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
           if (routed.intent && routed.intent !== 'chat' && routed.next_agent !== 'vini') {
             const transition = routed.transition_message || 'Vou redirecionar você para a área certa...';
             setMessages((m) => [...m, { role: 'assistant', content: transition, id: `${Date.now()}-t` }]);
+            void persistMessage('assistant', transition, modality, routed.intent);
             setIsStreaming(false);
             setTimeout(() => {
               if (routed.next_agent === 'support') navigate('/central-atendimento');
@@ -243,6 +250,11 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
             }
           }
         }
+
+        // Persist final assistant response
+        if (accumulated.trim()) {
+          void persistMessage('assistant', accumulated, modality, 'chat');
+        }
       } catch (e: any) {
         if (e?.name === 'AbortError') return;
         const msg = e?.message || 'Não consegui responder agora.';
@@ -254,7 +266,7 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
         setIsStreaming(false);
       }
     },
-    [messages, isStreaming, listening, stop, userName, onClose, navigate, session, update],
+    [messages, isStreaming, listening, stop, userName, onClose, navigate, session, update, persistMessage],
   );
 
   const handleSubmit = (e?: React.FormEvent) => {
