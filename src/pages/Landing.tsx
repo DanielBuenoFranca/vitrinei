@@ -1727,10 +1727,11 @@ const Landing = () => {
 
       {/* Footer - Quick actions (Home, Urgência, Perfil, Indicação) */}
       <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/80 backdrop-blur-md px-2 py-1 pb-[calc(0.25rem+env(safe-area-inset-bottom))]">
-        <div className="container mx-auto max-w-2xl grid grid-cols-4 gap-1.5">
+        <div className="container mx-auto max-w-2xl grid grid-cols-5 gap-1">
           {[
             { label: 'Home', icon: Home, onClick: () => navigate('/') },
             { label: 'Urgência', icon: Zap, onClick: () => navigate('/radar-urgencia') },
+            { label: 'Favoritos', icon: Heart, onClick: () => setFavoritesOpen(true), badge: favoritesCount },
             { label: 'Perfil', icon: Users, onClick: () => navigate(user ? '/carteira' : '/auth') },
             { label: 'Indicação', icon: Sparkles, onClick: () => navigate('/convite/INDIQUE') },
           ].map((btn) => (
@@ -1738,15 +1739,21 @@ const Landing = () => {
               key={btn.label}
               type="button"
               onClick={btn.onClick}
-              className="flex flex-col items-center justify-center gap-0.5 rounded-lg py-1 px-1 bg-white/[0.05] hover:bg-white/[0.12] border border-white/10 hover:border-primary/40 transition-all text-foreground/85 hover:text-primary"
+              className="relative flex flex-col items-center justify-center gap-0.5 rounded-lg py-1 px-1 bg-white/[0.05] hover:bg-white/[0.12] border border-white/10 hover:border-primary/40 transition-all text-foreground/85 hover:text-primary"
               aria-label={btn.label}
             >
               <btn.icon className="w-4 h-4" strokeWidth={1.6} />
               <span className="text-[9px] font-medium leading-none">{btn.label}</span>
+              {(btn as any).badge ? (
+                <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-1 rounded-full bg-rose-500 text-[8px] font-bold text-white flex items-center justify-center">
+                  {(btn as any).badge}
+                </span>
+              ) : null}
             </button>
           ))}
         </div>
       </footer>
+      <FavoritesModal open={favoritesOpen} onOpenChange={setFavoritesOpen} />
       </main>
     </div>
   );
