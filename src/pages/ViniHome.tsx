@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, Wallet, User as UserIcon, Sparkles, Mic, Plus,
   Bot, LogIn, Settings, X, Send, Radar, Gift, MapPin, ShoppingBag, Store, RotateCcw, Heart,
+  Search,
 } from 'lucide-react';
 import { FavoritesModal } from '@/components/FavoritesModal';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -471,15 +472,7 @@ const ViniHome = () => {
   // ─── Bottom-grid actions ───
   const handleHome = () => {
     wakeUp();
-    if (totalCartItems > 0) {
-      pushBubble({
-        role: 'vini',
-        text: `Você tem ${totalCartItems} ${totalCartItems === 1 ? 'item' : 'itens'} no carrinho. Ok, o que mais vamos buscar?`,
-      });
-    } else {
-      pushBubble({ role: 'vini', text: 'Estamos no Home. Por onde começamos?' });
-    }
-    setTimeout(() => inputRef.current?.focus(), 200);
+    navigate('/buscar');
   };
 
   const handleRadar = () => {
@@ -584,7 +577,7 @@ const ViniHome = () => {
   };
 
   const gridItems: GridItem[] = [
-    { key: 'home', icon: Home, label: 'Home', onClick: handleHome, active: true },
+    { key: 'buscar', icon: Search, label: 'Buscar', onClick: handleHome },
     { key: 'urgencia', icon: Radar, label: 'Urgência', onClick: handleRadar, active: radarActive, badge: totalCartItems > 0 ? totalCartItems : undefined },
     { key: 'reiniciar', icon: RotateCcw, label: 'Reiniciar', onClick: handleReiniciar },
     { key: 'perfil', icon: UserIcon, label: 'Perfil', onClick: handlePerfil },
