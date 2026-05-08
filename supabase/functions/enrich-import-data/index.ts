@@ -110,15 +110,12 @@ Retorne um JSON com a chave "enriched" contendo o array de linhas com os campos 
     if (!response.ok) {
       const errorText = await response.text()
       console.error('AI gateway error:', response.status, errorText)
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: 'Limite de requisições atingido. Tente novamente em alguns segundos.' }), {
-          status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: 'Créditos de IA esgotados.' }), {
-          status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+      if (response.status === 429 || response.status === 402) {
+        await autoOffOnFailure(response.status === 402 ? 'no_credits' : 'rate_limited');
+        void logAiSavings('enrich-import-data', `gateway_${response.status}`, Array.isArray(rows) ? rows.length : 1, { auto_off: true });
+        return new Response(JSON.stringify({ enriched: rows, _degraded: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
       return new Response(JSON.stringify({ error: 'Erro ao enriquecer dados' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
