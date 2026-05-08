@@ -570,6 +570,15 @@ const Landing = () => {
                               boxShadow: '0 14px 32px -16px hsl(265 80% 40% / 0.6), inset 0 1px 0 rgba(255,255,255,.08)',
                             }}
                           >
+                            <div className="absolute top-1.5 right-1.5 z-10">
+                              <FavoriteButton
+                                kind="provider"
+                                id={prov?.id ?? providerName}
+                                name={providerName}
+                                slug={slug}
+                                image={prov?.logo_url ?? null}
+                              />
+                            </div>
                             <button onClick={() => toggleProviderExpanded(providerName)} className="block w-full text-left">
                               <div className="relative aspect-[3/4] overflow-hidden">
                                 {prov?.logo_url ? (
