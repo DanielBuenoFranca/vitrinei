@@ -231,17 +231,56 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute inset-0 z-50 flex items-end sm:items-center justify-center px-3 sm:px-4 pb-3 sm:pb-0 bg-background/40 backdrop-blur-sm pointer-events-auto"
+          className="absolute inset-0 z-50 flex items-end sm:items-center justify-center px-3 sm:px-4 pb-3 sm:pb-0 pointer-events-auto"
           onClick={onClose}
+          style={{ perspective: '1600px', perspectiveOrigin: '50% 65%' }}
         >
+          {/* Luz volumétrica emergindo do centro da sala */}
           <motion.div
-            initial={{ y: 30, opacity: 0, scale: 0.96 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 30, opacity: 0, scale: 0.96 }}
-            transition={{ duration: 0.3 }}
+            initial={{ opacity: 0, scale: 0.6 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.6 }}
+            transition={{ duration: 0.5 }}
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background:
+                'radial-gradient(ellipse 60% 45% at 50% 55%, hsl(var(--vini-glow) / 0.28), hsl(var(--primary) / 0.10) 40%, transparent 75%)',
+              filter: 'blur(8px)',
+            }}
+          />
+          {/* Backdrop sutil */}
+          <div className="absolute inset-0 bg-background/25 backdrop-blur-[6px] pointer-events-none" />
+
+          <motion.div
+            initial={{ y: 60, opacity: 0, scale: 0.85, rotateX: 18, z: -200 }}
+            animate={{ y: 0, opacity: 1, scale: 1, rotateX: 0, z: 0 }}
+            exit={{ y: 40, opacity: 0, scale: 0.9, rotateX: 12 }}
+            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-lg glass-strong rounded-3xl border border-[hsl(var(--vini-glow)/0.5)] shadow-[0_0_60px_hsl(var(--vini-glow)/0.35)] overflow-hidden flex flex-col max-h-[80vh]"
+            style={{
+              transformStyle: 'preserve-3d',
+              boxShadow:
+                '0 40px 90px -20px hsl(var(--vini-glow) / 0.45), 0 0 80px hsl(var(--primary) / 0.25), inset 0 1px 0 hsl(var(--vini-glow) / 0.35), inset 0 0 40px hsl(var(--primary) / 0.06)',
+            }}
+            className="relative w-full max-w-lg rounded-3xl border border-[hsl(var(--vini-glow)/0.55)] overflow-hidden flex flex-col max-h-[80vh] bg-gradient-to-br from-white/[0.10] via-white/[0.04] to-white/[0.02] backdrop-blur-2xl"
           >
+            {/* Reflexo holográfico superior */}
+            <div
+              className="absolute inset-x-0 top-0 h-px pointer-events-none"
+              style={{ background: 'linear-gradient(90deg, transparent, hsl(var(--vini-glow) / 0.9), transparent)' }}
+            />
+            {/* Brilho interno animado */}
+            <motion.div
+              aria-hidden
+              className="absolute inset-0 pointer-events-none opacity-40"
+              animate={{ backgroundPosition: ['0% 0%', '100% 100%'] }}
+              transition={{ duration: 14, repeat: Infinity, repeatType: 'reverse', ease: 'linear' }}
+              style={{
+                background:
+                  'radial-gradient(circle at 30% 20%, hsl(var(--vini-glow) / 0.18), transparent 45%), radial-gradient(circle at 70% 80%, hsl(var(--primary) / 0.16), transparent 50%)',
+                backgroundSize: '200% 200%',
+              }}
+            />
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/40">
               <div className="flex items-center gap-2">
