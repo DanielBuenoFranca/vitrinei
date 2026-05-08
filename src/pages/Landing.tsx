@@ -62,6 +62,7 @@ const Landing = () => {
   const [searchParams] = useSearchParams();
   const { user, signOut, displayName } = useAuth();
   const { profileLabel } = usePermissions();
+  const { session, update: updateAiSession } = useAiSession();
   const accessLevel = useAccessLevel();
   const [searchQuery, setSearchQuery] = useState('');
   const [executedQuery, setExecutedQuery] = useState('');
@@ -73,6 +74,9 @@ const Landing = () => {
   const [showAiPanel, setShowAiPanel] = useState(false);
   const [aiMessage, setAiMessage] = useState('');
   const [aiChat, setAiChat] = useState<{ role: 'user' | 'ai'; text: string; searchResult?: SearchResult; contextualSuggestion?: ContextualSuggestion }[]>([]);
+  const [inlineAiOpen, setInlineAiOpen] = useState(false);
+  const [aiRefining, setAiRefining] = useState(false);
+  const [aiRoute, setAiRoute] = useState<AiRoute | null>(null);
   const [currentSuggestion, setCurrentSuggestion] = useState(0);
   const [aiSpeaking, setAiSpeaking] = useState(false);
   const [expandedProducts, setExpandedProducts] = useState<number | null>(null);
@@ -97,6 +101,66 @@ const Landing = () => {
   } = useCart();
   const searchRef = useRef<HTMLInputElement>(null);
   const speech = useSpeechRecognition();
+
+  const applyRouteToSearch = (route: AiRoute, fallbackQuery: string) => {
+    const nextQuery = (route.query || fallbackQuery).trim();
+    const routeSegments = (route.segments || []).map(s => normalizeText(s));
+    const matchingSegments = dbSegments
+      .filter(seg => routeSegments.some(rs => normalizeText(seg.id).includes(rs) || normalizeText(seg.name).includes(rs) || normalizeText(seg.label).includes(rs)))
+      .map(seg => seg.id);
+    if (nextQuery) setSearchQuery(nextQuery);
+    if (matchingSegments.length) setActiveSegments(Array.from(new Set(matchingSegments)));
+    if (route.item_type === 'service') setTypeFilter('service');
+    else if (route.item_type === 'product') setTypeFilter('product');
+    else setTypeFilter('all');
+    setExecutedQuery(nextQuery);
+    setSearchExecuted(true);
+    setSearchVersion(v => v + 1);
+    setInlineAiOpen(false);
+    setAiRoute(route);
+    updateAiSession({
+      tags: route.tags || [],
+      segments: route.segments || [],
+      lastIntent: route.intent,
+      lastQuery: nextQuery,
+    });
+  };
+
+  const refineWithVini = async (raw: string, options: { openPanel?: boolean; autoApply?: boolean } = {}) => {
+    const text = raw.trim();
+    if (!text) return null;
+    if (options.openPanel) setInlineAiOpen(true);
+    setAiRefining(true);
+    setAiChat(prev => [...prev, { role: 'user', text }]);
+    try {
+      const { data } = await supabase.functions.invoke('ai-router', { body: { message: text, session } });
+      const routed = (data || {}) as AiRoute;
+      setAiRoute(routed);
+      if (routed.needs_more_info || routed.intent !== 'search') {
+        const ask = routed.follow_up_question || 'Me diga mais um detalhe para eu filtrar melhor.';
+        setAiChat(prev => [...prev, { role: 'ai', text: ask }]);
+        return routed;
+      }
+      const query = (routed.query || text).trim();
+      const preview = semanticSearch(query, aiChat.filter(m => m.role === 'user').map(m => m.text).concat(text));
+      const label = routed.transition_message || preview.followUp || `Entendi: ${query}. Vou mostrar os resultados filtrados.`;
+      setAiChat(prev => [...prev, { role: 'ai', text: label, searchResult: preview }]);
+      if (options.autoApply !== false) applyRouteToSearch(routed, query);
+      return routed;
+    } catch {
+      const local = semanticSearch(text, aiChat.filter(m => m.role === 'user').map(m => m.text).concat(text));
+      if ((local.products.length + local.services.length) > 0) {
+        const fallback: AiRoute = { intent: 'search', query: text, item_type: local.products.length && !local.services.length ? 'product' : local.services.length && !local.products.length ? 'service' : 'both' };
+        setAiChat(prev => [...prev, { role: 'ai', text: local.followUp || 'Encontrei opções para sua busca.', searchResult: local }]);
+        if (options.autoApply !== false) applyRouteToSearch(fallback, text);
+        return fallback;
+      }
+      setAiChat(prev => [...prev, { role: 'ai', text: 'Ainda preciso de mais detalhes para buscar melhor.' }]);
+      return null;
+    } finally {
+      setAiRefining(false);
+    }
+  };
   useEffect(() => {
     if (speech.transcript) setSearchQuery(speech.transcript);
   }, [speech.transcript]);
