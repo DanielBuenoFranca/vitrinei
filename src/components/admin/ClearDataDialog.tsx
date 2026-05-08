@@ -97,6 +97,7 @@ export function ClearDataDialog({ open, onClose, onCleared }: ClearDataDialogPro
       case 'stock_entries': return { label: `Entrada ${row.document_number || row.id}`, sublabel: row.supplier_name || '' };
       case 'stock_movements': return { label: `${row.movement_type} · ${row.item_name}`, sublabel: new Date(row.created_at).toLocaleString('pt-BR') };
       case 'ai_savings_log': return { label: row.feature, sublabel: row.fallback_used };
+      case 'users': return { label: row.display_name || row._email || `#${String(row.user_id).slice(0,6)}`, sublabel: row._email || row.phone || '' };
       default: return { label: row.name || `#${row.id}`, sublabel: row.created_at ? new Date(row.created_at).toLocaleDateString('pt-BR') : '' };
     }
   };
