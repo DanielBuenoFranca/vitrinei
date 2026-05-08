@@ -661,11 +661,11 @@ const Landing = () => {
                           </span>
                         </button>
                       ) : servicesCarouselOpen && filteredResults.length > 2 ? (
-                        <div className="flex gap-2.5 overflow-x-auto no-scrollbar snap-x pb-2 -mx-1 px-1">
+                        <ScrollableRow>
                           {filteredResults.map((r, i) => (
                             <div key={r.id} className="snap-start shrink-0 w-[150px]">{renderCard(r, i)}</div>
                           ))}
-                        </div>
+                        </ScrollableRow>
                       ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                           {filteredResults.map((r, i) => renderCard(r, i))}
@@ -771,11 +771,11 @@ const Landing = () => {
                           </span>
                         </button>
                       ) : productsCarouselOpen && searchResult.products.length > 2 ? (
-                        <div className="flex gap-2.5 overflow-x-auto no-scrollbar snap-x pb-2 -mx-1 px-1">
+                        <ScrollableRow>
                           {searchResult.products.map((p, i) => (
                             <div key={p.id} className="snap-start shrink-0 w-[150px]">{renderCard(p, i)}</div>
                           ))}
-                        </div>
+                        </ScrollableRow>
                       ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                           {searchResult.products.map((p, i) => renderCard(p, i))}
