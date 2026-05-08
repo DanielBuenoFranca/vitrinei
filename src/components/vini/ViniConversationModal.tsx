@@ -44,21 +44,71 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const sessionIdRef = useRef<string>(crypto.randomUUID());
+  const userIdRef = useRef<string | null>(null);
+  const lastModalityRef = useRef<'voice' | 'text'>('text');
   const navigate = useNavigate();
   const { session, update } = useAiSession();
 
   const { supported, listening, transcript, start, stop } = useSpeechRecognition();
 
-  // Greet on open
+  // Persist a single message in vini_conversations (silent on failure)
+  const persistMessage = useCallback(
+    async (role: 'user' | 'assistant', content: string, modality: 'voice' | 'text', intent?: string) => {
+      const uid = userIdRef.current;
+      if (!uid || !content.trim()) return;
+      try {
+        await supabase.from('vini_conversations').insert({
+          user_id: uid,
+          session_id: sessionIdRef.current,
+          role,
+          content,
+          modality,
+          intent: intent ?? null,
+        });
+      } catch {
+        // silent — não bloqueia a conversa
+      }
+    },
+    [],
+  );
+
+  // Greet on open + load last history + start new session
   useEffect(() => {
     if (!open) return;
-    setMessages([]);
+    sessionIdRef.current = crypto.randomUUID();
     setInput('');
     setError(null);
-    const first = userName?.split(' ')[0] || '';
-    const welcome = WELCOMES[Math.floor(Math.random() * WELCOMES.length)](first);
-    setMessages([{ role: 'assistant', content: welcome, id: `${Date.now()}-w` }]);
-    setTimeout(() => inputRef.current?.focus(), 200);
+
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      userIdRef.current = user?.id ?? null;
+
+      let history: Msg[] = [];
+      if (user?.id) {
+        const { data } = await supabase
+          .from('vini_conversations')
+          .select('id, role, content, created_at')
+          .eq('user_id', user.id)
+          .in('role', ['user', 'assistant'])
+          .order('created_at', { ascending: false })
+          .limit(20);
+        if (data && data.length) {
+          history = data
+            .reverse()
+            .map((r) => ({ role: r.role as 'user' | 'assistant', content: r.content, id: r.id }));
+        }
+      }
+
+      const first = userName?.split(' ')[0] || '';
+      const welcome = WELCOMES[Math.floor(Math.random() * WELCOMES.length)](first);
+      const welcomeMsg: Msg = { role: 'assistant', content: welcome, id: `${Date.now()}-w` };
+      setMessages([...history, welcomeMsg]);
+      // welcome message is contextual but we still register it as a system marker
+      void persistMessage('assistant', welcome, 'text', 'welcome');
+    })();
+
+    setTimeout(() => inputRef.current?.focus(), 250);
     return () => {
       abortRef.current?.abort();
       try { stop(); } catch {}
@@ -79,9 +129,11 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
   }, [messages, isStreaming]);
 
   const sendMessage = useCallback(
-    async (raw: string) => {
+    async (raw: string, modalityOverride?: 'voice' | 'text') => {
       const text = raw.trim();
       if (!text || isStreaming) return;
+
+      const modality = modalityOverride ?? lastModalityRef.current ?? 'text';
 
       // Stop voice if active
       if (listening) try { stop(); } catch {}
@@ -92,10 +144,14 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
       setInput('');
       setError(null);
 
+      // Persist user message
+      void persistMessage('user', text, modality);
+
       // Farewell shortcut
       if (FAREWELL_RX.test(text)) {
         const bye = 'Foi ótimo conversar com você! Me chama quando quiser. 👋';
         setMessages((m) => [...m, { role: 'assistant', content: bye, id: `${Date.now()}-bye` }]);
+        void persistMessage('assistant', bye, modality, 'farewell');
         setTimeout(onClose, 1400);
         return;
       }
@@ -119,6 +175,7 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
           if (routed.intent && routed.intent !== 'chat' && routed.next_agent !== 'vini') {
             const transition = routed.transition_message || 'Vou redirecionar você para a área certa...';
             setMessages((m) => [...m, { role: 'assistant', content: transition, id: `${Date.now()}-t` }]);
+            void persistMessage('assistant', transition, modality, routed.intent);
             setIsStreaming(false);
             setTimeout(() => {
               if (routed.next_agent === 'support') navigate('/central-atendimento');
@@ -193,6 +250,11 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
             }
           }
         }
+
+        // Persist final assistant response
+        if (accumulated.trim()) {
+          void persistMessage('assistant', accumulated, modality, 'chat');
+        }
       } catch (e: any) {
         if (e?.name === 'AbortError') return;
         const msg = e?.message || 'Não consegui responder agora.';
@@ -204,22 +266,27 @@ export function ViniConversationModal({ open, onClose, userName }: ViniConversat
         setIsStreaming(false);
       }
     },
-    [messages, isStreaming, listening, stop, userName, onClose, navigate, session, update],
+    [messages, isStreaming, listening, stop, userName, onClose, navigate, session, update, persistMessage],
   );
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
-    sendMessage(input);
+    lastModalityRef.current = 'text';
+    sendMessage(input, 'text');
   };
 
   const toggleMic = () => {
     if (!supported) return;
     if (listening) {
       stop();
-      // If we have transcript, send it
-      if (input.trim()) sendMessage(input);
+      // If we have transcript, send it as voice
+      if (input.trim()) {
+        lastModalityRef.current = 'voice';
+        sendMessage(input, 'voice');
+      }
     } else {
       setInput('');
+      lastModalityRef.current = 'voice';
       start();
     }
   };
