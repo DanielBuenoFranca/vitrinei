@@ -577,7 +577,7 @@ const ViniHome = () => {
   };
 
   const gridItems: GridItem[] = [
-    { key: 'home', icon: Home, label: 'Home', onClick: handleHome, active: true },
+    { key: 'buscar', icon: Search, label: 'Buscar', onClick: handleHome },
     { key: 'urgencia', icon: Radar, label: 'Urgência', onClick: handleRadar, active: radarActive, badge: totalCartItems > 0 ? totalCartItems : undefined },
     { key: 'reiniciar', icon: RotateCcw, label: 'Reiniciar', onClick: handleReiniciar },
     { key: 'perfil', icon: UserIcon, label: 'Perfil', onClick: handlePerfil },
