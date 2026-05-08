@@ -359,13 +359,14 @@ const ViniHome = () => {
 
   const handleVoiceTap = () => {
     wakeUp();
-    setSearchBarVisible(true);
     if (listening) {
       stop();
-      if (text.trim()) sendQuery(text);
+      if (text.trim()) openConversationWith(text, 'voice');
       return;
     }
     if (supported) {
+      setSearchBarVisible(true);
+      setSearchBarMode('chat');
       start();
       setTimeout(() => pushBubble({ role: 'vini', text: 'Estou ouvindo… 🎙️' }), 200);
     } else {
@@ -460,20 +461,22 @@ const ViniHome = () => {
 
   const handleTextSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    sendQuery(text);
+    if (searchBarMode === 'search') sendQuery(text);
+    else openConversationWith(text, 'text');
+    setText('');
     setSearchBarVisible(false);
   };
 
   const handleSideSearch = () => {
     wakeUp();
     setSideOpen(false);
+    setSearchBarMode('search');
     setSearchBarVisible(true);
     setTimeout(() => inputRef.current?.focus(), 80);
   };
 
   const handleSideConverse = () => {
-    setSideOpen(false);
-    setChatOpen(true);
+    openConversationWith();
   };
 
   const handleSideStory = () => {
