@@ -53,6 +53,15 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
+    // [Economia de Crédito] Honor the global toggle.
+    const { mode } = await getAiMode();
+    if (mode === "off") {
+      void logAiSavings("vini-chat", "contingency_static", 1, { userName: !!userName });
+      return new Response(streamFallback(contingencyText(userName)), {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      });
+    }
+
     const contextMessage = userName
       ? `O usuário se chama "${userName}". Trate-o pelo primeiro nome quando fizer sentido.`
       : `O usuário não está identificado. Seja acolhedor sem perguntar o nome diretamente.`;
@@ -80,26 +89,17 @@ serve(async (req) => {
       let fallback = `${prefix}estou aqui com você. Posso te orientar sobre busca, loja, carrinho, carteira ou suporte — me conte o que precisa resolver agora.`;
       if (response.status === 429) {
         fallback = `${prefix}recebi muitas mensagens em sequência. Vamos respirar 1 segundinho e já te respondo. Enquanto isso, me diga em uma frase o que você quer.`;
+        await autoOffOnFailure("rate_limited");
       } else if (response.status === 402) {
-        fallback = `${prefix}meu canal de conversa livre está em manutenção agora, mas continuo te ajudando: posso te levar para busca, loja, carrinho, carteira ou suporte. O que você quer fazer?`;
+        fallback = contingencyText(userName);
+        await autoOffOnFailure("no_credits");
       } else {
         const t = await response.text().catch(() => "");
         console.error("AI gateway error:", response.status, t);
       }
+      void logAiSavings("vini-chat", `gateway_${response.status}`, 1, { auto_off: true });
 
-      // Return as SSE stream so the client's streaming reader handles it transparently
-      const sse = new ReadableStream({
-        start(controller) {
-          const enc = new TextEncoder();
-          const chunk = {
-            choices: [{ delta: { content: fallback }, index: 0, finish_reason: null }],
-          };
-          controller.enqueue(enc.encode(`data: ${JSON.stringify(chunk)}\n\n`));
-          controller.enqueue(enc.encode(`data: [DONE]\n\n`));
-          controller.close();
-        },
-      });
-      return new Response(sse, {
+      return new Response(streamFallback(fallback), {
         headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
       });
     }
