@@ -457,17 +457,25 @@ const Landing = () => {
                 {/* === FAIXA ROLANTE: PRESTADORES === */}
                 {hasResults && providerEntries.length > 0 && (
                   <div>
-                    <div className="flex items-center justify-between mb-2 px-1">
-                      <h3 className="text-white text-sm font-bold tracking-wide flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-violet-300" /> Prestadores próximos
-                      </h3>
+                    <div className="flex items-center justify-between mb-1.5 px-1">
+                      <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-white/55">Prestadores próximos</h3>
                       <label className="flex items-center gap-1.5 cursor-pointer select-none rounded-full border border-white/15 bg-white/5 px-2 py-0.5">
                         <Checkbox checked={showSimulated} onCheckedChange={(v) => setShowSimulated(!!v)} className="h-3 w-3" />
                         <span className="text-[10px] text-white/70 whitespace-nowrap">Incluir simulados</span>
                       </label>
                     </div>
-                    <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
-                      {providerEntries.map(([providerName, data], idx) => {
+                    <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 -mx-1 px-1 snap-x">
+                      {providerEntries
+                        .slice()
+                        .sort(([an, ad], [bn, bd]) => {
+                          const aTop = dbProviders.get(an)?.is_top_provider ? 1 : 0;
+                          const bTop = dbProviders.get(bn)?.is_top_provider ? 1 : 0;
+                          if (bTop !== aTop) return bTop - aTop;
+                          const aR = ad.services[0]?.rating ?? ad.products[0]?.rating ?? 0;
+                          const bR = bd.services[0]?.rating ?? bd.products[0]?.rating ?? 0;
+                          return bR - aR;
+                        })
+                        .map(([providerName, data], idx) => {
                         const prov = dbProviders.get(providerName);
                         const segName = data.services[0]?.segment || data.products[0]?.tags?.[0] || providerName;
                         const segVisual = getSegmentVisual(segName);
