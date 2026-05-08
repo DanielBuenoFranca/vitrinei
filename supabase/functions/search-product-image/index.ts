@@ -1,9 +1,28 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getAiMode, autoOffOnFailure, logAiSavings } from "../_shared/aiCredits.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
+
+async function callFreeFallback(payload: any) {
+  const url = `${Deno.env.get('SUPABASE_URL')}/functions/v1/fetch-free-image`;
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) return null;
+    const d = await r.json();
+    return d?.imageUrl || d?.url || null;
+  } catch { return null; }
+}
+
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
