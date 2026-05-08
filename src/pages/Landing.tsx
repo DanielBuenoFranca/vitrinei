@@ -730,6 +730,15 @@ const Landing = () => {
                               <div className="absolute top-1.5 left-1.5 rounded-full bg-emerald-500/80 backdrop-blur px-1.5 py-0.5">
                                 <span className="text-[8px] font-bold text-white">{product.stockType === 'fisico' ? 'Estoque' : 'Drop'}</span>
                               </div>
+                              <div className="absolute bottom-1.5 right-1.5">
+                                <FavoriteButton
+                                  kind="product"
+                                  id={product.id}
+                                  name={product.name}
+                                  image={product.image_url ?? null}
+                                  provider={(product as any).provider}
+                                />
+                              </div>
                             </div>
                             <div className="p-2">
                               <h4 className="text-[11px] font-bold text-white truncate">{product.name}</h4>
