@@ -21,6 +21,7 @@ import HeaderMarquee from '@/components/HeaderMarquee';
 import { AccessBanner, MaskedPrice, ActionGate, useAccessLevel } from '@/components/AccessGate';
 import { Search3DHero } from '@/components/landing/Search3DHero';
 import { TopProviderBadge } from '@/components/TopProviderBadge';
+import { useAiSession } from '@/contexts/AiSessionContext';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { segments as staticSegments, mockResults, semanticSearch, buildSupportSummary, generateContextualSuggestions, getAllServices, getAllProducts, loadDynamicEntries, reloadDynamicEntries, loadSegmentTagsCache, type ProductItem, type SearchResult, type ContextualSuggestion } from '@/data/searchData';
 import { supabase } from '@/integrations/supabase/client';
@@ -39,6 +40,19 @@ const aiSuggestions = [
 const normalizeText = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
 const slugify = (value: string) => normalizeText(value).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
+type AiRoute = {
+  intent?: 'chat' | 'search' | 'support' | 'cart' | 'story';
+  tags?: string[];
+  segments?: string[];
+  query?: string;
+  item_type?: 'service' | 'product' | 'both';
+  transition_message?: string;
+  confidence?: number;
+  needs_more_info?: boolean;
+  follow_up_question?: string;
+  suggestions?: string[];
+};
+
 const visualIcons = [Scissors, Droplets, Sprout, Truck, Hammer, Stethoscope, GraduationCap, Car, Brush, Cpu, Heart, PawPrint, PartyPopper, Leaf, Monitor, Gem, Shirt, Music, WrenchIcon, ShoppingBag];
 const pickVisualIcon = (seed: string) => visualIcons[Math.abs([...normalizeText(seed)].reduce((acc, c) => acc + c.charCodeAt(0), 0)) % visualIcons.length];
 
@@ -48,6 +62,7 @@ const Landing = () => {
   const [searchParams] = useSearchParams();
   const { user, signOut, displayName } = useAuth();
   const { profileLabel } = usePermissions();
+  const { session, update: updateAiSession } = useAiSession();
   const accessLevel = useAccessLevel();
   const [searchQuery, setSearchQuery] = useState('');
   const [executedQuery, setExecutedQuery] = useState('');
@@ -59,6 +74,9 @@ const Landing = () => {
   const [showAiPanel, setShowAiPanel] = useState(false);
   const [aiMessage, setAiMessage] = useState('');
   const [aiChat, setAiChat] = useState<{ role: 'user' | 'ai'; text: string; searchResult?: SearchResult; contextualSuggestion?: ContextualSuggestion }[]>([]);
+  const [inlineAiOpen, setInlineAiOpen] = useState(false);
+  const [aiRefining, setAiRefining] = useState(false);
+  const [aiRoute, setAiRoute] = useState<AiRoute | null>(null);
   const [currentSuggestion, setCurrentSuggestion] = useState(0);
   const [aiSpeaking, setAiSpeaking] = useState(false);
   const [expandedProducts, setExpandedProducts] = useState<number | null>(null);
@@ -83,6 +101,66 @@ const Landing = () => {
   } = useCart();
   const searchRef = useRef<HTMLInputElement>(null);
   const speech = useSpeechRecognition();
+
+  const applyRouteToSearch = (route: AiRoute, fallbackQuery: string) => {
+    const nextQuery = (route.query || fallbackQuery).trim();
+    const routeSegments = (route.segments || []).map(s => normalizeText(s));
+    const matchingSegments = dbSegments
+      .filter(seg => routeSegments.some(rs => normalizeText(seg.id).includes(rs) || normalizeText(seg.name).includes(rs) || normalizeText(seg.label).includes(rs)))
+      .map(seg => seg.id);
+    if (nextQuery) setSearchQuery(nextQuery);
+    if (matchingSegments.length) setActiveSegments(Array.from(new Set(matchingSegments)));
+    if (route.item_type === 'service') setTypeFilter('service');
+    else if (route.item_type === 'product') setTypeFilter('product');
+    else setTypeFilter('all');
+    setExecutedQuery(nextQuery);
+    setSearchExecuted(true);
+    setSearchVersion(v => v + 1);
+    setInlineAiOpen(false);
+    setAiRoute(route);
+    updateAiSession({
+      tags: route.tags || [],
+      segments: route.segments || [],
+      lastIntent: route.intent,
+      lastQuery: nextQuery,
+    });
+  };
+
+  const refineWithVini = async (raw: string, options: { openPanel?: boolean; autoApply?: boolean } = {}) => {
+    const text = raw.trim();
+    if (!text) return null;
+    if (options.openPanel) setInlineAiOpen(true);
+    setAiRefining(true);
+    setAiChat(prev => [...prev, { role: 'user', text }]);
+    try {
+      const { data } = await supabase.functions.invoke('ai-router', { body: { message: text, session } });
+      const routed = (data || {}) as AiRoute;
+      setAiRoute(routed);
+      if (routed.needs_more_info || routed.intent !== 'search') {
+        const ask = routed.follow_up_question || 'Me diga mais um detalhe para eu filtrar melhor.';
+        setAiChat(prev => [...prev, { role: 'ai', text: ask }]);
+        return routed;
+      }
+      const query = (routed.query || text).trim();
+      const preview = semanticSearch(query, aiChat.filter(m => m.role === 'user').map(m => m.text).concat(text));
+      const label = routed.transition_message || preview.followUp || `Entendi: ${query}. Vou mostrar os resultados filtrados.`;
+      setAiChat(prev => [...prev, { role: 'ai', text: label, searchResult: preview }]);
+      if (options.autoApply !== false) applyRouteToSearch(routed, query);
+      return routed;
+    } catch {
+      const local = semanticSearch(text, aiChat.filter(m => m.role === 'user').map(m => m.text).concat(text));
+      if ((local.products.length + local.services.length) > 0) {
+        const fallback: AiRoute = { intent: 'search', query: text, item_type: local.products.length && !local.services.length ? 'product' : local.services.length && !local.products.length ? 'service' : 'both' };
+        setAiChat(prev => [...prev, { role: 'ai', text: local.followUp || 'Encontrei opções para sua busca.', searchResult: local }]);
+        if (options.autoApply !== false) applyRouteToSearch(fallback, text);
+        return fallback;
+      }
+      setAiChat(prev => [...prev, { role: 'ai', text: 'Ainda preciso de mais detalhes para buscar melhor.' }]);
+      return null;
+    } finally {
+      setAiRefining(false);
+    }
+  };
   useEffect(() => {
     if (speech.transcript) setSearchQuery(speech.transcript);
   }, [speech.transcript]);
@@ -93,14 +171,10 @@ const Landing = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [speech.listening]);
-  // Pré-preenche busca via ?q= (vinda do Vini ou outras telas)
+  // Pré-preenche busca via ?q= (vinda do Vini ou outras telas); execução ocorre após carregar segmentos.
   useEffect(() => {
     const q = searchParams.get('q');
-    if (q && !searchExecuted) {
-      setSearchQuery(q);
-      setTimeout(() => executeSearch(), 200);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (q && !searchQuery) setSearchQuery(q);
   }, []);
 
   const handleMic = () => {
@@ -124,6 +198,12 @@ const Landing = () => {
     setSearchVersion(v => v + 1);
     setSelectedSuggestions(new Set());
     setShowSearchProducts(false);
+  };
+
+  const handleSmartSearch = () => {
+    const q = searchQuery.trim();
+    if (!q) return executeSearch();
+    refineWithVini(q, { openPanel: true, autoApply: true });
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent) => {
@@ -212,15 +292,23 @@ const Landing = () => {
       }
       setDataLoaded(true);
 
-      // Pre-fill search from URL ?q= passed by Vini Home
+      // Pre-fill smart search from URL ?q= passed by Vini Home
       try {
         const params = new URLSearchParams(window.location.search);
         const incomingQ = (params.get('q') || '').trim();
+        const incomingType = params.get('type') as 'service' | 'product' | 'both' | null;
+        const incomingSegs = (params.get('segments') || '').split(',').map(s => s.trim()).filter(Boolean);
         if (incomingQ) {
           setSearchQuery(incomingQ);
-          setExecutedQuery(incomingQ);
-          setSearchExecuted(true);
-          setSearchVersion(v => v + 1);
+          if (incomingType === 'service') setTypeFilter('service');
+          else if (incomingType === 'product') setTypeFilter('product');
+          const incomingNorm = incomingSegs.map(normalizeText);
+          if (incomingNorm.length) {
+            setActiveSegments(segs
+              .filter((s: any) => incomingNorm.some(n => normalizeText(s.name).includes(n)))
+              .map((s: any) => s.name));
+          }
+          refineWithVini(incomingQ, { openPanel: false, autoApply: true });
           return;
         }
       } catch {}
@@ -356,60 +444,11 @@ const Landing = () => {
   const handleAiSend = () => {
     if (!aiMessage.trim()) return;
     const msg = aiMessage.trim();
-    setAiChat((prev) => [...prev, { role: 'user', text: msg }]);
     setAiSpeaking(true);
-
-    // Build conversation context from previous user messages
-    const userMsgs = aiChat.filter(m => m.role === 'user').map(m => m.text);
-    const searchResult = semanticSearch(msg, [...userMsgs, msg]);
-
-    setTimeout(() => {
-      const hasResults = searchResult.products.length > 0 || searchResult.services.length > 0;
-
-      if (hasResults) {
-        const contextMsg = searchResult.followUp || 'Entendi sua necessidade! 🧠';
-        const parts: string[] = [contextMsg];
-
-        if (searchResult.needLabel) {
-          parts.push(`\n\n🔍 Necessidade identificada: ${searchResult.needLabel}`);
-        }
-        if (searchResult.products.length > 0) {
-          const physCount = searchResult.products.filter(p => p.stockType === 'fisico').length;
-          const dropCount = searchResult.products.filter(p => p.stockType === 'drop').length;
-          parts.push(`\n\n📦 ${searchResult.products.length} produto(s) disponíveis (${physCount} estoque, ${dropCount} drop):`);
-        }
-        if (searchResult.services.length > 0) {
-          parts.push(`\n\n🔧 ${searchResult.services.length} serviço(s) relevantes:`);
-        }
-        if (searchResult.suggestedServices && searchResult.suggestedServices.length > 0) {
-          parts.push(`\n\n💡 Sugestão IA: ${searchResult.suggestedServices.length} serviço(s) relacionados:`);
-        }
-
-        setAiChat((prev) => [...prev, { role: 'ai', text: parts.join(''), searchResult }]);
-        setSearchQuery(msg);
-      } else {
-        // ── CONTEXTUAL SUGGESTIONS ──
-        const contextSuggestion = generateContextualSuggestions(msg);
-        if (contextSuggestion) {
-          const text = `🧠 Não encontrei "${msg}" diretamente no hub, mas analisei o contexto!\n\n${contextSuggestion.derivedContext}\n\n📂 **Segmento:** ${contextSuggestion.segmentLabel}\n\nSelecione abaixo os serviços e produtos que correspondem ao que você precisa, ou escreva com mais detalhes:`;
-          setAiChat((prev) => [...prev, {
-            role: 'ai',
-            text,
-            contextualSuggestion: contextSuggestion,
-            searchResult: { products: [], services: [] } as SearchResult,
-          }]);
-        } else {
-          const summary = buildSupportSummary([...aiChat, { role: 'user', text: msg }], msg);
-          setAiChat((prev) => [...prev, {
-            role: 'ai',
-            text: `Não encontrei resultados para "${msg}" no hub atual. 😔\n\nAcione a Central abaixo para buscar profissionais (SLA: 24h).`,
-            searchResult: { products: [], services: [], _noResults: true, _query: msg, _summary: summary } as any
-          }]);
-        }
-      }
-      setTimeout(() => setAiSpeaking(false), 2000);
-    }, 1200);
-    setAiMessage('');
+    refineWithVini(msg, { openPanel: true, autoApply: true }).finally(() => {
+      setAiSpeaking(false);
+      setAiMessage('');
+    });
   };
 
   const navigateToDemo = (result: typeof mockResults[0]) => {
@@ -441,7 +480,7 @@ const Landing = () => {
           <Search3DHero
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            onSearch={executeSearch}
+            onSearch={handleSmartSearch}
             onMic={handleMic}
             micListening={speech.listening}
             micSupported={speech.supported}
@@ -451,8 +490,41 @@ const Landing = () => {
             typeFilter={typeFilter}
             setTypeFilter={(v) => { setTypeFilter(v); setTimeout(() => { setSearchExecuted(true); setSearchVersion(x => x + 1); }, 0); }}
           >
-            {searchExecuted && (
+            {(inlineAiOpen || searchExecuted) && (
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-5 pb-6">
+
+                {inlineAiOpen && (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-3 backdrop-blur-xl shadow-xl">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AiAvatar size={32} speaking={aiRefining} />
+                      <div className="min-w-0">
+                        <h3 className="text-[12px] font-bold text-white">Sugestões da IA</h3>
+                        <p className="text-[10px] text-white/55">Vou refinar antes de mostrar os resultados.</p>
+                      </div>
+                    </div>
+                    <div className="max-h-40 overflow-y-auto no-scrollbar space-y-1.5 mb-2">
+                      {aiChat.slice(-4).map((m, i) => (
+                        <div key={`${m.role}-${i}-${m.text}`} className={`text-[11px] leading-snug rounded-xl px-2.5 py-1.5 ${m.role === 'user' ? 'ml-8 bg-primary/80 text-primary-foreground' : 'mr-8 bg-black/25 text-white/85 border border-white/10'}`}>
+                          {m.text}
+                        </div>
+                      ))}
+                      {aiRefining && <div className="mr-8 bg-black/25 text-white/70 border border-white/10 text-[11px] rounded-xl px-2.5 py-1.5">Analisando contexto…</div>}
+                    </div>
+                    {(aiRoute?.suggestions || []).length > 0 && (
+                      <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
+                        {aiRoute!.suggestions!.map((s) => (
+                          <button key={s} onClick={() => { setAiMessage(''); refineWithVini(`${searchQuery} ${s}`, { openPanel: true, autoApply: true }); }} className="shrink-0 rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[10px] font-medium text-white/85">
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <div className="mt-2 flex gap-2">
+                      <Input value={aiMessage} onChange={(e) => setAiMessage(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAiSend()} placeholder="Responder ao Vini…" className="h-8 bg-black/25 border-white/10 text-white placeholder:text-white/35 text-xs" />
+                      <Button size="sm" onClick={handleAiSend} disabled={aiRefining || !aiMessage.trim()} className="h-8 px-3"><Send className="w-3 h-3" /></Button>
+                    </div>
+                  </div>
+                )}
 
                 {/* === FAIXA ROLANTE: PRESTADORES === */}
                 {hasResults && providerEntries.length > 0 && (
@@ -1622,7 +1694,7 @@ const Landing = () => {
       {/* Cart is now rendered globally via CartBar */}
 
       {/* Footer - Quick actions (Home, Urgência, Perfil, Indicação) */}
-      <footer className="shrink-0 border-t border-border bg-card/60 backdrop-blur-md px-2 py-1">
+      <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/80 backdrop-blur-md px-2 py-1 pb-[calc(0.25rem+env(safe-area-inset-bottom))]">
         <div className="container mx-auto max-w-2xl grid grid-cols-4 gap-1.5">
           {[
             { label: 'Home', icon: Home, onClick: () => navigate('/') },

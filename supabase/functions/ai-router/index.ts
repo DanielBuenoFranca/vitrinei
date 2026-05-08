@@ -15,6 +15,11 @@ interface RouterOutput {
   next_agent: 'vini' | 'search' | 'support' | 'cart';
   transition_message: string;
   query?: string;
+  item_type?: 'service' | 'product' | 'both';
+  confidence?: number;
+  needs_more_info?: boolean;
+  follow_up_question?: string;
+  suggestions?: string[];
 }
 
 const FALLBACK: RouterOutput = {
@@ -23,6 +28,10 @@ const FALLBACK: RouterOutput = {
   segments: [],
   next_agent: 'vini',
   transition_message: '',
+  item_type: 'both',
+  confidence: 0,
+  needs_more_info: false,
+  suggestions: [],
 };
 
 Deno.serve(async (req) => {
@@ -44,15 +53,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    const sys = `Você é o roteador de intenção do Vitrinei (ecossistema de MEIs).
-Classifique a mensagem do usuário e retorne JSON com:
+    const sys = `Você é o roteador de intenção do Vitrinei Connect (ecossistema de MEIs).
+Classifique a mensagem do usuário e retorne APENAS JSON válido com:
 - intent: "chat" (conversa geral), "search" (busca produto/serviço), "support" (suporte/dúvida sobre item ausente), "cart" (mexer em carrinho), "story" (contar história/explicar segmento).
 - tags: até 5 palavras-chave em pt-BR (minúsculas).
 - segments: nomes de segmentos relacionados (ex: "Beleza", "Construção", "Automotivo").
 - next_agent: "vini" | "search" | "support" | "cart".
 - transition_message: frase curta natural ("Vou buscar especialistas em X agora..."). Vazia se for chat puro.
 - query: termo de busca quando intent=search.
-Considere o contexto de sessão se fornecido.`;
+- item_type: "service", "product" ou "both".
+- confidence: número de 0 a 1.
+- needs_more_info: true quando a frase ainda é vaga demais para abrir a busca com precisão (ex: "preciso de remédio", "quero ajuda", "algo para casa").
+- follow_up_question: uma pergunta objetiva quando needs_more_info=true.
+- suggestions: 2 a 4 opções curtas clicáveis que ajudariam a concluir a intenção.
+Só mande para search quando houver necessidade, segmento e tipo suficientemente claros. Para sintomas, preserve o sintoma na query. Considere o contexto de sessão se fornecido.`;
 
     const res = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -88,7 +102,19 @@ Considere o contexto de sessão se fornecido.`;
       parsed = FALLBACK;
     }
 
-    return new Response(JSON.stringify(parsed), {
+    const itemType = ['service', 'product', 'both'].includes(String(parsed.item_type)) ? parsed.item_type : 'both';
+    const safe: RouterOutput = {
+      ...FALLBACK,
+      ...parsed,
+      tags: Array.isArray(parsed.tags) ? parsed.tags.slice(0, 5) : [],
+      segments: Array.isArray(parsed.segments) ? parsed.segments : [],
+      item_type: itemType,
+      confidence: Math.max(0, Math.min(1, Number(parsed.confidence || 0))),
+      needs_more_info: Boolean(parsed.needs_more_info),
+      suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions.slice(0, 4) : [],
+    };
+
+    return new Response(JSON.stringify(safe), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {

@@ -105,13 +105,19 @@ export function ClearDataDialog({ open, onClose, onCleared }: ClearDataDialogPro
   const loadCategory = async (cat: typeof CATEGORIES[number]) => {
     setLoading(l => ({ ...l, [cat.key]: true }));
     if (cat.key === 'users') {
-      // Carrega profiles excluindo Masters
-      const [{ data: profs }, { data: roles }] = await Promise.all([
+      // Carrega auth + profiles, excluindo Masters. Isso evita sobras em auth.users que bloqueiam nova importação.
+      const [{ data: authUsers }, { data: profs }, { data: roles }] = await Promise.all([
+        supabase.functions.invoke('list-auth-users'),
         supabase.from('profiles').select('user_id, display_name, phone').limit(1000),
         supabase.from('user_roles').select('user_id, role'),
       ]);
       const masterIds = new Set((roles || []).filter((r: any) => r.role === 'master').map((r: any) => r.user_id));
-      const filtered = (profs || []).filter((p: any) => !masterIds.has(p.user_id));
+      const profileMap = new Map((profs || []).map((p: any) => [p.user_id, p]));
+      const authRows = Array.isArray(authUsers) ? authUsers : [];
+      const merged = authRows.length > 0
+        ? authRows.map((u: any) => ({ ...(profileMap.get(u.id) || {}), user_id: u.id, _email: u.email }))
+        : (profs || []);
+      const filtered = merged.filter((p: any) => p.user_id && !masterIds.has(p.user_id));
       setItems(p => ({ ...p, users: filtered.map((r: any) => ({ id: r.user_id, ...labelFor('users', r), selected: true })) }));
       setCounts(c => ({ ...c, users: filtered.length }));
       setLoading(l => ({ ...l, users: false }));
@@ -209,13 +215,10 @@ export function ClearDataDialog({ open, onClose, onCleared }: ClearDataDialogPro
         if (k === 'users') {
           // Usa edge function delete-user para apagar auth + todas as tabelas relacionadas
           const userIds = ids as string[];
-          let okCount = 0;
-          let failCount = 0;
-          for (const uid of userIds) {
-            const { error } = await supabase.functions.invoke('delete-user', { body: { user_id: uid } });
-            if (error) { failCount++; console.error('delete-user', uid, error); }
-            else okCount++;
-          }
+          const { data, error } = await supabase.functions.invoke('delete-user', { body: { user_ids: userIds } });
+          const okCount = Number(data?.deleted || 0);
+          const failCount = error ? userIds.length : Number(data?.failed || 0);
+          if (error) console.error('delete-user batch', error);
           if (failCount) toast.error(`${failCount} usuário(s) com erro de exclusão`);
           if (okCount) toast.success(`${okCount} usuário(s) excluído(s)`);
           continue;
