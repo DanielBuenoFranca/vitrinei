@@ -102,7 +102,7 @@ export function Search3DHero({
 
   return (
     <div
-      className="relative h-full overflow-y-auto px-3 pt-3 pb-8"
+      className="relative h-full overflow-y-auto px-3 pt-3 pb-20"
       onScroll={dismissThought}
       onPointerDown={dismissThought}
       style={{
