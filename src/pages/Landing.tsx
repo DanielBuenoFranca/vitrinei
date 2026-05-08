@@ -21,6 +21,7 @@ import HeaderMarquee from '@/components/HeaderMarquee';
 import { AccessBanner, MaskedPrice, ActionGate, useAccessLevel } from '@/components/AccessGate';
 import { Search3DHero } from '@/components/landing/Search3DHero';
 import { TopProviderBadge } from '@/components/TopProviderBadge';
+import { useAiSession } from '@/contexts/AiSessionContext';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { segments as staticSegments, mockResults, semanticSearch, buildSupportSummary, generateContextualSuggestions, getAllServices, getAllProducts, loadDynamicEntries, reloadDynamicEntries, loadSegmentTagsCache, type ProductItem, type SearchResult, type ContextualSuggestion } from '@/data/searchData';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,6 +39,19 @@ const aiSuggestions = [
 
 const normalizeText = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
 const slugify = (value: string) => normalizeText(value).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+type AiRoute = {
+  intent?: 'chat' | 'search' | 'support' | 'cart' | 'story';
+  tags?: string[];
+  segments?: string[];
+  query?: string;
+  item_type?: 'service' | 'product' | 'both';
+  transition_message?: string;
+  confidence?: number;
+  needs_more_info?: boolean;
+  follow_up_question?: string;
+  suggestions?: string[];
+};
 
 const visualIcons = [Scissors, Droplets, Sprout, Truck, Hammer, Stethoscope, GraduationCap, Car, Brush, Cpu, Heart, PawPrint, PartyPopper, Leaf, Monitor, Gem, Shirt, Music, WrenchIcon, ShoppingBag];
 const pickVisualIcon = (seed: string) => visualIcons[Math.abs([...normalizeText(seed)].reduce((acc, c) => acc + c.charCodeAt(0), 0)) % visualIcons.length];
