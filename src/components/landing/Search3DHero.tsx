@@ -61,9 +61,11 @@ export function Search3DHero({
   searchQuery, setSearchQuery, onSearch, onMic, micListening, micSupported,
   segments, activeSegments, toggleSegment, typeFilter = 'all', setTypeFilter, children,
 }: Props) {
+  const navigate = useNavigate();
   const [top, setTop] = useState<Top[]>([]);
   const [thought, setThought] = useState<string | null>(null);
   const thoughtTimer = useRef<number | null>(null);
+  const slugify = (v: string) => v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
   useEffect(() => {
     supabase.from('providers')
