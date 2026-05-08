@@ -78,6 +78,21 @@ Deno.serve(async (req) => {
     const force = !!body.force;
     const target: "all" | "segments" | "providers" = body.target ?? "all";
 
+    // [Economia de Crédito] Block bulk image generation entirely while saving.
+    const { mode } = await getAiMode();
+    if (mode === "off") {
+      void logAiSavings("bulk-generate-catalog-images", "skipped_saving_mode", 1, { target, force });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          skipped: true,
+          reason: "ai_credits_mode=off",
+          message: "Geração em lote pausada pelo modo Economia de Crédito.",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const result = { segments: { ok: 0, skip: 0, fail: 0 }, providers: { ok: 0, skip: 0, fail: 0 } };
 
     if (target === "all" || target === "segments") {
