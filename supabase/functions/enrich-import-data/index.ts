@@ -21,6 +21,15 @@ Deno.serve(async (req) => {
 
     const { rows, existingSegments } = await req.json()
 
+    // [Economia de Crédito] Honor the global toggle.
+    const { mode } = await getAiMode();
+    if (mode === 'off') {
+      void logAiSavings('enrich-import-data', 'pass_through', Array.isArray(rows) ? rows.length : 1, { reason: 'saving_mode' });
+      return new Response(JSON.stringify({ enriched: rows, _degraded: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const prompt = `Você é um assistente de dados para um marketplace de serviços e produtos.
 Recebeu linhas de uma planilha de importação com campos possivelmente vazios.
 Para cada linha, preencha APENAS os campos vazios com dados genéricos plausíveis baseados no contexto da linha (nome do prestador, segmento, serviço/produto).
