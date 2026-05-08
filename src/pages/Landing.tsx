@@ -171,14 +171,10 @@ const Landing = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [speech.listening]);
-  // Pré-preenche busca via ?q= (vinda do Vini ou outras telas)
+  // Pré-preenche busca via ?q= (vinda do Vini ou outras telas); execução ocorre após carregar segmentos.
   useEffect(() => {
     const q = searchParams.get('q');
-    if (q && !searchExecuted) {
-      setSearchQuery(q);
-      setTimeout(() => executeSearch(), 200);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (q && !searchQuery) setSearchQuery(q);
   }, []);
 
   const handleMic = () => {
@@ -202,6 +198,12 @@ const Landing = () => {
     setSearchVersion(v => v + 1);
     setSelectedSuggestions(new Set());
     setShowSearchProducts(false);
+  };
+
+  const handleSmartSearch = () => {
+    const q = searchQuery.trim();
+    if (!q) return executeSearch();
+    refineWithVini(q, { openPanel: true, autoApply: true });
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent) => {
