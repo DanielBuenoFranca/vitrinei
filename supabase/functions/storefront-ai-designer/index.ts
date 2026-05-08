@@ -1,4 +1,20 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { getAiMode, autoOffOnFailure, logAiSavings } from "../_shared/aiCredits.ts";
+
+function streamText(text: string) {
+  return new ReadableStream({
+    start(controller) {
+      const enc = new TextEncoder();
+      const chunk = { choices: [{ delta: { content: text }, index: 0, finish_reason: null }] };
+      controller.enqueue(enc.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+      controller.enqueue(enc.encode(`data: [DONE]\n\n`));
+      controller.close();
+    },
+  });
+}
+
+const SAVING_MSG = "🎨 O designer da sua loja está em modo economia agora. Posso te orientar manualmente: escolha cores no painel ou descreva a mudança que faria, e quando o modo voltar a ficar ativo eu aplico tudo automaticamente. ";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
