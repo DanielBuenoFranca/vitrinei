@@ -27,7 +27,7 @@ type CatKey =
   | 'providers' | 'services' | 'products' | 'segments'
   | 'kits' | 'kit_items'
   | 'stock_entries' | 'stock_entry_items' | 'stock_movements'
-  | 'ai_savings_log';
+  | 'ai_savings_log' | 'users';
 
 type Item = { id: string | number; label: string; sublabel?: string; selected: boolean };
 
@@ -39,7 +39,7 @@ interface ClearDataDialogProps {
   counts?: { providers?: number; services?: number; products?: number; segments?: number };
 }
 
-type CatDef = { key: CatKey; label: string; table: string; warn?: string; idCol?: string; group: 'movements' | 'system' };
+type CatDef = { key: CatKey; label: string; table: string; warn?: string; idCol?: string; group: 'movements' | 'system' | 'users' };
 const CATEGORIES: CatDef[] = [
   // Cadastros de movimentações (operação diária)
   { key: 'providers',         label: 'Prestadores',          table: 'providers',          warn: 'Exclui também serviços/produtos vinculados e reseta flags em perfis.', group: 'movements' },
@@ -53,6 +53,8 @@ const CATEGORIES: CatDef[] = [
   { key: 'stock_entry_items', label: 'Itens de Entrada',     table: 'stock_entry_items',  idCol: 'id', group: 'system' },
   { key: 'stock_movements',   label: 'Movimentações Cardex', table: 'stock_movements',    idCol: 'id', warn: 'Apaga histórico — uso restrito.', group: 'system' },
   { key: 'ai_savings_log',    label: 'Log de Economia IA',   table: 'ai_savings_log',     idCol: 'id', group: 'system' },
+  // Usuários (atenção máxima)
+  { key: 'users',             label: 'Usuários (exceto Master)', table: 'profiles',       warn: 'Apaga conta de auth, perfil, carteira, assinatura e indicações. Master é preservado.', group: 'users' },
 ];
 
 const GROUP_META: Record<'movements' | 'system', { title: string; description: string; tone: string }> = {
