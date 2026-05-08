@@ -27,7 +27,7 @@ type CatKey =
   | 'providers' | 'services' | 'products' | 'segments'
   | 'kits' | 'kit_items'
   | 'stock_entries' | 'stock_entry_items' | 'stock_movements'
-  | 'ai_savings_log';
+  | 'ai_savings_log' | 'users';
 
 type Item = { id: string | number; label: string; sublabel?: string; selected: boolean };
 
@@ -39,7 +39,7 @@ interface ClearDataDialogProps {
   counts?: { providers?: number; services?: number; products?: number; segments?: number };
 }
 
-type CatDef = { key: CatKey; label: string; table: string; warn?: string; idCol?: string; group: 'movements' | 'system' };
+type CatDef = { key: CatKey; label: string; table: string; warn?: string; idCol?: string; group: 'movements' | 'system' | 'users' };
 const CATEGORIES: CatDef[] = [
   // Cadastros de movimentações (operação diária)
   { key: 'providers',         label: 'Prestadores',          table: 'providers',          warn: 'Exclui também serviços/produtos vinculados e reseta flags em perfis.', group: 'movements' },
@@ -53,9 +53,11 @@ const CATEGORIES: CatDef[] = [
   { key: 'stock_entry_items', label: 'Itens de Entrada',     table: 'stock_entry_items',  idCol: 'id', group: 'system' },
   { key: 'stock_movements',   label: 'Movimentações Cardex', table: 'stock_movements',    idCol: 'id', warn: 'Apaga histórico — uso restrito.', group: 'system' },
   { key: 'ai_savings_log',    label: 'Log de Economia IA',   table: 'ai_savings_log',     idCol: 'id', group: 'system' },
+  // Usuários (atenção máxima)
+  { key: 'users',             label: 'Usuários (exceto Master)', table: 'profiles',       warn: 'Apaga conta de auth, perfil, carteira, assinatura e indicações. Master é preservado.', group: 'users' },
 ];
 
-const GROUP_META: Record<'movements' | 'system', { title: string; description: string; tone: string }> = {
+const GROUP_META: Record<'movements' | 'system' | 'users', { title: string; description: string; tone: string }> = {
   movements: {
     title: 'Cadastros de movimentações',
     description: 'Registros criados na operação diária da ferramenta.',
@@ -65,6 +67,11 @@ const GROUP_META: Record<'movements' | 'system', { title: string; description: s
     title: 'Cadastros do sistema',
     description: 'Atenção — apagar pode gerar falhas ou inconsistências nos fluxos.',
     tone: 'border-destructive/40',
+  },
+  users: {
+    title: 'Usuários do sistema',
+    description: 'Apaga contas de auth + perfis. Contas Master sempre são preservadas.',
+    tone: 'border-destructive/60',
   },
 };
 
@@ -90,19 +97,32 @@ export function ClearDataDialog({ open, onClose, onCleared }: ClearDataDialogPro
       case 'stock_entries': return { label: `Entrada ${row.document_number || row.id}`, sublabel: row.supplier_name || '' };
       case 'stock_movements': return { label: `${row.movement_type} · ${row.item_name}`, sublabel: new Date(row.created_at).toLocaleString('pt-BR') };
       case 'ai_savings_log': return { label: row.feature, sublabel: row.fallback_used };
+      case 'users': return { label: row.display_name || row._email || `#${String(row.user_id).slice(0,6)}`, sublabel: row._email || row.phone || '' };
       default: return { label: row.name || `#${row.id}`, sublabel: row.created_at ? new Date(row.created_at).toLocaleDateString('pt-BR') : '' };
     }
   };
 
   const loadCategory = async (cat: typeof CATEGORIES[number]) => {
     setLoading(l => ({ ...l, [cat.key]: true }));
+    if (cat.key === 'users') {
+      // Carrega profiles excluindo Masters
+      const [{ data: profs }, { data: roles }] = await Promise.all([
+        supabase.from('profiles').select('user_id, display_name, phone').limit(1000),
+        supabase.from('user_roles').select('user_id, role'),
+      ]);
+      const masterIds = new Set((roles || []).filter((r: any) => r.role === 'master').map((r: any) => r.user_id));
+      const filtered = (profs || []).filter((p: any) => !masterIds.has(p.user_id));
+      setItems(p => ({ ...p, users: filtered.map((r: any) => ({ id: r.user_id, ...labelFor('users', r), selected: true })) }));
+      setCounts(c => ({ ...c, users: filtered.length }));
+      setLoading(l => ({ ...l, users: false }));
+      return;
+    }
     const { data, count, error } = await supabase
       .from(cat.table as any)
       .select('*', { count: 'exact' })
       .order('created_at' as any, { ascending: false } as any)
       .limit(500);
     if (error) {
-      // ordenação por created_at pode falhar em algumas — fallback simples
       const fb = await supabase.from(cat.table as any).select('*', { count: 'exact' }).limit(500);
       setItems(p => ({ ...p, [cat.key]: (fb.data || []).map((r: any) => ({ id: r.id, ...labelFor(cat.key, r), selected: true })) }));
       setCounts(c => ({ ...c, [cat.key]: fb.count || 0 }));
@@ -144,6 +164,7 @@ export function ClearDataDialog({ open, onClose, onCleared }: ClearDataDialogPro
         'kit_items', 'kits',
         'services', 'products',
         'providers', 'segments', 'ai_savings_log',
+        'users',
       ];
       for (const k of order) {
         if (!selectedCats[k]) continue;
@@ -185,6 +206,21 @@ export function ClearDataDialog({ open, onClose, onCleared }: ClearDataDialogPro
           continue;
         }
 
+        if (k === 'users') {
+          // Usa edge function delete-user para apagar auth + todas as tabelas relacionadas
+          const userIds = ids as string[];
+          let okCount = 0;
+          let failCount = 0;
+          for (const uid of userIds) {
+            const { error } = await supabase.functions.invoke('delete-user', { body: { user_id: uid } });
+            if (error) { failCount++; console.error('delete-user', uid, error); }
+            else okCount++;
+          }
+          if (failCount) toast.error(`${failCount} usuário(s) com erro de exclusão`);
+          if (okCount) toast.success(`${okCount} usuário(s) excluído(s)`);
+          continue;
+        }
+
         const { error } = await supabase.from(cat.table as any).delete().in('id', ids as any);
         if (error) {
           toast.error(`Erro em ${cat.label}: ${error.message}`);
@@ -219,7 +255,7 @@ export function ClearDataDialog({ open, onClose, onCleared }: ClearDataDialogPro
 
         {/* Step 1 — categorias agrupadas */}
         <div className="space-y-3">
-          {(['movements', 'system'] as const).map(group => {
+          {(['movements', 'system', 'users'] as const).map(group => {
             const cats = CATEGORIES.filter(c => c.group === group);
             const allSelected = cats.every(c => selectedCats[c.key]);
             const meta = GROUP_META[group];

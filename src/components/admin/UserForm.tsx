@@ -73,11 +73,11 @@ const validateDoc = (raw: string): { valid: boolean; message: string } => {
 };
 
 const ROLE_OPTIONS: { id: AppRole; label: string; icon: any; desc: string }[] = [
-  { id: 'client',   label: 'Comprador',  icon: ShoppingCart, desc: 'Compra serviços e produtos' },
+  { id: 'master',   label: 'Master',     icon: Crown,        desc: 'Acesso total ao sistema' },
+  { id: 'admin',    label: 'Admin',      icon: Shield,       desc: 'Gerencia operação e dados' },
   { id: 'provider', label: 'Prestador',  icon: Wrench,       desc: 'Vende serviços/produtos com vitrine' },
-  { id: 'mixed',    label: 'Misto',      icon: Shuffle,      desc: 'Compra e vende' },
-  { id: 'admin',    label: 'Admin',      icon: Shield,       desc: 'Gerencia o sistema' },
-  { id: 'master',   label: 'Master',     icon: Crown,        desc: 'Acesso total' },
+  { id: 'client',   label: 'Consumidor', icon: ShoppingCart, desc: 'Compra serviços e produtos' },
+  { id: 'mixed',    label: 'Misto',      icon: Shuffle,      desc: 'Prestador + Consumidor' },
 ];
 
 export function UserForm({ open, onClose, onSaved, profile, currentRole, currentEmail, segments }: UserFormProps) {
