@@ -134,7 +134,7 @@ const ProviderStorefront = () => {
   const [providerServices, setProviderServices] = useState<any[]>([]);
   const [providerProducts, setProviderProducts] = useState<ProductItem[]>([]);
   const [segmentTags, setSegmentTags] = useState<string[]>([]);
-  const [dbSegments, setDbSegments] = useState<{ id: number; name: string }[]>([]);
+  const [dbSegments, setDbSegments] = useState<{ id: number; name: string; image_url?: string | null }[]>([]);
   const [allProviders, setAllProviders] = useState<{ id: number; name: string; segment: string[] }[]>([]);
 
   // Forms
@@ -167,11 +167,11 @@ const ProviderStorefront = () => {
       await Promise.all([reloadDynamicEntries(), loadSegmentTagsCache()]);
 
       const [{ data: segsData }, { data: providers }, { data: allProvs }] = await Promise.all([
-        supabase.from('segments').select('id, name').order('name'),
+        supabase.from('segments').select('id, name, image_url').order('name'),
         supabase.from('providers').select('*'),
         supabase.from('providers').select('id, name, segment'),
       ]);
-      setDbSegments((segsData || []) as { id: number; name: string }[]);
+      setDbSegments((segsData || []) as { id: number; name: string; image_url?: string | null }[]);
       setAllProviders((allProvs || []).map((p: any) => ({ id: p.id, name: p.name, segment: p.segment || [] })));
 
       if (providers) {
