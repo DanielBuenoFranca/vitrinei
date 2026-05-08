@@ -164,6 +164,7 @@ export function ClearDataDialog({ open, onClose, onCleared }: ClearDataDialogPro
         'kit_items', 'kits',
         'services', 'products',
         'providers', 'segments', 'ai_savings_log',
+        'users',
       ];
       for (const k of order) {
         if (!selectedCats[k]) continue;
@@ -202,6 +203,21 @@ export function ClearDataDialog({ open, onClose, onCleared }: ClearDataDialogPro
             }).in('user_id', userIds);
             await supabase.from('user_roles').delete().in('user_id', userIds).eq('role', 'provider' as any);
           }
+          continue;
+        }
+
+        if (k === 'users') {
+          // Usa edge function delete-user para apagar auth + todas as tabelas relacionadas
+          const userIds = ids as string[];
+          let okCount = 0;
+          let failCount = 0;
+          for (const uid of userIds) {
+            const { error } = await supabase.functions.invoke('delete-user', { body: { user_id: uid } });
+            if (error) { failCount++; console.error('delete-user', uid, error); }
+            else okCount++;
+          }
+          if (failCount) toast.error(`${failCount} usuário(s) com erro de exclusão`);
+          if (okCount) toast.success(`${okCount} usuário(s) excluído(s)`);
           continue;
         }
 
