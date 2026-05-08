@@ -1,10 +1,29 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { getAiMode, autoOffOnFailure, logAiSavings } from "../_shared/aiCredits.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+function streamFallback(text: string) {
+  return new ReadableStream({
+    start(controller) {
+      const enc = new TextEncoder();
+      const chunk = { choices: [{ delta: { content: text }, index: 0, finish_reason: null }] };
+      controller.enqueue(enc.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+      controller.enqueue(enc.encode(`data: [DONE]\n\n`));
+      controller.close();
+    },
+  });
+}
+
+function contingencyText(userName?: string) {
+  const first = (userName || "").split(" ")[0];
+  const prefix = first ? `${first}, ` : "";
+  return `${prefix}meu canal de conversa livre está em modo economia agora. Continuo te ajudando: posso te levar para busca, loja, carrinho, carteira ou suporte. O que você quer fazer?`;
+}
 
 const SYSTEM_PROMPT = `Você é o Vini, o braço-direito digital do ecossistema Vitrinei Connect.
 
