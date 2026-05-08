@@ -596,8 +596,8 @@ const Landing = () => {
                 {/* === MARKETPLACE: PRODUTOS === */}
                 {hasResults && searchResult.products.length > 0 && (
                   <div>
-                    <h3 className="text-white text-sm font-bold mb-2 px-1 flex items-center gap-1.5">
-                      <ShoppingBag className="w-3.5 h-3.5 text-emerald-300" /> Produtos ({searchResult.products.length})
+                    <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-white/55 mb-1.5 px-1 flex items-center gap-1.5">
+                      <ShoppingBag className="w-3 h-3 text-emerald-300/80" /> Produtos ({searchResult.products.length})
                     </h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                       {searchResult.products.map((product, idx) => {
