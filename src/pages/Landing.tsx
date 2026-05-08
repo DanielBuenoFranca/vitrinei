@@ -661,6 +661,15 @@ const Landing = () => {
                               <div className="absolute top-1.5 right-1.5 rounded-full bg-black/70 backdrop-blur px-1.5 py-0.5 flex items-center gap-0.5">
                                 {inCart ? <CheckCircle2 className="w-3 h-3 text-violet-300" /> : <Plus className="w-3 h-3 text-white" />}
                               </div>
+                              <div className="absolute top-1.5 left-1.5">
+                                <FavoriteButton
+                                  kind="service"
+                                  id={result.id}
+                                  name={result.name}
+                                  image={seg?.image_url ?? null}
+                                  provider={result.provider}
+                                />
+                              </div>
                             </div>
                             <div className="p-2">
                               <h4 className="text-[11px] font-bold text-white truncate">{result.name}</h4>
