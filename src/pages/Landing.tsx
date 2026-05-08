@@ -644,73 +644,114 @@ const Landing = () => {
                 })()}
 
                 {/* === MARKETPLACE: PRODUTOS === */}
-                {hasResults && searchResult.products.length > 0 && (
-                  <div>
-                    <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-white/55 mb-1.5 px-1 flex items-center gap-1.5">
-                      <ShoppingBag className="w-3 h-3 text-emerald-300/80" /> Produtos ({searchResult.products.length})
-                    </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                      {searchResult.products.map((product, idx) => {
-                        const PIcon = getVisualIcon(product.name);
-                        const inCart = isInProductCart(product.id);
-                        return (
-                          <motion.button
-                            key={product.id}
-                            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: idx * 0.03 }}
-                            whileHover={{ y: -2 }}
-                            onClick={() => {
-                              if (accessLevel === 'visitor') { toast.info('Crie sua conta para adicionar produtos ao carrinho', { action: { label: 'Cadastrar', onClick: () => navigate('/auth') }, duration: 5000 }); return; }
-                              if (accessLevel === 'lead') { toast.warning('Confirme seu e-mail para comprar produtos', { duration: 6000 }); return; }
-                              toggleProductInCart(product);
-                            }}
-                            className="rounded-2xl overflow-hidden text-left relative group"
-                            style={{
-                              background: 'linear-gradient(160deg, hsl(160 35% 14%), hsl(160 50% 6%))',
-                              border: inCart ? '1px solid hsl(160 70% 50%)' : '1px solid hsl(160 25% 28% / 0.5)',
-                              boxShadow: inCart
-                                ? '0 12px 30px -10px hsl(160 80% 40% / 0.7), inset 0 1px 0 rgba(255,255,255,.1)'
-                                : '0 10px 24px -12px hsl(160 60% 0% / 0.7), inset 0 1px 0 rgba(255,255,255,.06)',
-                            }}
+                {hasResults && searchResult.products.length > 0 && (() => {
+                  const useStack = searchResult.products.length > 2 && !productsCarouselOpen;
+                  const renderCard = (product: any, idx: number) => {
+                    const PIcon = getVisualIcon(product.name);
+                    const inCart = isInProductCart(product.id);
+                    return (
+                      <motion.button
+                        key={product.id}
+                        initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.03 }}
+                        whileHover={{ y: -2 }}
+                        onClick={() => {
+                          if (accessLevel === 'visitor') { toast.info('Crie sua conta para adicionar produtos ao carrinho', { action: { label: 'Cadastrar', onClick: () => navigate('/auth') }, duration: 5000 }); return; }
+                          if (accessLevel === 'lead') { toast.warning('Confirme seu e-mail para comprar produtos', { duration: 6000 }); return; }
+                          toggleProductInCart(product);
+                        }}
+                        className="rounded-2xl overflow-hidden text-left relative group w-full"
+                        style={{
+                          background: 'linear-gradient(160deg, hsl(160 35% 14%), hsl(160 50% 6%))',
+                          border: inCart ? '1px solid hsl(160 70% 50%)' : '1px solid hsl(160 25% 28% / 0.5)',
+                          boxShadow: inCart
+                            ? '0 12px 30px -10px hsl(160 80% 40% / 0.7), inset 0 1px 0 rgba(255,255,255,.1)'
+                            : '0 10px 24px -12px hsl(160 60% 0% / 0.7), inset 0 1px 0 rgba(255,255,255,.06)',
+                        }}
+                      >
+                        <div className="aspect-[4/3] overflow-hidden bg-gradient-to-br from-emerald-900/40 to-slate-900 relative">
+                          {product.image_url ? (
+                            <img src={product.image_url} alt={product.name} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center"><PIcon className="w-10 h-10 text-emerald-300/60" /></div>
+                          )}
+                          <div className="absolute top-1.5 right-1.5 rounded-full bg-black/70 backdrop-blur px-1.5 py-0.5 flex items-center gap-0.5">
+                            {inCart ? <CheckCircle2 className="w-3 h-3 text-emerald-300" /> : <Plus className="w-3 h-3 text-white" />}
+                          </div>
+                          <div className="absolute top-1.5 left-1.5 rounded-full bg-emerald-500/80 backdrop-blur px-1.5 py-0.5">
+                            <span className="text-[8px] font-bold text-white">{product.stockType === 'fisico' ? 'Estoque' : 'Drop'}</span>
+                          </div>
+                          <div className="absolute bottom-1.5 right-1.5">
+                            <FavoriteButton kind="product" id={product.id} name={product.name} image={product.image_url ?? null} provider={(product as any).provider} />
+                          </div>
+                        </div>
+                        <div className="p-2">
+                          <h4 className="text-[11px] font-bold text-white truncate">{product.name}</h4>
+                          <p className="text-[9px] text-white/50 truncate">{product.provider}</p>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="text-[11px] font-bold text-emerald-200"><MaskedPrice value={product.price} /></span>
+                            <span className="flex items-center gap-0.5 text-[9px] text-amber-300">
+                              <Star className="w-2 h-2 fill-amber-300" /> {product.rating ?? 4.8}
+                            </span>
+                          </div>
+                        </div>
+                      </motion.button>
+                    );
+                  };
+                  return (
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5 px-1">
+                        <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-white/55 flex items-center gap-1.5">
+                          <ShoppingBag className="w-3 h-3 text-emerald-300/80" /> Produtos ({searchResult.products.length})
+                        </h3>
+                        {searchResult.products.length > 2 && (
+                          <button
+                            onClick={() => setProductsCarouselOpen(v => !v)}
+                            className="flex items-center gap-1 rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[10px] text-white/75 hover:bg-white/10"
+                            title={productsCarouselOpen ? 'Empilhar cards' : 'Abrir carrossel'}
                           >
-                            <div className="aspect-[4/3] overflow-hidden bg-gradient-to-br from-emerald-900/40 to-slate-900 relative">
-                              {product.image_url ? (
-                                <img src={product.image_url} alt={product.name} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center"><PIcon className="w-10 h-10 text-emerald-300/60" /></div>
-                              )}
-                              <div className="absolute top-1.5 right-1.5 rounded-full bg-black/70 backdrop-blur px-1.5 py-0.5 flex items-center gap-0.5">
-                                {inCart ? <CheckCircle2 className="w-3 h-3 text-emerald-300" /> : <Plus className="w-3 h-3 text-white" />}
-                              </div>
-                              <div className="absolute top-1.5 left-1.5 rounded-full bg-emerald-500/80 backdrop-blur px-1.5 py-0.5">
-                                <span className="text-[8px] font-bold text-white">{product.stockType === 'fisico' ? 'Estoque' : 'Drop'}</span>
-                              </div>
-                              <div className="absolute bottom-1.5 right-1.5">
-                                <FavoriteButton
-                                  kind="product"
-                                  id={product.id}
-                                  name={product.name}
-                                  image={product.image_url ?? null}
-                                  provider={(product as any).provider}
-                                />
-                              </div>
+                            {productsCarouselOpen ? <Layers className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                            {productsCarouselOpen ? 'Empilhar' : 'Abrir'}
+                          </button>
+                        )}
+                      </div>
+                      {useStack ? (
+                        <button
+                          onClick={() => setProductsCarouselOpen(true)}
+                          className="relative block w-full h-[170px] mx-auto"
+                          aria-label="Abrir carrossel de produtos"
+                        >
+                          {searchResult.products.slice(0, 3).map((p, i) => (
+                            <div
+                              key={p.id}
+                              className="absolute left-1/2 top-0 w-[55%]"
+                              style={{
+                                transform: `translateX(calc(-50% + ${(i - 1) * 18}px)) rotate(${(i - 1) * 4}deg) scale(${1 - i * 0.04})`,
+                                zIndex: 10 - i,
+                                opacity: 1 - i * 0.15,
+                              }}
+                            >
+                              {renderCard(p, i)}
                             </div>
-                            <div className="p-2">
-                              <h4 className="text-[11px] font-bold text-white truncate">{product.name}</h4>
-                              <p className="text-[9px] text-white/50 truncate">{product.provider}</p>
-                              <div className="flex items-center justify-between mt-1">
-                                <span className="text-[11px] font-bold text-emerald-200"><MaskedPrice value={product.price} /></span>
-                                <span className="flex items-center gap-0.5 text-[9px] text-amber-300">
-                                  <Star className="w-2 h-2 fill-amber-300" /> {product.rating ?? 4.8}
-                                </span>
-                              </div>
-                            </div>
-                          </motion.button>
-                        );
-                      })}
+                          ))}
+                          <span className="absolute bottom-1 right-2 z-20 flex items-center gap-1 rounded-full bg-emerald-600/90 px-2 py-1 text-[10px] font-bold text-white shadow-lg">
+                            <ChevronRight className="w-3 h-3" /> {searchResult.products.length} itens
+                          </span>
+                        </button>
+                      ) : productsCarouselOpen && searchResult.products.length > 2 ? (
+                        <div className="flex gap-2.5 overflow-x-auto no-scrollbar snap-x pb-2 -mx-1 px-1">
+                          {searchResult.products.map((p, i) => (
+                            <div key={p.id} className="snap-start shrink-0 w-[150px]">{renderCard(p, i)}</div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                          {searchResult.products.map((p, i) => renderCard(p, i))}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {noResults && (() => {
                   const ctxSuggestion = generateContextualSuggestions(executedQuery);
