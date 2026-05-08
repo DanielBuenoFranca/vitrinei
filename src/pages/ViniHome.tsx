@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, Wallet, User as UserIcon, Sparkles, Mic, Plus,
-  Bot, LogIn, Settings, X, Send, Radar, Gift, MapPin, ShoppingBag, Store, RotateCcw,
+  Bot, LogIn, Settings, X, Send, Radar, Gift, MapPin, ShoppingBag, Store, RotateCcw, Heart,
 } from 'lucide-react';
+import { FavoritesModal } from '@/components/FavoritesModal';
+import { useFavorites } from '@/hooks/useFavorites';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
@@ -62,6 +64,8 @@ const ViniHome = () => {
   const { session, update: updateAiSession } = useAiSession();
   const { totalCartItems, totalCartValue, productCart, serviceCart, clearCart } = useCart();
   const { supported, listening, transcript, start, stop } = useSpeechRecognition();
+  const { count: favoritesCount } = useFavorites();
+  const [favoritesOpen, setFavoritesOpen] = useState(false);
 
   const [city, setCity] = useState<string | null>(null);
   const [planLabel, setPlanLabel] = useState<string | null>(null);
@@ -584,6 +588,7 @@ const ViniHome = () => {
     { key: 'urgencia', icon: Radar, label: 'Urgência', onClick: handleRadar, active: radarActive, badge: totalCartItems > 0 ? totalCartItems : undefined },
     { key: 'reiniciar', icon: RotateCcw, label: 'Reiniciar', onClick: handleReiniciar },
     { key: 'perfil', icon: UserIcon, label: 'Perfil', onClick: handlePerfil },
+    { key: 'favoritos', icon: Heart, label: 'Favoritos', onClick: () => setFavoritesOpen(true), badge: favoritesCount > 0 ? favoritesCount : undefined },
     { key: 'indica', icon: Gift, label: 'Indicação', onClick: handleIndicacao, highlight: 'R$ 5,00' },
   ];
 
@@ -978,6 +983,7 @@ const ViniHome = () => {
         onClose={() => setChatOpen(false)}
         userName={displayName}
       />
+      <FavoritesModal open={favoritesOpen} onOpenChange={setFavoritesOpen} />
     </div>
   );
 };

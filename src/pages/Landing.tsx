@@ -27,6 +27,9 @@ import { segments as staticSegments, mockResults, semanticSearch, buildSupportSu
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
+import { FavoriteButton } from '@/components/FavoriteButton';
+import { FavoritesModal } from '@/components/FavoritesModal';
+import { useFavorites } from '@/hooks/useFavorites';
 
 
 const aiSuggestions = [
@@ -80,6 +83,8 @@ const Landing = () => {
   const [currentSuggestion, setCurrentSuggestion] = useState(0);
   const [aiSpeaking, setAiSpeaking] = useState(false);
   const [expandedProducts, setExpandedProducts] = useState<number | null>(null);
+  const [favoritesOpen, setFavoritesOpen] = useState(false);
+  const { count: favoritesCount } = useFavorites();
   const [expandedServices, setExpandedServices] = useState<number | null>(null);
   const [showSearchProducts, setShowSearchProducts] = useState(false);
   const [pendingChatSuggestions, setPendingChatSuggestions] = useState<Map<number, Set<string>>>(new Map());
@@ -565,6 +570,15 @@ const Landing = () => {
                               boxShadow: '0 14px 32px -16px hsl(265 80% 40% / 0.6), inset 0 1px 0 rgba(255,255,255,.08)',
                             }}
                           >
+                            <div className="absolute top-1.5 right-1.5 z-10">
+                              <FavoriteButton
+                                kind="provider"
+                                id={(prov as any)?.id ?? slug}
+                                name={providerName}
+                                slug={slug}
+                                image={prov?.logo_url ?? null}
+                              />
+                            </div>
                             <button onClick={() => toggleProviderExpanded(providerName)} className="block w-full text-left">
                               <div className="relative aspect-[3/4] overflow-hidden">
                                 {prov?.logo_url ? (
@@ -647,6 +661,15 @@ const Landing = () => {
                               <div className="absolute top-1.5 right-1.5 rounded-full bg-black/70 backdrop-blur px-1.5 py-0.5 flex items-center gap-0.5">
                                 {inCart ? <CheckCircle2 className="w-3 h-3 text-violet-300" /> : <Plus className="w-3 h-3 text-white" />}
                               </div>
+                              <div className="absolute top-1.5 left-1.5">
+                                <FavoriteButton
+                                  kind="service"
+                                  id={result.id}
+                                  name={result.name}
+                                  image={seg?.image_url ?? null}
+                                  provider={result.provider}
+                                />
+                              </div>
                             </div>
                             <div className="p-2">
                               <h4 className="text-[11px] font-bold text-white truncate">{result.name}</h4>
@@ -706,6 +729,15 @@ const Landing = () => {
                               </div>
                               <div className="absolute top-1.5 left-1.5 rounded-full bg-emerald-500/80 backdrop-blur px-1.5 py-0.5">
                                 <span className="text-[8px] font-bold text-white">{product.stockType === 'fisico' ? 'Estoque' : 'Drop'}</span>
+                              </div>
+                              <div className="absolute bottom-1.5 right-1.5">
+                                <FavoriteButton
+                                  kind="product"
+                                  id={product.id}
+                                  name={product.name}
+                                  image={product.image_url ?? null}
+                                  provider={(product as any).provider}
+                                />
                               </div>
                             </div>
                             <div className="p-2">
@@ -1695,10 +1727,11 @@ const Landing = () => {
 
       {/* Footer - Quick actions (Home, Urgência, Perfil, Indicação) */}
       <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/80 backdrop-blur-md px-2 py-1 pb-[calc(0.25rem+env(safe-area-inset-bottom))]">
-        <div className="container mx-auto max-w-2xl grid grid-cols-4 gap-1.5">
+        <div className="container mx-auto max-w-2xl grid grid-cols-5 gap-1">
           {[
             { label: 'Home', icon: Home, onClick: () => navigate('/') },
             { label: 'Urgência', icon: Zap, onClick: () => navigate('/radar-urgencia') },
+            { label: 'Favoritos', icon: Heart, onClick: () => setFavoritesOpen(true), badge: favoritesCount },
             { label: 'Perfil', icon: Users, onClick: () => navigate(user ? '/carteira' : '/auth') },
             { label: 'Indicação', icon: Sparkles, onClick: () => navigate('/convite/INDIQUE') },
           ].map((btn) => (
@@ -1706,15 +1739,21 @@ const Landing = () => {
               key={btn.label}
               type="button"
               onClick={btn.onClick}
-              className="flex flex-col items-center justify-center gap-0.5 rounded-lg py-1 px-1 bg-white/[0.05] hover:bg-white/[0.12] border border-white/10 hover:border-primary/40 transition-all text-foreground/85 hover:text-primary"
+              className="relative flex flex-col items-center justify-center gap-0.5 rounded-lg py-1 px-1 bg-white/[0.05] hover:bg-white/[0.12] border border-white/10 hover:border-primary/40 transition-all text-foreground/85 hover:text-primary"
               aria-label={btn.label}
             >
               <btn.icon className="w-4 h-4" strokeWidth={1.6} />
               <span className="text-[9px] font-medium leading-none">{btn.label}</span>
+              {(btn as any).badge ? (
+                <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-1 rounded-full bg-rose-500 text-[8px] font-bold text-white flex items-center justify-center">
+                  {(btn as any).badge}
+                </span>
+              ) : null}
             </button>
           ))}
         </div>
       </footer>
+      <FavoritesModal open={favoritesOpen} onOpenChange={setFavoritesOpen} />
       </main>
     </div>
   );

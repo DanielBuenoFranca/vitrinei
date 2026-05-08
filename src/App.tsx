@@ -10,6 +10,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ConversionProvider } from "@/contexts/ConversionContext";
 import { AiSessionProvider } from "@/contexts/AiSessionContext";
+import { FavoritesProvider } from "@/hooks/useFavorites";
 import CartBar from "@/components/CartBar";
 import { AttentionFooterBar } from "@/components/AttentionFooterBar";
 import { SystemStatusIndicator } from "@/components/SystemStatusIndicator";
@@ -75,6 +76,7 @@ const App = () => {
   <ThemeProvider>
   <AuthProvider>
   <CartProvider>
+  <FavoritesProvider>
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
@@ -113,6 +115,7 @@ const App = () => {
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
+  </FavoritesProvider>
   </CartProvider>
   </AuthProvider>
   </ThemeProvider>
