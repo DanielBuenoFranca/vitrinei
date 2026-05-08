@@ -76,6 +76,7 @@ const App = () => {
   <ThemeProvider>
   <AuthProvider>
   <CartProvider>
+  <FavoritesProvider>
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
