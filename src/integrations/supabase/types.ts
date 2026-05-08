@@ -1061,6 +1061,42 @@ export type Database = {
         }
         Relationships: []
       }
+      vini_conversations: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          intent: string | null
+          metadata: Json
+          modality: string
+          role: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          intent?: string | null
+          metadata?: Json
+          modality?: string
+          role: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          intent?: string | null
+          metadata?: Json
+          modality?: string
+          role?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wallet_transactions: {
         Row: {
           amount: number
