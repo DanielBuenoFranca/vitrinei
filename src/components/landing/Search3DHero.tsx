@@ -179,139 +179,76 @@ export function Search3DHero({
         </div>
       </motion.div>
 
-      {/* ===================== TOP 3 PRESTADORES (faixa fotográfica grande) ===================== */}
-      {top.length > 0 && (
-        <div className="mt-3 mx-auto max-w-2xl rounded-[24px] overflow-hidden p-1.5"
-          style={{
-            background: 'linear-gradient(160deg, hsl(225 50% 18% / 0.7), hsl(225 55% 8% / 0.85))',
-            border: '1px solid hsl(225 40% 35% / 0.4)',
-            boxShadow: '0 14px 40px -18px hsl(265 80% 40% / 0.45)',
-          }}
-        >
-          <div className="grid grid-cols-3 gap-1.5">
-            {top.slice(0, 3).map((p) => (
-              <motion.button
-                key={p.id}
-                whileHover={{ y: -2 }}
-                onClick={onSearch}
-                className="relative aspect-[3/4] rounded-2xl overflow-hidden"
-                style={{
-                  boxShadow:
-                    '0 10px 24px -12px rgba(0,0,0,.7),' +
-                    'inset 0 1px 0 rgba(255,255,255,.15),' +
-                    'inset 0 -2px 0 rgba(0,0,0,.5)',
-                  border: '1px solid rgba(255,255,255,.08)',
-                }}
-              >
-                {p.logo_url ? (
-                  <img src={p.logo_url} alt={p.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-violet-900 to-slate-900 flex items-center justify-center">
-                    <Sparkles className="w-10 h-10 text-violet-300/40" />
-                  </div>
-                )}
-                {/* Microfone decorativo no topo (lembra mockup) */}
-                <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-6 h-2 rounded-full bg-white/20 backdrop-blur-sm" />
-                {p.is_top_provider && (
-                  <div className="absolute top-1.5 right-1.5">
-                    <TopProviderBadge active size="xs" label="TOP" />
-                  </div>
-                )}
-              </motion.button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* (bolha estática removida — sugestões agora aparecem como pensamento do Vini perto do avatar) */}
-
-      {/* ===================== FILTRO TIPO + SEGMENTOS 3D ===================== */}
+      {/* ===================== SEGMENTOS — carrossel horizontal compacto ===================== */}
       <div className="mt-3 mx-auto max-w-2xl">
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-2.5">
+        <SectionTitle>Segmentos</SectionTitle>
+        <div className="flex gap-2 overflow-x-auto no-scrollbar snap-x pb-1 -mx-1 px-1">
           {setTypeFilter && (
             <>
-              <TypeFilterCard
-                label="Tudo"
-                icon={LayoutGrid}
-                gradient="linear-gradient(160deg, hsl(255 60% 35%), hsl(225 65% 18%))"
-                active={typeFilter === 'all'}
-                onClick={() => setTypeFilter('all')}
-              />
-              <TypeFilterCard
-                label="Serviços"
-                icon={WrenchIcon}
-                gradient="linear-gradient(160deg, hsl(210 80% 45%), hsl(220 70% 22%))"
-                active={typeFilter === 'service'}
-                onClick={() => setTypeFilter('service')}
-              />
-              <TypeFilterCard
-                label="Produtos"
-                icon={PackageIcon}
-                gradient="linear-gradient(160deg, hsl(160 70% 40%), hsl(170 75% 20%))"
-                active={typeFilter === 'product'}
-                onClick={() => setTypeFilter('product')}
-              />
+              <CarouselTile>
+                <TypeFilterCard label="Tudo" icon={LayoutGrid}
+                  gradient="linear-gradient(160deg, hsl(255 60% 35%), hsl(225 65% 18%))"
+                  active={typeFilter === 'all'} onClick={() => setTypeFilter('all')} />
+              </CarouselTile>
+              <CarouselTile>
+                <TypeFilterCard label="Serviços" icon={WrenchIcon}
+                  gradient="linear-gradient(160deg, hsl(210 80% 45%), hsl(220 70% 22%))"
+                  active={typeFilter === 'service'} onClick={() => setTypeFilter('service')} />
+              </CarouselTile>
+              <CarouselTile>
+                <TypeFilterCard label="Produtos" icon={PackageIcon}
+                  gradient="linear-gradient(160deg, hsl(160 70% 40%), hsl(170 75% 20%))"
+                  active={typeFilter === 'product'} onClick={() => setTypeFilter('product')} />
+              </CarouselTile>
             </>
           )}
           {segs.map((seg) => (
-            <SegmentCard
-              key={seg.id}
-              seg={seg}
-              active={activeSegments.includes(seg.id)}
-              onClick={() => toggleSegment(seg.id)}
-            />
+            <CarouselTile key={seg.id}>
+              <SegmentCard seg={seg} active={activeSegments.includes(seg.id)}
+                onClick={() => toggleSegment(seg.id)} />
+            </CarouselTile>
           ))}
         </div>
       </div>
 
-      {/* ===================== MAIS PROCURADOS PERTO DE VOCÊ ===================== */}
+      {/* ===================== MAIS PROCURADOS — carrossel compacto ===================== */}
       {top.length > 0 && (
-        <div
-          className="mt-4 mx-auto max-w-2xl rounded-[24px] p-3"
-          style={{
-            background: 'linear-gradient(160deg, hsl(225 40% 18% / 0.85), hsl(225 50% 9% / 0.92))',
-            border: '1px solid hsl(225 35% 40% / 0.35)',
-            boxShadow: '0 16px 44px -20px hsl(265 80% 40% / 0.5), inset 0 1px 0 rgba(255,255,255,.06)',
-          }}
-        >
-          <div className="flex items-center justify-between mb-2 px-1">
-            <h3 className="text-white text-sm font-bold">Mais procurados perto de você</h3>
-            <button onClick={onSearch} className="text-[11px] text-violet-300 hover:text-violet-200">
-              Ver todos
-            </button>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {top.slice(0, 3).map((p) => (
+        <div className="mt-4 mx-auto max-w-2xl">
+          <SectionTitle action={<button onClick={onSearch} className="text-[10px] text-violet-300/80 hover:text-violet-200">Ver todos</button>}>
+            Mais procurados perto de você
+          </SectionTitle>
+          <div className="flex gap-2 overflow-x-auto no-scrollbar snap-x pb-1 -mx-1 px-1">
+            {top.map((p) => (
               <motion.button
                 key={p.id}
                 whileHover={{ y: -2 }}
                 onClick={onSearch}
-                className="rounded-xl overflow-hidden text-left"
+                className="snap-start shrink-0 w-[96px] rounded-xl overflow-hidden text-left"
                 style={{
                   background: 'hsl(225 30% 14%)',
                   border: '1px solid rgba(255,255,255,.06)',
                   boxShadow: '0 8px 20px -10px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.05)',
                 }}
               >
-                <div className="aspect-[4/3] bg-gradient-to-br from-violet-900/40 to-slate-900 overflow-hidden">
+                <div className="aspect-square bg-gradient-to-br from-violet-900/40 to-slate-900 overflow-hidden relative">
                   {p.logo_url ? (
                     <img src={p.logo_url} alt={p.name} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Sparkles className="w-8 h-8 text-violet-300/40" />
+                      <Sparkles className="w-7 h-7 text-violet-300/40" />
+                    </div>
+                  )}
+                  {p.is_top_provider && (
+                    <div className="absolute top-1 right-1">
+                      <TopProviderBadge active size="xs" label="TOP" />
                     </div>
                   )}
                 </div>
-                <div className="p-2">
-                  <div className="flex items-center gap-1">
-                    <p className="text-[12px] font-bold text-white truncate flex-1">{p.name}</p>
-                  </div>
-                  <div className="flex items-center justify-between mt-0.5">
-                    <span className="flex items-center gap-0.5 text-[10px] text-amber-300">
-                      <Star className="w-2.5 h-2.5 fill-amber-300" /> {(p.rating ?? 4.5).toFixed(1)}
-                    </span>
-                    <TopProviderBadge active={p.is_top_provider} size="xs" label="TOP" />
-                  </div>
+                <div className="px-1.5 py-1">
+                  <p className="text-[10px] font-bold text-white truncate leading-tight">{p.name}</p>
+                  <span className="flex items-center gap-0.5 text-[9px] text-amber-300 mt-0.5">
+                    <Star className="w-2 h-2 fill-amber-300" /> {(p.rating ?? 4.5).toFixed(1)}
+                  </span>
                 </div>
               </motion.button>
             ))}
