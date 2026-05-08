@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, Wallet, User as UserIcon, Sparkles, Mic, Plus,
-  Bot, LogIn, Settings, X, Send, Radar, Gift, MapPin, ShoppingBag, Store, RotateCcw,
+  Bot, LogIn, Settings, X, Send, Radar, Gift, MapPin, ShoppingBag, Store, RotateCcw, Heart,
 } from 'lucide-react';
+import { FavoritesModal } from '@/components/FavoritesModal';
+import { useFavorites } from '@/hooks/useFavorites';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
