@@ -292,15 +292,23 @@ const Landing = () => {
       }
       setDataLoaded(true);
 
-      // Pre-fill search from URL ?q= passed by Vini Home
+      // Pre-fill smart search from URL ?q= passed by Vini Home
       try {
         const params = new URLSearchParams(window.location.search);
         const incomingQ = (params.get('q') || '').trim();
+        const incomingType = params.get('type') as 'service' | 'product' | 'both' | null;
+        const incomingSegs = (params.get('segments') || '').split(',').map(s => s.trim()).filter(Boolean);
         if (incomingQ) {
           setSearchQuery(incomingQ);
-          setExecutedQuery(incomingQ);
-          setSearchExecuted(true);
-          setSearchVersion(v => v + 1);
+          if (incomingType === 'service') setTypeFilter('service');
+          else if (incomingType === 'product') setTypeFilter('product');
+          const incomingNorm = incomingSegs.map(normalizeText);
+          if (incomingNorm.length) {
+            setActiveSegments(segs
+              .filter((s: any) => incomingNorm.some(n => normalizeText(s.name).includes(n)))
+              .map((s: any) => s.name));
+          }
+          refineWithVini(incomingQ, { openPanel: false, autoApply: true });
           return;
         }
       } catch {}
