@@ -98,7 +98,10 @@ const ViniHome = () => {
   const [lastTranscript, setLastTranscript] = useState<string>('');
   const [storyOpen, setStoryOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [modalInitialMessage, setModalInitialMessage] = useState<string | null>(null);
+  const [modalInitialModality, setModalInitialModality] = useState<'voice' | 'text'>('text');
   const [searchBarVisible, setSearchBarVisible] = useState(false);
+  const [searchBarMode, setSearchBarMode] = useState<'chat' | 'search'>('chat');
   const [radarActive, setRadarActive] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -121,9 +124,9 @@ const ViniHome = () => {
       const final = lastSpokenRef.current.trim();
       if (final && listening) {
         try { stop(); } catch {}
-        sendQuery(final);
+        openConversationWith(final, 'voice');
       } else if (final && !listening) {
-        sendQuery(final);
+        openConversationWith(final, 'voice');
       }
     }, 1200);
 
@@ -308,6 +311,15 @@ const ViniHome = () => {
     });
     // Any new bubble counts as activity — restart the 5s idle clock
     resetIdleTimer();
+  };
+
+  const openConversationWith = (message?: string, modality: 'voice' | 'text' = 'text') => {
+    wakeUp();
+    setSideOpen(false);
+    setSearchBarVisible(false);
+    setModalInitialModality(modality);
+    setModalInitialMessage(message?.trim() || null);
+    setChatOpen(true);
   };
 
   const clearChat = () => {
