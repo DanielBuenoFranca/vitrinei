@@ -104,13 +104,25 @@ export function ClearDataDialog({ open, onClose, onCleared }: ClearDataDialogPro
 
   const loadCategory = async (cat: typeof CATEGORIES[number]) => {
     setLoading(l => ({ ...l, [cat.key]: true }));
+    if (cat.key === 'users') {
+      // Carrega profiles excluindo Masters
+      const [{ data: profs }, { data: roles }] = await Promise.all([
+        supabase.from('profiles').select('user_id, display_name, phone').limit(1000),
+        supabase.from('user_roles').select('user_id, role'),
+      ]);
+      const masterIds = new Set((roles || []).filter((r: any) => r.role === 'master').map((r: any) => r.user_id));
+      const filtered = (profs || []).filter((p: any) => !masterIds.has(p.user_id));
+      setItems(p => ({ ...p, users: filtered.map((r: any) => ({ id: r.user_id, ...labelFor('users', r), selected: true })) }));
+      setCounts(c => ({ ...c, users: filtered.length }));
+      setLoading(l => ({ ...l, users: false }));
+      return;
+    }
     const { data, count, error } = await supabase
       .from(cat.table as any)
       .select('*', { count: 'exact' })
       .order('created_at' as any, { ascending: false } as any)
       .limit(500);
     if (error) {
-      // ordenação por created_at pode falhar em algumas — fallback simples
       const fb = await supabase.from(cat.table as any).select('*', { count: 'exact' }).limit(500);
       setItems(p => ({ ...p, [cat.key]: (fb.data || []).map((r: any) => ({ id: r.id, ...labelFor(cat.key, r), selected: true })) }));
       setCounts(c => ({ ...c, [cat.key]: fb.count || 0 }));
