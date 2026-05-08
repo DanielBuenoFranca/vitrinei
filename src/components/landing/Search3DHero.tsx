@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Search, Sparkles, Star, Store, Wrench as WrenchIcon, Package as PackageIcon, LayoutGrid } from 'lucide-react';
+import { Mic, Search, Sparkles, Star, Store, Wrench as WrenchIcon, Package as PackageIcon, LayoutGrid, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   Wrench, Scissors, Droplets, Sprout, Truck, Hammer, Stethoscope,
   GraduationCap, Car, Home, Brush, ShoppingBag,
@@ -55,6 +55,39 @@ interface Top {
   rating: number;
   is_top_provider: boolean;
   segment: string[];
+}
+
+/* ============================================================
+   Carrossel com setas de rolagem esquerda / direita
+   ============================================================ */
+function ScrollableRow({ children, className = '' }: { children: ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const scroll = (dir: 'left' | 'right') => {
+    if (!ref.current) return;
+    const amount = dir === 'left' ? -220 : 220;
+    ref.current.scrollBy({ left: amount, behavior: 'smooth' });
+  };
+  return (
+    <div className="relative">
+      <button
+        onClick={() => scroll('left')}
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-6 h-6 rounded-full bg-black/60 backdrop-blur text-white/90 hover:bg-black/80 hover:text-white transition-all"
+        aria-label="Rolar para esquerda"
+      >
+        <ChevronLeft className="w-3.5 h-3.5" />
+      </button>
+      <div ref={ref} className={`flex gap-2 overflow-x-auto no-scrollbar snap-x pb-1 -mx-1 px-1 ${className}`}>
+        {children}
+      </div>
+      <button
+        onClick={() => scroll('right')}
+        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-6 h-6 rounded-full bg-black/60 backdrop-blur text-white/90 hover:bg-black/80 hover:text-white transition-all"
+        aria-label="Rolar para direita"
+      >
+        <ChevronRight className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
 }
 
 export function Search3DHero({
@@ -185,33 +218,33 @@ export function Search3DHero({
       {/* ===================== SEGMENTOS — carrossel horizontal compacto ===================== */}
       <div className="mt-3 mx-auto max-w-2xl">
         <SectionTitle>Segmentos</SectionTitle>
-        <div className="flex gap-2 overflow-x-auto no-scrollbar snap-x pb-1 -mx-1 px-1">
-          {setTypeFilter && (
-            <>
-              <CarouselTile>
-                <TypeFilterCard label="Tudo" icon={LayoutGrid}
-                  gradient="linear-gradient(160deg, hsl(255 60% 35%), hsl(225 65% 18%))"
-                  active={typeFilter === 'all'} onClick={() => setTypeFilter('all')} />
-              </CarouselTile>
-              <CarouselTile>
-                <TypeFilterCard label="Serviços" icon={WrenchIcon}
-                  gradient="linear-gradient(160deg, hsl(210 80% 45%), hsl(220 70% 22%))"
-                  active={typeFilter === 'service'} onClick={() => setTypeFilter('service')} />
-              </CarouselTile>
-              <CarouselTile>
-                <TypeFilterCard label="Produtos" icon={PackageIcon}
-                  gradient="linear-gradient(160deg, hsl(160 70% 40%), hsl(170 75% 20%))"
-                  active={typeFilter === 'product'} onClick={() => setTypeFilter('product')} />
-              </CarouselTile>
-            </>
-          )}
-          {segs.map((seg) => (
-            <CarouselTile key={seg.id}>
-              <SegmentCard seg={seg} active={activeSegments.includes(seg.id)}
-                onClick={() => toggleSegment(seg.id)} />
+      <ScrollableRow>
+        {setTypeFilter && (
+          <>
+            <CarouselTile>
+              <TypeFilterCard label="Tudo" icon={LayoutGrid}
+                gradient="linear-gradient(160deg, hsl(255 60% 35%), hsl(225 65% 18%))"
+                active={typeFilter === 'all'} onClick={() => setTypeFilter('all')} />
             </CarouselTile>
-          ))}
-        </div>
+            <CarouselTile>
+              <TypeFilterCard label="Serviços" icon={WrenchIcon}
+                gradient="linear-gradient(160deg, hsl(210 80% 45%), hsl(220 70% 22%))"
+                active={typeFilter === 'service'} onClick={() => setTypeFilter('service')} />
+            </CarouselTile>
+            <CarouselTile>
+              <TypeFilterCard label="Produtos" icon={PackageIcon}
+                gradient="linear-gradient(160deg, hsl(160 70% 40%), hsl(170 75% 20%))"
+                active={typeFilter === 'product'} onClick={() => setTypeFilter('product')} />
+            </CarouselTile>
+          </>
+        )}
+        {segs.map((seg) => (
+          <CarouselTile key={seg.id}>
+            <SegmentCard seg={seg} active={activeSegments.includes(seg.id)}
+              onClick={() => toggleSegment(seg.id)} />
+          </CarouselTile>
+        ))}
+      </ScrollableRow>
       </div>
 
       {/* ===================== PRESTADORES / FORNECEDORES — carrossel ordenado por ranking ===================== */}
@@ -220,7 +253,7 @@ export function Search3DHero({
           <SectionTitle action={<button onClick={onSearch} className="text-[10px] text-violet-300/80 hover:text-violet-200">Ver todos</button>}>
             Prestadores / Fornecedores
           </SectionTitle>
-          <div className="flex gap-2 overflow-x-auto no-scrollbar snap-x pb-1 -mx-1 px-1">
+          <ScrollableRow>
             {top.map((p) => {
               const slug = slugify(p.name);
               return (
@@ -265,7 +298,7 @@ export function Search3DHero({
                 </motion.div>
               );
             })}
-          </div>
+          </ScrollableRow>
         </div>
       )}
 

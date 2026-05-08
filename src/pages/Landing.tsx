@@ -12,7 +12,7 @@ import {
   Search, Zap, Sparkles, Clock, MapPin, DollarSign,
   Headphones, ShoppingCart, BarChart3, Send, Star,
   Package, TrendingDown, Navigation, Users, Shield, MessageCircle,
-  ChevronDown, ChevronRight, ShoppingBag, Wrench as WrenchIcon, Store, Plus, CheckCircle2, X, Trash2, Settings, CreditCard, AlertTriangle, Minus, Home, Layers,
+  ChevronDown, ChevronRight, ChevronLeft, ShoppingBag, Wrench as WrenchIcon, Store, Plus, CheckCircle2, X, Trash2, Settings, CreditCard, AlertTriangle, Minus, Home, Layers,
   Scissors, Droplets, Sprout, Truck, Hammer, Stethoscope, GraduationCap, Car, Brush, Cpu, Heart, PawPrint, PartyPopper, Leaf, Monitor, Gem, Shirt, Music
 } from 'lucide-react';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
@@ -59,6 +59,38 @@ type AiRoute = {
 const visualIcons = [Scissors, Droplets, Sprout, Truck, Hammer, Stethoscope, GraduationCap, Car, Brush, Cpu, Heart, PawPrint, PartyPopper, Leaf, Monitor, Gem, Shirt, Music, WrenchIcon, ShoppingBag];
 const pickVisualIcon = (seed: string) => visualIcons[Math.abs([...normalizeText(seed)].reduce((acc, c) => acc + c.charCodeAt(0), 0)) % visualIcons.length];
 
+/* ============================================================
+   Carrossel com setas de rolagem esquerda / direita
+   ============================================================ */
+function ScrollableRow({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const scroll = (dir: 'left' | 'right') => {
+    if (!ref.current) return;
+    const amount = dir === 'left' ? -220 : 220;
+    ref.current.scrollBy({ left: amount, behavior: 'smooth' });
+  };
+  return (
+    <div className="relative">
+      <button
+        onClick={() => scroll('left')}
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-6 h-6 rounded-full bg-black/60 backdrop-blur text-white/90 hover:bg-black/80 hover:text-white transition-all"
+        aria-label="Rolar para esquerda"
+      >
+        <ChevronLeft className="w-3.5 h-3.5" />
+      </button>
+      <div ref={ref} className={`flex gap-2.5 overflow-x-auto no-scrollbar snap-x pb-2 -mx-1 px-1 ${className}`}>
+        {children}
+      </div>
+      <button
+        onClick={() => scroll('right')}
+        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-6 h-6 rounded-full bg-black/60 backdrop-blur text-white/90 hover:bg-black/80 hover:text-white transition-all"
+        aria-label="Rolar para direita"
+      >
+        <ChevronRight className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+}
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -629,11 +661,11 @@ const Landing = () => {
                           </span>
                         </button>
                       ) : servicesCarouselOpen && filteredResults.length > 2 ? (
-                        <div className="flex gap-2.5 overflow-x-auto no-scrollbar snap-x pb-2 -mx-1 px-1">
+                        <ScrollableRow>
                           {filteredResults.map((r, i) => (
                             <div key={r.id} className="snap-start shrink-0 w-[150px]">{renderCard(r, i)}</div>
                           ))}
-                        </div>
+                        </ScrollableRow>
                       ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                           {filteredResults.map((r, i) => renderCard(r, i))}
@@ -739,11 +771,11 @@ const Landing = () => {
                           </span>
                         </button>
                       ) : productsCarouselOpen && searchResult.products.length > 2 ? (
-                        <div className="flex gap-2.5 overflow-x-auto no-scrollbar snap-x pb-2 -mx-1 px-1">
+                        <ScrollableRow>
                           {searchResult.products.map((p, i) => (
                             <div key={p.id} className="snap-start shrink-0 w-[150px]">{renderCard(p, i)}</div>
                           ))}
-                        </div>
+                        </ScrollableRow>
                       ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                           {searchResult.products.map((p, i) => renderCard(p, i))}
