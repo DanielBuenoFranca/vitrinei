@@ -27,6 +27,9 @@ import { segments as staticSegments, mockResults, semanticSearch, buildSupportSu
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
+import { FavoriteButton } from '@/components/FavoriteButton';
+import { FavoritesModal } from '@/components/FavoritesModal';
+import { useFavorites } from '@/hooks/useFavorites';
 
 
 const aiSuggestions = [
