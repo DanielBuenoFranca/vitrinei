@@ -57,6 +57,39 @@ interface Top {
   segment: string[];
 }
 
+/* ============================================================
+   Carrossel com setas de rolagem esquerda / direita
+   ============================================================ */
+function ScrollableRow({ children, className = '' }: { children: ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const scroll = (dir: 'left' | 'right') => {
+    if (!ref.current) return;
+    const amount = dir === 'left' ? -220 : 220;
+    ref.current.scrollBy({ left: amount, behavior: 'smooth' });
+  };
+  return (
+    <div className="relative">
+      <button
+        onClick={() => scroll('left')}
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-6 h-6 rounded-full bg-black/60 backdrop-blur text-white/90 hover:bg-black/80 hover:text-white transition-all"
+        aria-label="Rolar para esquerda"
+      >
+        <ChevronLeft className="w-3.5 h-3.5" />
+      </button>
+      <div ref={ref} className={`flex gap-2 overflow-x-auto no-scrollbar snap-x pb-1 -mx-1 px-1 ${className}`}>
+        {children}
+      </div>
+      <button
+        onClick={() => scroll('right')}
+        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-6 h-6 rounded-full bg-black/60 backdrop-blur text-white/90 hover:bg-black/80 hover:text-white transition-all"
+        aria-label="Rolar para direita"
+      >
+        <ChevronRight className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+}
+
 export function Search3DHero({
   searchQuery, setSearchQuery, onSearch, onMic, micListening, micSupported,
   segments, activeSegments, toggleSegment, typeFilter = 'all', setTypeFilter, children,
