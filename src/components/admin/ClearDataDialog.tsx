@@ -215,13 +215,10 @@ export function ClearDataDialog({ open, onClose, onCleared }: ClearDataDialogPro
         if (k === 'users') {
           // Usa edge function delete-user para apagar auth + todas as tabelas relacionadas
           const userIds = ids as string[];
-          let okCount = 0;
-          let failCount = 0;
-          for (const uid of userIds) {
-            const { error } = await supabase.functions.invoke('delete-user', { body: { user_id: uid } });
-            if (error) { failCount++; console.error('delete-user', uid, error); }
-            else okCount++;
-          }
+          const { data, error } = await supabase.functions.invoke('delete-user', { body: { user_ids: userIds } });
+          const okCount = Number(data?.deleted || 0);
+          const failCount = error ? userIds.length : Number(data?.failed || 0);
+          if (error) console.error('delete-user batch', error);
           if (failCount) toast.error(`${failCount} usuário(s) com erro de exclusão`);
           if (okCount) toast.success(`${okCount} usuário(s) excluído(s)`);
           continue;
