@@ -36,6 +36,15 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
+    // [Economia de Crédito] Honor the global toggle.
+    const { mode } = await getAiMode();
+    if (mode === "off") {
+      void logAiSavings("generate-provider-logo", "initials_svg", 1, { providerName });
+      return new Response(JSON.stringify({ logoUrl: buildInitialsSvg(providerName, segment) }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Generate artistic logo using AI image generation
     const prompt = `Create a modern, professional, minimalist logo icon for a small business called "${providerName}" in the "${segment || 'services'}" industry. The logo should be a simple, creative symbol or monogram, using bold colors on a clean white background. Style: flat design, geometric shapes, vibrant accent color, no text, suitable as a profile picture or avatar. High contrast, professional look.`;
 
@@ -52,11 +61,19 @@ serve(async (req) => {
       }),
     });
 
+    if (response.status === 402 || response.status === 429) {
+      await autoOffOnFailure(response.status === 402 ? "no_credits" : "rate_limited");
+      void logAiSavings("generate-provider-logo", `gateway_${response.status}`, 1, { auto_off: true });
+      return new Response(JSON.stringify({ logoUrl: buildInitialsSvg(providerName, segment) }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (!response.ok) {
       const errText = await response.text();
       console.error("AI gateway error:", response.status, errText);
-      return new Response(JSON.stringify({ error: "Failed to generate image" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(JSON.stringify({ logoUrl: buildInitialsSvg(providerName, segment) }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
