@@ -213,7 +213,7 @@ export function ViniConversationModal({
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
           signal: controller.signal,
-          body: JSON.stringify({ messages: apiMessages, userName: userName || null }),
+          body: JSON.stringify({ messages: apiMessages, userName: userName || null, mode }),
         });
 
         if (!resp.ok || !resp.body) {
