@@ -169,7 +169,7 @@ const TOPICS: Topic[] = [
   },
   {
     id: "search",
-    match: /\b(procur|busc|preciso de|quero (achar|encontrar)|onde (eu )?acho|tem (algum|alguem)|profissional|prestador|servi[cç]o|produto|kit)\b/,
+    match: /\b(procur|busc|preciso|preciso de|quero|achar|encontrar|onde (eu )?acho|tem (algum|alguem)|profissional|prestador|eletricista|encanador|pedreiro|mec[aâ]nico|t[ée]cnico|servi[cç]o|produto|kit|hoje|agora)\b/,
     replies: [
       ({ name, q }) => `${name ? `${name}, ` : ""}entendi a necessidade. Pelo que você falou (“${q.slice(0, 80)}”), posso transformar isso numa busca direcionada — me diz bairro, urgência e faixa de preço pra eu refinar.`,
       ({ name }) => `${name ? `Bora, ${name}.` : "Bora."} Pra eu já te entregar quem resolve, me passa em uma frase: o que precisa, pra quando e onde.`,
