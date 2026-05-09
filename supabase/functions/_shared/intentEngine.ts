@@ -134,6 +134,54 @@ async function fetchSegments(): Promise<{ id: number; name: string; suggested_ta
   } catch { return []; }
 }
 
+// Stopwords PT‑BR para extrair tokens "interessantes" do que o usuário disse
+const STOPWORDS = new Set([
+  "estou","com","para","tem","que","uma","uns","umas","dos","das","meu","minha",
+  "quero","preciso","muito","bem","mal","ola","oi","olá","tô","to","ta","tá",
+  "vou","sou","eu","na","no","de","da","do","em","um","os","as","pra","por",
+  "the","and","i","my","me","is","are",
+]);
+
+function extractKeywords(raw: string): string[] {
+  const norm = (raw || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const words = norm.match(/\b[a-z0-9]{3,}\b/g) || [];
+  return Array.from(new Set(words.filter((w) => !STOPWORDS.has(w))));
+}
+
+// Busca direta no estoque por palavras‑chave nas tabelas dynamic_products
+// (name + tags) e dynamic_services (name). Sempre que algum item bater,
+// devolvemos uma rota de busca com alta confiança usando o termo encontrado.
+async function searchInventoryByKeywords(
+  keywords: string[],
+): Promise<{ products: any[]; services: any[]; segments: string[]; matchedKeyword?: string }> {
+  if (!URL_BASE || !SERVICE_KEY || keywords.length === 0) {
+    return { products: [], services: [], segments: [] };
+  }
+  for (const kw of keywords) {
+    try {
+      const enc = encodeURIComponent(kw);
+      const [pRes, sRes] = await Promise.all([
+        fetch(
+          `${URL_BASE}/rest/v1/dynamic_products?select=name,tags,provider&or=(name.ilike.*${enc}*,tags.cs.{${enc}})&limit=10`,
+          { headers: headers() },
+        ),
+        fetch(
+          `${URL_BASE}/rest/v1/dynamic_services?select=name,segment,provider&name=ilike.*${enc}*&limit=10`,
+          { headers: headers() },
+        ),
+      ]);
+      const products = pRes.ok ? await pRes.json() : [];
+      const services = sRes.ok ? await sRes.json() : [];
+      if (products.length + services.length > 0) {
+        const segs = new Set<string>();
+        services.forEach((s: any) => s.segment && segs.add(s.segment));
+        return { products, services, segments: Array.from(segs), matchedKeyword: kw };
+      }
+    } catch { /* tenta próximo */ }
+  }
+  return { products: [], services: [], segments: [] };
+}
+
 async function fetchSegmentInventory(segmentName: string): Promise<{ services: number; products: number; sample: string[] }> {
   if (!URL_BASE || !SERVICE_KEY) return { services: 0, products: 0, sample: [] };
   const enc = (v: string) => encodeURIComponent(v);
