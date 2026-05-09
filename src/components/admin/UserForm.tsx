@@ -276,11 +276,8 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
       // ── LEAD importado (sem auth): atualiza diretamente a tabela providers ──
       if (isEdit && isLead) {
         if (!leadProviderId) { toast.error('Lead sem providerId — recarregue a lista'); setSaving(false); return; }
-        // Auto-gerar logo se faltar
-        let finalLogo = logoUrl;
-        if (isProviderRole && !finalLogo && name.trim()) {
-          finalLogo = await generateAiLogo(name.trim(), selectedSegments[0] || 'Geral');
-        }
+        // Logo: usa apenas o que foi enviado manualmente (geração automática removida).
+        const finalLogo = logoUrl;
         const provUpdate: any = {
           name: name.trim(),
           phone: phone.trim() || null,
@@ -342,11 +339,8 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
         }
       }
 
-      // 2) Auto-gerar logo se prestador sem logo
-      let finalLogo = logoUrl;
-      if (isProviderRole && !finalLogo && name.trim()) {
-        finalLogo = await generateAiLogo(name.trim(), selectedSegments[0] || 'Geral');
-      }
+      // 2) Logo: usa apenas o que foi enviado manualmente (geração automática removida).
+      const finalLogo = logoUrl;
 
       // 3) Atualiza profile (trigger sincroniza providers)
       const profileData: any = {
