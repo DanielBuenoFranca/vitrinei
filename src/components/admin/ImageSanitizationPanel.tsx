@@ -84,27 +84,32 @@ export function ImageSanitizationPanel() {
 
   const runAll = async () => {
     if (items.length === 0) { toast.info('Nada a sanear'); return; }
-    setRunning(true);
-    setResults({ ok: 0, fail: 0 });
-    setProgress({ done: 0, total: items.length, current: '' });
-    let ok = 0, fail = 0;
-    const remaining: Item[] = [];
-    for (const item of items) {
-      setProgress({ done: ok + fail, total: items.length, current: `${item.kind}: ${item.name}` });
-      try {
-        await sanitizeOne(item);
-        ok++;
-      } catch (e: any) {
-        console.error('sanitize failed', item, e);
-        fail++;
-        remaining.push(item);
-      }
-      setResults({ ok, fail });
-    }
-    setProgress({ done: ok + fail, total: items.length, current: '' });
-    setItems(remaining);
-    setRunning(false);
-    toast.success(`Saneamento concluído: ${ok} ok, ${fail} falhas`);
+    const queue = [...items];
+    const total = queue.length;
+    await startJob({
+      id: 'sanitize-images',
+      label: `Saneamento de imagens (${total})`,
+      run: async (report) => {
+        let ok = 0, fail = 0;
+        const remaining: Item[] = [];
+        for (let i = 0; i < queue.length; i++) {
+          const item = queue[i];
+          report(`${item.kind}: ${item.name} (${i + 1}/${total})`, Math.round((i / total) * 100));
+          try {
+            await sanitizeOne(item);
+            ok++;
+            // remove do estado mesmo se o usuário ainda estiver na tela
+            setItems((prev) => prev.filter((x) => !(x.kind === item.kind && x.id === item.id)));
+          } catch (e) {
+            console.error('sanitize failed', item, e);
+            fail++;
+            remaining.push(item);
+          }
+        }
+        return { ok, fail };
+      },
+      successMessage: (r) => `Saneamento concluído: ${r?.ok ?? 0} ok, ${r?.fail ?? 0} falhas`,
+    });
   };
 
   const sanitizeSingle = async (item: Item) => {
