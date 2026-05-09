@@ -145,6 +145,14 @@ export const naturalLanguageMap: {
   needLabel?: string;
 }[] = [
   {
+    triggers: ['dor', 'estou com dor', 'tô com dor', 'to com dor', 'estou sentindo dor', 'sinto dor', 'tenho dor', 'dores', 'desconforto'],
+    segments: ['natureza', 'saude_clinica'], keywords: ['remédio', 'remedio', 'analgésico', 'analgesico', 'alívio', 'alivio', 'dor'],
+    relevantServiceIds: [27, 38, 4],
+    relevantProductIds: [2009, 105, 118, 119, 103, 104],
+    needLabel: 'Alívio para dor',
+    aiFollowUp: 'Identifiquei: **Alívio para dor**. Separei produtos disponíveis para melhorar o desconforto e opções de atendimento se precisar.'
+  },
+  {
     triggers: ['dor de barriga', 'dor de estômago', 'dor abdominal', 'mal estar', 'enjoo', 'náusea', 'azia', 'gastrite', 'indigestão'],
     segments: ['natureza', 'saude_clinica'], keywords: ['fitoterapia', 'fitoterápico', 'chá', 'remédio', 'abdominal'],
     relevantServiceIds: [27, 38, 4],
