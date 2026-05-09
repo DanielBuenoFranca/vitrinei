@@ -518,67 +518,78 @@ const ViniHome = () => {
     }, 15000);
 
     setTimeout(async () => {
-      const intent = analyzeAndRoute(query);
-      if (intent) {
-        emitEmotion('happy');
-        pushBubble({ role: 'vini', text: intent.reply });
-        setTimeout(() => { navigate(intent.route); finalize(); }, 1100);
-        return;
-      }
-
-      // Race: ai-router com timeout duro (8s). Se travar, cai no fallback local.
-      let routed: any = null;
-      let invokeError: any = null;
       try {
-        const invokePromise = supabase.functions.invoke('ai-router', { body: { message: query, session } });
-        const timeoutPromise = new Promise<{ data: null; error: any }>((resolve) =>
-          setTimeout(() => resolve({ data: null, error: new Error('ai-router timeout 8s') }), 8000),
-        );
-        const res: any = await Promise.race([invokePromise, timeoutPromise]);
-        routed = res?.data;
-        invokeError = res?.error;
-        if (invokeError) console.error('[Vini] ai-router error:', invokeError);
-      } catch (e) {
-        console.error('[Vini] ai-router exception:', e);
-      }
-
-      if (routed && !routed.error) {
-        updateAiSession({ tags: routed.tags || [], segments: routed.segments || [], lastIntent: routed.intent, lastQuery: routed.query || query });
-        if (routed.needs_more_info || routed.intent !== 'search') {
-          emitEmotion('thinking');
-          pushBubble({
-            role: 'vini',
-            text: routed.follow_up_question || `Me conte mais um detalhe sobre "${query}" para eu buscar com precisão.`,
-            action: (routed.suggestions || [])[0] ? { label: routed.suggestions[0], intent: 'search', payload: `${query} ${routed.suggestions[0]}` } : undefined,
-          });
-          finalize();
+        const intent = analyzeAndRoute(query);
+        if (intent) {
+          emitEmotion('happy');
+          pushBubble({ role: 'vini', text: intent.reply });
+          setTimeout(() => { navigate(intent.route); finalize(); }, 1100);
           return;
         }
-        const params = new URLSearchParams({ q: routed.query || query, type: routed.item_type || 'both' });
-        if ((routed.segments || []).length) params.set('segments', routed.segments.join(','));
-        emitEmotion('happy');
-        pushBubble({ role: 'vini', text: routed.transition_message || `Entendi o que você precisa. Já estou abrindo a busca filtrada.` });
-        setTimeout(() => { navigate(`/buscar?${params.toString()}`); finalize(); }, 900);
-        return;
-      }
 
-      // Fallback local: busca semântica no estoque embutido
-      const result = semanticSearch(query, history);
-      const total = (result.products?.length || 0) + (result.services?.length || 0);
+        // Race: ai-router com timeout duro (8s). Se travar, cai no fallback local.
+        let routed: any = null;
+        let invokeError: any = null;
+        try {
+          const invokePromise = supabase.functions.invoke('ai-router', { body: { message: query, session } });
+          const timeoutPromise = new Promise<{ data: null; error: any }>((resolve) =>
+            setTimeout(() => resolve({ data: null, error: new Error('ai-router timeout 8s') }), 8000),
+          );
+          const res: any = await Promise.race([invokePromise, timeoutPromise]);
+          routed = res?.data;
+          invokeError = res?.error;
+          if (invokeError) console.error('[Vini] ai-router error:', invokeError);
+        } catch (e) {
+          console.error('[Vini] ai-router exception:', e);
+        }
 
-      if (total > 0) {
-        emitEmotion('happy');
-        pushBubble({
-          role: 'vini',
-          text: `Encontrei ${total} ${total === 1 ? 'opção' : 'opções'} para "${query}". Já estou abrindo os resultados!`,
-        });
-        setTimeout(() => { navigate(`/buscar?q=${encodeURIComponent(query)}`); finalize(); }, 1000);
-      } else {
+        if (routed && !routed.error) {
+          updateAiSession({ tags: routed.tags || [], segments: routed.segments || [], lastIntent: routed.intent, lastQuery: routed.query || query });
+          if (routed.needs_more_info || routed.intent !== 'search') {
+            emitEmotion('thinking');
+            pushBubble({
+              role: 'vini',
+              text: routed.follow_up_question || `Me conte mais um detalhe sobre "${query}" para eu buscar com precisão.`,
+              action: (routed.suggestions || [])[0] ? { label: routed.suggestions[0], intent: 'search', payload: `${query} ${routed.suggestions[0]}` } : undefined,
+            });
+            finalize();
+            return;
+          }
+          const params = new URLSearchParams({ q: routed.query || query, type: routed.item_type || 'both' });
+          if ((routed.segments || []).length) params.set('segments', routed.segments.join(','));
+          emitEmotion('happy');
+          pushBubble({ role: 'vini', text: routed.transition_message || `Entendi o que você precisa. Já estou abrindo a busca filtrada.` });
+          setTimeout(() => { navigate(`/buscar?${params.toString()}`); finalize(); }, 900);
+          return;
+        }
+
+        // Fallback local: busca semântica no estoque embutido
+        const result = semanticSearch(query, history);
+        const total = (result.products?.length || 0) + (result.services?.length || 0);
+
+        if (total > 0) {
+          emitEmotion('happy');
+          pushBubble({
+            role: 'vini',
+            text: `Encontrei ${total} ${total === 1 ? 'opção' : 'opções'} para "${query}". Já estou abrindo os resultados!`,
+          });
+          setTimeout(() => { navigate(`/buscar?q=${encodeURIComponent(query)}`); finalize(); }, 1000);
+        } else {
+          emitEmotion('sad');
+          pushBubble({
+            role: 'vini',
+            text: `Não encontrei exatamente "${query}" no estoque local. Posso abrir a busca completa pra você ou refinar aqui mesmo — me dá mais um detalhe?`,
+            action: { label: 'Abrir busca completa', route: `/buscar?q=${encodeURIComponent(query)}&fora=1` },
+          });
+          finalize();
+        }
+      } catch (err) {
+        // Qualquer erro síncrono/inesperado: NUNCA deixar o Vini mudo.
+        console.error('[Vini] sendQuery fatal error:', err);
         emitEmotion('sad');
         pushBubble({
           role: 'vini',
-          text: `Não encontrei exatamente "${query}" no estoque local. Posso abrir a busca completa pra você ou refinar aqui mesmo — me dá mais um detalhe?`,
-          action: { label: 'Abrir busca completa', route: `/buscar?q=${encodeURIComponent(query)}&fora=1` },
+          text: `Tive um soluço aqui ao processar "${query}". Pode tentar de novo em outras palavras?`,
         });
         finalize();
       }
