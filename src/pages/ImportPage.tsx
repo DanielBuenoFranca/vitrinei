@@ -1383,7 +1383,7 @@ const ImportPage = () => {
             } else {
               const price = parseFloat(row.productPrice) || 0;
               const tags = row.segment ? [row.segment.toLowerCase()] : [];
-              const qtyRaw = parseInt(row.productQuantity, 10);
+              const qtyRaw = parseInt(String(row.productQuantity).replace(',', '.'), 10);
               const quantity = Number.isFinite(qtyRaw) && qtyRaw >= 0 ? qtyRaw : 0;
               const { data: ins, error } = await supabase.from('dynamic_products').insert({
                 product_id: nextProductId++,
