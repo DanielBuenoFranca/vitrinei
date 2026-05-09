@@ -136,7 +136,8 @@ const ViniHome = () => {
       const final = lastSpokenRef.current.trim();
       if (final) {
         try { stop(); } catch {}
-        openConversationWith(final, 'voice');
+        // Voz da tela principal → perfil SUPER VENDEDOR (busca/ai-router)
+        sendQuery(final);
         lastSpokenRef.current = '';
       }
     }, 900);
@@ -151,7 +152,8 @@ const ViniHome = () => {
     if (!final) return;
     if (autoSubmitTimerRef.current) window.clearTimeout(autoSubmitTimerRef.current);
     lastSpokenRef.current = '';
-    openConversationWith(final, 'voice');
+    // Tela principal: voz finaliza → vai para o vendedor (busca)
+    sendQuery(final);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listening]);
 
@@ -427,14 +429,15 @@ const ViniHome = () => {
     wakeUp();
     if (listening) {
       stop();
-      if (text.trim()) openConversationWith(text, 'voice');
+      // Voz da tela principal → super vendedor (busca no ecossistema)
+      if (text.trim()) sendQuery(text);
       return;
     }
     if (supported) {
       setSearchBarVisible(true);
-      setSearchBarMode('chat');
+      setSearchBarMode('search');
       start();
-      setTimeout(() => pushBubble({ role: 'vini', text: 'Estou ouvindo… 🎙️' }), 200);
+      setTimeout(() => pushBubble({ role: 'vini', text: 'Estou ouvindo… 🎙️ Me diga o que você precisa.' }), 200);
     } else {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
@@ -527,8 +530,8 @@ const ViniHome = () => {
 
   const handleTextSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchBarMode === 'search') sendQuery(text);
-    else openConversationWith(text, 'text');
+    // Texto digitado na barra principal → super vendedor (busca)
+    if (text.trim()) sendQuery(text);
     setText('');
     setSearchBarVisible(false);
   };
