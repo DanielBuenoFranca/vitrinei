@@ -966,6 +966,7 @@ const ViniHome = () => {
         initialMessage={modalInitialMessage}
         initialModality={modalInitialModality}
         onInitialConsumed={() => setModalInitialMessage(null)}
+        mode={modalMode}
       />
       <FavoritesModal open={favoritesOpen} onOpenChange={setFavoritesOpen} />
     </div>
