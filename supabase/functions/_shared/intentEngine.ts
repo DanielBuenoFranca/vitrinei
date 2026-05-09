@@ -246,6 +246,30 @@ export async function classifyMessage(message: string, sessionCtx: any = {}): Pr
 
   // 2) Necessidade detectada por gatilho léxico
   const need = NEEDS.find((n) => n.triggers.test(q));
+
+  // 2.a) Busca direta no estoque pelas palavras‑chave da frase do usuário.
+  //      Isso garante que mesmo sem um segmento mapeado, se houver um item
+  //      cujo nome/tag bate com a fala (ex.: "Raiz para dor"), abrimos a
+  //      tela de busca já filtrada.
+  const keywords = extractKeywords(raw);
+  const inv = await searchInventoryByKeywords(keywords);
+  if (inv.products.length + inv.services.length > 0) {
+    const sample = inv.products[0]?.name || inv.services[0]?.name || inv.matchedKeyword;
+    out.intent = "search";
+    out.next_agent = "search";
+    out.query = inv.matchedKeyword || raw;
+    out.segments = inv.segments;
+    out.tags = [need?.id, inv.matchedKeyword, ...keywords.slice(0, 3)].filter(Boolean) as string[];
+    out.item_type = inv.products.length && !inv.services.length
+      ? "product"
+      : inv.services.length && !inv.products.length
+        ? "service"
+        : "both";
+    out.transition_message = `Encontrei "${sample}" no estoque. Já vou abrir a busca filtrada pra você.`;
+    out.confidence = 0.95;
+    return out;
+  }
+
   if (!need) return null; // deixa o caller decidir (chat puro / IA)
 
   // Busca segmentos reais no banco que casem com os candidatos
@@ -264,7 +288,7 @@ export async function classifyMessage(message: string, sessionCtx: any = {}): Pr
     out.item_type = need.itemType;
     out.tags = [need.id];
     out.transition_message = `Vou abrir a busca por "${raw}".`;
-    out.confidence = 0.55;
+    out.confidence = 0.7;
     return out;
   }
 
