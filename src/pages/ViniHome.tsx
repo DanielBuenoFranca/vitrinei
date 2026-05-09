@@ -73,7 +73,16 @@ const ViniHome = () => {
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
 
   const [hasInteracted, setHasInteracted] = useState(false);
-  const [sideOpen, setSideOpen] = useState(false);
+  const [sideOpen, setSideOpen] = useState(true);
+  const lastSmallTalkRef = useRef<number>(0);
+  const smallTalkCountRef = useRef<number>(0);
+  const greetedKey = (uid?: string | null) => `vini:greeted${uid ? `:${uid}` : ''}`;
+  const wasGreeted = (uid?: string | null) => {
+    try { return !!localStorage.getItem(greetedKey(uid)); } catch { return false; }
+  };
+  const markGreeted = (uid?: string | null) => {
+    try { localStorage.setItem(greetedKey(uid), '1'); } catch {}
+  };
   const [bubbles, setBubbles] = useState<Bubble[]>(() => {
     if (typeof window === 'undefined') return [];
     try {
