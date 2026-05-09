@@ -357,6 +357,9 @@ const ViniHome = () => {
     setSearchBarVisible(false);
     setModalInitialModality(modality);
     setModalInitialMessage(message?.trim() || null);
+    // Voz/Texto pela barra de busca → personalidade comercial completa.
+    // Botão "Conversar" (sem mensagem inicial) → papo livre puro.
+    setModalMode(message?.trim() ? 'commerce' : 'free');
     setChatOpen(true);
   };
 
