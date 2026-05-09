@@ -760,32 +760,7 @@ const Landing = () => {
                   );
                 })()}
 
-                {noResults && (() => {
-                  const ctxSuggestion = generateContextualSuggestions(executedQuery);
-                  return (
-                    <div className="rounded-[24px] border border-accent/30 bg-card/95 p-4 shadow-xl">
-                      <div className="flex items-center gap-3 mb-3">
-                        <AiAvatar size={40} speaking={true} onClick={() => setShowAiPanel(true)} />
-                        <div>
-                          <h3 className="font-display font-bold text-foreground text-sm">Sugestões da IA</h3>
-                          <p className="text-xs text-muted-foreground">Não encontrei “{executedQuery}” diretamente. Selecione alternativas ou refine a busca.</p>
-                        </div>
-                      </div>
-                      {ctxSuggestion && (
-                        <div className="flex flex-wrap gap-2">
-                          {[...ctxSuggestion.suggestedServices.map(s => s.name), ...ctxSuggestion.suggestedProducts.map(p => p.name)].map((name) => {
-                            const selected = selectedSuggestions.has(name);
-                            return <button key={name} onClick={() => toggleSuggestionSelection(name)} className={`rounded-full border px-3 py-2 text-xs font-medium ${selected ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/50 text-foreground border-border'}`}>{name}</button>;
-                          })}
-                        </div>
-                      )}
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {ctxSuggestion && selectedSuggestions.size > 0 && <Button className="gap-2" onClick={() => handleSendSelectedSuggestions(ctxSuggestion)}><Headphones className="w-4 h-4" /> Enviar para Central</Button>}
-                        <Button variant="outline" className="gap-2" onClick={handleRefineSearch}><Search className="w-4 h-4" /> Refinar</Button>
-                      </div>
-                    </div>
-                  );
-                })()}
+                {/* Card "Sugestões da IA" (no-results) removido a pedido. */}
               </motion.div>
             )}
           </Search3DHero>
