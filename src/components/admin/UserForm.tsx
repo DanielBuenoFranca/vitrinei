@@ -149,11 +149,14 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
       const allRoles = (currentRoles && currentRoles.length > 0)
         ? currentRoles
         : (currentRole ? [currentRole] : []);
-      const derivedProfile: ProfileType =
-        allRoles.includes('mixed') ? 'mixed' :
-        allRoles.includes('provider') && allRoles.includes('client') ? 'mixed' :
-        allRoles.includes('provider') ? 'provider' :
-        'client';
+      const isLead = !!profile.__isLead;
+      const derivedProfile: ProfileType = isLead && allRoles.length === 0
+        // Lead importado sem papel ainda → padrão Misto + Comum
+        ? 'mixed'
+        : allRoles.includes('mixed') ? 'mixed' :
+          allRoles.includes('provider') && allRoles.includes('client') ? 'mixed' :
+          allRoles.includes('provider') ? 'provider' :
+          'client';
       const derivedAdmin: AdminLevel =
         allRoles.includes('master') ? 'master' :
         allRoles.includes('admin') ? 'admin' : 'none';
