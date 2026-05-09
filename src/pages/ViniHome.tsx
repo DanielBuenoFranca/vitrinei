@@ -65,7 +65,7 @@ const ViniHome = () => {
   const { session, update: updateAiSession } = useAiSession();
   const { totalCartItems, totalCartValue, productCart, serviceCart, clearCart } = useCart();
   const { supported, listening, transcript, start, stop } = useSpeechRecognition();
-  const { /* count: favoritesCount */ } = useFavorites();
+  
   const [favoritesOpen, setFavoritesOpen] = useState(false);
 
   const [city, setCity] = useState<string | null>(null);
