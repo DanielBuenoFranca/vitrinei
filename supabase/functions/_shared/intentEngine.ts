@@ -351,7 +351,9 @@ export async function classifyMessage(message: string, sessionCtx: any = {}): Pr
   // tem follow-up, primeiro pergunta para precisar a busca em vez de chutar.
   // Ex.: "quero remédio" → "Para qual sintoma?". Já "remédio para dor de
   // cabeça" tem keywords suficientes (>=2 úteis) e segue para a busca.
-  const isVague = need?.followUp && keywords.length <= 1;
+  // Se o grafo conceitual já trouxe expansão (termo específico como
+  // "hamburguer"), não pedimos refinamento — vamos direto pra busca.
+  const isVague = need?.followUp && keywords.length <= 1 && concepts.length === 0;
   if (isVague) {
     out.intent = "chat";
     out.next_agent = "vini";
