@@ -751,7 +751,7 @@ const AdminPanel = () => {
                               </TableCell>
                               <TableCell className="text-center">{segProviders}</TableCell>
                               <TableCell className="text-center">{segServices}</TableCell>
-                              <TableCell className="text-center">—</TableCell>
+                              <TableCell className="text-center">{segProducts}</TableCell>
                               <TableCell className="text-xs text-muted-foreground">
                                 {new Date(seg.created_at).toLocaleDateString('pt-BR')}
                               </TableCell>
