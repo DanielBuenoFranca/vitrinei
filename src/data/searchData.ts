@@ -424,6 +424,7 @@ export interface ProductItem {
   distance: string;
   relatedServiceIds: number[];
   tags: string[]; // for matching symptoms/needs
+  segments?: string[]; // segmentos diretamente vinculados ao produto (fonte da verdade)
   image_url?: string | null;
 }
 
@@ -1907,6 +1908,7 @@ export async function loadDynamicEntries(): Promise<void> {
         distance: row.distance,
         relatedServiceIds: row.related_service_ids || [],
         tags: row.tags || [],
+        segments: row.segments || [],
         image_url: row.image_url || null,
         _fromDb: true,
       }));
