@@ -113,6 +113,9 @@ export function ViniConversationModal({
     setInput('');
     setError(null);
     setHistoryReady(false);
+    setMessages([]);
+    initialMessageKeyRef.current = null;
+    lastVoiceSubmissionRef.current = '';
 
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
