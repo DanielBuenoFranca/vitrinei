@@ -1438,21 +1438,26 @@ const ImportPage = () => {
       setImportProgress({ step: 'Finalizando...', percent: 90 });
       await reloadDynamicEntries();
       
-      setImportProgress({ step: 'Concluído!', percent: 100 });
+      tick('Concluído!', 100);
       setResult(res);
 
-      if (res.errors.length === 0) {
-        toast.success('Importação concluída com sucesso!');
-      } else {
-        toast.warning(`Importação parcial: ${res.errors.length} erro(s) em linhas específicas`);
-      }
-    } catch (err: any) {
-      console.error('Import error:', err);
-      toast.error('Erro durante importação: ' + (err?.message || 'erro desconhecido'));
-    } finally {
-      setImporting(false);
       setTimeout(() => setImportProgress(null), 2000);
-    }
+      return res;
+        } catch (err: any) {
+          console.error('Import error:', err);
+          setImportProgress(null);
+          throw err;
+        } finally {
+          setImporting(false);
+        }
+      },
+      successMessage: (res: any) => {
+        const errs = res?.errors?.length || 0;
+        if (errs === 0) return `Importação concluída: ${res?.providersCreated ?? 0} novos, ${res?.providersLinked ?? 0} vinculados, ${res?.servicesCreated ?? 0} serviços, ${res?.productsCreated ?? 0} produtos`;
+        return `Importação parcial: ${errs} erro(s) em linhas específicas`;
+      },
+      errorMessage: (err) => 'Erro durante importação: ' + (err?.message || 'erro desconhecido'),
+    });
   };
 
   const resetAll = () => {
