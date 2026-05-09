@@ -1309,15 +1309,26 @@ function handleBroadContextSearch(query: string): SearchResult | null {
         const ns = normalize(segment || '');
         return normalizedSegments.some(ctxSeg => ns === ctxSeg || ns.includes(ctxSeg) || ctxSeg.includes(ns));
       };
+      const hasKeyword = (text: string, keyword: string) => {
+        const textNorm = normalize(text);
+        const keywordNorm = normalize(keyword);
+        const textTokens = tokenizePhrase(textNorm);
+        const keywordTokens = tokenizePhrase(keywordNorm);
+        if (keywordTokens.length > 1) return textNorm.includes(keywordNorm);
+        return textTokens.some(token => token === keywordNorm || token === `${keywordNorm}s`);
+      };
+      const foodContext = normalizedSegments.some(seg => seg === 'alimentacao');
+      const petFood = (text: string) => /\b(pet|cachorro|gato|racao|ração)\b/.test(normalize(text));
       const services = allSvcs.filter(s =>
         segmentMatches(s.segment) ||
-        ctx.serviceKeywords.some(kw => normalize(s.name).includes(normalize(kw)))
+        ctx.serviceKeywords.some(kw => hasKeyword(s.name, kw))
       );
       
       const products = allProds.filter(p => {
         const pText = normalize([p.name, ...p.tags].join(' '));
+        if (foodContext && petFood(pText)) return false;
         return segmentMatches(p.tags.join(' ')) ||
-          ctx.productKeywords.some(kw => pText.includes(normalize(kw))) ||
+          ctx.productKeywords.some(kw => hasKeyword(pText, kw)) ||
           p.relatedServiceIds.some(id => services.some(s => s.id === id));
       });
       
