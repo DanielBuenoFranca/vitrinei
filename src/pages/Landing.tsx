@@ -344,9 +344,14 @@ const Landing = () => {
           else setTypeFilter('all');
           const incomingNorm = incomingSegs.map(normalizeText);
           if (incomingNorm.length && segs) {
-            setActiveSegments(segs
-              .filter((s: any) => incomingNorm.some(n => normalizeText(s.name).includes(n)))
-              .map((s: any) => s.name));
+            const matched = segs
+              .filter((s: any) => {
+                const segN = normalizeText(s.name);
+                const tags = (s.suggested_tags || []).map((t: string) => normalizeText(t));
+                return incomingNorm.some(n => segN === n || segN.includes(n) || n.includes(segN) || tags.some((t: string) => t.includes(n) || n.includes(t)));
+              })
+              .map((s: any) => s.name);
+            if (matched.length) setActiveSegments(matched);
           }
           setInlineAiOpen(false);
           setExecutedQuery(incomingQ);
