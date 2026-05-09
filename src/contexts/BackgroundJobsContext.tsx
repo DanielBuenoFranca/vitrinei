@@ -82,7 +82,7 @@ export const BackgroundJobsProvider = ({ children }: { children: React.ReactNode
     setJobs(prev => prev.filter(j => j.id === id ? j.status === 'running' : true));
   }, []);
 
-  const startJob: BackgroundJobsContextType['startJob'] = useCallback(async ({ id, label, run, successMessage, errorMessage }) => {
+  const startJob: BackgroundJobsContextType['startJob'] = useCallback(async ({ id, label, route, run, successMessage, errorMessage }) => {
     if (runningRef.current.has(id)) {
       toast.info(`"${label}" já está em execução em segundo plano`);
       return;
@@ -94,7 +94,7 @@ export const BackgroundJobsProvider = ({ children }: { children: React.ReactNode
       const without = prev.filter(j => j.id !== id);
       return [
         ...without,
-        { id, label, step: 'Iniciando...', percent: 0, status: 'running', startedAt: Date.now() },
+        { id, label, route, step: 'Iniciando...', percent: 0, status: 'running', startedAt: Date.now() },
       ];
     });
 
