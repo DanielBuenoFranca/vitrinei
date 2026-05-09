@@ -197,43 +197,23 @@ export function ViniConversationModal({
 
       let routedIntent = 'chat';
 
-      // 1) Router: classifica intenção e contexto antes de chamar o vini-chat
-      try {
-        const { data: routed } = await supabase.functions.invoke('ai-router', {
-          body: { message: text, session },
-        });
-        if (routed && !routed.error) {
-          routedIntent = routed.intent || 'chat';
-          update({
-            tags: routed.tags || [],
-            segments: routed.segments || [],
-            lastIntent: routed.intent,
-            lastQuery: routed.query || text,
-          });
-          if (routed.needs_more_info) {
-            const followUp = routed.follow_up_question || 'Me conte mais um detalhe para eu entender melhor.';
-            setMessages((m) => [...m, { role: 'assistant', content: followUp, id: `${Date.now()}-f` }]);
-            void persistMessage('assistant', followUp, modality, routed.intent || 'follow_up');
-            setIsStreaming(false);
-            return;
+      // Modo Conversar: NUNCA redireciona nem interrompe o papo.
+      // O ai-router roda apenas em background para enriquecer tags/segmentos
+      // do contexto global do Vini — sem bloquear, sem follow-up forçado,
+      // sem transição automática para outras telas.
+      void supabase.functions
+        .invoke('ai-router', { body: { message: text, session } })
+        .then(({ data: routed }) => {
+          if (routed && !routed.error) {
+            update({
+              tags: routed.tags || [],
+              segments: routed.segments || [],
+              lastIntent: routed.intent,
+              lastQuery: routed.query || text,
+            });
           }
-          if (routed.intent && routed.intent !== 'chat' && routed.next_agent !== 'vini') {
-            const transition = routed.transition_message || 'Vou redirecionar você para a área certa...';
-            setMessages((m) => [...m, { role: 'assistant', content: transition, id: `${Date.now()}-t` }]);
-            void persistMessage('assistant', transition, modality, routed.intent);
-            setIsStreaming(false);
-            setTimeout(() => {
-              if (routed.next_agent === 'support') navigate('/central-atendimento');
-              else if (routed.next_agent === 'cart') navigate('/carteira');
-              else navigate(`/buscar?q=${encodeURIComponent(routed.query || text)}`);
-              onClose();
-            }, 900);
-            return;
-          }
-        }
-      } catch {
-        // silent fallback to vini-chat
-      }
+        })
+        .catch(() => {});
 
       const assistantId = `${Date.now()}-a`;
       let accumulated = '';
