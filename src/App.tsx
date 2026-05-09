@@ -10,6 +10,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ConversionProvider } from "@/contexts/ConversionContext";
 import { AiSessionProvider } from "@/contexts/AiSessionContext";
+import { BackgroundJobsProvider } from "@/contexts/BackgroundJobsContext";
 import { FavoritesProvider } from "@/hooks/useFavorites";
 import CartBar from "@/components/CartBar";
 import { AttentionFooterBar } from "@/components/AttentionFooterBar";
@@ -84,6 +85,7 @@ const App = () => {
       <BrowserRouter>
         <ConversionProvider>
         <AiSessionProvider>
+        <BackgroundJobsProvider>
         <CartBar />
         <Routes>
           <Route path="/auth" element={<AuthPage />} />
@@ -110,6 +112,7 @@ const App = () => {
         </Routes>
         <AttentionFooterBar />
         <SystemStatusIndicator />
+        </BackgroundJobsProvider>
         </AiSessionProvider>
         </ConversionProvider>
       </BrowserRouter>
