@@ -1301,6 +1301,11 @@ const AdminPanel = () => {
                                     );
                                   })()}
                                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+                                    if (profile.__isLead) {
+                                      // Lead importado: força Perfil = Misto + Papel = Comum (sem roles em user_roles)
+                                      setUserForm({ open: true, profile, role: 'mixed', allRoles: [], email: profile.__leadEmail || null });
+                                      return;
+                                    }
                                     const allRoles = userRoles.filter((x: any) => x.user_id === profile.user_id).map((x: any) => x.role);
                                     const r = allRoles.find((x: string) => ['provider','mixed','client','admin','master'].includes(x));
                                     setUserForm({ open: true, profile, role: r || 'client', allRoles, email: authUserEmails[profile.user_id] || null });
