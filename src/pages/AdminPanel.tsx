@@ -73,7 +73,7 @@ const AdminPanel = () => {
   const [loading, setLoading] = useState(true);
   const [clearDialog, setClearDialog] = useState(false);
 
-  const [userForm, setUserForm] = useState<{ open: boolean; profile: any | null; role: any; email: string | null }>({ open: false, profile: null, role: null, email: null });
+  const [userForm, setUserForm] = useState<{ open: boolean; profile: any | null; role: any; allRoles?: string[]; email: string | null }>({ open: false, profile: null, role: null, allRoles: [], email: null });
   
   const [productForm, setProductForm] = useState<{ open: boolean; item: DynamicProduct | null }>({ open: false, item: null });
   const [serviceForm, setServiceForm] = useState<{ open: boolean; item: DynamicService | null }>({ open: false, item: null });
