@@ -372,8 +372,33 @@ const ViniHome = () => {
 
   const handleAvatarClick = () => {
     wakeUp();
-    setSideOpen((v) => !v);
+    setSideOpen(true);
     window.dispatchEvent(new CustomEvent('vini:click'));
+  };
+
+  // Small-talk variants when the user taps the screen background.
+  // Vini "percebe" que o usuário está olhando e puxa um assunto leve.
+  const SMALL_TALK = [
+    'Tô por aqui se precisar — é só me dizer o que está procurando.',
+    'Posso te sugerir algo perto de você agora mesmo?',
+    'Quer que eu monte uma ideia rápida pro seu dia?',
+    'Pensei em algo que talvez te interesse — quer ouvir?',
+    'Se quiser, eu busco um prestador top da sua região.',
+    'Me conta: tá precisando resolver alguma coisa hoje?',
+  ];
+
+  const handleScreenTap = () => {
+    setSideOpen(true);
+    if (!hasInteracted) { wakeUp(); return; }
+    const now = Date.now();
+    if (now - lastSmallTalkRef.current < 12000) return; // throttle
+    if (smallTalkCountRef.current >= 4) return; // limit per visit
+    lastSmallTalkRef.current = now;
+    smallTalkCountRef.current += 1;
+    const name = user && displayName ? displayName.split(' ')[0] : null;
+    const base = SMALL_TALK[Math.floor(Math.random() * SMALL_TALK.length)];
+    const text = name && Math.random() < 0.4 ? `${name}, ${base.charAt(0).toLowerCase()}${base.slice(1)}` : base;
+    pushBubble({ role: 'vini', text });
   };
 
   const handleVoiceTap = () => {
