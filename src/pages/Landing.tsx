@@ -331,7 +331,7 @@ const Landing = () => {
       }
       setDataLoaded(true);
 
-      // Pre-fill smart search from URL ?q= passed by Vini Home
+      // Pré-aplicação direta vinda do Vini: filtra e executa busca sem abrir painel de IA
       try {
         const params = new URLSearchParams(window.location.search);
         const incomingQ = (params.get('q') || '').trim();
@@ -341,13 +341,17 @@ const Landing = () => {
           setSearchQuery(incomingQ);
           if (incomingType === 'service') setTypeFilter('service');
           else if (incomingType === 'product') setTypeFilter('product');
+          else setTypeFilter('all');
           const incomingNorm = incomingSegs.map(normalizeText);
-          if (incomingNorm.length) {
+          if (incomingNorm.length && segs) {
             setActiveSegments(segs
               .filter((s: any) => incomingNorm.some(n => normalizeText(s.name).includes(n)))
               .map((s: any) => s.name));
           }
-          refineWithVini(incomingQ, { openPanel: false, autoApply: true });
+          setInlineAiOpen(false);
+          setExecutedQuery(incomingQ);
+          setSearchExecuted(true);
+          setSearchVersion(v => v + 1);
           return;
         }
       } catch {}
