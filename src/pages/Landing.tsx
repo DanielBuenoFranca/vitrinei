@@ -344,9 +344,14 @@ const Landing = () => {
           else setTypeFilter('all');
           const incomingNorm = incomingSegs.map(normalizeText);
           if (incomingNorm.length && segs) {
-            setActiveSegments(segs
-              .filter((s: any) => incomingNorm.some(n => normalizeText(s.name).includes(n)))
-              .map((s: any) => s.name));
+            const matched = segs
+              .filter((s: any) => {
+                const segN = normalizeText(s.name);
+                const tags = (s.suggested_tags || []).map((t: string) => normalizeText(t));
+                return incomingNorm.some(n => segN === n || segN.includes(n) || n.includes(segN) || tags.some((t: string) => t.includes(n) || n.includes(t)));
+              })
+              .map((s: any) => s.name);
+            if (matched.length) setActiveSegments(matched);
           }
           setInlineAiOpen(false);
           setExecutedQuery(incomingQ);
@@ -760,32 +765,7 @@ const Landing = () => {
                   );
                 })()}
 
-                {noResults && (() => {
-                  const ctxSuggestion = generateContextualSuggestions(executedQuery);
-                  return (
-                    <div className="rounded-[24px] border border-accent/30 bg-card/95 p-4 shadow-xl">
-                      <div className="flex items-center gap-3 mb-3">
-                        <AiAvatar size={40} speaking={true} onClick={() => setShowAiPanel(true)} />
-                        <div>
-                          <h3 className="font-display font-bold text-foreground text-sm">Sugestões da IA</h3>
-                          <p className="text-xs text-muted-foreground">Não encontrei “{executedQuery}” diretamente. Selecione alternativas ou refine a busca.</p>
-                        </div>
-                      </div>
-                      {ctxSuggestion && (
-                        <div className="flex flex-wrap gap-2">
-                          {[...ctxSuggestion.suggestedServices.map(s => s.name), ...ctxSuggestion.suggestedProducts.map(p => p.name)].map((name) => {
-                            const selected = selectedSuggestions.has(name);
-                            return <button key={name} onClick={() => toggleSuggestionSelection(name)} className={`rounded-full border px-3 py-2 text-xs font-medium ${selected ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/50 text-foreground border-border'}`}>{name}</button>;
-                          })}
-                        </div>
-                      )}
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {ctxSuggestion && selectedSuggestions.size > 0 && <Button className="gap-2" onClick={() => handleSendSelectedSuggestions(ctxSuggestion)}><Headphones className="w-4 h-4" /> Enviar para Central</Button>}
-                        <Button variant="outline" className="gap-2" onClick={handleRefineSearch}><Search className="w-4 h-4" /> Refinar</Button>
-                      </div>
-                    </div>
-                  );
-                })()}
+                {/* Card "Sugestões da IA" (no-results) removido a pedido. */}
               </motion.div>
             )}
           </Search3DHero>
@@ -1279,116 +1259,7 @@ const Landing = () => {
                     );
                   })()}
 
-                  {/* ── NOT FOUND IN DATABASE ── */}
-                  {noResults && (() => {
-                    const ctxSuggestion = generateContextualSuggestions(executedQuery);
-                    return (
-                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-6">
-                        {/* Not found badge */}
-                        <div className="flex items-center gap-2 mb-4">
-                          <Badge className="bg-destructive/10 text-destructive border-destructive/20 text-xs px-3 py-1">
-                            <X className="w-3.5 h-3.5 mr-1.5" /> Não encontrado na base de dados
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">Pesquisa: "{executedQuery}"</span>
-                        </div>
-
-                        {/* AI contextual panel */}
-                        <div className="rounded-2xl border border-border bg-card p-5 mb-4">
-                          <div className="flex items-center gap-3 mb-4">
-                            <AiAvatar size={44} speaking={true} onClick={() => setShowAiPanel(true)} />
-                            <div>
-                              <h3 className="font-display font-bold text-foreground text-sm">🧠 Sugestões da IA</h3>
-                              <p className="text-xs text-muted-foreground">
-                                Não encontrei "{executedQuery}" na base, mas posso ajudar! Selecione o que mais se aproxima:
-                              </p>
-                            </div>
-                          </div>
-
-                          {ctxSuggestion ? (
-                            <div className="space-y-4">
-                              <p className="text-sm text-foreground">{ctxSuggestion.derivedContext}</p>
-                              <Badge className="bg-primary/10 text-primary border-primary/20 text-xs">📂 {ctxSuggestion.segmentLabel}</Badge>
-
-                              {/* Selectable suggestions as chips */}
-                              <div>
-                                <p className="text-xs font-semibold text-muted-foreground mb-2">Selecione uma ou mais opções:</p>
-                                <div className="flex flex-wrap gap-2">
-                                  {ctxSuggestion.suggestedServices.map((svc) => {
-                                    const isSelected = selectedSuggestions.has(svc.name);
-                                    return (
-                                      <motion.button
-                                        key={svc.name}
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={() => toggleSuggestionSelection(svc.name)}
-                                        className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs font-medium transition-all duration-200 border ${
-                                          isSelected
-                                            ? 'bg-primary text-primary-foreground border-primary shadow-md'
-                                            : 'bg-muted/50 text-foreground border-border hover:border-primary/40'
-                                        }`}
-                                      >
-                                        <WrenchIcon className="w-3.5 h-3.5" />
-                                        {svc.name}
-                                        {isSelected && <CheckCircle2 className="w-3.5 h-3.5" />}
-                                      </motion.button>
-                                    );
-                                  })}
-                                  {ctxSuggestion.suggestedProducts.map((prod) => {
-                                    const isSelected = selectedSuggestions.has(prod.name);
-                                    return (
-                                      <motion.button
-                                        key={prod.name}
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={() => toggleSuggestionSelection(prod.name)}
-                                        className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs font-medium transition-all duration-200 border ${
-                                          isSelected
-                                            ? 'bg-success text-primary-foreground border-success shadow-md'
-                                            : 'bg-muted/50 text-foreground border-border hover:border-success/40'
-                                        }`}
-                                      >
-                                        <ShoppingBag className="w-3.5 h-3.5" />
-                                        {prod.name}
-                                        {isSelected && <CheckCircle2 className="w-3.5 h-3.5" />}
-                                      </motion.button>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-
-                              {/* Action buttons */}
-                              <div className="flex flex-col sm:flex-row gap-2 pt-2">
-                                {selectedSuggestions.size > 0 && (
-                                  <Button className="gap-2" onClick={() => handleSendSelectedSuggestions(ctxSuggestion)}>
-                                    <Headphones className="w-4 h-4" /> Enviar {selectedSuggestions.size} seleção(ões) para a Central
-                                  </Button>
-                                )}
-                                <Button variant="outline" className="gap-2" onClick={handleRefineSearch}>
-                                  <Search className="w-4 h-4" /> Refinar pesquisa
-                                </Button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="space-y-3">
-                              <p className="text-sm text-muted-foreground">
-                                Não consegui identificar sugestões automáticas para "{executedQuery}".
-                              </p>
-                              <div className="flex flex-col sm:flex-row gap-2">
-                                <Button className="gap-2" onClick={() => {
-                                  const summary = buildSupportSummary(aiChat, executedQuery);
-                                  const params = new URLSearchParams({ query: executedQuery, context: 'Busca sem resultado', summary, type: 'both', segment: '' });
-                                  navigate(`/central-atendimento?${params.toString()}`);
-                                }}>
-                                  <Headphones className="w-4 h-4" /> Acionar Central (SLA 24h)
-                                </Button>
-                                <Button variant="outline" className="gap-2" onClick={handleRefineSearch}>
-                                  <Search className="w-4 h-4" /> Refinar pesquisa
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </motion.div>
-                    );
-                  })()}
+                  {/* Card "Sugestões da IA" (no-results) removido a pedido. */}
                 </motion.div>
               )}
             </AnimatePresence>
