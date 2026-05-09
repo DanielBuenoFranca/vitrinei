@@ -111,6 +111,7 @@ const ViniHome = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [modalInitialMessage, setModalInitialMessage] = useState<string | null>(null);
   const [modalInitialModality, setModalInitialModality] = useState<'voice' | 'text'>('text');
+  const [modalMode, setModalMode] = useState<'free' | 'commerce'>('free');
   const [searchBarVisible, setSearchBarVisible] = useState(false);
   const [searchBarMode, setSearchBarMode] = useState<'chat' | 'search'>('chat');
   const [radarActive, setRadarActive] = useState(false);
@@ -356,6 +357,9 @@ const ViniHome = () => {
     setSearchBarVisible(false);
     setModalInitialModality(modality);
     setModalInitialMessage(message?.trim() || null);
+    // Voz/Texto pela barra de busca → personalidade comercial completa.
+    // Botão "Conversar" (sem mensagem inicial) → papo livre puro.
+    setModalMode(message?.trim() ? 'commerce' : 'free');
     setChatOpen(true);
   };
 
@@ -962,6 +966,7 @@ const ViniHome = () => {
         initialMessage={modalInitialMessage}
         initialModality={modalInitialModality}
         onInitialConsumed={() => setModalInitialMessage(null)}
+        mode={modalMode}
       />
       <FavoritesModal open={favoritesOpen} onOpenChange={setFavoritesOpen} />
     </div>

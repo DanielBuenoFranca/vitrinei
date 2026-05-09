@@ -49,6 +49,12 @@ interface ViniConversationModalProps {
   initialMessage?: string | null;
   initialModality?: 'voice' | 'text';
   onInitialConsumed?: () => void;
+  /**
+   * 'free'     → papo puro (botão Conversar). Histórico zerado a cada abertura.
+   * 'commerce' → personalidade comercial completa (busca, contextualização,
+   *              agentes do ecossistema). Mantém histórico.
+   */
+  mode?: 'free' | 'commerce';
 }
 
 export function ViniConversationModal({
@@ -58,6 +64,7 @@ export function ViniConversationModal({
   initialMessage,
   initialModality = 'text',
   onInitialConsumed,
+  mode = 'free',
 }: ViniConversationModalProps) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
@@ -106,13 +113,18 @@ export function ViniConversationModal({
     setInput('');
     setError(null);
     setHistoryReady(false);
+    setMessages([]);
+    initialMessageKeyRef.current = null;
+    lastVoiceSubmissionRef.current = '';
 
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       userIdRef.current = user?.id ?? null;
 
       let history: Msg[] = [];
-      if (user?.id) {
+      // Modo 'free' (botão Conversar): histórico SEMPRE zerado — começamos
+      // do zero, com as boas-vindas do Vini, a cada abertura.
+      if (mode === 'commerce' && user?.id) {
         const { data } = await supabase
           .from('vini_conversations')
           .select('id, role, content, created_at, intent')
@@ -204,7 +216,7 @@ export function ViniConversationModal({
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
           signal: controller.signal,
-          body: JSON.stringify({ messages: apiMessages, userName: userName || null }),
+          body: JSON.stringify({ messages: apiMessages, userName: userName || null, mode }),
         });
 
         if (!resp.ok || !resp.body) {
