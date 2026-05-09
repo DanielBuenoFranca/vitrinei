@@ -205,12 +205,10 @@ export function ProviderForm({ open, onClose, onSaved, provider, segments }: Pro
 
     setSaving(true);
 
-    // Auto-generate logo if none provided
-    let finalLogoUrl = logoUrl;
-    if (!finalLogoUrl && form.name.trim()) {
-      finalLogoUrl = await generateAiLogo(form.name.trim(), selectedSegments[0] || '');
-      if (finalLogoUrl) setLogoUrl(finalLogoUrl);
-    }
+    // Logo: usa apenas o que foi enviado/escolhido manualmente.
+    // A geração automática via IA foi removida do save para evitar bloquear o cadastro
+    // (a função sanitize-images exige id válido, que ainda não existe ao criar).
+    const finalLogoUrl = logoUrl;
 
     const data: any = {
       ...form,
