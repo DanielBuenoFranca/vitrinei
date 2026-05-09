@@ -1285,8 +1285,9 @@ const AdminPanel = () => {
                                     );
                                   })()}
                                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
-                                    const r = userRoles.find((x: any) => x.user_id === profile.user_id && ['provider','mixed','client','admin','master'].includes(x.role));
-                                    setUserForm({ open: true, profile, role: r?.role || 'client', email: authUserEmails[profile.user_id] || null });
+                                    const allRoles = userRoles.filter((x: any) => x.user_id === profile.user_id).map((x: any) => x.role);
+                                    const r = allRoles.find((x: string) => ['provider','mixed','client','admin','master'].includes(x));
+                                    setUserForm({ open: true, profile, role: r || 'client', allRoles, email: authUserEmails[profile.user_id] || null });
                                   }}>
                                     <Pencil className="h-4 w-4" />
                                   </Button>
