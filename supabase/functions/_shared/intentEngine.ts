@@ -336,15 +336,15 @@ export async function classifyMessage(message: string, sessionCtx: any = {}): Pr
   //      cujo nome/tag bate com a fala (ex.: "Raiz para dor"), abrimos a
   //      tela de busca já filtrada.
   const keywords = extractKeywords(raw);
+  // Expansão conceitual: "hamburguer" → ["lanche","carne","comida","fome",...]
+  const concepts = expandConcepts(q);
   // Se houver necessidade detectada, expande com sinônimos da need (ex.:
-  // "quero remédio" também tenta "dor", "alivio", etc.)
-  const expandedKeywords = need
-    ? Array.from(new Set([
-        ...keywords,
-        ...norm(need.query).split(/\s+/).filter((w) => w.length >= 3),
-        need.id,
-      ]))
-    : keywords;
+  // "quero remédio" também tenta "dor", "alivio", etc.) e adiciona o grafo.
+  const expandedKeywords = Array.from(new Set([
+    ...keywords,
+    ...concepts,
+    ...(need ? [...norm(need.query).split(/\s+/).filter((w) => w.length >= 3), need.id] : []),
+  ]));
   const inv = await searchInventoryByKeywords(expandedKeywords);
 
   // Refinamento: se a frase é muito vaga (poucas palavras "úteis") e a need
