@@ -119,7 +119,9 @@ export function ViniConversationModal({
       userIdRef.current = user?.id ?? null;
 
       let history: Msg[] = [];
-      if (user?.id) {
+      // Modo 'free' (botão Conversar): histórico SEMPRE zerado — começamos
+      // do zero, com as boas-vindas do Vini, a cada abertura.
+      if (mode === 'commerce' && user?.id) {
         const { data } = await supabase
           .from('vini_conversations')
           .select('id, role, content, created_at, intent')
