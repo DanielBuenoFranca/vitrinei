@@ -29,6 +29,7 @@ import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
 import { FavoriteButton } from '@/components/FavoriteButton';
 import { FavoritesModal } from '@/components/FavoritesModal';
+import { useFavorites } from '@/hooks/useFavorites';
 
 
 
