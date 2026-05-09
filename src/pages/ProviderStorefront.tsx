@@ -608,162 +608,189 @@ const ProviderStorefront = () => {
         )}
       </AnimatePresence>
 
-      {/* Provider Profile Header */}
-      <section className="pt-16 px-4">
-        <div className="container mx-auto max-w-3xl">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            className="rounded-2xl border border-border bg-card overflow-hidden">
-            {/* Banner with carousel */}
-            <div className="h-32 relative overflow-hidden">
-              {/* Background image or gradient */}
-              {currentBanner.imageUrl ? (
-                <div className="absolute inset-0">
-                  <img src={currentBanner.imageUrl} alt="Banner" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/30" />
-                </div>
-              ) : (
+      {/* ──────────────── HERO MAGAZINE ──────────────── */}
+      <section className="pt-14">
+        <div className="relative">
+          {/* Banner backdrop full-bleed */}
+          <div className="relative h-56 sm:h-72 overflow-hidden">
+            {currentBanner.imageUrl ? (
+              <>
+                <img src={currentBanner.imageUrl} alt="Banner" className="absolute inset-0 w-full h-full object-cover scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-background" />
+              </>
+            ) : (
+              <>
                 <div className="absolute inset-0" style={{ background: currentBanner.gradient }} />
-              )}
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.18),transparent_55%),radial-gradient(circle_at_80%_70%,rgba(0,0,0,0.25),transparent_60%)]" />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
+              </>
+            )}
 
-              {/* Banner text */}
-              {currentBanner.text && (
-                <div className="absolute inset-0 flex items-center justify-center px-6">
-                  <span className="text-white font-bold text-lg drop-shadow-lg text-center leading-snug max-w-[80%] truncate">
+            {/* Banner text — editorial */}
+            {currentBanner.text && (
+              <div className="absolute inset-0 flex items-center px-6 sm:px-10">
+                <div className="max-w-2xl">
+                  <span className="inline-block text-[10px] font-bold tracking-[0.25em] uppercase text-white/70 mb-2">Em destaque</span>
+                  <h2 className="text-white font-display text-2xl sm:text-4xl font-extrabold leading-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)]">
                     {currentBanner.text}
-                  </span>
+                  </h2>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Carousel indicators */}
-              {totalBanners > 1 && (
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+            {/* Carousel controls */}
+            {totalBanners > 1 && (
+              <>
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
                   {Array.from({ length: totalBanners }).map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setCurrentBannerIdx(i)}
-                      className={`w-2 h-2 rounded-full transition-all ${i === currentBannerIdx % totalBanners ? 'bg-white w-4' : 'bg-white/50'}`}
-                    />
+                    <button key={i} onClick={() => setCurrentBannerIdx(i)}
+                      className={`h-1.5 rounded-full transition-all ${i === currentBannerIdx % totalBanners ? 'bg-white w-6' : 'bg-white/40 w-1.5 hover:bg-white/70'}`} />
                   ))}
                 </div>
-              )}
+                <button onClick={() => setCurrentBannerIdx(prev => (prev - 1 + totalBanners) % totalBanners)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/15 backdrop-blur-md hover:bg-white/30 flex items-center justify-center text-white border border-white/20 z-10">
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button onClick={() => setCurrentBannerIdx(prev => (prev + 1) % totalBanners)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/15 backdrop-blur-md hover:bg-white/30 flex items-center justify-center text-white border border-white/20 z-10">
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </>
+            )}
 
-              {/* Carousel arrows */}
-              {totalBanners > 1 && (
-                <>
-                  <button onClick={() => setCurrentBannerIdx(prev => (prev - 1 + totalBanners) % totalBanners)}
-                    className="absolute left-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-black/30 flex items-center justify-center text-white hover:bg-black/50">
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => setCurrentBannerIdx(prev => (prev + 1) % totalBanners)}
-                    className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-black/30 flex items-center justify-center text-white hover:bg-black/50">
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </>
-              )}
-
-              {/* Logo — always in foreground, never cropped */}
-              <div className="absolute -bottom-8 left-6 z-10">
-                {provider.logo_url ? (
-                  <div className="w-16 h-16 rounded-2xl border-4 border-card shadow-lg overflow-hidden bg-card">
-                    <img src={provider.logo_url} alt={provider.name} className="w-full h-full object-contain" />
-                  </div>
-                ) : (
-                  <div className="w-16 h-16 rounded-2xl bg-card border-4 border-card shadow-lg flex items-center justify-center">
-                    <SegIcon className="w-8 h-8 text-primary" />
-                  </div>
+            {/* Edit-mode floating actions on banner */}
+            {editMode && (
+              <div className="absolute top-3 right-3 flex gap-1.5 z-20">
+                {provider.logo_url && (
+                  <Button variant="secondary" size="sm" className="gap-1 text-[10px] h-7 bg-white/85 hover:bg-white text-foreground" onClick={downloadLogo}>
+                    <Download className="w-3 h-3" /> Logo
+                  </Button>
                 )}
+                <Button variant="secondary" size="sm" className="gap-1 text-[10px] h-7 bg-white/85 hover:bg-white text-foreground" onClick={generateLogo} disabled={generatingLogo}>
+                  <RefreshCw className={`w-3 h-3 ${generatingLogo ? 'animate-spin' : ''}`} /> {generatingLogo ? 'Gerando...' : 'Logo IA'}
+                </Button>
+                <Button variant="secondary" size="sm" className="gap-1 text-[10px] h-7 bg-white/85 hover:bg-white text-foreground" onClick={() => setProviderFormOpen(true)}>
+                  <Pencil className="w-3 h-3" /> Perfil
+                </Button>
               </div>
+            )}
+          </div>
 
-              {editMode && (
-                <div className="absolute top-2 right-2 flex gap-1 z-10">
-                  {provider.logo_url && (
-                    <Button variant="secondary" size="sm" className="gap-1 text-[10px] h-7 opacity-80 hover:opacity-100" onClick={downloadLogo}>
-                      <Download className="w-3 h-3" /> Logo
-                    </Button>
+          {/* Identity card overlapping banner */}
+          <div className="container mx-auto max-w-5xl px-4">
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+              className="relative -mt-20 sm:-mt-24 rounded-3xl border border-border/60 bg-card/90 backdrop-blur-xl shadow-[0_30px_80px_-30px_hsl(var(--primary)/0.35)] overflow-hidden">
+              <div className="p-5 sm:p-7 flex flex-col sm:flex-row gap-5 sm:gap-6">
+                {/* Logo block */}
+                <div className="shrink-0 mx-auto sm:mx-0">
+                  {provider.logo_url ? (
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl ring-4 ring-card shadow-[0_15px_40px_-12px_hsl(var(--primary)/0.4)] overflow-hidden bg-card">
+                      <img src={provider.logo_url} alt={provider.name} className="w-full h-full object-contain" />
+                    </div>
+                  ) : (
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl ring-4 ring-card bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center shadow-lg">
+                      <SegIcon className="w-10 h-10 text-primary" />
+                    </div>
                   )}
-                  <Button variant="secondary" size="sm" className="gap-1 text-[10px] h-7 opacity-80 hover:opacity-100" onClick={generateLogo} disabled={generatingLogo}>
-                    <RefreshCw className={`w-3 h-3 ${generatingLogo ? 'animate-spin' : ''}`} /> {generatingLogo ? 'Gerando...' : 'Gerar Logo IA'}
-                  </Button>
-                  <Button variant="secondary" size="sm" className="gap-1 text-[10px] h-7 opacity-80 hover:opacity-100" onClick={() => setProviderFormOpen(true)}>
-                    <Pencil className="w-3 h-3" /> Perfil
-                  </Button>
                 </div>
-              )}
-            </div>
 
-            <div className="pt-12 pb-5 px-6">
-              <div className="flex items-start justify-between flex-wrap gap-2">
-                <div>
-                  <h1 className="font-display text-xl font-bold text-foreground">{provider.name}</h1>
-                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                {/* Info block */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-foreground leading-tight">{provider.name}</h1>
+                        <Badge variant="outline" className="text-[10px] uppercase tracking-wider">
+                          {provider.type === 'mei' ? 'MEI' : 'PF'}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1.5 flex-wrap text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1 font-semibold text-foreground">
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" /> {provider.rating}
+                          <span className="font-normal text-muted-foreground ml-0.5">avaliação</span>
+                        </span>
+                        {provider.distance && (
+                          <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {provider.distance}</span>
+                        )}
+                        <span className="hidden sm:flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-emerald-500" /> Verificado</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Segment chips */}
+                  <div className="flex flex-wrap gap-1.5 mt-3">
                     {(Array.isArray(provider.segment) ? provider.segment : [provider.segment]).map(seg => (
-                      <Badge key={seg} className="bg-primary/10 text-primary border-primary/20 text-xs">{seg}</Badge>
+                      <Badge key={seg} className="bg-primary/10 text-primary border-primary/20 text-[11px] hover:bg-primary/15">{seg}</Badge>
                     ))}
-                    <Badge variant="outline" className="text-[10px]">{provider.type === 'mei' ? 'MEI' : 'Pessoa Física'}</Badge>
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Star className="w-3 h-3 fill-accent text-accent" /> {provider.rating}
-                    </span>
-                    {provider.distance && (
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <MapPin className="w-3 h-3" /> {provider.distance}
-                      </span>
-                    )}
+                    {segmentTags.slice(0, 4).map(tag => (
+                      <span key={tag} className="text-[10px] text-muted-foreground bg-muted/60 border border-border/40 px-2 py-0.5 rounded-full">{tag}</span>
+                    ))}
+                  </div>
+
+                  {/* Contact row */}
+                  {((config.showPhone !== false && provider.phone) || (config.showEmail !== false && provider.email) || (config.showAddress !== false && provider.city)) && (
+                    <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-3 text-[11px] text-muted-foreground">
+                      {(config.showPhone !== false) && provider.phone && (
+                        <span className="flex items-center gap-1.5"><Phone className="w-3 h-3 text-primary" /> {provider.phone}</span>
+                      )}
+                      {(config.showEmail !== false) && provider.email && (
+                        <span className="flex items-center gap-1.5"><Mail className="w-3 h-3 text-primary" /> {provider.email}</span>
+                      )}
+                      {(config.showAddress !== false) && provider.city && (
+                        <span className="flex items-center gap-1.5"><MapPinned className="w-3 h-3 text-primary" /> {provider.city}{provider.address ? ` · ${provider.address}` : ''}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Stat strip */}
+              <div className="grid grid-cols-3 border-t border-border/60 divide-x divide-border/60 bg-gradient-to-r from-muted/30 via-transparent to-muted/30">
+                <div className="px-4 py-3 flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <WrenchIcon className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-base font-bold text-foreground leading-none">{providerServices.length}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Serviços</p>
+                  </div>
+                </div>
+                <div className="px-4 py-3 flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                    <Package className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-base font-bold text-foreground leading-none">{providerProducts.length}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Produtos</p>
+                  </div>
+                </div>
+                <div className="px-4 py-3 flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-amber-400/15 flex items-center justify-center">
+                    <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
+                  </div>
+                  <div>
+                    <p className="text-base font-bold text-foreground leading-none">{provider.rating}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Reputação</p>
                   </div>
                 </div>
               </div>
 
-              {/* Contact info */}
-              <div className="flex flex-wrap gap-3 mt-3 text-xs text-muted-foreground">
-                {(config.showPhone !== false) && provider.phone && (
-                  <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {provider.phone}</span>
-                )}
-                {(config.showEmail !== false) && provider.email && (
-                  <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {provider.email}</span>
-                )}
-                {(config.showAddress !== false) && provider.city && (
-                  <span className="flex items-center gap-1"><MapPinned className="w-3 h-3" /> {provider.city}{provider.address ? ` - ${provider.address}` : ''}</span>
-                )}
-              </div>
-
-              {/* Segment tags */}
-              {segmentTags.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-3">
-                  {segmentTags.map(tag => (
-                    <span key={tag} className="text-[10px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">{tag}</span>
-                  ))}
+              {/* Edit quick-actions */}
+              {editMode && (
+                <div className="px-5 py-3 border-t border-border/60 flex flex-wrap gap-2 bg-muted/20">
+                  <Button variant="outline" size="sm" className="gap-1 text-xs h-8" onClick={() => { setEditService(null); setServiceFormOpen(true); }}>
+                    <Plus className="w-3.5 h-3.5" /> Novo Serviço
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1 text-xs h-8" onClick={() => { setEditProduct(null); setProductFormOpen(true); }}>
+                    <Plus className="w-3.5 h-3.5" /> Novo Produto
+                  </Button>
+                  <Button variant="default" size="sm" className="gap-1 text-xs h-8" onClick={() => setKitBuilderOpen(true)}>
+                    <Plus className="w-3.5 h-3.5" /> Novo Kit
+                  </Button>
                 </div>
               )}
-
-              {/* Stats */}
-              <div className="flex gap-4 mt-4 pt-3 border-t border-border items-center">
-                <div className="text-center">
-                  <p className="text-lg font-bold text-foreground">{providerServices.length}</p>
-                  <p className="text-[10px] text-muted-foreground">Serviços</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-lg font-bold text-foreground">{providerProducts.length}</p>
-                  <p className="text-[10px] text-muted-foreground">Produtos</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-lg font-bold text-foreground">{provider.rating}</p>
-                  <p className="text-[10px] text-muted-foreground">Avaliação</p>
-                </div>
-                {editMode && (
-                  <div className="ml-auto flex gap-1.5">
-                    <Button variant="outline" size="sm" className="gap-1 text-xs h-7" onClick={() => { setEditService(null); setServiceFormOpen(true); }}>
-                      <Plus className="w-3 h-3" /> Serviço
-                    </Button>
-                    <Button variant="outline" size="sm" className="gap-1 text-xs h-7" onClick={() => { setEditProduct(null); setProductFormOpen(true); }}>
-                      <Plus className="w-3 h-3" /> Produto
-                    </Button>
-                    <Button variant="default" size="sm" className="gap-1 text-xs h-7" onClick={() => setKitBuilderOpen(true)}>
-                      <Plus className="w-3 h-3" /> Kit
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
