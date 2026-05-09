@@ -3,6 +3,7 @@
 // descrição) para gerar imagens profissionais, realistas e fiéis ao item.
 // Modo ON = IA paga, modo OFF = imagem grátis (Unsplash → Pixabay → ...).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { understandSubject } from "../_shared/imageUnderstanding.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
