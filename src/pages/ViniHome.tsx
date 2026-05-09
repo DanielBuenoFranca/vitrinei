@@ -260,7 +260,7 @@ const ViniHome = () => {
     }, 60000);
   };
 
-  // Personalized greeting on login (fires only once per user per session)
+  // Personalized greeting on login (fires only once per user, persisted)
   useEffect(() => {
     if (!user) {
       lastGreetedUserRef.current = null;
@@ -268,6 +268,7 @@ const ViniHome = () => {
     }
     if (lastGreetedUserRef.current === user.id) return;
     lastGreetedUserRef.current = user.id;
+    if (wasGreeted(user.id)) return;
 
     const name = displayName?.split(' ')[0] || 'amigo';
     const role = profileLabel || 'usuário';
@@ -282,21 +283,23 @@ const ViniHome = () => {
       try { sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(next)); } catch {}
       return next;
     });
+    markGreeted(user.id);
     setHasInteracted(true);
     setChatExpanded(true);
     resetIdleTimer();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, displayName, profileLabel]);
 
-  // Generic greeting for visitors when they open Home (only once per session)
+  // Generic greeting for visitors when they open Home (only once, persisted)
   useEffect(() => {
     if (user) return; // logged-in path handled above
-    if (hasGreetingInHistory(bubbles)) return;
+    if (wasGreeted(null) || hasGreetingInHistory(bubbles)) return;
     const t = window.setTimeout(() => {
       pushBubble({
         role: 'vini',
         text: `${getGreeting().replace(/^[^\s]+\s/, '')} Sou o Vini, seu assistente do Vitrinei. Pode falar comigo ou tocar no microfone — te ajudo a achar o que precisa. 👋`,
       });
+      markGreeted(null);
       setHasInteracted(true);
       resetIdleTimer();
     }, 800);
