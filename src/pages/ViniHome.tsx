@@ -926,25 +926,8 @@ const ViniHome = () => {
       {/* ─── Bottom-left grid (Home, Radar, Indicação, Perfil, Demos) ─── */}
       <ViniBottomGrid items={gridItems} />
 
-      {/* ─── Live transcript while listening ─── */}
-      <AnimatePresence>
-        {(listening || (transcript && transcript === lastTranscript)) && (transcript || lastTranscript) && (
-          <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="absolute left-1/2 -translate-x-1/2 top-[18%] z-30 pointer-events-none px-4 w-full max-w-md"
-          >
-            <div className="glass-strong rounded-2xl px-4 py-2.5 text-center border border-primary/40 shadow-[0_0_30px_hsl(var(--primary)/0.25)]">
-              <p className="text-[10px] uppercase tracking-widest text-primary font-bold mb-0.5">
-                {listening ? 'Ouvindo…' : 'Você disse'}
-              </p>
-              <p className="text-sm sm:text-base font-medium text-foreground">"{transcript || lastTranscript}"</p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Banner de transcrição superior removido — a transcrição aparece
+          apenas dentro da barra de busca para evitar duplicidade visual. */}
 
       {/* Painel de histórico de conversa removido a pedido */}
 
