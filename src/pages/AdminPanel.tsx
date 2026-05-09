@@ -385,13 +385,14 @@ const AdminPanel = () => {
 
       if (!refEmail) {
         toast.warning('Lead sem e-mail — preencha o cadastro para ativar.');
-        setUserForm({ open: true, profile: lead, role: 'provider', email: null });
+        // Lead importado → padrão Perfil=Misto, Papel=Comum
+        setUserForm({ open: true, profile: lead, role: 'mixed', allRoles: ['mixed'], email: null });
         return;
       }
 
       setActivatingUser(userId);
       try {
-        // 1) Cria a conta auth com senha temporária + defaults (papel Prestador)
+        // 1) Cria a conta auth com senha temporária + defaults (Perfil=Misto p/ leads importados)
         const tmpPwd = `Tmp${Math.random().toString(36).slice(2, 10)}!`;
         const { data: createRes, error: createErr } = await supabase.functions.invoke('create-user', {
           body: {
@@ -399,7 +400,7 @@ const AdminPanel = () => {
             password: tmpPwd,
             name: lead.display_name || refEmail.split('@')[0],
             phone: lead.phone || undefined,
-            role: 'provider',
+            role: 'mixed',
           },
         });
         if (createErr || createRes?.error) {
