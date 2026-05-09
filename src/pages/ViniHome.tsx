@@ -152,7 +152,8 @@ const ViniHome = () => {
     if (!final) return;
     if (autoSubmitTimerRef.current) window.clearTimeout(autoSubmitTimerRef.current);
     lastSpokenRef.current = '';
-    openConversationWith(final, 'voice');
+    // Tela principal: voz finaliza → vai para o vendedor (busca)
+    sendQuery(final);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listening]);
 
