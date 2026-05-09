@@ -201,22 +201,8 @@ export function ImageSanitizationPanel() {
       </CardHeader>
       <CardContent className="space-y-3">
         {running && (
-          <div className="space-y-1 p-3 rounded-lg bg-muted/40 border">
-            <div className="flex items-center justify-between text-xs">
-              <span className="truncate">{progress.current || 'Processando...'}</span>
-              <span className="text-muted-foreground tabular-nums">
-                {progress.done}/{progress.total}
-              </span>
-            </div>
-            <Progress value={(progress.done / Math.max(1, progress.total)) * 100} />
-            <div className="flex gap-3 text-xs pt-1">
-              <span className="text-emerald-600 flex items-center gap-1">
-                <CheckCircle2 className="h-3 w-3" /> {results.ok} ok
-              </span>
-              <span className="text-destructive flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" /> {results.fail} falhas
-              </span>
-            </div>
+          <div className="p-3 rounded-lg bg-muted/40 border text-xs text-muted-foreground">
+            Rodando em segundo plano — você pode navegar livremente. O progresso aparece no canto inferior direito e um aviso será emitido ao concluir.
           </div>
         )}
 
