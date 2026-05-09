@@ -151,9 +151,16 @@ serve(async (req) => {
     "Que reflexão boa. O que te fez puxar esse assunto agora?",
     "Acho que dá pra explorar isso por vários ângulos. Por onde você quer começar?",
   ];
+  const COMMERCE_FALLBACKS = [
+    "Anotei aqui. Me diz um pouco mais — pra qual ocasião ou em qual região você precisa?",
+    "Boa! Quer que eu pense em opções mais em conta ou mais premium?",
+    "Entendi o pedido. Qual sua urgência: hoje, esta semana, ou pode planejar?",
+    "Show. Prefere um prestador próximo de você ou tanto faz a localização?",
+  ];
   const localReply = async () => {
+    const pool = mode === 'commerce' ? COMMERCE_FALLBACKS : FREE_CHAT_FALLBACKS;
     const seed = (userMsg || "").length + Date.now();
-    return FREE_CHAT_FALLBACKS[seed % FREE_CHAT_FALLBACKS.length];
+    return pool[seed % pool.length];
   };
 
   try {
