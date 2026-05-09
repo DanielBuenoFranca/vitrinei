@@ -73,7 +73,7 @@ const AdminPanel = () => {
   const [loading, setLoading] = useState(true);
   const [clearDialog, setClearDialog] = useState(false);
 
-  const [userForm, setUserForm] = useState<{ open: boolean; profile: any | null; role: any; email: string | null }>({ open: false, profile: null, role: null, email: null });
+  const [userForm, setUserForm] = useState<{ open: boolean; profile: any | null; role: any; allRoles?: string[]; email: string | null }>({ open: false, profile: null, role: null, allRoles: [], email: null });
   
   const [productForm, setProductForm] = useState<{ open: boolean; item: DynamicProduct | null }>({ open: false, item: null });
   const [serviceForm, setServiceForm] = useState<{ open: boolean; item: DynamicService | null }>({ open: false, item: null });
@@ -1082,11 +1082,12 @@ const AdminPanel = () => {
                           <TableHead>Avatar</TableHead>
                           <TableHead>Nome</TableHead>
                           <TableHead>E-mail</TableHead>
-                          <TableHead>Modalidade</TableHead>
+                          <TableHead title="CPF/CNPJ — identidade única no ecossistema">CPF/CNPJ</TableHead>
+                          <TableHead title="O que o usuário faz: Consumidor, Prestador ou Misto">Perfil</TableHead>
+                          <TableHead title="Permissões de gestão: Master, Admin ou Comum">Papel</TableHead>
                           <TableHead>Plano</TableHead>
                           <TableHead>Status E-mail</TableHead>
                           <TableHead>Telefone</TableHead>
-                          <TableHead>Papéis</TableHead>
                           <TableHead>Criado em</TableHead>
                           <TableHead>Ações</TableHead>
                         </TableRow>
@@ -1096,11 +1097,15 @@ const AdminPanel = () => {
                           const roles = userRoles.filter((r: any) => r.user_id === profile.user_id);
                           const userSub = userSubscriptions.find((s: any) => s.user_id === profile.user_id && s.status === 'active');
                           const userSubPending = userSubscriptions.find((s: any) => s.user_id === profile.user_id && s.status === 'pending');
-                          // Determine modalidade from roles
+                          // Perfil de negócio (o que o usuário FAZ)
                           const hasProvider = roles.some((r: any) => r.role === 'provider');
                           const hasClient = roles.some((r: any) => r.role === 'client');
                           const hasMixed = roles.some((r: any) => r.role === 'mixed');
-                          const modalidade = hasMixed ? 'Misto' : hasProvider && hasClient ? 'Misto' : hasProvider ? 'Prestador' : hasClient ? 'Comprador' : '—';
+                          const perfil = hasMixed ? 'Misto' : hasProvider && hasClient ? 'Misto' : hasProvider ? 'Prestador' : hasClient ? 'Consumidor' : '—';
+                          // Papel administrativo (o que o usuário PODE fazer no sistema)
+                          const isMasterRow = roles.some((r: any) => r.role === 'master');
+                          const isAdminRow = roles.some((r: any) => r.role === 'admin');
+                          const papel: 'Master' | 'Admin' | 'Comum' = isMasterRow ? 'Master' : isAdminRow ? 'Admin' : 'Comum';
                           const planLabel = userSub ? userSub.plan.charAt(0).toUpperCase() + userSub.plan.slice(1) : '—';
                           const planColor = userSub ? (userSub.plan === 'ouro' ? 'bg-yellow-500/20 text-yellow-700 border-yellow-300' : userSub.plan === 'prata' ? 'bg-gray-400/20 text-gray-600 border-gray-300' : 'bg-orange-500/20 text-orange-700 border-orange-300') : '';
                           return (
@@ -1121,12 +1126,33 @@ const AdminPanel = () => {
                                 )}
                               </TableCell>
                               <TableCell className="text-xs text-muted-foreground">{authUserEmails[profile.user_id] || profile.__leadEmail || '—'}</TableCell>
+                              <TableCell className="text-xs font-mono text-muted-foreground">
+                                {profile.cpf_cnpj
+                                  ? (String(profile.cpf_cnpj).toUpperCase() === 'ISENTO'
+                                      ? <Badge variant="outline" className="text-[9px] bg-amber-50 text-amber-700 border-amber-200">ISENTO</Badge>
+                                      : profile.cpf_cnpj)
+                                  : <span className="text-destructive/70">—</span>}
+                              </TableCell>
                               <TableCell>
                                 <Badge variant="outline" className="text-[10px]">
-                                  {modalidade === 'Prestador' && <Wrench className="w-2.5 h-2.5 mr-0.5 inline" />}
-                                  {modalidade === 'Comprador' && <ShoppingCart className="w-2.5 h-2.5 mr-0.5 inline" />}
-                                  {modalidade === 'Misto' && <Shuffle className="w-2.5 h-2.5 mr-0.5 inline" />}
-                                  {modalidade}
+                                  {perfil === 'Prestador' && <Wrench className="w-2.5 h-2.5 mr-0.5 inline" />}
+                                  {perfil === 'Consumidor' && <ShoppingCart className="w-2.5 h-2.5 mr-0.5 inline" />}
+                                  {perfil === 'Misto' && <Shuffle className="w-2.5 h-2.5 mr-0.5 inline" />}
+                                  {perfil}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className={`text-[10px] ${
+                                    papel === 'Master' ? 'bg-yellow-500/20 text-yellow-700 border-yellow-300' :
+                                    papel === 'Admin' ? 'bg-blue-500/20 text-blue-700 border-blue-300' :
+                                    'bg-muted text-muted-foreground'
+                                  }`}
+                                >
+                                  {papel === 'Master' && <Crown className="w-2.5 h-2.5 mr-0.5 inline" />}
+                                  {papel === 'Admin' && <Shield className="w-2.5 h-2.5 mr-0.5 inline" />}
+                                  {papel}
                                 </Badge>
                               </TableCell>
                               <TableCell>
@@ -1143,31 +1169,6 @@ const AdminPanel = () => {
                                 }
                               </TableCell>
                               <TableCell className="text-xs text-muted-foreground">{profile.phone || '—'}</TableCell>
-                              <TableCell>
-                                <div className="flex gap-1 flex-wrap">
-                                  {([
-                                    { role: 'master', icon: Crown, color: 'bg-yellow-500/20 text-yellow-700 border-yellow-300' },
-                                    { role: 'admin', icon: Shield, color: '' },
-                                    { role: 'moderator', icon: Shield, color: '' },
-                                    { role: 'provider', icon: Wrench, color: 'bg-blue-500/20 text-blue-700 border-blue-300' },
-                                    { role: 'client', icon: ShoppingCart, color: 'bg-green-500/20 text-green-700 border-green-300' },
-                                    { role: 'mixed', icon: Shuffle, color: 'bg-purple-500/20 text-purple-700 border-purple-300' },
-                                  ] as const).map(({ role, icon: Icon, color }) => {
-                                    const hasRole = roles.some((r: any) => r.role === role);
-                                    return (
-                                      <Badge
-                                        key={role}
-                                        variant={hasRole ? 'default' : 'outline'}
-                                        className={`text-[10px] cursor-pointer ${hasRole && color ? color : ''}`}
-                                        onClick={() => toggleUserRole(profile.user_id, role)}
-                                      >
-                                        <Icon className="w-2.5 h-2.5 mr-0.5" />
-                                        {role}
-                                      </Badge>
-                                    );
-                                  })}
-                                </div>
-                              </TableCell>
                               <TableCell className="text-xs text-muted-foreground">
                                 {new Date(profile.created_at).toLocaleDateString('pt-BR')}
                               </TableCell>
@@ -1284,8 +1285,9 @@ const AdminPanel = () => {
                                     );
                                   })()}
                                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
-                                    const r = userRoles.find((x: any) => x.user_id === profile.user_id && ['provider','mixed','client','admin','master'].includes(x.role));
-                                    setUserForm({ open: true, profile, role: r?.role || 'client', email: authUserEmails[profile.user_id] || null });
+                                    const allRoles = userRoles.filter((x: any) => x.user_id === profile.user_id).map((x: any) => x.role);
+                                    const r = allRoles.find((x: string) => ['provider','mixed','client','admin','master'].includes(x));
+                                    setUserForm({ open: true, profile, role: r || 'client', allRoles, email: authUserEmails[profile.user_id] || null });
                                   }}>
                                     <Pencil className="h-4 w-4" />
                                   </Button>
@@ -1514,6 +1516,7 @@ const AdminPanel = () => {
         onSaved={() => { fetchUsers(); fetchData(); reloadDynamicEntries(); }}
         profile={userForm.profile}
         currentRole={userForm.role}
+        currentRoles={(userForm.allRoles || []) as any}
         currentEmail={userForm.email}
         segments={segmentList}
       />

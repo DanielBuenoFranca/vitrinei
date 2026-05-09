@@ -20,6 +20,8 @@ import { maskPhone, maskCPFCNPJ, unmask, maskCEP, lookupCep, geocodeAddress } fr
 import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlans';
 
 type AppRole = 'master' | 'admin' | 'provider' | 'client' | 'mixed';
+type ProfileType = 'client' | 'provider' | 'mixed';
+type AdminLevel = 'none' | 'admin' | 'master';
 
 interface Segment { id: number; name: string; }
 
@@ -29,6 +31,9 @@ interface UserFormProps {
   onSaved: () => void;
   /** Profile + role atual quando edição. Null = novo. */
   profile?: any | null;
+  /** Lista completa de papéis do usuário (para derivar perfil + papel admin). */
+  currentRoles?: AppRole[] | null;
+  /** @deprecated mantido para compat; preferir currentRoles. */
   currentRole?: AppRole | null;
   currentEmail?: string | null;
   segments: Segment[];
@@ -72,15 +77,19 @@ const validateDoc = (raw: string): { valid: boolean; message: string } => {
   return validateCnpj(d) ? { valid: true, message: 'CNPJ válido ✓' } : { valid: false, message: 'CNPJ inválido' };
 };
 
-const ROLE_OPTIONS: { id: AppRole; label: string; icon: any; desc: string }[] = [
-  { id: 'master',   label: 'Master',     icon: Crown,        desc: 'Acesso total ao sistema' },
-  { id: 'admin',    label: 'Admin',      icon: Shield,       desc: 'Gerencia operação e dados' },
-  { id: 'provider', label: 'Prestador',  icon: Wrench,       desc: 'Vende serviços/produtos com vitrine' },
+const PROFILE_OPTIONS: { id: ProfileType; label: string; icon: any; desc: string }[] = [
   { id: 'client',   label: 'Consumidor', icon: ShoppingCart, desc: 'Compra serviços e produtos' },
+  { id: 'provider', label: 'Prestador',  icon: Wrench,       desc: 'Vende serviços/produtos com vitrine' },
   { id: 'mixed',    label: 'Misto',      icon: Shuffle,      desc: 'Prestador + Consumidor' },
 ];
 
-export function UserForm({ open, onClose, onSaved, profile, currentRole, currentEmail, segments }: UserFormProps) {
+const ADMIN_OPTIONS: { id: AdminLevel; label: string; icon: any; desc: string }[] = [
+  { id: 'none',   label: 'Comum',  icon: ShoppingCart, desc: 'Sem privilégios administrativos' },
+  { id: 'admin',  label: 'Admin',  icon: Shield,       desc: 'Gerencia operação e dados do sistema' },
+  { id: 'master', label: 'Master', icon: Crown,        desc: 'Controle total do ecossistema' },
+];
+
+export function UserForm({ open, onClose, onSaved, profile, currentRoles, currentRole, currentEmail, segments }: UserFormProps) {
   const isEdit = !!profile;
 
   // ── Estado: campos básicos ────────────────────────────────────
@@ -88,7 +97,8 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
-  const [role, setRole] = useState<AppRole>('client');
+  const [profileType, setProfileType] = useState<ProfileType>('client');
+  const [adminLevel, setAdminLevel] = useState<AdminLevel>('none');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [city, setCity] = useState('');
   const [address, setAddress] = useState('');
@@ -135,7 +145,20 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
       setEmail(currentEmail || '');
       setPassword('');
       setPhone(profile.phone || '');
-      setRole(currentRole || 'client');
+      // Deriva perfil + papel admin a partir das roles atuais
+      const allRoles = (currentRoles && currentRoles.length > 0)
+        ? currentRoles
+        : (currentRole ? [currentRole] : []);
+      const derivedProfile: ProfileType =
+        allRoles.includes('mixed') ? 'mixed' :
+        allRoles.includes('provider') && allRoles.includes('client') ? 'mixed' :
+        allRoles.includes('provider') ? 'provider' :
+        'client';
+      const derivedAdmin: AdminLevel =
+        allRoles.includes('master') ? 'master' :
+        allRoles.includes('admin') ? 'admin' : 'none';
+      setProfileType(derivedProfile);
+      setAdminLevel(derivedAdmin);
       setAvatarUrl(profile.avatar_url || '');
       setCity(profile.city || '');
       setAddress(profile.address || '');
@@ -162,7 +185,8 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
       }
     } else {
       setName(''); setEmail(''); setPassword(''); setPhone('');
-      setRole('client'); setAvatarUrl(''); setCity(''); setAddress('');
+      setProfileType('client'); setAdminLevel('none');
+      setAvatarUrl(''); setCity(''); setAddress('');
       setCep(''); setNeighborhood(''); setStateUf('');
       setLatitude(null); setLongitude(null);
       setCpfCnpj(''); setSkipDocValidation(false); setProviderType('mei');
@@ -172,9 +196,9 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
       setMarginPct(30); setProfitPct(20);
       setSelectedPlanId(defaultPlanId);
     }
-  }, [open, profile, currentRole, currentEmail, segments, defaultPlanId]);
+  }, [open, profile, currentRole, currentRoles, currentEmail, segments, defaultPlanId]);
 
-  const isProviderRole = role === 'provider' || role === 'mixed';
+  const isProviderRole = profileType === 'provider' || profileType === 'mixed';
   const docValidation = validateDoc(cpfCnpj);
   const rawDoc = cpfCnpj.replace(/\D/g, '');
 
@@ -304,7 +328,7 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
             password,
             name: name.trim(),
             phone: phone.trim() || undefined,
-            role,
+            role: profileType,
           },
         });
         if (error || data?.error) {
@@ -312,21 +336,42 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
           setSaving(false); return;
         }
         userId = data.user_id;
+        // Aplica papel administrativo se solicitado na criação
+        if (adminLevel !== 'none' && userId) {
+          await supabase.from('user_roles').insert({ user_id: userId, role: adminLevel });
+        }
       } else {
-        // Edição: atualizar role se mudou
-        if (currentRole !== role) {
-          // Remove papéis antigos não-master/admin do tipo cliente/prestador/misto
-          const { data: existingRoles } = await supabase.from('user_roles').select('id, role').eq('user_id', userId);
-          const businessRoles = ['client', 'provider', 'mixed'];
+        // Edição: sincroniza Perfil + Papel administrativo independentemente
+        const { data: existingRoles } = await supabase.from('user_roles').select('id, role').eq('user_id', userId);
+
+        // (a) Perfil de negócio: client / provider / mixed
+        const businessRoles = ['client', 'provider', 'mixed'];
+        const currentBusiness = existingRoles?.find(r => businessRoles.includes(r.role));
+        if (!currentBusiness || currentBusiness.role !== profileType) {
           const toRemove = existingRoles?.filter(r => businessRoles.includes(r.role)) || [];
           for (const r of toRemove) await supabase.from('user_roles').delete().eq('id', r.id);
+          await supabase.from('user_roles').insert({ user_id: userId, role: profileType });
+        }
 
-          // Adiciona novo (admin/master mantidos via toggle separado)
-          if (businessRoles.includes(role)) {
-            await supabase.from('user_roles').insert({ user_id: userId, role });
-          } else if (role === 'admin' || role === 'master') {
-            const has = existingRoles?.some(r => r.role === role);
-            if (!has) await supabase.from('user_roles').insert({ user_id: userId, role });
+        // (b) Papel administrativo: none / admin / master
+        const adminRoles = ['admin', 'master'];
+        const currentAdmin = existingRoles?.find(r => adminRoles.includes(r.role))?.role as AdminLevel | undefined;
+        const desired: AdminLevel = adminLevel;
+        if ((currentAdmin || 'none') !== desired) {
+          // Bloqueia remoção do último Master
+          if (currentAdmin === 'master' && desired !== 'master') {
+            const { count } = await supabase.from('user_roles').select('id', { count: 'exact', head: true }).eq('role', 'master');
+            if ((count || 0) <= 1) {
+              toast.error('Não é possível remover o último Master do sistema.');
+              setSaving(false); return;
+            }
+          }
+          // Remove o atual
+          const toRemoveAdmin = existingRoles?.filter(r => adminRoles.includes(r.role)) || [];
+          for (const r of toRemoveAdmin) await supabase.from('user_roles').delete().eq('id', r.id);
+          // Adiciona o novo (se não for 'none')
+          if (desired !== 'none') {
+            await supabase.from('user_roles').insert({ user_id: userId, role: desired });
           }
         }
 
@@ -429,23 +474,58 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
         </DialogHeader>
 
         <div className="grid gap-5 py-2">
-          {/* ── Perfil de acesso ── */}
+          {/* ── Identidade do Usuário (CPF) ── */}
+          <div className="rounded-lg border border-dashed border-primary/30 bg-primary/5 p-3">
+            <p className="text-[11px] text-muted-foreground leading-snug">
+              <strong className="text-foreground">Usuário</strong> = identidade única no ecossistema (CPF/CNPJ).
+              Cada usuário tem <strong>um Perfil</strong> (o que faz no sistema) e, opcionalmente, um <strong>Papel administrativo</strong> (poderes de gestão).
+            </p>
+          </div>
+
+          {/* ── Perfil (negócio) ── */}
           <div>
-            <Label className="text-sm font-semibold mb-2 block">Perfil de Acesso *</Label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {ROLE_OPTIONS.map(opt => (
+            <Label className="text-sm font-semibold mb-2 block">Perfil *</Label>
+            <p className="text-[11px] text-muted-foreground mb-2">Define o que o usuário faz no ecossistema.</p>
+            <div className="grid grid-cols-3 gap-2">
+              {PROFILE_OPTIONS.map(opt => (
                 <button
                   key={opt.id}
                   type="button"
-                  onClick={() => setRole(opt.id)}
+                  onClick={() => setProfileType(opt.id)}
                   className={`p-3 rounded-lg border text-left transition-all ${
-                    role === opt.id
+                    profileType === opt.id
                       ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
                       : 'border-border hover:border-primary/40'
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <opt.icon className={`w-4 h-4 ${role === opt.id ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <opt.icon className={`w-4 h-4 ${profileType === opt.id ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <span className="text-xs font-bold">{opt.label}</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground leading-tight">{opt.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Papel administrativo ── */}
+          <div>
+            <Label className="text-sm font-semibold mb-2 block">Papel Administrativo</Label>
+            <p className="text-[11px] text-muted-foreground mb-2">Permissões de gestão — independente do Perfil. Padrão: Comum.</p>
+            <div className="grid grid-cols-3 gap-2">
+              {ADMIN_OPTIONS.map(opt => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setAdminLevel(opt.id)}
+                  className={`p-3 rounded-lg border text-left transition-all ${
+                    adminLevel === opt.id
+                      ? 'border-amber-500 bg-amber-500/10 ring-2 ring-amber-500/30'
+                      : 'border-border hover:border-amber-500/40'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <opt.icon className={`w-4 h-4 ${adminLevel === opt.id ? 'text-amber-600' : 'text-muted-foreground'}`} />
                     <span className="text-xs font-bold">{opt.label}</span>
                   </div>
                   <p className="text-[10px] text-muted-foreground leading-tight">{opt.desc}</p>
