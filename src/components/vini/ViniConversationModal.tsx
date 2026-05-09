@@ -194,6 +194,10 @@ export function ViniConversationModal({
       setIsStreaming(true);
       const controller = new AbortController();
       abortRef.current = controller;
+      // Watchdog: se a resposta travar por mais de 30s, aborta para liberar o input
+      const watchdog = window.setTimeout(() => {
+        try { controller.abort(); } catch {}
+      }, 30000);
 
       const routedIntent = 'chat';
       // Modo Conversar PURO: sem roteador, sem busca, sem venda, sem redirecionamentos.
@@ -274,13 +278,24 @@ export function ViniConversationModal({
           void persistMessage('assistant', accumulated, modality, routedIntent);
         }
       } catch (e: any) {
-        if (e?.name === 'AbortError') return;
+        if (e?.name === 'AbortError') {
+          // timeout/abort: avisa o usuário em vez de ficar mudo
+          setMessages((m) =>
+            m.map((x) =>
+              x.id === assistantId
+                ? { ...x, content: x.content?.trim() ? x.content : '⚠️ Demorei demais para responder. Pode mandar de novo?' }
+                : x,
+            ),
+          );
+          return;
+        }
         const msg = e?.message || 'Não consegui responder agora.';
         setError(msg);
         setMessages((m) =>
           m.map((x) => (x.id === assistantId ? { ...x, content: `⚠️ ${msg}` } : x)),
         );
       } finally {
+        window.clearTimeout(watchdog);
         setIsStreaming(false);
       }
     },
