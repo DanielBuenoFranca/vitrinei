@@ -429,14 +429,15 @@ const ViniHome = () => {
     wakeUp();
     if (listening) {
       stop();
-      if (text.trim()) openConversationWith(text, 'voice');
+      // Voz da tela principal → super vendedor (busca no ecossistema)
+      if (text.trim()) sendQuery(text);
       return;
     }
     if (supported) {
       setSearchBarVisible(true);
-      setSearchBarMode('chat');
+      setSearchBarMode('search');
       start();
-      setTimeout(() => pushBubble({ role: 'vini', text: 'Estou ouvindo… 🎙️' }), 200);
+      setTimeout(() => pushBubble({ role: 'vini', text: 'Estou ouvindo… 🎙️ Me diga o que você precisa.' }), 200);
     } else {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
