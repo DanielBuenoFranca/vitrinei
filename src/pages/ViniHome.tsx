@@ -530,8 +530,8 @@ const ViniHome = () => {
 
   const handleTextSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchBarMode === 'search') sendQuery(text);
-    else openConversationWith(text, 'text');
+    // Texto digitado na barra principal → super vendedor (busca)
+    if (text.trim()) sendQuery(text);
     setText('');
     setSearchBarVisible(false);
   };
