@@ -1511,7 +1511,9 @@ const ImportPage = () => {
 
   const resetAll = () => {
     setRows([]); setErrors([]); setResult(null); setFileName(''); setEditingCell(null);
-    setDedupPending([]); setImportProgress(null);
+    setDedupPending([]); setImportProgress(null); setAutoFillSummary(null);
+    setGroupDecisions(new Map());
+    try { sessionStorage.removeItem(SESSION_KEY); } catch { /* noop */ }
     if (fileRef.current) fileRef.current.value = '';
   };
 
