@@ -30,28 +30,16 @@ const WELCOMES = [
 
 const FAREWELL_RX = /\b(tchau|bye|valeu|obrigad[ao]|fui|até logo|at[ée] mais|encerrar)\b/i;
 
-const buildContingencyReply = (text: string, userName?: string | null) => {
+const buildContingencyReply = (_text: string, userName?: string | null) => {
   const first = userName?.split(' ')[0] || '';
-  const q = text.toLowerCase();
   const name = first ? `${first}, ` : '';
-
-  if (/(carrinho|comprar|checkout|pagamento|finalizar)/.test(q)) {
-    return `${name}entendi que você quer avançar com compra ou pagamento. Posso te orientar no carrinho e, quando quiser, te levo para finalizar com segurança.`;
-  }
-  if (/(buscar|preciso|quero|procur|servi[cç]o|produto|profissional|prestador)/.test(q)) {
-    return `${name}entendi sua necessidade. Posso transformar isso em uma busca mais precisa por prestadores, serviços, kits ou produtos próximos. Se quiser, diga também bairro, urgência e faixa de preço.`;
-  }
-  if (/(o que voc[eê] pode|me ajuda|como funciona|quem é voc[eê])/.test(q)) {
-    return `${name}eu posso conversar com você, entender o que precisa, organizar buscas por produtos e serviços, lembrar o contexto do papo e te levar para a área certa do Vitrinei. Me diga em uma frase o que quer resolver agora.`;
-  }
-  if (/(loja|minha loja|vitrine|prestador|vender)/.test(q)) {
-    return `${name}posso ajudar com sua vitrine: apresentação, serviços, kits, produtos, preços e próximos passos para vender melhor no marketplace.`;
-  }
-  if (/(saldo|carteira|cashback|assinatura|plano)/.test(q)) {
-    return `${name}posso te ajudar a entender carteira, cashback, assinatura e benefícios. Me diga qual ponto você quer conferir primeiro.`;
-  }
-
-  return `${name}estou te acompanhando. Posso responder, resumir, sugerir caminhos e conectar sua conversa com busca, loja, carrinho ou suporte. Me conte mais um detalhe para eu agir com precisão.`;
+  const options = [
+    `${name}adorei o que você trouxe. Conta mais um pouco — tô curioso pra entender melhor.`,
+    `${name}interessante esse pensamento. Como você enxerga isso no dia a dia?`,
+    `${name}boa reflexão. Quer puxar esse fio um pouquinho mais?`,
+    `${name}faz sentido. E o que mais te vem à cabeça sobre isso?`,
+  ];
+  return options[Math.floor(Math.random() * options.length)];
 };
 
 interface ViniConversationModalProps {
