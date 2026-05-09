@@ -312,9 +312,25 @@ const ViniHome = () => {
     try { localStorage.setItem('vini:search-history', JSON.stringify(history.slice(-20))); } catch {}
   }, [history]);
 
-  // Cleanup idle timer on unmount
+  // Arm the idle timer on mount + reset on any user activity, so the
+  // autonomous "Vini puxa assunto" routine fires even for returning users
+  // (when the once-only welcome greeting is suppressed).
   useEffect(() => {
-    return () => { if (idleTimerRef.current) window.clearTimeout(idleTimerRef.current); };
+    resetIdleTimer();
+    const onActivity = () => {
+      lastInteractionRef.current = Date.now();
+      resetIdleTimer();
+    };
+    window.addEventListener('pointerdown', onActivity);
+    window.addEventListener('keydown', onActivity);
+    window.addEventListener('touchstart', onActivity, { passive: true });
+    return () => {
+      if (idleTimerRef.current) window.clearTimeout(idleTimerRef.current);
+      window.removeEventListener('pointerdown', onActivity);
+      window.removeEventListener('keydown', onActivity);
+      window.removeEventListener('touchstart', onActivity);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 
