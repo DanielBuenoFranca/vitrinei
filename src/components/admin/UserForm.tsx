@@ -77,15 +77,19 @@ const validateDoc = (raw: string): { valid: boolean; message: string } => {
   return validateCnpj(d) ? { valid: true, message: 'CNPJ válido ✓' } : { valid: false, message: 'CNPJ inválido' };
 };
 
-const ROLE_OPTIONS: { id: AppRole; label: string; icon: any; desc: string }[] = [
-  { id: 'master',   label: 'Master',     icon: Crown,        desc: 'Acesso total ao sistema' },
-  { id: 'admin',    label: 'Admin',      icon: Shield,       desc: 'Gerencia operação e dados' },
-  { id: 'provider', label: 'Prestador',  icon: Wrench,       desc: 'Vende serviços/produtos com vitrine' },
+const PROFILE_OPTIONS: { id: ProfileType; label: string; icon: any; desc: string }[] = [
   { id: 'client',   label: 'Consumidor', icon: ShoppingCart, desc: 'Compra serviços e produtos' },
+  { id: 'provider', label: 'Prestador',  icon: Wrench,       desc: 'Vende serviços/produtos com vitrine' },
   { id: 'mixed',    label: 'Misto',      icon: Shuffle,      desc: 'Prestador + Consumidor' },
 ];
 
-export function UserForm({ open, onClose, onSaved, profile, currentRole, currentEmail, segments }: UserFormProps) {
+const ADMIN_OPTIONS: { id: AdminLevel; label: string; icon: any; desc: string }[] = [
+  { id: 'none',   label: 'Comum',  icon: ShoppingCart, desc: 'Sem privilégios administrativos' },
+  { id: 'admin',  label: 'Admin',  icon: Shield,       desc: 'Gerencia operação e dados do sistema' },
+  { id: 'master', label: 'Master', icon: Crown,        desc: 'Controle total do ecossistema' },
+];
+
+export function UserForm({ open, onClose, onSaved, profile, currentRoles, currentRole, currentEmail, segments }: UserFormProps) {
   const isEdit = !!profile;
 
   // ── Estado: campos básicos ────────────────────────────────────
@@ -93,7 +97,8 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
-  const [role, setRole] = useState<AppRole>('client');
+  const [profileType, setProfileType] = useState<ProfileType>('client');
+  const [adminLevel, setAdminLevel] = useState<AdminLevel>('none');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [city, setCity] = useState('');
   const [address, setAddress] = useState('');
