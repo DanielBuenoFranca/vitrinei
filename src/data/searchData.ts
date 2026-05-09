@@ -1908,6 +1908,7 @@ export async function loadDynamicEntries(): Promise<void> {
         distance: row.distance,
         relatedServiceIds: row.related_service_ids || [],
         tags: row.tags || [],
+        segments: row.segments || [],
         image_url: row.image_url || null,
         _fromDb: true,
       }));
