@@ -339,11 +339,8 @@ export function UserForm({ open, onClose, onSaved, profile, currentRole, current
         }
       }
 
-      // 2) Auto-gerar logo se prestador sem logo
-      let finalLogo = logoUrl;
-      if (isProviderRole && !finalLogo && name.trim()) {
-        finalLogo = await generateAiLogo(name.trim(), selectedSegments[0] || 'Geral');
-      }
+      // 2) Logo: usa apenas o que foi enviado manualmente (geração automática removida).
+      const finalLogo = logoUrl;
 
       // 3) Atualiza profile (trigger sincroniza providers)
       const profileData: any = {
