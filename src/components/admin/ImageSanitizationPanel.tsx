@@ -151,20 +151,23 @@ export function ImageSanitizationPanel() {
             size="sm"
             variant="secondary"
             disabled={running}
-            onClick={async () => {
-              setRunning(true);
-              toast.info('Gerando imagens IA do catálogo (pode demorar)...');
-              const { data, error } = await supabase.functions.invoke('bulk-generate-catalog-images', {
-                body: { target: 'all', force: false },
+            onClick={() => {
+              startJob({
+                id: 'bulk-catalog-images',
+                label: 'Gerando imagens IA do catálogo',
+                run: async (report) => {
+                  report('Disparando geração no servidor...', 10);
+                  const { data, error } = await supabase.functions.invoke('bulk-generate-catalog-images', {
+                    body: { target: 'all', force: false },
+                  });
+                  if (error) throw new Error(error.message);
+                  report('Atualizando lista...', 95);
+                  scan();
+                  return data?.result;
+                },
+                successMessage: (r: any) =>
+                  `Catálogo: Seg ${r?.segments?.ok ?? 0}/${r?.segments?.fail ?? 0} · Prest ${r?.providers?.ok ?? 0}/${r?.providers?.fail ?? 0}`,
               });
-              setRunning(false);
-              if (error) { toast.error('Falha: ' + error.message); return; }
-              const r = data?.result;
-              toast.success(
-                `Segmentos: ${r?.segments?.ok ?? 0} ok / ${r?.segments?.fail ?? 0} falhas. ` +
-                `Prestadores: ${r?.providers?.ok ?? 0} ok / ${r?.providers?.fail ?? 0} falhas.`
-              );
-              scan();
             }}
           >
             <Sparkles className="h-4 w-4 mr-1" /> Gerar imagens catálogo (IA)
@@ -173,17 +176,23 @@ export function ImageSanitizationPanel() {
             size="sm"
             variant="outline"
             disabled={running}
-            onClick={async () => {
+            onClick={() => {
               if (!confirm('Regerar TODAS as imagens (segmentos + prestadores), inclusive os que já têm? Custo de IA elevado.')) return;
-              setRunning(true);
-              const { data, error } = await supabase.functions.invoke('bulk-generate-catalog-images', {
-                body: { target: 'all', force: true },
+              startJob({
+                id: 'bulk-catalog-images-force',
+                label: 'Regerando todas as imagens do catálogo',
+                run: async (report) => {
+                  report('Disparando regeração...', 10);
+                  const { data, error } = await supabase.functions.invoke('bulk-generate-catalog-images', {
+                    body: { target: 'all', force: true },
+                  });
+                  if (error) throw new Error(error.message);
+                  report('Atualizando lista...', 95);
+                  scan();
+                  return data?.result;
+                },
+                successMessage: (r: any) => `Regenerado. Seg ${r?.segments?.ok ?? 0} · Prest ${r?.providers?.ok ?? 0}`,
               });
-              setRunning(false);
-              if (error) { toast.error('Falha: ' + error.message); return; }
-              const r = data?.result;
-              toast.success(`Regenerado. Seg: ${r?.segments?.ok}/${r?.providers?.ok} prestadores`);
-              scan();
             }}
           >
             Forçar regeração
