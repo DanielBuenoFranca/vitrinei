@@ -75,7 +75,8 @@ Deno.serve(async (req) => {
 
     const meta = updatedUser?.user?.user_metadata || {}
     const userEmail = updatedUser?.user?.email || ''
-    const selectedProfile = meta.selected_profile || 'client'
+    // Padrão para leads importados: Perfil=Misto (consumidor + prestador) + Papel=Comum (sem admin/master)
+    const selectedProfile = meta.selected_profile || 'mixed'
 
     // 2) Plano (selecionado ou padrão = mediano)
     let selectedPlan: string = meta.selected_plan || ''
