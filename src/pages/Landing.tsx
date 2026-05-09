@@ -29,7 +29,7 @@ import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
 import { FavoriteButton } from '@/components/FavoriteButton';
 import { FavoritesModal } from '@/components/FavoritesModal';
-import { useFavorites } from '@/hooks/useFavorites';
+
 
 
 const aiSuggestions = [
@@ -116,7 +116,7 @@ const Landing = () => {
   const [aiSpeaking, setAiSpeaking] = useState(false);
   const [expandedProducts, setExpandedProducts] = useState<number | null>(null);
   const [favoritesOpen, setFavoritesOpen] = useState(false);
-  const { count: favoritesCount } = useFavorites();
+  
   const [expandedServices, setExpandedServices] = useState<number | null>(null);
   const [showSearchProducts, setShowSearchProducts] = useState(false);
   const [servicesCarouselOpen, setServicesCarouselOpen] = useState(false);
@@ -1625,7 +1625,7 @@ const Landing = () => {
           {[
             { label: 'Home', icon: Home, onClick: () => navigate('/') },
             { label: 'Urgência', icon: Zap, onClick: () => navigate('/radar-urgencia') },
-            { label: 'Favoritos', icon: Heart, onClick: () => setFavoritesOpen(true), badge: favoritesCount },
+            { label: 'Favoritos', icon: Heart, onClick: () => setFavoritesOpen(true) },
             { label: 'Perfil', icon: Users, onClick: () => navigate(user ? '/carteira' : '/auth') },
             { label: 'Indicação', icon: Sparkles, onClick: () => navigate('/convite/INDIQUE') },
           ].map((btn) => (

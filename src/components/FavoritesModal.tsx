@@ -39,7 +39,6 @@ export function FavoritesModal({ open, onOpenChange }: Props) {
           <DialogTitle className="flex items-center gap-2 text-white">
             <Heart className="w-4 h-4 text-rose-400 fill-rose-400" />
             Favoritos
-            <span className="text-xs text-white/50 font-normal">({favorites.length})</span>
           </DialogTitle>
           <DialogDescription className="text-[11px] text-white/55">
             Toque para abrir a loja ou ver o item na busca.
