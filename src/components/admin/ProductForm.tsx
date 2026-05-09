@@ -101,14 +101,15 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
       });
       setSelectedTags(product.tags || []);
       setImageUrl((product as any).image_url || null);
-      if (product.provider_id) {
+      // Fonte da verdade: product.segments. Fallback: segmentos do prestador (legado).
+      const productSegs: string[] = Array.isArray((product as any).segments) ? (product as any).segments : [];
+      let initialSegs = productSegs;
+      if (initialSegs.length === 0 && product.provider_id) {
         const prov = providers.find(p => p.id === product.provider_id);
-        if (prov) {
-          const provSegs = Array.isArray(prov.segment) ? prov.segment : [prov.segment];
-          setSelectedSegments(provSegs);
-          loadSegmentTags(provSegs);
-        }
+        if (prov) initialSegs = Array.isArray(prov.segment) ? prov.segment : [prov.segment];
       }
+      setSelectedSegments(initialSegs);
+      loadSegmentTags(initialSegs);
     } else {
       setForm({ name: '', price: 0, provider: '', provider_id: null, stock_type: 'fisico', rating: 4.5, distance: '2 km', product_id: Math.floor(Math.random() * 9000) + 1000, unit: 'un', quantity: 0 });
       setSelectedTags([]);
