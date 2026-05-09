@@ -54,6 +54,24 @@ const BROAD_CONTEXT_MAP: Record<string, {
   productKeywords: string[];
   label: string;
 }> = {
+  comida: {
+    segments: ['alimentacao', 'alimentação'],
+    serviceKeywords: ['comida', 'prato', 'marmita', 'feira', 'fruta', 'hortifruti', 'tempero', 'massa', 'carne', 'bolo', 'salgado', 'congelado'],
+    productKeywords: ['alimentação', 'comida', 'prato', 'marmita', 'fruta', 'verdura', 'legume', 'carne', 'bolo', 'torta', 'salgado', 'pão', 'pizza', 'congelado'],
+    label: 'Alimentação — Comidas e Produtos',
+  },
+  fome: {
+    segments: ['alimentacao', 'alimentação'],
+    serviceKeywords: ['comida', 'prato', 'marmita', 'feira', 'massa', 'carne', 'bolo', 'salgado', 'congelado'],
+    productKeywords: ['alimentação', 'comida', 'prato', 'marmita', 'fruta', 'verdura', 'legume', 'carne', 'bolo', 'torta', 'salgado', 'pão', 'pizza', 'congelado'],
+    label: 'Fome — Opções de Alimentação',
+  },
+  alimentacao: {
+    segments: ['alimentacao', 'alimentação'],
+    serviceKeywords: ['comida', 'prato', 'marmita', 'feira', 'fruta', 'hortifruti', 'tempero', 'massa', 'carne', 'bolo', 'salgado', 'congelado'],
+    productKeywords: ['alimentação', 'comida', 'prato', 'marmita', 'fruta', 'verdura', 'legume', 'carne', 'bolo', 'torta', 'salgado', 'pão', 'pizza', 'congelado'],
+    label: 'Alimentação — Comidas e Produtos',
+  },
   casa: {
     segments: ['casa', 'manutencao'],
     serviceKeywords: ['limpeza', 'faxina', 'encanador', 'eletricista', 'pintor', 'jardineiro', 'dedetização', 'mudança', 'organização', 'decoração'],
@@ -1286,14 +1304,31 @@ function handleBroadContextSearch(query: string): SearchResult | null {
       const allSvcs = getAllServices();
       const allProds = getAllProducts();
       
-      const services = allSvcs.filter(s => 
-        ctx.segments.includes(s.segment) ||
-        ctx.serviceKeywords.some(kw => normalize(s.name).includes(normalize(kw)))
+      const normalizedSegments = ctx.segments.map(normalize);
+      const segmentMatches = (segment?: string) => {
+        const ns = normalize(segment || '');
+        return normalizedSegments.some(ctxSeg => ns === ctxSeg || ns.includes(ctxSeg) || ctxSeg.includes(ns));
+      };
+      const hasKeyword = (text: string, keyword: string) => {
+        const textNorm = normalize(text);
+        const keywordNorm = normalize(keyword);
+        const textTokens = tokenizePhrase(textNorm);
+        const keywordTokens = tokenizePhrase(keywordNorm);
+        if (keywordTokens.length > 1) return textNorm.includes(keywordNorm);
+        return textTokens.some(token => token === keywordNorm || token === `${keywordNorm}s`);
+      };
+      const foodContext = normalizedSegments.some(seg => seg === 'alimentacao');
+      const petFood = (text: string) => /\b(pet|cachorro|gato|racao|ração)\b/.test(normalize(text));
+      const services = allSvcs.filter(s =>
+        segmentMatches(s.segment) ||
+        ctx.serviceKeywords.some(kw => hasKeyword(s.name, kw))
       );
       
       const products = allProds.filter(p => {
         const pText = normalize([p.name, ...p.tags].join(' '));
-        return ctx.productKeywords.some(kw => pText.includes(normalize(kw))) ||
+        if (foodContext && petFood(pText)) return false;
+        return segmentMatches(p.tags.join(' ')) ||
+          ctx.productKeywords.some(kw => hasKeyword(pText, kw)) ||
           p.relatedServiceIds.some(id => services.some(s => s.id === id));
       });
       
