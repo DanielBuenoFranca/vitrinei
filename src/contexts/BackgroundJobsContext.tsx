@@ -104,13 +104,13 @@ export const BackgroundJobsProvider = ({ children }: { children: React.ReactNode
       const result = await run(report);
       const msg = successMessage ? successMessage(result) : `${label} concluído`;
       upsert(id, { status: 'success', percent: 100, step: 'Concluído', finishedAt: Date.now(), message: msg });
-      toast.success(msg);
+      toast.success(msg, { id });
       pushNotify('Vitrinei Connect', msg);
       return result;
     } catch (err: any) {
       const msg = errorMessage ? errorMessage(err) : `${label} falhou: ${err?.message || 'erro'}`;
       upsert(id, { status: 'error', step: 'Falhou', finishedAt: Date.now(), message: msg });
-      toast.error(msg);
+      toast.error(msg, { id });
       pushNotify('Vitrinei Connect', msg);
     } finally {
       runningRef.current.delete(id);
@@ -136,19 +136,25 @@ export const useBackgroundJobs = () => {
 const BackgroundJobsWidget = ({ jobs, dismissJob }: { jobs: JobState[]; dismissJob: (id: string) => void }) => {
   const navigate = useNavigate();
   if (jobs.length === 0) return null;
+  const handleCardClick = (j: JobState) => {
+    // limpa o push/toast e o card de status, depois navega se houver rota
+    toast.dismiss(j.id);
+    if (j.status !== 'running') dismissJob(j.id);
+    if (j.route) navigate(j.route);
+  };
   return (
     <div className="fixed bottom-4 right-4 z-[60] w-[320px] max-w-[90vw] space-y-2 pointer-events-none">
       {jobs.map(j => {
-        const clickable = !!j.route;
+        const clickable = !!j.route || j.status !== 'running';
         return (
           <div
             key={j.id}
             role={clickable ? 'button' : undefined}
             tabIndex={clickable ? 0 : undefined}
-            onClick={() => { if (clickable) navigate(j.route!); }}
-            onKeyDown={(e) => { if (clickable && (e.key === 'Enter' || e.key === ' ')) navigate(j.route!); }}
+            onClick={() => { if (clickable) handleCardClick(j); }}
+            onKeyDown={(e) => { if (clickable && (e.key === 'Enter' || e.key === ' ')) handleCardClick(j); }}
             className={`pointer-events-auto rounded-lg border bg-background/95 backdrop-blur shadow-lg p-3 text-xs ${clickable ? 'cursor-pointer hover:border-primary/60 hover:bg-muted/40 transition-colors' : ''}`}
-            title={clickable ? 'Abrir tela em execução' : undefined}
+            title={clickable ? (j.route ? 'Abrir tela e limpar aviso' : 'Limpar aviso') : undefined}
           >
             <div className="flex items-center gap-2">
               {j.status === 'running' && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />}
