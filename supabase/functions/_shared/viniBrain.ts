@@ -427,7 +427,11 @@ export function think(input: BrainInput, learned: LearnedPattern[] = []): BrainO
     const filtered = candidates.filter(
       (t) => !previousAssistant.toLowerCase().includes(`#${t.id}`),
     );
-    const chosen = pick(filtered.length ? filtered : candidates, seedOf(nq));
+    const pool = (filtered.length ? filtered : candidates).slice();
+    // Mantém só os tópicos com a maior prioridade encontrada
+    const maxPrio = Math.max(...pool.map((t) => TOPIC_PRIORITY[t.id] ?? 1));
+    const top = pool.filter((t) => (TOPIC_PRIORITY[t.id] ?? 1) === maxPrio);
+    const chosen = pick(top, seedOf(nq));
     const reply = pick(chosen.replies, seedOf(nq + chosen.id))({ name, q });
     const fu = chosen.followUp?.({ name, q });
     return {
