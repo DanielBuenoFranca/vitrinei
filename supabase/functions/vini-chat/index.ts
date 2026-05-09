@@ -158,9 +158,9 @@ serve(async (req) => {
 
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    const { mode } = await getAiMode();
+    const { mode: aiMode } = await getAiMode();
 
-    if (mode === "off" || !LOVABLE_API_KEY) {
+    if (aiMode === "off" || !LOVABLE_API_KEY) {
       void logAiSavings("vini-chat", "local_brain", 1, {
         reason: !LOVABLE_API_KEY ? "no_key" : "mode_off",
       });
