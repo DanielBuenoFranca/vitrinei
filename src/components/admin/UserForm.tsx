@@ -145,7 +145,20 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
       setEmail(currentEmail || '');
       setPassword('');
       setPhone(profile.phone || '');
-      setRole(currentRole || 'client');
+      // Deriva perfil + papel admin a partir das roles atuais
+      const allRoles = (currentRoles && currentRoles.length > 0)
+        ? currentRoles
+        : (currentRole ? [currentRole] : []);
+      const derivedProfile: ProfileType =
+        allRoles.includes('mixed') ? 'mixed' :
+        allRoles.includes('provider') && allRoles.includes('client') ? 'mixed' :
+        allRoles.includes('provider') ? 'provider' :
+        'client';
+      const derivedAdmin: AdminLevel =
+        allRoles.includes('master') ? 'master' :
+        allRoles.includes('admin') ? 'admin' : 'none';
+      setProfileType(derivedProfile);
+      setAdminLevel(derivedAdmin);
       setAvatarUrl(profile.avatar_url || '');
       setCity(profile.city || '');
       setAddress(profile.address || '');
@@ -172,7 +185,8 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
       }
     } else {
       setName(''); setEmail(''); setPassword(''); setPhone('');
-      setRole('client'); setAvatarUrl(''); setCity(''); setAddress('');
+      setProfileType('client'); setAdminLevel('none');
+      setAvatarUrl(''); setCity(''); setAddress('');
       setCep(''); setNeighborhood(''); setStateUf('');
       setLatitude(null); setLongitude(null);
       setCpfCnpj(''); setSkipDocValidation(false); setProviderType('mei');
@@ -182,9 +196,9 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
       setMarginPct(30); setProfitPct(20);
       setSelectedPlanId(defaultPlanId);
     }
-  }, [open, profile, currentRole, currentEmail, segments, defaultPlanId]);
+  }, [open, profile, currentRole, currentRoles, currentEmail, segments, defaultPlanId]);
 
-  const isProviderRole = role === 'provider' || role === 'mixed';
+  const isProviderRole = profileType === 'provider' || profileType === 'mixed';
   const docValidation = validateDoc(cpfCnpj);
   const rawDoc = cpfCnpj.replace(/\D/g, '');
 
