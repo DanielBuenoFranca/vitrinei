@@ -536,38 +536,7 @@ const Landing = () => {
             {(inlineAiOpen || searchExecuted) && (
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-5 pb-6">
 
-                {inlineAiOpen && (
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-3 backdrop-blur-xl shadow-xl">
-                    <div className="flex items-center gap-2 mb-2">
-                      <AiAvatar size={32} speaking={aiRefining} />
-                      <div className="min-w-0">
-                        <h3 className="text-[12px] font-bold text-white">Sugestões da IA</h3>
-                        <p className="text-[10px] text-white/55">Vou refinar antes de mostrar os resultados.</p>
-                      </div>
-                    </div>
-                    <div className="max-h-40 overflow-y-auto no-scrollbar space-y-1.5 mb-2">
-                      {aiChat.slice(-4).map((m, i) => (
-                        <div key={`${m.role}-${i}-${m.text}`} className={`text-[11px] leading-snug rounded-xl px-2.5 py-1.5 ${m.role === 'user' ? 'ml-8 bg-primary/80 text-primary-foreground' : 'mr-8 bg-black/25 text-white/85 border border-white/10'}`}>
-                          {m.text}
-                        </div>
-                      ))}
-                      {aiRefining && <div className="mr-8 bg-black/25 text-white/70 border border-white/10 text-[11px] rounded-xl px-2.5 py-1.5">Analisando contexto…</div>}
-                    </div>
-                    {(aiRoute?.suggestions || []).length > 0 && (
-                      <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
-                        {aiRoute!.suggestions!.map((s) => (
-                          <button key={s} onClick={() => { setAiMessage(''); refineWithVini(`${searchQuery} ${s}`, { openPanel: true, autoApply: true }); }} className="shrink-0 rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[10px] font-medium text-white/85">
-                            {s}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    <div className="mt-2 flex gap-2">
-                      <Input value={aiMessage} onChange={(e) => setAiMessage(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAiSend()} placeholder="Responder ao Vini…" className="h-8 bg-black/25 border-white/10 text-white placeholder:text-white/35 text-xs" />
-                      <Button size="sm" onClick={handleAiSend} disabled={aiRefining || !aiMessage.trim()} className="h-8 px-3"><Send className="w-3 h-3" /></Button>
-                    </div>
-                  </div>
-                )}
+                {/* Card "Sugestões da IA" removido a pedido. */}
 
                 {/* Bloco "Prestadores próximos" removido — substituído pela seção "Prestadores / Fornecedores" no hero. */}
 
