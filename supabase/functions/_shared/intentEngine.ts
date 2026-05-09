@@ -265,7 +265,16 @@ export async function classifyMessage(message: string, sessionCtx: any = {}): Pr
   //      cujo nome/tag bate com a fala (ex.: "Raiz para dor"), abrimos a
   //      tela de busca já filtrada.
   const keywords = extractKeywords(raw);
-  const inv = await searchInventoryByKeywords(keywords);
+  // Se houver necessidade detectada, expande com sinônimos da need (ex.:
+  // "quero remédio" também tenta "dor", "alivio", etc.)
+  const expandedKeywords = need
+    ? Array.from(new Set([
+        ...keywords,
+        ...norm(need.query).split(/\s+/).filter((w) => w.length >= 3),
+        need.id,
+      ]))
+    : keywords;
+  const inv = await searchInventoryByKeywords(expandedKeywords);
   if (inv.products.length + inv.services.length > 0) {
     const sample = inv.products[0]?.name || inv.services[0]?.name || inv.matchedKeyword;
     out.intent = "search";
