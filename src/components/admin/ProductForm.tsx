@@ -208,6 +208,11 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
         const merged = Array.from(new Set([...current, ...selectedSegments]));
         if (merged.length !== current.length) {
           await supabase.from('providers').update({ segment: merged }).eq('id', form.provider_id);
+          // Sincroniza também no profile do dono (se tiver user_id vinculado)
+          const { data: provRow } = await supabase.from('providers').select('user_id').eq('id', form.provider_id).maybeSingle();
+          if (provRow?.user_id) {
+            await supabase.from('profiles').update({ provider_segments: merged, is_provider: true }).eq('user_id', provRow.user_id);
+          }
         }
       } catch {}
     }
