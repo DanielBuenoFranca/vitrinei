@@ -189,6 +189,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
       unit: form.unit,
       quantity: form.quantity,
       image_url: imageUrl,
+      segments: selectedSegments,
     };
     if (isEdit) {
       const { error } = await supabase.from('dynamic_products').update(data).eq('id', product!.id);
