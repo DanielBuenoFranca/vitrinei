@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getAiMode, autoOffOnFailure, logAiSavings } from "../_shared/aiCredits.ts";
-import { thinkAsync, streamBrainReply, type BrainMessage } from "../_shared/viniBrain.ts";
+import { streamBrainReply, type BrainMessage } from "../_shared/viniBrain.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
