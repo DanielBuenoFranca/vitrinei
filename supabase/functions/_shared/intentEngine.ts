@@ -53,13 +53,25 @@ const NEEDS: Need[] = [
   {
     id: "dor",
     triggers:
-      /\b(dor|doendo|doi|machucad|desconforto|com dor|febre|gripe|enxaqueca|inflama)\b/,
-    segments: ["sa[uú]de", "farm[aá]ci", "drogaria", "cl[ií]nic", "hospital"],
+      /\b(dor|dores|doendo|doi|d[oó]i|machucad|desconforto|com dor|febre|gripe|resfriad|enxaqueca|inflama|c[oó]lica|n[aá]usea|enj[oô]o|tontura|tosse|alergia|al[eé]rgic|coceira|azia|refluxo|diarr[eé]ia|prisao de ventre|intestino|garganta|sinusite|rinite|otite|cistite|infec[cç]ao|mal estar|adoec|doente|ferida|queimadura|pressao alta|diabet|inson[ií]a|ansied|estress|depress|enxaqueca)\b/,
+    segments: ["sa[uú]de", "farm[aá]ci", "drogaria", "cl[ií]nic", "hospital", "rem[eé]dio", "natur"],
     itemType: "both",
     query: "alívio para dor",
     followUp: {
-      question: "Onde é a dor e que tipo de dor você está sentindo? (ex.: cabeça, dente, costas, muscular, garganta)",
-      suggestions: ["Cabeça", "Dente", "Costas", "Garganta"],
+      question: "Onde é a dor e que tipo de desconforto você está sentindo? (ex.: cabeça, dente, costas, muscular, garganta, barriga)",
+      suggestions: ["Cabeça", "Dente", "Costas", "Garganta", "Barriga"],
+    },
+  },
+  {
+    id: "remedio",
+    triggers:
+      /\b(rem[eé]di|medicament|farm[aá]ci|drogaria|antibi[oó]tic|anti[- ]?inflamat|analg[eé]sic|antial[eé]rgic|antit[eé]rmic|fitoter[aá]pic|pomada|xarope|comprimido|c[aá]psula|gotas|soro|vitamina|suplement|cha medicinal|ch[aá] medicinal|raiz medicinal|erva medicinal|natural para)\b/,
+    segments: ["rem[eé]dio", "farm[aá]ci", "drogaria", "sa[uú]de", "natur", "fitoter"],
+    itemType: "product",
+    query: "remédio",
+    followUp: {
+      question: "Para qual sintoma você precisa do remédio? (ex.: dor, febre, alergia, gripe, estômago, sono)",
+      suggestions: ["Dor", "Febre", "Alergia", "Gripe", "Estômago"],
     },
   },
   {
@@ -162,11 +174,11 @@ async function searchInventoryByKeywords(
       const enc = encodeURIComponent(kw);
       const [pRes, sRes] = await Promise.all([
         fetch(
-          `${URL_BASE}/rest/v1/dynamic_products?select=name,tags,provider&or=(name.ilike.*${enc}*,tags.cs.{${enc}})&limit=10`,
+          `${URL_BASE}/rest/v1/dynamic_products?select=name,tags,segments,provider&or=(name.ilike.*${enc}*,tags.cs.{${enc}},segments.cs.{${enc}})&limit=10`,
           { headers: headers() },
         ),
         fetch(
-          `${URL_BASE}/rest/v1/dynamic_services?select=name,segment,provider&name=ilike.*${enc}*&limit=10`,
+          `${URL_BASE}/rest/v1/dynamic_services?select=name,segment,segments,provider&or=(name.ilike.*${enc}*,segment.ilike.*${enc}*,segments.cs.{${enc}})&limit=10`,
           { headers: headers() },
         ),
       ]);
@@ -175,6 +187,7 @@ async function searchInventoryByKeywords(
       if (products.length + services.length > 0) {
         const segs = new Set<string>();
         services.forEach((s: any) => s.segment && segs.add(s.segment));
+        products.forEach((p: any) => Array.isArray(p.segments) && p.segments.forEach((x: string) => segs.add(x)));
         return { products, services, segments: Array.from(segs), matchedKeyword: kw };
       }
     } catch { /* tenta próximo */ }
@@ -252,7 +265,35 @@ export async function classifyMessage(message: string, sessionCtx: any = {}): Pr
   //      cujo nome/tag bate com a fala (ex.: "Raiz para dor"), abrimos a
   //      tela de busca já filtrada.
   const keywords = extractKeywords(raw);
-  const inv = await searchInventoryByKeywords(keywords);
+  // Se houver necessidade detectada, expande com sinônimos da need (ex.:
+  // "quero remédio" também tenta "dor", "alivio", etc.)
+  const expandedKeywords = need
+    ? Array.from(new Set([
+        ...keywords,
+        ...norm(need.query).split(/\s+/).filter((w) => w.length >= 3),
+        need.id,
+      ]))
+    : keywords;
+  const inv = await searchInventoryByKeywords(expandedKeywords);
+
+  // Refinamento: se a frase é muito vaga (poucas palavras "úteis") e a need
+  // tem follow-up, primeiro pergunta para precisar a busca em vez de chutar.
+  // Ex.: "quero remédio" → "Para qual sintoma?". Já "remédio para dor de
+  // cabeça" tem keywords suficientes (>=2 úteis) e segue para a busca.
+  const isVague = need?.followUp && keywords.length <= 1;
+  if (isVague) {
+    out.intent = "chat";
+    out.next_agent = "vini";
+    out.needs_more_info = true;
+    out.follow_up_question = need!.followUp!.question;
+    out.suggestions = need!.followUp!.suggestions;
+    out.tags = [need!.id];
+    out.query = need!.query;
+    out.item_type = need!.itemType;
+    out.confidence = 0.8;
+    return out;
+  }
+
   if (inv.products.length + inv.services.length > 0) {
     const sample = inv.products[0]?.name || inv.services[0]?.name || inv.matchedKeyword;
     out.intent = "search";
