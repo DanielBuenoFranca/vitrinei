@@ -276,6 +276,14 @@ const TOPICS: Topic[] = [
   },
 ];
 
+// Quanto maior, mais "ação intencional" — vence saudações genéricas
+const TOPIC_PRIORITY: Record<string, number> = {
+  search: 5, cart: 5, wallet: 4, store: 4, support: 5, radar: 5,
+  subscription: 3, knowledge: 3, capabilities: 3, identity: 2,
+  feeling: 2, joke: 2, thanks: 1, yesno_continuation: 1, negation: 1,
+  greeting: 0,
+};
+
 const OPENERS = [
   (n: string) => `${n ? `Oi ${n}!` : "Oi!"} Sobre o que vamos conversar hoje?`,
   (n: string) => `${n ? `E aí, ${n}!` : "E aí!"} Pode falar — papo livre ou ação prática, eu acompanho.`,
