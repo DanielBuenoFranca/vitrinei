@@ -424,6 +424,7 @@ export interface ProductItem {
   distance: string;
   relatedServiceIds: number[];
   tags: string[]; // for matching symptoms/needs
+  segments?: string[]; // segmentos diretamente vinculados ao produto (fonte da verdade)
   image_url?: string | null;
 }
 
