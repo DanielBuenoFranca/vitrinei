@@ -371,16 +371,21 @@ const Landing = () => {
   }, []);
 
   const toggleSegment = (id: string) => {
-    setActiveSegments((prev) => {
-      const next = prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id];
-      setTimeout(() => {
-        setSearchExecuted(true);
-        setExecutedQuery(searchQuery.trim());
-        setSearchVersion(v => v + 1);
-      }, 0);
-      return next;
-    });
+    setActiveSegments((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
+    );
   };
+
+  // Reatividade: qualquer mudança nos filtros (segmentos / tipo) re‑executa
+  // a busca instantaneamente, mesmo sem clicar em "Buscar".
+  useEffect(() => {
+    if (!dataLoaded) return;
+    setExecutedQuery(searchQuery.trim());
+    setSearchExecuted(true);
+    setSearchVersion((v) => v + 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSegments, typeFilter, dataLoaded]);
+
 
   // ── DB providers with logos ──
   const [dbProviders, setDbProviders] = useState<Map<string, { logo_url: string | null; is_top_provider?: boolean }>>(new Map());
@@ -537,7 +542,7 @@ const Landing = () => {
             activeSegments={activeSegments}
             toggleSegment={toggleSegment}
             typeFilter={typeFilter}
-            setTypeFilter={(v) => { setTypeFilter(v); setTimeout(() => { setSearchExecuted(true); setSearchVersion(x => x + 1); }, 0); }}
+            setTypeFilter={(v) => setTypeFilter(v)}
           >
             {(inlineAiOpen || searchExecuted) && (
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-5 pb-6">
