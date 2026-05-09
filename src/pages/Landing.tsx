@@ -241,8 +241,9 @@ const Landing = () => {
 
   const handleSmartSearch = () => {
     const q = searchQuery.trim();
-    if (!q) return executeSearch();
-    refineWithVini(q, { openPanel: true, autoApply: true });
+    executeSearch();
+    if (!q) return;
+    void refineWithVini(q, { openPanel: false, autoApply: false });
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent) => {
@@ -1195,7 +1196,7 @@ const Landing = () => {
                   )}
 
                   {/* ── AI SUGGESTIONS (shown after DB results OR when no results) ── */}
-                  {hasResults && executedQuery && (() => {
+                  {false && hasResults && executedQuery && (() => {
                     const ctxSuggestion = generateContextualSuggestions(executedQuery);
                     if (!ctxSuggestion) return null;
                     // Filter out suggestions that already exist in the DB results
