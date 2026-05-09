@@ -117,6 +117,7 @@ const Landing = () => {
   const [aiSpeaking, setAiSpeaking] = useState(false);
   const [expandedProducts, setExpandedProducts] = useState<number | null>(null);
   const [favoritesOpen, setFavoritesOpen] = useState(false);
+  const { count: favoritesCount } = useFavorites();
   
   const [expandedServices, setExpandedServices] = useState<number | null>(null);
   const [showSearchProducts, setShowSearchProducts] = useState(false);
@@ -1637,7 +1638,10 @@ const Landing = () => {
               className="relative flex flex-col items-center justify-center gap-0.5 rounded-lg py-1 px-1 bg-white/[0.05] hover:bg-white/[0.12] border border-white/10 hover:border-primary/40 transition-all text-foreground/85 hover:text-primary"
               aria-label={btn.label}
             >
-              <btn.icon className="w-4 h-4" strokeWidth={1.6} />
+              <btn.icon
+                className={`w-4 h-4 ${btn.label === 'Favoritos' && favoritesCount > 0 ? 'text-rose-400 fill-rose-400 drop-shadow-[0_0_6px_rgba(244,63,94,0.75)]' : ''}`}
+                strokeWidth={1.6}
+              />
               <span className="text-[9px] font-medium leading-none">{btn.label}</span>
               {(btn as any).badge ? (
                 <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-1 rounded-full bg-rose-500 text-[8px] font-bold text-white flex items-center justify-center">
