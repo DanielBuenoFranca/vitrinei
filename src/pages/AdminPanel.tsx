@@ -1516,6 +1516,7 @@ const AdminPanel = () => {
         onSaved={() => { fetchUsers(); fetchData(); reloadDynamicEntries(); }}
         profile={userForm.profile}
         currentRole={userForm.role}
+        currentRoles={(userForm.allRoles || []) as any}
         currentEmail={userForm.email}
         segments={segmentList}
       />
