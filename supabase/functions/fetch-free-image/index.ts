@@ -1,104 +1,142 @@
 // Edge function: busca uma imagem profissional gratuita.
-// Ordem: Unsplash → Pixabay → Openverse (sem chave) → Loremflickr (sem chave)
-// → Picsum (seed determinístico) / UI-Avatars (provider). NUNCA retorna 404.
+// Agora com reranking por entendimento (must/block) — evita "Couve Flor" virar
+// foto de buquê, "Pão Congelado" virar paisagem nevada, etc.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { understandSubject, scoreCandidate, type SubjectUnderstanding } from "../_shared/imageUnderstanding.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-type Pick = { url: string; source: string } | null;
+type Cand = { url: string; source: string; score: number; meta: string };
 
-async function tryUnsplash(query: string): Promise<Pick> {
+async function tryUnsplash(query: string, u: SubjectUnderstanding): Promise<Cand[]> {
   const key = Deno.env.get("UNSPLASH_ACCESS_KEY");
-  if (!key) return null;
+  if (!key) return [];
   try {
-    const r = await fetch(`https://api.unsplash.com/search/photos?per_page=1&orientation=squarish&query=${encodeURIComponent(query)}`, {
-      headers: { Authorization: `Client-ID ${key}` },
-    });
-    if (!r.ok) return null;
+    const r = await fetch(
+      `https://api.unsplash.com/search/photos?per_page=8&orientation=squarish&query=${encodeURIComponent(query)}`,
+      { headers: { Authorization: `Client-ID ${key}` } },
+    );
+    if (!r.ok) return [];
     const j = await r.json();
-    const url = j?.results?.[0]?.urls?.regular;
-    return url ? { url, source: "unsplash" } : null;
-  } catch { return null; }
+    return (j?.results || []).map((p: any) => {
+      const meta = [p.alt_description, p.description, (p.tags || []).map((t: any) => t.title).join(" ")]
+        .filter(Boolean).join(" ");
+      return {
+        url: p?.urls?.regular,
+        source: "unsplash",
+        meta,
+        score: scoreCandidate(`${query} ${meta}`, u.must, u.block),
+      };
+    }).filter((c: Cand) => !!c.url);
+  } catch { return []; }
 }
 
-async function tryPixabay(query: string): Promise<Pick> {
+async function tryPixabay(query: string, u: SubjectUnderstanding): Promise<Cand[]> {
   const key = Deno.env.get("PIXABAY_API_KEY");
-  if (!key) return null;
+  if (!key) return [];
   try {
-    const r = await fetch(`https://pixabay.com/api/?key=${key}&q=${encodeURIComponent(query)}&image_type=photo&per_page=3&safesearch=true`);
-    if (!r.ok) return null;
+    const r = await fetch(
+      `https://pixabay.com/api/?key=${key}&q=${encodeURIComponent(query)}&image_type=photo&per_page=10&safesearch=true`,
+    );
+    if (!r.ok) return [];
     const j = await r.json();
-    const url = j?.hits?.[0]?.largeImageURL || j?.hits?.[0]?.webformatURL;
-    return url ? { url, source: "pixabay" } : null;
-  } catch { return null; }
+    return (j?.hits || []).map((h: any) => {
+      const meta = `${h.tags || ""}`;
+      return {
+        url: h.largeImageURL || h.webformatURL,
+        source: "pixabay",
+        meta,
+        score: scoreCandidate(`${query} ${meta}`, u.must, u.block),
+      };
+    }).filter((c: Cand) => !!c.url);
+  } catch { return []; }
 }
 
-// Openverse — API pública e gratuita (sem chave)
-async function tryOpenverse(query: string): Promise<Pick> {
+async function tryOpenverse(query: string, u: SubjectUnderstanding): Promise<Cand[]> {
   try {
-    const r = await fetch(`https://api.openverse.org/v1/images/?q=${encodeURIComponent(query)}&page_size=3&license_type=commercial`);
-    if (!r.ok) return null;
+    const r = await fetch(
+      `https://api.openverse.org/v1/images/?q=${encodeURIComponent(query)}&page_size=8&license_type=commercial`,
+    );
+    if (!r.ok) return [];
     const j = await r.json();
-    const url = j?.results?.[0]?.url || j?.results?.[0]?.thumbnail;
-    return url ? { url, source: "openverse" } : null;
-  } catch { return null; }
+    return (j?.results || []).map((p: any) => {
+      const meta = `${p.title || ""} ${(p.tags || []).map((t: any) => t.name).join(" ")}`;
+      return {
+        url: p.url || p.thumbnail,
+        source: "openverse",
+        meta,
+        score: scoreCandidate(`${query} ${meta}`, u.must, u.block),
+      };
+    }).filter((c: Cand) => !!c.url);
+  } catch { return []; }
 }
 
-// Loremflickr — devolve uma foto temática sem chave
-async function tryLoremflickr(query: string): Promise<Pick> {
+function tryLoremflickr(query: string): Cand[] {
   try {
     const tag = encodeURIComponent(query.replace(/\s+/g, ","));
-    const url = `https://loremflickr.com/640/640/${tag}`;
-    // valida que responde
-    const r = await fetch(url, { method: "GET" });
-    if (!r.ok) return null;
-    return { url: r.url || url, source: "loremflickr" };
-  } catch { return null; }
+    return [{ url: `https://loremflickr.com/640/640/${tag}`, source: "loremflickr", meta: query, score: 0 }];
+  } catch { return []; }
 }
 
-// Sempre devolve algo
-function placeholder(kind: string, name: string): { url: string; source: string } {
+function placeholderCand(kind: string, name: string): Cand {
   const seed = encodeURIComponent(`${kind}-${name}`.slice(0, 60));
-  if (kind === "provider") {
+  if (kind === "provider" || kind === "profile") {
     const initials = encodeURIComponent(
-      name.split(/\s+/).map((p) => p[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "V"
+      name.split(/\s+/).map((p) => p[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "V",
     );
     return {
       url: `https://ui-avatars.com/api/?name=${initials}&size=512&background=6d28d9&color=fff&bold=true&format=png`,
-      source: "ui-avatars",
+      source: "ui-avatars", meta: name, score: -100,
     };
   }
-  return { url: `https://picsum.photos/seed/${seed}/640/640`, source: "picsum" };
+  return { url: `https://picsum.photos/seed/${seed}/640/640`, source: "picsum", meta: name, score: -100 };
 }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const { kind, id, name, segment } = await req.json();
+    const body = await req.json();
+    const { kind, id, name, segment, tags, description, linkedNames } = body;
     if (!kind || !id || !name) {
       return new Response(JSON.stringify({ error: "kind, id and name required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const query = [name, segment].filter(Boolean).join(" ");
-    const candidates: Array<{ url: string; source: string } | null> = [
-      await tryUnsplash(query),
-      await tryPixabay(query),
-      await tryOpenverse(query),
-      await tryLoremflickr(query),
-      placeholder(kind, name),
-    ];
+    // Allow caller to pass an already-computed understanding to avoid double work.
+    let understanding: SubjectUnderstanding | null = body.understanding || null;
+    if (!understanding) {
+      understanding = await understandSubject({
+        name, segment, tags, description, linkedNames, kind,
+      });
+    }
+    const query = understanding.query || [name, segment].filter(Boolean).join(" ");
 
-    // tenta cada candidato sequencialmente; se download falhar, passa para o próximo
+    // Gather candidates across sources, then rank by score.
+    const all: Cand[] = [];
+    all.push(...(await tryUnsplash(query, understanding)));
+    all.push(...(await tryPixabay(query, understanding)));
+    if (all.length < 4) all.push(...(await tryOpenverse(query, understanding)));
+    if (all.length === 0) all.push(...tryLoremflickr(query));
+    all.push(placeholderCand(kind, name));
+
+    // Sort: highest score first; break ties by source preference order.
+    const order = ["unsplash", "pixabay", "openverse", "loremflickr", "picsum", "ui-avatars"];
+    all.sort((a, b) => b.score - a.score || order.indexOf(a.source) - order.indexOf(b.source));
+
+    // Reject any candidate that contains a block term (negative score) UNLESS
+    // it's the only thing left.
+    const safe = all.filter((c) => c.score > -10);
+    const queue = safe.length ? safe : all;
+
     let buf: Uint8Array | null = null;
     let ct = "image/jpeg";
     let usedSource = "svg-fallback";
-    for (const c of candidates) {
-      if (!c) continue;
+    let usedQuery = query;
+    for (const c of queue) {
       try {
         const r = await fetch(c.url, { redirect: "follow" });
         if (!r.ok) continue;
@@ -108,10 +146,10 @@ Deno.serve(async (req) => {
         ct = r.headers.get("content-type") || "image/jpeg";
         usedSource = c.source;
         break;
-      } catch { /* tenta próximo */ }
+      } catch { /* next */ }
     }
 
-    // fallback final garantido: SVG gerado localmente (não depende de rede)
+    // SVG fallback final
     if (!buf) {
       const initials = (name.split(/\s+/).map((p: string) => p[0]).filter(Boolean).slice(0, 2).join("") || "V").toUpperCase();
       const palette = ["#6d28d9", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#ec4899"];
@@ -122,14 +160,12 @@ Deno.serve(async (req) => {
       usedSource = "svg-fallback";
     }
 
-    const pick = { url: "", source: usedSource };
     const ext = ct.includes("svg") ? "svg" : ct.includes("png") ? "png" : ct.includes("webp") ? "webp" : "jpg";
-
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const bucket = kind === "provider" ? "provider-logos" : "storefront-assets";
     const folder = kind === "provider" ? "" : `${kind}-images/`;
-    const safe = String(name).replace(/[^a-zA-Z0-9]/g, "_").slice(0, 30);
-    const fileName = `${folder}free-${kind}-${id}-${Date.now()}-${safe}.${ext}`;
+    const safe2 = String(name).replace(/[^a-zA-Z0-9]/g, "_").slice(0, 30);
+    const fileName = `${folder}free-${kind}-${id}-${Date.now()}-${safe2}.${ext}`;
 
     const { error: upErr } = await supabase.storage.from(bucket).upload(fileName, buf, { contentType: ct, upsert: true });
     if (upErr) throw upErr;
@@ -143,15 +179,14 @@ Deno.serve(async (req) => {
     else if (kind === "segment") await supabase.from("segments").update({ image_url: url }).eq("id", id);
     else if (kind === "profile") await supabase.from("profiles").update({ avatar_url: url }).eq("user_id", String(id));
 
-    // log economia (~1 crédito de IA economizado por imagem)
     await supabase.from("ai_savings_log").insert({
       feature: "image_sanitize",
-      fallback_used: pick.source,
+      fallback_used: usedSource,
       estimated_credits: 1,
-      context: { kind, id, query },
+      context: { kind, id, query: usedQuery, understanding },
     });
 
-    return new Response(JSON.stringify({ imageUrl: url, source: pick.source }), {
+    return new Response(JSON.stringify({ imageUrl: url, source: usedSource, understanding }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
