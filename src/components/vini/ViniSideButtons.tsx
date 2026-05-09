@@ -32,12 +32,13 @@ export function ViniSideButtons({ open, onSearch, onConverse, onStory }: ViniSid
     {
       key: 'story',
       content: (
-        // Apenas a CABEÇA do Vini (crop superior do PNG via object-position)
+        // Apenas a CABEÇA do Vini — zoom forte com foco no topo
         <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center">
           <img
             src={viniMini}
             alt="Vini"
-            className="w-[170%] h-[170%] object-cover object-top drop-shadow-[0_0_4px_hsl(var(--vini-glow)/0.7)]"
+            className="w-[280%] h-[280%] object-cover drop-shadow-[0_0_4px_hsl(var(--vini-glow)/0.7)]"
+            style={{ objectPosition: '50% 8%' }}
           />
         </div>
       ),
