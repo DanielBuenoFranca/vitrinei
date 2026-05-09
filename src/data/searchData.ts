@@ -1304,14 +1304,20 @@ function handleBroadContextSearch(query: string): SearchResult | null {
       const allSvcs = getAllServices();
       const allProds = getAllProducts();
       
-      const services = allSvcs.filter(s => 
-        ctx.segments.includes(s.segment) ||
+      const normalizedSegments = ctx.segments.map(normalize);
+      const segmentMatches = (segment?: string) => {
+        const ns = normalize(segment || '');
+        return normalizedSegments.some(ctxSeg => ns === ctxSeg || ns.includes(ctxSeg) || ctxSeg.includes(ns));
+      };
+      const services = allSvcs.filter(s =>
+        segmentMatches(s.segment) ||
         ctx.serviceKeywords.some(kw => normalize(s.name).includes(normalize(kw)))
       );
       
       const products = allProds.filter(p => {
         const pText = normalize([p.name, ...p.tags].join(' '));
-        return ctx.productKeywords.some(kw => pText.includes(normalize(kw))) ||
+        return segmentMatches(p.tags.join(' ')) ||
+          ctx.productKeywords.some(kw => pText.includes(normalize(kw))) ||
           p.relatedServiceIds.some(id => services.some(s => s.id === id));
       });
       
