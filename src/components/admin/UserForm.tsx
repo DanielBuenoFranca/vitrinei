@@ -474,23 +474,58 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
         </DialogHeader>
 
         <div className="grid gap-5 py-2">
-          {/* ── Perfil de acesso ── */}
+          {/* ── Identidade do Usuário (CPF) ── */}
+          <div className="rounded-lg border border-dashed border-primary/30 bg-primary/5 p-3">
+            <p className="text-[11px] text-muted-foreground leading-snug">
+              <strong className="text-foreground">Usuário</strong> = identidade única no ecossistema (CPF/CNPJ).
+              Cada usuário tem <strong>um Perfil</strong> (o que faz no sistema) e, opcionalmente, um <strong>Papel administrativo</strong> (poderes de gestão).
+            </p>
+          </div>
+
+          {/* ── Perfil (negócio) ── */}
           <div>
-            <Label className="text-sm font-semibold mb-2 block">Perfil de Acesso *</Label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {ROLE_OPTIONS.map(opt => (
+            <Label className="text-sm font-semibold mb-2 block">Perfil *</Label>
+            <p className="text-[11px] text-muted-foreground mb-2">Define o que o usuário faz no ecossistema.</p>
+            <div className="grid grid-cols-3 gap-2">
+              {PROFILE_OPTIONS.map(opt => (
                 <button
                   key={opt.id}
                   type="button"
-                  onClick={() => setRole(opt.id)}
+                  onClick={() => setProfileType(opt.id)}
                   className={`p-3 rounded-lg border text-left transition-all ${
-                    role === opt.id
+                    profileType === opt.id
                       ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
                       : 'border-border hover:border-primary/40'
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <opt.icon className={`w-4 h-4 ${role === opt.id ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <opt.icon className={`w-4 h-4 ${profileType === opt.id ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <span className="text-xs font-bold">{opt.label}</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground leading-tight">{opt.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Papel administrativo ── */}
+          <div>
+            <Label className="text-sm font-semibold mb-2 block">Papel Administrativo</Label>
+            <p className="text-[11px] text-muted-foreground mb-2">Permissões de gestão — independente do Perfil. Padrão: Comum.</p>
+            <div className="grid grid-cols-3 gap-2">
+              {ADMIN_OPTIONS.map(opt => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setAdminLevel(opt.id)}
+                  className={`p-3 rounded-lg border text-left transition-all ${
+                    adminLevel === opt.id
+                      ? 'border-amber-500 bg-amber-500/10 ring-2 ring-amber-500/30'
+                      : 'border-border hover:border-amber-500/40'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <opt.icon className={`w-4 h-4 ${adminLevel === opt.id ? 'text-amber-600' : 'text-muted-foreground'}`} />
                     <span className="text-xs font-bold">{opt.label}</span>
                   </div>
                   <p className="text-[10px] text-muted-foreground leading-tight">{opt.desc}</p>
