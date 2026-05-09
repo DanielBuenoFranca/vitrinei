@@ -120,23 +120,20 @@ serve(async (req) => {
   const userId = payload.userId ?? null;
   const userMsg = lastUserText(messages);
 
-  // Resposta do cérebro local (com padrões aprendidos)
+  // Fallback PURO de conversa (sem vender, sem buscar, sem sugerir features).
+  // Usado APENAS quando a IA está off/indisponível — nunca cita Vitrinei.
+  const FREE_CHAT_FALLBACKS = [
+    "Hmm, interessante. Me conta um pouco mais sobre isso, fiquei curioso.",
+    "Boa colocação. Como você chegou a essa ideia?",
+    "Faz total sentido. E o que mais te passa pela cabeça quando pensa nisso?",
+    "Gostei do tema. Se pudesse aprofundar um ponto, qual seria?",
+    "Entendo. Conta mais — tô prestando atenção.",
+    "Que reflexão boa. O que te fez puxar esse assunto agora?",
+    "Acho que dá pra explorar isso por vários ângulos. Por onde você quer começar?",
+  ];
   const localReply = async () => {
-    const out = await thinkAsync({ messages, userName, session });
-    // Em modo local, só REFORÇA padrão já aprendido (não cria novos a partir de
-    // respostas estáticas/fallback — evita loop de feedback ruim).
-    if (userMsg && out.text && out.source === "learned" && out.patternId) {
-      fireLearn({
-        user_message: userMsg,
-        assistant_reply: out.text,
-        source_mode: "local",
-        pattern_id: out.patternId,
-        session_id: sessionId,
-        user_id: userId,
-        signal: "served",
-      });
-    }
-    return out.text;
+    const seed = (userMsg || "").length + Date.now();
+    return FREE_CHAT_FALLBACKS[seed % FREE_CHAT_FALLBACKS.length];
   };
 
   try {
