@@ -22,9 +22,8 @@ const isMissing = (url: string | null | undefined) =>
 export function ImageSanitizationPanel() {
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
-  const [running, setRunning] = useState(false);
-  const [progress, setProgress] = useState({ done: 0, total: 0, current: '' });
-  const [results, setResults] = useState<{ ok: number; fail: number }>({ ok: 0, fail: 0 });
+  const { startJob, isRunning } = useBackgroundJobs();
+  const running = isRunning('sanitize-images') || isRunning('bulk-catalog-images') || isRunning('bulk-catalog-images-force');
 
   const scan = async () => {
     setLoading(true);
