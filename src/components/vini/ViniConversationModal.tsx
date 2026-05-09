@@ -323,12 +323,11 @@ export function ViniConversationModal({
     [messages, isStreaming, listening, stop, userName, onClose, navigate, session, update, persistMessage],
   );
 
-  // Push voice transcript into the input live and auto-send after the user pauses.
+  // Empurra o transcript ao input ao vivo e auto-envia após pausa curta.
   useEffect(() => {
     if (!open || !transcript) return;
     setInput(transcript);
     if (!listening) return;
-
     if (voiceSubmitTimerRef.current) window.clearTimeout(voiceSubmitTimerRef.current);
     voiceSubmitTimerRef.current = window.setTimeout(() => {
       const final = transcript.trim();
@@ -337,12 +336,23 @@ export function ViniConversationModal({
       lastModalityRef.current = 'voice';
       try { stop(); } catch {}
       void sendMessage(final, 'voice');
-    }, 1250);
-
+    }, 900);
     return () => {
       if (voiceSubmitTimerRef.current) window.clearTimeout(voiceSubmitTimerRef.current);
     };
   }, [open, transcript, listening, stop, sendMessage]);
+
+  // Quando o reconhecimento finaliza (onend), envia imediatamente o que houver.
+  useEffect(() => {
+    if (!open || listening) return;
+    const final = (transcript || input).trim();
+    if (!final || final === lastVoiceSubmissionRef.current) return;
+    if (lastModalityRef.current !== 'voice') return;
+    lastVoiceSubmissionRef.current = final;
+    if (voiceSubmitTimerRef.current) window.clearTimeout(voiceSubmitTimerRef.current);
+    void sendMessage(final, 'voice');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listening, open]);
 
   // Accept voice/text captured outside the modal and run it through the same intelligence.
   useEffect(() => {
