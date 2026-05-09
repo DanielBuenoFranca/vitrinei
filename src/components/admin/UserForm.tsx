@@ -146,20 +146,23 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
       setPassword('');
       setPhone(profile.phone || '');
       // Deriva perfil + papel admin a partir das roles atuais
-      const allRoles = (currentRoles && currentRoles.length > 0)
-        ? currentRoles
-        : (currentRole ? [currentRole] : []);
       const isLead = !!profile.__isLead;
-      const derivedProfile: ProfileType = isLead && allRoles.length === 0
-        // Lead importado sem papel ainda → padrão Misto + Comum
+      const allRoles = isLead
+        ? [] // Lead importado nunca tem roles em user_roles — ignora fallback de currentRole
+        : ((currentRoles && currentRoles.length > 0)
+            ? currentRoles
+            : (currentRole ? [currentRole] : []));
+      const derivedProfile: ProfileType = isLead
+        // Lead importado: regra do importador → sempre Misto
         ? 'mixed'
         : allRoles.includes('mixed') ? 'mixed' :
           allRoles.includes('provider') && allRoles.includes('client') ? 'mixed' :
           allRoles.includes('provider') ? 'provider' :
           'client';
-      const derivedAdmin: AdminLevel =
-        allRoles.includes('master') ? 'master' :
-        allRoles.includes('admin') ? 'admin' : 'none';
+      const derivedAdmin: AdminLevel = isLead
+        ? 'none'
+        : allRoles.includes('master') ? 'master' :
+          allRoles.includes('admin') ? 'admin' : 'none';
       setProfileType(derivedProfile);
       setAdminLevel(derivedAdmin);
       setAvatarUrl(profile.avatar_url || '');

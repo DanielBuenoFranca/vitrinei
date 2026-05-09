@@ -144,7 +144,7 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
     }
     const productsNames = linkedProducts.map(p => p.name);
     const data = {
-      name: form.name, segment: form.segment, provider: form.provider,
+      name: form.name, segment: form.segment, segments: [form.segment], provider: form.provider,
       provider_id: form.provider_id, price: totalPrice, rating: form.rating,
       distance: form.distance, time: form.time, products: productsNames,
       service_id: form.service_id, labor_cost: form.labor_cost,
@@ -160,6 +160,21 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
       const { error } = await supabase.from('dynamic_services').insert(data);
       if (error) { toast.error('Erro ao criar'); setSaving(false); return; }
       toast.success('Serviço criado');
+    }
+    // Garante que o prestador esteja vinculado ao segmento do serviço
+    if (form.provider_id && form.segment) {
+      try {
+        const prov = providers.find(p => p.id === form.provider_id);
+        const current = Array.isArray(prov?.segment) ? (prov!.segment as string[]) : [];
+        if (!current.includes(form.segment)) {
+          const merged = Array.from(new Set([...current, form.segment]));
+          await supabase.from('providers').update({ segment: merged }).eq('id', form.provider_id);
+          const { data: provRow } = await supabase.from('providers').select('user_id').eq('id', form.provider_id).maybeSingle();
+          if (provRow?.user_id) {
+            await supabase.from('profiles').update({ provider_segments: merged, is_provider: true }).eq('user_id', provRow.user_id);
+          }
+        }
+      } catch {}
     }
     setSaving(false);
     onSaved();
