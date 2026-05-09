@@ -54,6 +54,24 @@ const BROAD_CONTEXT_MAP: Record<string, {
   productKeywords: string[];
   label: string;
 }> = {
+  comida: {
+    segments: ['alimentacao', 'alimentação'],
+    serviceKeywords: ['comida', 'prato', 'marmita', 'feira', 'fruta', 'hortifruti', 'tempero', 'massa', 'carne', 'bolo', 'salgado', 'congelado'],
+    productKeywords: ['alimentação', 'comida', 'prato', 'marmita', 'fruta', 'verdura', 'legume', 'carne', 'bolo', 'torta', 'salgado', 'pão', 'pizza', 'congelado'],
+    label: 'Alimentação — Comidas e Produtos',
+  },
+  fome: {
+    segments: ['alimentacao', 'alimentação'],
+    serviceKeywords: ['comida', 'prato', 'marmita', 'feira', 'massa', 'carne', 'bolo', 'salgado', 'congelado'],
+    productKeywords: ['alimentação', 'comida', 'prato', 'marmita', 'fruta', 'verdura', 'legume', 'carne', 'bolo', 'torta', 'salgado', 'pão', 'pizza', 'congelado'],
+    label: 'Fome — Opções de Alimentação',
+  },
+  alimentacao: {
+    segments: ['alimentacao', 'alimentação'],
+    serviceKeywords: ['comida', 'prato', 'marmita', 'feira', 'fruta', 'hortifruti', 'tempero', 'massa', 'carne', 'bolo', 'salgado', 'congelado'],
+    productKeywords: ['alimentação', 'comida', 'prato', 'marmita', 'fruta', 'verdura', 'legume', 'carne', 'bolo', 'torta', 'salgado', 'pão', 'pizza', 'congelado'],
+    label: 'Alimentação — Comidas e Produtos',
+  },
   casa: {
     segments: ['casa', 'manutencao'],
     serviceKeywords: ['limpeza', 'faxina', 'encanador', 'eletricista', 'pintor', 'jardineiro', 'dedetização', 'mudança', 'organização', 'decoração'],
