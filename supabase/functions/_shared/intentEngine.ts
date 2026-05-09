@@ -53,13 +53,25 @@ const NEEDS: Need[] = [
   {
     id: "dor",
     triggers:
-      /\b(dor|doendo|doi|machucad|desconforto|com dor|febre|gripe|enxaqueca|inflama)\b/,
-    segments: ["sa[uú]de", "farm[aá]ci", "drogaria", "cl[ií]nic", "hospital"],
+      /\b(dor|dores|doendo|doi|d[oó]i|machucad|desconforto|com dor|febre|gripe|resfriad|enxaqueca|inflama|c[oó]lica|n[aá]usea|enj[oô]o|tontura|tosse|alergia|al[eé]rgic|coceira|azia|refluxo|diarr[eé]ia|prisao de ventre|intestino|garganta|sinusite|rinite|otite|cistite|infec[cç]ao|mal estar|adoec|doente|ferida|queimadura|pressao alta|diabet|inson[ií]a|ansied|estress|depress|enxaqueca)\b/,
+    segments: ["sa[uú]de", "farm[aá]ci", "drogaria", "cl[ií]nic", "hospital", "rem[eé]dio", "natur"],
     itemType: "both",
     query: "alívio para dor",
     followUp: {
-      question: "Onde é a dor e que tipo de dor você está sentindo? (ex.: cabeça, dente, costas, muscular, garganta)",
-      suggestions: ["Cabeça", "Dente", "Costas", "Garganta"],
+      question: "Onde é a dor e que tipo de desconforto você está sentindo? (ex.: cabeça, dente, costas, muscular, garganta, barriga)",
+      suggestions: ["Cabeça", "Dente", "Costas", "Garganta", "Barriga"],
+    },
+  },
+  {
+    id: "remedio",
+    triggers:
+      /\b(rem[eé]di|medicament|farm[aá]ci|drogaria|antibi[oó]tic|anti[- ]?inflamat|analg[eé]sic|antial[eé]rgic|antit[eé]rmic|fitoter[aá]pic|pomada|xarope|comprimido|c[aá]psula|gotas|soro|vitamina|suplement|cha medicinal|ch[aá] medicinal|raiz medicinal|erva medicinal|natural para)\b/,
+    segments: ["rem[eé]dio", "farm[aá]ci", "drogaria", "sa[uú]de", "natur", "fitoter"],
+    itemType: "product",
+    query: "remédio",
+    followUp: {
+      question: "Para qual sintoma você precisa do remédio? (ex.: dor, febre, alergia, gripe, estômago, sono)",
+      suggestions: ["Dor", "Febre", "Alergia", "Gripe", "Estômago"],
     },
   },
   {
