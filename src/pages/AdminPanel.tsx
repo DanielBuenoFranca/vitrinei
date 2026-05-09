@@ -1082,11 +1082,12 @@ const AdminPanel = () => {
                           <TableHead>Avatar</TableHead>
                           <TableHead>Nome</TableHead>
                           <TableHead>E-mail</TableHead>
-                          <TableHead>Modalidade</TableHead>
+                          <TableHead title="CPF/CNPJ — identidade única no ecossistema">CPF/CNPJ</TableHead>
+                          <TableHead title="O que o usuário faz: Consumidor, Prestador ou Misto">Perfil</TableHead>
+                          <TableHead title="Permissões de gestão: Master, Admin ou Comum">Papel</TableHead>
                           <TableHead>Plano</TableHead>
                           <TableHead>Status E-mail</TableHead>
                           <TableHead>Telefone</TableHead>
-                          <TableHead>Papéis</TableHead>
                           <TableHead>Criado em</TableHead>
                           <TableHead>Ações</TableHead>
                         </TableRow>
