@@ -136,7 +136,8 @@ const ViniHome = () => {
       const final = lastSpokenRef.current.trim();
       if (final) {
         try { stop(); } catch {}
-        openConversationWith(final, 'voice');
+        // Voz da tela principal → perfil SUPER VENDEDOR (busca/ai-router)
+        sendQuery(final);
         lastSpokenRef.current = '';
       }
     }, 900);
