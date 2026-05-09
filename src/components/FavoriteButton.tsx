@@ -30,7 +30,8 @@ export function FavoriteButton({
       aria-label={active ? `Remover ${name} dos favoritos` : `Favoritar ${name}`}
       title={active ? 'Remover dos favoritos' : 'Favoritar'}
       className={cn(
-        'rounded-full bg-black/65 backdrop-blur p-1.5 border border-white/15 hover:border-white/40 transition-all hover:scale-110 active:scale-95',
+        'rounded-full bg-black/65 backdrop-blur p-1.5 border transition-all hover:scale-110 active:scale-95',
+        active ? 'border-rose-500/60' : 'border-white/15 hover:border-white/40',
         className,
       )}
     >
