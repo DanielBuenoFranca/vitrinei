@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useBackgroundJobs } from '@/contexts/BackgroundJobsContext';
 import { toast } from 'sonner';
 import {
   ArrowLeft, Upload, FileSpreadsheet, CheckCircle2, AlertTriangle,
@@ -622,6 +623,7 @@ const validateBusinessRules = (
 const ImportPage = () => {
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
+  const { startJob, isRunning } = useBackgroundJobs();
   const fileRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [errors, setErrors] = useState<RowError[]>([]);
@@ -1123,7 +1125,14 @@ const ImportPage = () => {
 
     setImporting(true);
     setImportProgress({ step: 'Preparando dados...', percent: 5 });
-    try {
+    const reportProgress = (step: string, percent: number) => setImportProgress({ step, percent });
+    await startJob({
+      id: 'import-spreadsheet',
+      label: `Importando planilha (${rows.length} linhas)`,
+      run: async (report) => {
+        const tick = (step: string, percent: number) => { reportProgress(step, percent); report(step, percent); };
+        tick('Preparando dados...', 5);
+        try {
       const res: ImportResult = {
         providersCreated: 0, providersLinked: 0, servicesCreated: 0,
         productsCreated: 0, segmentsCreated: 0, errors: [], fixes: [],
@@ -1429,21 +1438,26 @@ const ImportPage = () => {
       setImportProgress({ step: 'Finalizando...', percent: 90 });
       await reloadDynamicEntries();
       
-      setImportProgress({ step: 'Concluído!', percent: 100 });
+      tick('Concluído!', 100);
       setResult(res);
 
-      if (res.errors.length === 0) {
-        toast.success('Importação concluída com sucesso!');
-      } else {
-        toast.warning(`Importação parcial: ${res.errors.length} erro(s) em linhas específicas`);
-      }
-    } catch (err: any) {
-      console.error('Import error:', err);
-      toast.error('Erro durante importação: ' + (err?.message || 'erro desconhecido'));
-    } finally {
-      setImporting(false);
       setTimeout(() => setImportProgress(null), 2000);
-    }
+      return res;
+        } catch (err: any) {
+          console.error('Import error:', err);
+          setImportProgress(null);
+          throw err;
+        } finally {
+          setImporting(false);
+        }
+      },
+      successMessage: (res: any) => {
+        const errs = res?.errors?.length || 0;
+        if (errs === 0) return `Importação concluída: ${res?.providersCreated ?? 0} novos, ${res?.providersLinked ?? 0} vinculados, ${res?.servicesCreated ?? 0} serviços, ${res?.productsCreated ?? 0} produtos`;
+        return `Importação parcial: ${errs} erro(s) em linhas específicas`;
+      },
+      errorMessage: (err) => 'Erro durante importação: ' + (err?.message || 'erro desconhecido'),
+    });
   };
 
   const resetAll = () => {

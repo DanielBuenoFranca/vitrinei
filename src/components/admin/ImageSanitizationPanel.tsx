@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { ImageOff, Loader2, RefreshCw, Sparkles, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useBackgroundJobs } from '@/contexts/BackgroundJobsContext';
 
 type Item = {
   kind: 'provider' | 'product' | 'kit' | 'service' | 'segment' | 'profile';
@@ -21,9 +22,8 @@ const isMissing = (url: string | null | undefined) =>
 export function ImageSanitizationPanel() {
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
-  const [running, setRunning] = useState(false);
-  const [progress, setProgress] = useState({ done: 0, total: 0, current: '' });
-  const [results, setResults] = useState<{ ok: number; fail: number }>({ ok: 0, fail: 0 });
+  const { startJob, isRunning } = useBackgroundJobs();
+  const running = isRunning('sanitize-images') || isRunning('bulk-catalog-images') || isRunning('bulk-catalog-images-force');
 
   const scan = async () => {
     setLoading(true);
@@ -84,27 +84,32 @@ export function ImageSanitizationPanel() {
 
   const runAll = async () => {
     if (items.length === 0) { toast.info('Nada a sanear'); return; }
-    setRunning(true);
-    setResults({ ok: 0, fail: 0 });
-    setProgress({ done: 0, total: items.length, current: '' });
-    let ok = 0, fail = 0;
-    const remaining: Item[] = [];
-    for (const item of items) {
-      setProgress({ done: ok + fail, total: items.length, current: `${item.kind}: ${item.name}` });
-      try {
-        await sanitizeOne(item);
-        ok++;
-      } catch (e: any) {
-        console.error('sanitize failed', item, e);
-        fail++;
-        remaining.push(item);
-      }
-      setResults({ ok, fail });
-    }
-    setProgress({ done: ok + fail, total: items.length, current: '' });
-    setItems(remaining);
-    setRunning(false);
-    toast.success(`Saneamento concluído: ${ok} ok, ${fail} falhas`);
+    const queue = [...items];
+    const total = queue.length;
+    await startJob({
+      id: 'sanitize-images',
+      label: `Saneamento de imagens (${total})`,
+      run: async (report) => {
+        let ok = 0, fail = 0;
+        const remaining: Item[] = [];
+        for (let i = 0; i < queue.length; i++) {
+          const item = queue[i];
+          report(`${item.kind}: ${item.name} (${i + 1}/${total})`, Math.round((i / total) * 100));
+          try {
+            await sanitizeOne(item);
+            ok++;
+            // remove do estado mesmo se o usuário ainda estiver na tela
+            setItems((prev) => prev.filter((x) => !(x.kind === item.kind && x.id === item.id)));
+          } catch (e) {
+            console.error('sanitize failed', item, e);
+            fail++;
+            remaining.push(item);
+          }
+        }
+        return { ok, fail };
+      },
+      successMessage: (r) => `Saneamento concluído: ${r?.ok ?? 0} ok, ${r?.fail ?? 0} falhas`,
+    });
   };
 
   const sanitizeSingle = async (item: Item) => {
@@ -146,20 +151,23 @@ export function ImageSanitizationPanel() {
             size="sm"
             variant="secondary"
             disabled={running}
-            onClick={async () => {
-              setRunning(true);
-              toast.info('Gerando imagens IA do catálogo (pode demorar)...');
-              const { data, error } = await supabase.functions.invoke('bulk-generate-catalog-images', {
-                body: { target: 'all', force: false },
+            onClick={() => {
+              startJob({
+                id: 'bulk-catalog-images',
+                label: 'Gerando imagens IA do catálogo',
+                run: async (report) => {
+                  report('Disparando geração no servidor...', 10);
+                  const { data, error } = await supabase.functions.invoke('bulk-generate-catalog-images', {
+                    body: { target: 'all', force: false },
+                  });
+                  if (error) throw new Error(error.message);
+                  report('Atualizando lista...', 95);
+                  scan();
+                  return data?.result;
+                },
+                successMessage: (r: any) =>
+                  `Catálogo: Seg ${r?.segments?.ok ?? 0}/${r?.segments?.fail ?? 0} · Prest ${r?.providers?.ok ?? 0}/${r?.providers?.fail ?? 0}`,
               });
-              setRunning(false);
-              if (error) { toast.error('Falha: ' + error.message); return; }
-              const r = data?.result;
-              toast.success(
-                `Segmentos: ${r?.segments?.ok ?? 0} ok / ${r?.segments?.fail ?? 0} falhas. ` +
-                `Prestadores: ${r?.providers?.ok ?? 0} ok / ${r?.providers?.fail ?? 0} falhas.`
-              );
-              scan();
             }}
           >
             <Sparkles className="h-4 w-4 mr-1" /> Gerar imagens catálogo (IA)
@@ -168,17 +176,23 @@ export function ImageSanitizationPanel() {
             size="sm"
             variant="outline"
             disabled={running}
-            onClick={async () => {
+            onClick={() => {
               if (!confirm('Regerar TODAS as imagens (segmentos + prestadores), inclusive os que já têm? Custo de IA elevado.')) return;
-              setRunning(true);
-              const { data, error } = await supabase.functions.invoke('bulk-generate-catalog-images', {
-                body: { target: 'all', force: true },
+              startJob({
+                id: 'bulk-catalog-images-force',
+                label: 'Regerando todas as imagens do catálogo',
+                run: async (report) => {
+                  report('Disparando regeração...', 10);
+                  const { data, error } = await supabase.functions.invoke('bulk-generate-catalog-images', {
+                    body: { target: 'all', force: true },
+                  });
+                  if (error) throw new Error(error.message);
+                  report('Atualizando lista...', 95);
+                  scan();
+                  return data?.result;
+                },
+                successMessage: (r: any) => `Regenerado. Seg ${r?.segments?.ok ?? 0} · Prest ${r?.providers?.ok ?? 0}`,
               });
-              setRunning(false);
-              if (error) { toast.error('Falha: ' + error.message); return; }
-              const r = data?.result;
-              toast.success(`Regenerado. Seg: ${r?.segments?.ok}/${r?.providers?.ok} prestadores`);
-              scan();
             }}
           >
             Forçar regeração
@@ -187,22 +201,8 @@ export function ImageSanitizationPanel() {
       </CardHeader>
       <CardContent className="space-y-3">
         {running && (
-          <div className="space-y-1 p-3 rounded-lg bg-muted/40 border">
-            <div className="flex items-center justify-between text-xs">
-              <span className="truncate">{progress.current || 'Processando...'}</span>
-              <span className="text-muted-foreground tabular-nums">
-                {progress.done}/{progress.total}
-              </span>
-            </div>
-            <Progress value={(progress.done / Math.max(1, progress.total)) * 100} />
-            <div className="flex gap-3 text-xs pt-1">
-              <span className="text-emerald-600 flex items-center gap-1">
-                <CheckCircle2 className="h-3 w-3" /> {results.ok} ok
-              </span>
-              <span className="text-destructive flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" /> {results.fail} falhas
-              </span>
-            </div>
+          <div className="p-3 rounded-lg bg-muted/40 border text-xs text-muted-foreground">
+            Rodando em segundo plano — você pode navegar livremente. O progresso aparece no canto inferior direito e um aviso será emitido ao concluir.
           </div>
         )}
 
