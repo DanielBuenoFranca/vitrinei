@@ -116,7 +116,7 @@ const Landing = () => {
   const [aiSpeaking, setAiSpeaking] = useState(false);
   const [expandedProducts, setExpandedProducts] = useState<number | null>(null);
   const [favoritesOpen, setFavoritesOpen] = useState(false);
-  const { count: favoritesCount } = useFavorites();
+  const { /* count: favoritesCount */ } = useFavorites();
   const [expandedServices, setExpandedServices] = useState<number | null>(null);
   const [showSearchProducts, setShowSearchProducts] = useState(false);
   const [servicesCarouselOpen, setServicesCarouselOpen] = useState(false);
