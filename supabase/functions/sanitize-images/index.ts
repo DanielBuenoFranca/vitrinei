@@ -3,6 +3,7 @@
 // descrição) para gerar imagens profissionais, realistas e fiéis ao item.
 // Modo ON = IA paga, modo OFF = imagem grátis (Unsplash → Pixabay → ...).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { understandSubject } from "../_shared/imageUnderstanding.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -230,17 +231,27 @@ Deno.serve(async (req) => {
 
     // Enriquece contexto a partir do banco + payload
     const ctx = await enrichContext(supabase, kind, Number(id) || 0, payload);
-    // query usado pelo fallback grátis (mais rico que só "name segment")
-    const queryParts = [ctx.name, ctx.segment, ...ctx.tags.slice(0, 3), ...ctx.linkedNames.slice(0, 2)]
-      .filter(Boolean).join(" ");
+
+    // "Vini understanding": vira nome+segmento+tags+descrição em query precisa
+    // em inglês + listas must/block para escolher/desambiguar a imagem.
+    const understanding = await understandSubject({
+      name: ctx.name, segment: ctx.segment, tags: ctx.tags,
+      description: ctx.description, linkedNames: ctx.linkedNames, kind,
+    });
+    const freePayload = {
+      kind, id, name,
+      segment: ctx.segment, tags: ctx.tags,
+      description: ctx.description, linkedNames: ctx.linkedNames,
+      understanding,
+    };
 
     // 1) lê toggle
     const { data: settings } = await supabase.from("site_settings").select("value").eq("key","ai_credits_mode").maybeSingle();
     const aiMode = ((settings?.value as any)?.mode || "on") as "on" | "off";
 
-    // 2) modo OFF → free direto (com query enriquecida)
+    // 2) modo OFF → free direto (com understanding)
     if (aiMode === "off") {
-      const r = await callFreeFallback(supabase, { kind, id, name, segment: queryParts });
+      const r = await callFreeFallback(supabase, freePayload);
       return new Response(await r.text(), { status: r.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -248,11 +259,15 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       await autoOffOnFailure(supabase, "missing_lovable_key");
-      const r = await callFreeFallback(supabase, { kind, id, name, segment: queryParts });
+      const r = await callFreeFallback(supabase, freePayload);
       return new Response(await r.text(), { status: r.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const prompt = buildPrompt(kind, ctx);
+    // Reforça o prompt da IA com o entendimento (must/block) — evita derrapagens.
+    let prompt = buildPrompt(kind, ctx);
+    if (understanding.must.length) prompt += ` MUST clearly depict: ${understanding.must.join(", ")}.`;
+    if (understanding.block.length) prompt += ` MUST NOT depict: ${understanding.block.join(", ")}.`;
+    if (understanding.query) prompt += ` Visual reference query: ${understanding.query}.`;
     console.log("[sanitize-images] prompt:", prompt.slice(0, 300));
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -267,20 +282,20 @@ Deno.serve(async (req) => {
 
     if (aiRes.status === 402 || aiRes.status === 429) {
       await autoOffOnFailure(supabase, aiRes.status === 402 ? "no_credits" : "rate_limited");
-      const r = await callFreeFallback(supabase, { kind, id, name, segment: queryParts });
+      const r = await callFreeFallback(supabase, freePayload);
       return new Response(await r.text(), { status: r.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     if (!aiRes.ok) {
       console.error("AI error:", aiRes.status, await aiRes.text());
-      const r = await callFreeFallback(supabase, { kind, id, name, segment: queryParts });
+      const r = await callFreeFallback(supabase, freePayload);
       return new Response(await r.text(), { status: r.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const aiData = await aiRes.json();
     const imageData = aiData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
     if (!imageData?.startsWith("data:image")) {
-      const r = await callFreeFallback(supabase, { kind, id, name, segment: queryParts });
+      const r = await callFreeFallback(supabase, freePayload);
       return new Response(await r.text(), { status: r.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
