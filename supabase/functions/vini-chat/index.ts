@@ -113,16 +113,17 @@ serve(async (req) => {
   // Resposta do cérebro local (com padrões aprendidos)
   const localReply = async () => {
     const out = await thinkAsync({ messages, userName, session });
-    // Quando usamos o cérebro local, registra o turno para reforço estatístico.
-    if (userMsg && out.text) {
+    // Em modo local, só REFORÇA padrão já aprendido (não cria novos a partir de
+    // respostas estáticas/fallback — evita loop de feedback ruim).
+    if (userMsg && out.text && out.source === "learned" && out.patternId) {
       fireLearn({
         user_message: userMsg,
         assistant_reply: out.text,
         source_mode: "local",
-        pattern_id: out.patternId ?? null,
+        pattern_id: out.patternId,
         session_id: sessionId,
         user_id: userId,
-        signal: out.source === "fallback" ? "fallback" : "served",
+        signal: "served",
       });
     }
     return out.text;
