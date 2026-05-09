@@ -1042,11 +1042,18 @@ const AdminPanel = () => {
               products={products}
               segments={segments}
               onEditProvider={(p) => {
-                // Tenta abrir o usuário vinculado ao prestador
-                const prof = userProfiles.find(u => (u as any).cpf_cnpj === p.cpf_cnpj || u.display_name === p.name);
+                // Abre o MESMO formulário da aba Usuários — fonte única da verdade
+                const normDoc = (s: any) => String(s || '').replace(/\D/g, '');
+                const pDoc = normDoc(p.cpf_cnpj);
+                const prof = userProfiles.find((u: any) =>
+                  (pDoc && (normDoc(u.cpf_cnpj) === pDoc || u.cpf_cnpj_normalized === pDoc)) ||
+                  (p.user_id && u.user_id === p.user_id) ||
+                  (!pDoc && u.display_name === p.name)
+                );
                 if (prof) {
-                  const r = userRoles.find((x: any) => x.user_id === prof.user_id && ['provider','mixed'].includes(x.role));
-                  setUserForm({ open: true, profile: prof, role: r?.role || 'provider', email: authUserEmails[prof.user_id] || null });
+                  const allRoles = userRoles.filter((x: any) => x.user_id === prof.user_id).map((x: any) => x.role);
+                  const r = allRoles.find((x: string) => ['provider','mixed','client','admin','master'].includes(x));
+                  setUserForm({ open: true, profile: prof, role: r || 'mixed', allRoles, email: authUserEmails[prof.user_id] || null });
                 } else {
                   toast.info('Prestador legado sem usuário vinculado. Cadastre/ajuste o usuário com o mesmo CPF/CNPJ — a vinculação é automática.');
                 }
