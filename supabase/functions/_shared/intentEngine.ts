@@ -37,11 +37,82 @@ type Need = {
   followUp?: { question: string; suggestions: string[] };
 };
 
+// ──────────────────────────────────────────────────────────────────────────
+// CONCEPT GRAPH — interpretação ampla do contexto.
+// Mapeia termos específicos (ex.: "hamburguer", "pizza", "sushi") em uma
+// constelação semântica de palavras relacionadas (carne, lanche, comida,
+// fome, etc.). Essa expansão é injetada tanto na detecção de necessidade
+// quanto na busca por palavras‑chave no estoque, fazendo o Vini "entender"
+// que quem pede um hamburguer também está com fome / quer comida / lanche.
+// Para ampliar, basta adicionar novas entradas no mapa abaixo.
+type ConceptEntry = { match: RegExp; expand: string[] };
+const CONCEPT_GRAPH: ConceptEntry[] = [
+  // Comida — itens específicos puxam o universo "fome / comida / lanche"
+  { match: /\b(hamburguer|hamb[uú]rguer|burger|x[- ]?burger|x[- ]?tudo|x[- ]?salada|cheeseburger)\b/,
+    expand: ["hamburguer", "burger", "lanche", "carne", "comida", "fome", "alimentacao", "sanduiche"] },
+  { match: /\b(pizza|calzone|pizzaria)\b/,
+    expand: ["pizza", "comida", "fome", "alimentacao", "italiana", "lanche", "queijo"] },
+  { match: /\b(sushi|temaki|sashimi|japonesa|japones|yakisoba)\b/,
+    expand: ["sushi", "japonesa", "comida", "fome", "alimentacao", "peixe", "oriental"] },
+  { match: /\b(churrasc|picanha|costela|espetinho)\b/,
+    expand: ["churrasco", "carne", "comida", "fome", "alimentacao", "brasileira"] },
+  { match: /\b(a[cç]a[ií]|sorvete|sobremesa|doce|bolo|brigadeiro|chocolate)\b/,
+    expand: ["doce", "sobremesa", "comida", "fome", "alimentacao", "lanche"] },
+  { match: /\b(salgad|coxinha|pastel|esfiha|empad)\b/,
+    expand: ["salgado", "lanche", "comida", "fome", "alimentacao", "padaria"] },
+  { match: /\b(suco|refrigerante|bebida|cerveja|vinho|drink|coquetel|caipirinha|agua)\b/,
+    expand: ["bebida", "comida", "fome", "alimentacao", "drink"] },
+  { match: /\b(caf[eé] da manh[aã]|caf[eé]|p[aã]o|padaria|bolacha|biscoit)\b/,
+    expand: ["padaria", "cafe", "comida", "fome", "alimentacao", "lanche"] },
+  { match: /\b(marmita|marmitex|prato feito|pf|self service|comida caseira|vegetariana|vegana|saud[aá]vel|fit)\b/,
+    expand: ["marmita", "comida", "fome", "almoco", "alimentacao", "refeicao"] },
+
+  // Saúde — sintomas específicos puxam "remédio / dor / saúde"
+  { match: /\b(cabe[cç]a|enxaqueca)\b/,
+    expand: ["cabeca", "dor", "remedio", "analgesico", "saude"] },
+  { match: /\b(barriga|estomag|est[oô]mago|intestino|c[oó]lica|diarr|n[aá]usea)\b/,
+    expand: ["barriga", "estomago", "dor", "remedio", "saude", "antiacido"] },
+  { match: /\b(garganta|tosse|gripe|resfriad|sinusite|rinite)\b/,
+    expand: ["garganta", "gripe", "remedio", "xarope", "saude", "antigripal"] },
+  { match: /\b(febre|temperatura|calafrio)\b/,
+    expand: ["febre", "remedio", "antitermico", "saude"] },
+  { match: /\b(alergia|al[eé]rgic|coceira|urtic[aá]ria)\b/,
+    expand: ["alergia", "remedio", "antialergico", "saude"] },
+
+  // Casa / serviços — termos específicos puxam famílias amplas
+  { match: /\b(vazamento|torneira|cano|chuveiro|pia|esgoto|encanador)\b/,
+    expand: ["encanador", "hidraulica", "vazamento", "casa", "reparo", "manutencao"] },
+  { match: /\b(tomada|disjuntor|curto|fia[cç]ao|el[eé]tric|chuveiro queimado|lampada)\b/,
+    expand: ["eletricista", "eletrica", "casa", "reparo", "manutencao"] },
+  { match: /\b(faxina|limpeza pesada|diarista|passar roupa|jardim)\b/,
+    expand: ["faxina", "limpeza", "diarista", "casa", "domestico"] },
+
+  // Beleza
+  { match: /\b(cabel|corte|escova|progressiva|hidrata[cç]ao|coloracao|mecha)\b/,
+    expand: ["cabelo", "salao", "beleza", "estetica"] },
+  { match: /\b(unha|manicure|pedicure|esmalte|gel)\b/,
+    expand: ["unha", "manicure", "beleza", "estetica", "salao"] },
+
+  // Auto
+  { match: /\b(pneu furado|borracharia|guincho|bater[ií]a descarregada|alinhamento|balanceamento)\b/,
+    expand: ["carro", "automotivo", "oficina", "mecanico", "veiculo"] },
+];
+
+// Aplica o grafo conceitual à frase normalizada. Devolve o conjunto de
+// palavras‑gatilho expandidas (sem duplicatas) — vazio se nada bater.
+function expandConcepts(qNorm: string): string[] {
+  const out = new Set<string>();
+  for (const c of CONCEPT_GRAPH) {
+    if (c.match.test(qNorm)) c.expand.forEach((w) => out.add(w));
+  }
+  return Array.from(out);
+}
+
 const NEEDS: Need[] = [
   {
     id: "fome",
     triggers:
-      /\b(fome|comer|comida|almoc|jantar|lanch|faminto|barriga roncando|com vontade de comer|petisc|refei[cç]ao)\b/,
+      /\b(fome|comer|comida|almoc|jantar|lanch|faminto|barriga roncando|com vontade de comer|petisc|refei[cç]ao|hamburguer|hamb[uú]rguer|burger|pizza|sushi|churrasc|marmita|salgad|sorvete|a[cç]a[ií]|doce|sobremesa|p[aã]o|padaria|caf[eé] da manh[aã])\b/,
     segments: ["aliment", "restaurant", "lanchonete", "food", "padaria", "delivery"],
     itemType: "both",
     query: "comida",
