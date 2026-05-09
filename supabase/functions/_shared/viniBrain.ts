@@ -132,6 +132,7 @@ function tryDateTime(q: string): string | null {
 type Topic = {
   id: string;
   match: RegExp;
+  priority?: number; // maior vence quando múltiplos casam (default 1)
   replies: ((ctx: { name: string; q: string }) => string)[];
   followUp?: (ctx: { name: string; q: string }) => string | undefined;
 };
