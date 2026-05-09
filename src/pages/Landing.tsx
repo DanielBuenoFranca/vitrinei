@@ -212,10 +212,33 @@ const Landing = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [speech.listening]);
-  // Pré-preenche busca via ?q= (vinda do Vini ou outras telas); execução ocorre após carregar segmentos.
+  // Pré-preenche e EXECUTA a busca via ?q= (vinda do Vini ou outras telas).
+  // Também aplica ?type= (service/product/both) e ?segments=a,b,c quando presentes.
   useEffect(() => {
     const q = searchParams.get('q');
-    if (q && !searchQuery) setSearchQuery(q);
+    const type = searchParams.get('type');
+    const segs = searchParams.get('segments');
+    if (!q) return;
+    setSearchQuery(q);
+    if (type === 'service' || type === 'product') setTypeFilter(type);
+    else if (type === 'both' || type === 'all') setTypeFilter('all');
+    if (segs) {
+      const list = segs.split(',').map(s => s.trim()).filter(Boolean);
+      if (list.length) {
+        setTimeout(() => {
+          setActiveSegments(prev => {
+            const filtered = dbSegments
+              .filter(seg => list.some(rs => normalizeText(seg.id).includes(normalizeText(rs)) || normalizeText(seg.name).includes(normalizeText(rs)) || normalizeText(seg.label).includes(normalizeText(rs))))
+              .map(s => s.id);
+            return filtered.length ? filtered : prev;
+          });
+        }, 300);
+      }
+    }
+    // dispara a busca de fato
+    setExecutedQuery(q);
+    setSearchExecuted(true);
+    setSearchVersion(v => v + 1);
   }, []);
 
   const handleMic = () => {
