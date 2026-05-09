@@ -49,6 +49,20 @@ Deno.serve(async (req) => {
       });
     }
 
+    // 1) Motor determinístico SEMPRE primeiro: cruza pergunta com estoque real
+    //    (segments + dynamic_services + dynamic_products). Se houver match
+    //    consistente, devolve imediatamente sem gastar crédito de IA.
+    try {
+      const engine = await classifyMessage(message, session);
+      if (engine && engine.confidence >= 0.6) {
+        return new Response(JSON.stringify(engine), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } catch (err) {
+      console.warn("[ai-router] engine error:", err);
+    }
+
     const apiKey = Deno.env.get('LOVABLE_API_KEY');
     if (!apiKey) {
       return new Response(JSON.stringify(FALLBACK), {
@@ -56,11 +70,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // [Economia de Crédito] Honor the global toggle.
+    // [Economia de Crédito] Honra o toggle global. Em modo OFF, devolvemos
+    // o resultado do engine (mesmo que com confiança baixa) para a UI ainda
+    // poder agir, em vez de cair em "chat" puro.
     const { mode } = await getAiMode();
     if (mode === 'off') {
-      void logAiSavings('ai-router', 'fallback_static', 1, { length: message.length });
-      return new Response(JSON.stringify({ ...FALLBACK, _degraded: true, query: message }), {
+      void logAiSavings('ai-router', 'engine_only', 1, { length: message.length });
+      const engine2 = await classifyMessage(message, session).catch(() => null);
+      const out = engine2 || { ...FALLBACK, query: message };
+      return new Response(JSON.stringify({ ...out, _degraded: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
