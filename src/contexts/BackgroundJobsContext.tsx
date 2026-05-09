@@ -28,6 +28,7 @@ interface BackgroundJobsContextType {
   startJob: <T>(opts: {
     id: string;
     label: string;
+    route?: string;
     run: (report: ReportFn) => Promise<T>;
     successMessage?: (result: T) => string;
     errorMessage?: (err: any) => string;
