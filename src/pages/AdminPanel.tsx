@@ -1109,11 +1109,16 @@ const AdminPanel = () => {
                           const hasProvider = roles.some((r: any) => r.role === 'provider');
                           const hasClient = roles.some((r: any) => r.role === 'client');
                           const hasMixed = roles.some((r: any) => r.role === 'mixed');
-                          const perfil = hasMixed ? 'Misto' : hasProvider && hasClient ? 'Misto' : hasProvider ? 'Prestador' : hasClient ? 'Consumidor' : '—';
+                          // Lead importado: padrão Misto + Comum (regra de cadastro do importador)
+                          const perfil = profile.__isLead
+                            ? 'Misto'
+                            : hasMixed ? 'Misto' : hasProvider && hasClient ? 'Misto' : hasProvider ? 'Prestador' : hasClient ? 'Consumidor' : '—';
                           // Papel administrativo (o que o usuário PODE fazer no sistema)
                           const isMasterRow = roles.some((r: any) => r.role === 'master');
                           const isAdminRow = roles.some((r: any) => r.role === 'admin');
-                          const papel: 'Master' | 'Admin' | 'Comum' = isMasterRow ? 'Master' : isAdminRow ? 'Admin' : 'Comum';
+                          const papel: 'Master' | 'Admin' | 'Comum' = profile.__isLead
+                            ? 'Comum'
+                            : (isMasterRow ? 'Master' : isAdminRow ? 'Admin' : 'Comum');
                           const planLabel = userSub ? userSub.plan.charAt(0).toUpperCase() + userSub.plan.slice(1) : '—';
                           const planColor = userSub ? (userSub.plan === 'ouro' ? 'bg-yellow-500/20 text-yellow-700 border-yellow-300' : userSub.plan === 'prata' ? 'bg-gray-400/20 text-gray-600 border-gray-300' : 'bg-orange-500/20 text-orange-700 border-orange-300') : '';
                           return (
