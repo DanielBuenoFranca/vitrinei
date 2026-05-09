@@ -725,8 +725,18 @@ const AdminPanel = () => {
                       </TableHeader>
                       <TableBody>
                         {segments.map(seg => {
-                          const segProviders = providers.filter(p => p.segment?.includes(seg.name)).length;
-                          const segServices = services.filter(s => s.segment === seg.name).length;
+                          const norm = (v: string) => (v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+                          const segNameN = norm(seg.name);
+                          const segTagsN = ((seg as any).suggested_tags || []).map((t: string) => norm(t));
+                          const segProviders = providers.filter(p => (p.segment || []).some(s => norm(s) === segNameN)).length;
+                          const segServices = services.filter(s => norm(s.segment) === segNameN).length;
+                          // Produto pertence ao segmento se: prestador tem o segmento OU alguma tag bate com tags sugeridas do segmento
+                          const provIdsInSeg = new Set(providers.filter(p => (p.segment || []).some(s => norm(s) === segNameN)).map(p => p.id));
+                          const segProducts = products.filter(p => {
+                            if (p.provider_id && provIdsInSeg.has(p.provider_id)) return true;
+                            const tagsN = (p.tags || []).map(norm);
+                            return tagsN.some(t => segTagsN.includes(t) || t === segNameN);
+                          }).length;
                           return (
                             <TableRow key={seg.id}>
                               <TableCell className="font-medium">
