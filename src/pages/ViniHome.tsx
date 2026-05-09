@@ -466,9 +466,16 @@ const ViniHome = () => {
     return null;
   };
 
+  const isThinkingRef = useRef(false);
   const sendQuery = (q: string) => {
     const query = q.trim();
     if (!query) return;
+    // Trava: evita perguntas enfileiradas que se atropelam e somem
+    if (isThinkingRef.current) {
+      console.warn('[Vini] já está pensando, ignorando duplicata:', query);
+      return;
+    }
+    isThinkingRef.current = true;
     wakeUp();
     setLastTranscript(query);
     pushBubble({ role: 'user', text: query });
@@ -476,37 +483,49 @@ const ViniHome = () => {
     setText('');
     emitEmotion('thinking');
 
+    const finalize = () => { isThinkingRef.current = false; };
+
     setTimeout(async () => {
       const intent = analyzeAndRoute(query);
       if (intent) {
         emitEmotion('happy');
         pushBubble({ role: 'vini', text: intent.reply });
-        setTimeout(() => navigate(intent.route), 1100);
+        setTimeout(() => { navigate(intent.route); finalize(); }, 1100);
         return;
       }
 
+      let routed: any = null;
+      let invokeError: any = null;
       try {
-        const { data: routed } = await supabase.functions.invoke('ai-router', { body: { message: query, session } });
-        if (routed && !routed.error) {
-          updateAiSession({ tags: routed.tags || [], segments: routed.segments || [], lastIntent: routed.intent, lastQuery: routed.query || query });
-          if (routed.needs_more_info || routed.intent !== 'search') {
-            emitEmotion('thinking');
-            pushBubble({
-              role: 'vini',
-              text: routed.follow_up_question || 'Me conte mais um detalhe para eu buscar com precisão.',
-              action: (routed.suggestions || [])[0] ? { label: routed.suggestions[0], intent: 'search', payload: `${query} ${routed.suggestions[0]}` } : undefined,
-            });
-            return;
-          }
-          const params = new URLSearchParams({ q: routed.query || query, type: routed.item_type || 'both' });
-          if ((routed.segments || []).length) params.set('segments', routed.segments.join(','));
-          emitEmotion('happy');
-          pushBubble({ role: 'vini', text: routed.transition_message || `Entendi o que você precisa. Já estou abrindo a busca filtrada.` });
-          setTimeout(() => navigate(`/buscar?${params.toString()}`), 900);
+        const res = await supabase.functions.invoke('ai-router', { body: { message: query, session } });
+        routed = res?.data;
+        invokeError = res?.error;
+        if (invokeError) console.error('[Vini] ai-router error:', invokeError);
+      } catch (e) {
+        console.error('[Vini] ai-router exception:', e);
+      }
+
+      if (routed && !routed.error) {
+        updateAiSession({ tags: routed.tags || [], segments: routed.segments || [], lastIntent: routed.intent, lastQuery: routed.query || query });
+        if (routed.needs_more_info || routed.intent !== 'search') {
+          emitEmotion('thinking');
+          pushBubble({
+            role: 'vini',
+            text: routed.follow_up_question || `Me conte mais um detalhe sobre "${query}" para eu buscar com precisão.`,
+            action: (routed.suggestions || [])[0] ? { label: routed.suggestions[0], intent: 'search', payload: `${query} ${routed.suggestions[0]}` } : undefined,
+          });
+          finalize();
           return;
         }
-      } catch {}
+        const params = new URLSearchParams({ q: routed.query || query, type: routed.item_type || 'both' });
+        if ((routed.segments || []).length) params.set('segments', routed.segments.join(','));
+        emitEmotion('happy');
+        pushBubble({ role: 'vini', text: routed.transition_message || `Entendi o que você precisa. Já estou abrindo a busca filtrada.` });
+        setTimeout(() => { navigate(`/buscar?${params.toString()}`); finalize(); }, 900);
+        return;
+      }
 
+      // Fallback local: busca semântica no estoque embutido
       const result = semanticSearch(query, history);
       const total = (result.products?.length || 0) + (result.services?.length || 0);
 
@@ -516,14 +535,15 @@ const ViniHome = () => {
           role: 'vini',
           text: `Encontrei ${total} ${total === 1 ? 'opção' : 'opções'} para "${query}". Já estou abrindo os resultados!`,
         });
-        setTimeout(() => navigate(`/buscar?q=${encodeURIComponent(query)}`), 1000);
+        setTimeout(() => { navigate(`/buscar?q=${encodeURIComponent(query)}`); finalize(); }, 1000);
       } else {
         emitEmotion('sad');
         pushBubble({
           role: 'vini',
-          text: `Não encontrei exatamente "${query}" no estoque local. Você pode refinar aqui mesmo, ou abrir a busca completa.`,
+          text: `Não encontrei exatamente "${query}" no estoque local. Posso abrir a busca completa pra você ou refinar aqui mesmo — me dá mais um detalhe?`,
           action: { label: 'Abrir busca completa', route: `/buscar?q=${encodeURIComponent(query)}&fora=1` },
         });
+        finalize();
       }
     }, 500);
   };
