@@ -15,6 +15,7 @@ export type GridItem = {
   badge?: string | number;
   active?: boolean;
   highlight?: string;
+  iconClassName?: string;
 };
 
 interface ViniBottomGridProps {
@@ -53,7 +54,7 @@ export function ViniBottomGrid({ items }: ViniBottomGridProps) {
               it.active ? 'text-primary border-primary/70' : 'text-foreground/85',
             )}
           >
-            <it.icon className="w-[18px] h-[18px]" strokeWidth={1.25} />
+            <it.icon className={cn('w-[18px] h-[18px]', it.iconClassName)} strokeWidth={1.25} />
             <span className="text-[8.5px] font-medium leading-tight text-foreground/85 px-0.5 text-center">
               {it.label}
             </span>
