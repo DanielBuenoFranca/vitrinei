@@ -127,6 +127,7 @@ serve(async (req) => {
     session?: any;
     sessionId?: string | null;
     userId?: string | null;
+    mode?: 'free' | 'commerce';
   } = {};
   try { payload = await req.json(); } catch { payload = {}; }
 
@@ -135,6 +136,8 @@ serve(async (req) => {
   const session = payload.session ?? null;
   const sessionId = payload.sessionId ?? null;
   const userId = payload.userId ?? null;
+  const mode: 'free' | 'commerce' = payload.mode === 'commerce' ? 'commerce' : 'free';
+  const SYSTEM_PROMPT = mode === 'commerce' ? SYSTEM_PROMPT_COMMERCE : SYSTEM_PROMPT_FREE;
   const userMsg = lastUserText(messages);
 
   // Fallback PURO de conversa (sem vender, sem buscar, sem sugerir features).
