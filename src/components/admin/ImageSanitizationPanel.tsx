@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { ImageOff, Loader2, RefreshCw, Sparkles, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useBackgroundJobs } from '@/contexts/BackgroundJobsContext';
 
 type Item = {
   kind: 'provider' | 'product' | 'kit' | 'service' | 'segment' | 'profile';
