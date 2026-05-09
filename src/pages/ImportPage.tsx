@@ -790,24 +790,38 @@ const ImportPage = () => {
 
       const rawHeaders = Object.keys(json[0]);
       const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-      const findCol = (patterns: string[]) => rawHeaders.find(h => patterns.some(p => normalize(h).includes(p)));
+      const used = new Set<string>();
+      // Busca header por padrões, evitando reaproveitar coluna já mapeada.
+      // `excludeIfContains` impede match acidental quando o header contém um termo de outro grupo.
+      const findCol = (patterns: string[], excludeIfContains: string[] = []) => {
+        return rawHeaders.find(h => {
+          if (used.has(h)) return false;
+          const n = normalize(h);
+          if (excludeIfContains.some(x => n.includes(x))) return false;
+          return patterns.some(p => n.includes(p));
+        });
+      };
+      const claim = (h: string | undefined) => { if (h) used.add(h); return h; };
 
+      // Ordem importa: campos específicos primeiro, genéricos por último.
       const colMap = {
-        provider: findCol(['prestador', 'provider', 'nome do prestador', 'profissional', 'usuario', 'usuário']),
-        cpfCnpj: findCol(['cpf', 'cnpj', 'cpf/cnpj', 'cpf_cnpj', 'documento']),
-        segment: findCol(['segmento', 'segment', 'categoria', 'area']),
-        service: findCol(['servico', 'service', 'serviço']),
-        servicePrice: findCol(['preco_servico', 'preço serviço', 'preco servico', 'service_price', 'valor_servico', 'valor servico', 'preço_serviço']),
-        serviceUnit: findCol(['un. servico', 'un. serviço', 'unidade servico', 'unidade serviço', 'service_unit']),
-        serviceQuantity: findCol(['qtd servico', 'qtd serviço', 'quantidade servico', 'quantidade serviço', 'qtd_servico', 'service_quantity']),
-        product: findCol(['produto', 'product']),
-        productPrice: findCol(['preco_produto', 'preço produto', 'preco produto', 'product_price', 'valor_produto', 'valor produto', 'preço_produto']),
-        productUnit: findCol(['un. produto', 'unidade produto', 'product_unit']),
-        stock: findCol(['tipo_estoque', 'tipo estoque', 'estoque tipo', 'stock_type']),
-        productQuantity: findCol(['qtd produto', 'quantidade produto', 'qtd_produto', 'product_quantity', 'estoque qtd', 'qtd', 'quantidade']),
-        phone: findCol(['telefone', 'phone', 'cel']),
-        email: findCol(['email', 'e-mail']),
-        city: findCol(['cidade', 'city']),
+        provider: claim(findCol(['prestador', 'provider', 'nome do prestador', 'profissional', 'usuario', 'usuário'])),
+        cpfCnpj: claim(findCol(['cpf', 'cnpj', 'cpf/cnpj', 'cpf_cnpj', 'documento'])),
+        segment: claim(findCol(['segmento', 'segment', 'categoria', 'area'])),
+        // Serviço: bloqueia headers de "produto"
+        service: claim(findCol(['servico', 'service', 'serviço'], ['produto', 'product'])),
+        servicePrice: claim(findCol(['preco_servico', 'preço serviço', 'preco servico', 'service_price', 'valor_servico', 'valor servico', 'preço_serviço'], ['produto', 'product'])),
+        serviceUnit: claim(findCol(['un. servico', 'un. serviço', 'unidade servico', 'unidade serviço', 'service_unit'], ['produto', 'product'])),
+        serviceQuantity: claim(findCol(['qtd servico', 'qtd serviço', 'quantidade servico', 'quantidade serviço', 'qtd_servico', 'service_quantity'], ['produto', 'product'])),
+        // Produto: bloqueia headers de "serviço"
+        product: claim(findCol(['produto', 'product'], ['servico', 'serviço', 'service'])),
+        productPrice: claim(findCol(['preco_produto', 'preço produto', 'preco produto', 'product_price', 'valor_produto', 'valor produto', 'preço_produto'], ['servico', 'serviço', 'service'])),
+        productUnit: claim(findCol(['un. produto', 'unidade produto', 'product_unit'], ['servico', 'serviço', 'service'])),
+        stock: claim(findCol(['tipo_estoque', 'tipo estoque', 'estoque tipo', 'stock_type'])),
+        productQuantity: claim(findCol(['qtd produto', 'quantidade produto', 'qtd_produto', 'product_quantity', 'estoque qtd', 'qtd', 'quantidade'], ['servico', 'serviço', 'service'])),
+        phone: claim(findCol(['telefone', 'phone', 'cel'])),
+        email: claim(findCol(['email', 'e-mail'])),
+        city: claim(findCol(['cidade', 'city'])),
       };
 
       const parsed: ParsedRow[] = json.map((r: any, i: number) => ({
