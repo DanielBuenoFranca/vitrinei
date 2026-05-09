@@ -1,29 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getAiMode, autoOffOnFailure, logAiSavings } from "../_shared/aiCredits.ts";
+import { think, streamBrainReply, type BrainMessage } from "../_shared/viniBrain.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
-
-function streamFallback(text: string) {
-  return new ReadableStream({
-    start(controller) {
-      const enc = new TextEncoder();
-      const chunk = { choices: [{ delta: { content: text }, index: 0, finish_reason: null }] };
-      controller.enqueue(enc.encode(`data: ${JSON.stringify(chunk)}\n\n`));
-      controller.enqueue(enc.encode(`data: [DONE]\n\n`));
-      controller.close();
-    },
-  });
-}
-
-function contingencyText(userName?: string) {
-  const first = (userName || "").split(" ")[0];
-  const prefix = first ? `${first}, ` : "";
-  return `${prefix}meu canal de conversa livre está em modo economia agora. Continuo te ajudando: posso te levar para busca, loja, carrinho, carteira ou suporte. O que você quer fazer?`;
-}
 
 const SYSTEM_PROMPT = `Você é o Vini, o braço-direito digital do ecossistema Vitrinei Connect.
 
@@ -36,9 +19,10 @@ PERSONALIDADE:
 MODO CONVERSAÇÃO:
 - Aqui o usuário quer conversar livremente: papo, dúvidas gerais, curiosidades, conselhos, brincadeiras.
 - Responda qualquer assunto com naturalidade, como um amigo culto e atualizado.
-- Se a pergunta exige fato muito atual (notícias, preços, esportes), responda com seu conhecimento e diga que pode confirmar depois se quiser.
 - Mantenha respostas com 2 a 5 frases — direto ao ponto, sem encher linguiça.
 - Se o usuário se despedir, responda algo carinhoso e curto.
+- NUNCA mencione limitações internas, modo, créditos, manutenção, "estou off", etc.
+- NUNCA simule a fala do usuário — apenas responda o que ele perguntou.
 
 LIMITES:
 - Não invente dados pessoais do usuário.
@@ -48,16 +32,30 @@ LIMITES:
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  let payload: { messages?: BrainMessage[]; userName?: string | null; session?: any } = {};
   try {
-    const { messages, userName } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    payload = await req.json();
+  } catch {
+    payload = {};
+  }
+  const messages: BrainMessage[] = Array.isArray(payload.messages) ? payload.messages : [];
+  const userName = payload.userName ?? null;
+  const session = payload.session ?? null;
 
-    // [Economia de Crédito] Honor the global toggle.
+  // Cérebro local: sempre disponível para fallback elegante.
+  const brainReply = () => {
+    const out = think({ messages, userName, session });
+    return out.text;
+  };
+
+  try {
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+
+    // [Economia de Crédito] — se o gateway está desativado, o usuário NÃO percebe.
     const { mode } = await getAiMode();
-    if (mode === "off") {
-      void logAiSavings("vini-chat", "contingency_static", 1, { userName: !!userName });
-      return new Response(streamFallback(contingencyText(userName)), {
+    if (mode === "off" || !LOVABLE_API_KEY) {
+      void logAiSavings("vini-chat", "local_brain", 1, { reason: !LOVABLE_API_KEY ? "no_key" : "mode_off" });
+      return new Response(streamBrainReply(brainReply()), {
         headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
       });
     }
@@ -84,22 +82,19 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      const first = (userName || "").split(" ")[0];
-      const prefix = first ? `${first}, ` : "";
-      let fallback = `${prefix}estou aqui com você. Posso te orientar sobre busca, loja, carrinho, carteira ou suporte — me conte o que precisa resolver agora.`;
       if (response.status === 429) {
-        fallback = `${prefix}recebi muitas mensagens em sequência. Vamos respirar 1 segundinho e já te respondo. Enquanto isso, me diga em uma frase o que você quer.`;
         await autoOffOnFailure("rate_limited");
+        void logAiSavings("vini-chat", "local_brain_after_429", 1);
       } else if (response.status === 402) {
-        fallback = contingencyText(userName);
         await autoOffOnFailure("no_credits");
+        void logAiSavings("vini-chat", "local_brain_after_402", 1);
       } else {
         const t = await response.text().catch(() => "");
         console.error("AI gateway error:", response.status, t);
+        void logAiSavings("vini-chat", `local_brain_after_${response.status}`, 1);
       }
-      void logAiSavings("vini-chat", `gateway_${response.status}`, 1, { auto_off: true });
-
-      return new Response(streamFallback(fallback), {
+      // Em qualquer falha, devolvemos uma resposta humanizada do cérebro local.
+      return new Response(streamBrainReply(brainReply()), {
         headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
       });
     }
@@ -109,9 +104,9 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("vini-chat error:", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Erro desconhecido" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    // Mesmo em erro inesperado o usuário recebe uma resposta natural.
+    return new Response(streamBrainReply(brainReply()), {
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+    });
   }
 });
