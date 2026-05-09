@@ -207,7 +207,7 @@ const AdminPanel = () => {
         address: p.address || null,
         created_at: p.created_at,
         is_provider: true,
-        is_customer: false,
+        is_customer: true,
         __isLead: true,
         __providerId: p.id,
         __leadEmail: p.email || null,
