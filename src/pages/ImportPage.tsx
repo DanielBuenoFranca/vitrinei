@@ -1345,7 +1345,7 @@ const ImportPage = () => {
               svcEntry = serviceCache.get(sk)!;
             } else {
               const labor = parseFloat(row.servicePrice) || 0;
-              const qtyRaw = parseInt(row.serviceQuantity, 10);
+              const qtyRaw = parseInt(String(row.serviceQuantity).replace(',', '.'), 10);
               const quantity = Number.isFinite(qtyRaw) && qtyRaw >= 0 ? qtyRaw : 0;
               const { data: ins, error } = await supabase.from('dynamic_services').insert({
                 service_id: nextServiceId++,
