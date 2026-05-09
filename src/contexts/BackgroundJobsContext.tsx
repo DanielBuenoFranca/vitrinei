@@ -134,31 +134,46 @@ export const useBackgroundJobs = () => {
 };
 
 const BackgroundJobsWidget = ({ jobs, dismissJob }: { jobs: JobState[]; dismissJob: (id: string) => void }) => {
+  const navigate = useNavigate();
   if (jobs.length === 0) return null;
   return (
     <div className="fixed bottom-4 right-4 z-[60] w-[320px] max-w-[90vw] space-y-2 pointer-events-none">
-      {jobs.map(j => (
-        <div
-          key={j.id}
-          className="pointer-events-auto rounded-lg border bg-background/95 backdrop-blur shadow-lg p-3 text-xs"
-        >
-          <div className="flex items-center gap-2">
-            {j.status === 'running' && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />}
-            {j.status === 'success' && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />}
-            {j.status === 'error' && <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />}
-            <span className="font-medium truncate flex-1">{j.label}</span>
-            {j.status !== 'running' && (
-              <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => dismissJob(j.id)}>
-                <X className="h-3 w-3" />
-              </Button>
+      {jobs.map(j => {
+        const clickable = !!j.route;
+        return (
+          <div
+            key={j.id}
+            role={clickable ? 'button' : undefined}
+            tabIndex={clickable ? 0 : undefined}
+            onClick={() => { if (clickable) navigate(j.route!); }}
+            onKeyDown={(e) => { if (clickable && (e.key === 'Enter' || e.key === ' ')) navigate(j.route!); }}
+            className={`pointer-events-auto rounded-lg border bg-background/95 backdrop-blur shadow-lg p-3 text-xs ${clickable ? 'cursor-pointer hover:border-primary/60 hover:bg-muted/40 transition-colors' : ''}`}
+            title={clickable ? 'Abrir tela em execução' : undefined}
+          >
+            <div className="flex items-center gap-2">
+              {j.status === 'running' && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />}
+              {j.status === 'success' && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />}
+              {j.status === 'error' && <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />}
+              <span className="font-medium truncate flex-1">{j.label}</span>
+              {clickable && <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" />}
+              {j.status !== 'running' && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-5 w-5"
+                  onClick={(e) => { e.stopPropagation(); dismissJob(j.id); }}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+            <div className="mt-1 truncate text-muted-foreground">{j.message || j.step}</div>
+            {j.status === 'running' && (
+              <Progress value={j.percent} className="h-1.5 mt-2" />
             )}
           </div>
-          <div className="mt-1 truncate text-muted-foreground">{j.message || j.step}</div>
-          {j.status === 'running' && (
-            <Progress value={j.percent} className="h-1.5 mt-2" />
-          )}
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
