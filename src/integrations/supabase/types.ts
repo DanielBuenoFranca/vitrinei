@@ -91,6 +91,7 @@ export type Database = {
           quantity: number
           rating: number
           related_service_ids: number[]
+          segments: string[]
           stock_type: string
           tags: string[]
           unit: string
@@ -108,6 +109,7 @@ export type Database = {
           quantity?: number
           rating?: number
           related_service_ids?: number[]
+          segments?: string[]
           stock_type?: string
           tags?: string[]
           unit?: string
@@ -125,6 +127,7 @@ export type Database = {
           quantity?: number
           rating?: number
           related_service_ids?: number[]
+          segments?: string[]
           stock_type?: string
           tags?: string[]
           unit?: string
@@ -155,6 +158,7 @@ export type Database = {
           quantity: number
           rating: number
           segment: string
+          segments: string[]
           service_id: number
           time: string
           unit: string
@@ -174,6 +178,7 @@ export type Database = {
           quantity?: number
           rating?: number
           segment: string
+          segments?: string[]
           service_id: number
           time?: string
           unit?: string
@@ -193,6 +198,7 @@ export type Database = {
           quantity?: number
           rating?: number
           segment?: string
+          segments?: string[]
           service_id?: number
           time?: string
           unit?: string
