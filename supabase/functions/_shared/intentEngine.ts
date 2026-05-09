@@ -174,11 +174,11 @@ async function searchInventoryByKeywords(
       const enc = encodeURIComponent(kw);
       const [pRes, sRes] = await Promise.all([
         fetch(
-          `${URL_BASE}/rest/v1/dynamic_products?select=name,tags,provider&or=(name.ilike.*${enc}*,tags.cs.{${enc}})&limit=10`,
+          `${URL_BASE}/rest/v1/dynamic_products?select=name,tags,segments,provider&or=(name.ilike.*${enc}*,tags.cs.{${enc}},segments.cs.{${enc}})&limit=10`,
           { headers: headers() },
         ),
         fetch(
-          `${URL_BASE}/rest/v1/dynamic_services?select=name,segment,provider&name=ilike.*${enc}*&limit=10`,
+          `${URL_BASE}/rest/v1/dynamic_services?select=name,segment,segments,provider&or=(name.ilike.*${enc}*,segment.ilike.*${enc}*,segments.cs.{${enc}})&limit=10`,
           { headers: headers() },
         ),
       ]);
@@ -187,6 +187,7 @@ async function searchInventoryByKeywords(
       if (products.length + services.length > 0) {
         const segs = new Set<string>();
         services.forEach((s: any) => s.segment && segs.add(s.segment));
+        products.forEach((p: any) => Array.isArray(p.segments) && p.segments.forEach((x: string) => segs.add(x)));
         return { products, services, segments: Array.from(segs), matchedKeyword: kw };
       }
     } catch { /* tenta próximo */ }
