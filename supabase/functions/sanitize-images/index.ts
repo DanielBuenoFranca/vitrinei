@@ -282,20 +282,20 @@ Deno.serve(async (req) => {
 
     if (aiRes.status === 402 || aiRes.status === 429) {
       await autoOffOnFailure(supabase, aiRes.status === 402 ? "no_credits" : "rate_limited");
-      const r = await callFreeFallback(supabase, { kind, id, name, segment: queryParts });
+      const r = await callFreeFallback(supabase, freePayload);
       return new Response(await r.text(), { status: r.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     if (!aiRes.ok) {
       console.error("AI error:", aiRes.status, await aiRes.text());
-      const r = await callFreeFallback(supabase, { kind, id, name, segment: queryParts });
+      const r = await callFreeFallback(supabase, freePayload);
       return new Response(await r.text(), { status: r.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const aiData = await aiRes.json();
     const imageData = aiData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
     if (!imageData?.startsWith("data:image")) {
-      const r = await callFreeFallback(supabase, { kind, id, name, segment: queryParts });
+      const r = await callFreeFallback(supabase, freePayload);
       return new Response(await r.text(), { status: r.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
