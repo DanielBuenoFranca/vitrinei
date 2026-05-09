@@ -666,6 +666,54 @@ const ImportPage = () => {
   const [groupDecisions, setGroupDecisions] = useState<Map<string, { action: 'merge' | 'create'; providerId?: number }>>(new Map());
   const [expandedGroupKeys, setExpandedGroupKeys] = useState<Set<string>>(new Set());
 
+  /* ─── Persistência da sessão de importação ───
+     Mantém rows/errors/result/fileName/decisões em sessionStorage para que,
+     se o usuário sair de /importar e voltar (via card de progresso), a tela
+     seja restaurada exatamente como estava. */
+  const SESSION_KEY = 'vc.import.session.v1';
+  const hydratedRef = useRef(false);
+
+  // Hydrate uma única vez no mount
+  useEffect(() => {
+    if (hydratedRef.current) return;
+    hydratedRef.current = true;
+    try {
+      const raw = sessionStorage.getItem(SESSION_KEY);
+      if (!raw) return;
+      const s = JSON.parse(raw);
+      if (Array.isArray(s.rows)) setRows(s.rows.map((r: any) => ({ ...r, _aiFields: undefined })));
+      if (Array.isArray(s.errors)) setErrors(s.errors);
+      if (s.result) setResult(s.result);
+      if (s.fileName) setFileName(s.fileName);
+      if (s.importProgress) setImportProgress(s.importProgress);
+      if (s.autoFillSummary) setAutoFillSummary(s.autoFillSummary);
+      if (Array.isArray(s.dedupPending)) setDedupPending(s.dedupPending);
+      if (Array.isArray(s.groupDecisions)) setGroupDecisions(new Map(s.groupDecisions));
+    } catch (e) { console.warn('hydrate import session', e); }
+  }, []);
+
+  // Persiste sempre que algo relevante muda
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    try {
+      const payload = {
+        rows: rows.map(r => { const { _aiFields, ...rest } = r as any; return rest; }),
+        errors,
+        result,
+        fileName,
+        importProgress,
+        autoFillSummary,
+        dedupPending,
+        groupDecisions: Array.from(groupDecisions.entries()),
+      };
+      if (rows.length === 0 && !result && !fileName) {
+        sessionStorage.removeItem(SESSION_KEY);
+      } else {
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(payload));
+      }
+    } catch (e) { /* quota/serialização — ignorar */ }
+  }, [rows, errors, result, fileName, importProgress, autoFillSummary, dedupPending, groupDecisions]);
+
   useEffect(() => {
     const load = async () => {
       const [segRes, provRes] = await Promise.all([
@@ -1463,7 +1511,9 @@ const ImportPage = () => {
 
   const resetAll = () => {
     setRows([]); setErrors([]); setResult(null); setFileName(''); setEditingCell(null);
-    setDedupPending([]); setImportProgress(null);
+    setDedupPending([]); setImportProgress(null); setAutoFillSummary(null);
+    setGroupDecisions(new Map());
+    try { sessionStorage.removeItem(SESSION_KEY); } catch { /* noop */ }
     if (fileRef.current) fileRef.current.value = '';
   };
 
