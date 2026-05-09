@@ -1,8 +1,9 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Loader2, X, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Loader2, X, CheckCircle2, AlertTriangle, ExternalLink } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 export type JobStatus = 'running' | 'success' | 'error';
 
@@ -15,6 +16,7 @@ export interface JobState {
   startedAt: number;
   finishedAt?: number;
   message?: string;
+  route?: string;
 }
 
 export type ReportFn = (step: string, percent: number) => void;
