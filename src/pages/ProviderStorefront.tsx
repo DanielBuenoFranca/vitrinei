@@ -1213,6 +1213,24 @@ const ProviderStorefront = () => {
             )}
           </div>
         )}
+
+        {/* Footer link discreto */}
+        <footer className="mt-16 py-6 border-t border-border/40 bg-card/40 backdrop-blur-sm">
+          <div className="container mx-auto max-w-5xl px-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center shrink-0">
+                <Zap className="w-3 h-3 text-primary-foreground" />
+              </div>
+              <span className="text-[10px] text-muted-foreground truncate">
+                {shareUrl}
+              </span>
+            </div>
+            <Button variant="ghost" size="sm" className="h-7 px-2 text-[10px] gap-1 shrink-0" onClick={copyLink}>
+              {copied ? <CheckCircle2 className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+              {copied ? 'Copiado' : 'Copiar link'}
+            </Button>
+          </div>
+        </footer>
       </div>
     );
   }
