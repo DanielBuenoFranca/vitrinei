@@ -467,12 +467,20 @@ const ViniHome = () => {
   };
 
   const isThinkingRef = useRef(false);
+  const pendingQueryRef = useRef<string | null>(null);
+  const safetyTimerRef = useRef<number | null>(null);
+
   const sendQuery = (q: string) => {
     const query = q.trim();
     if (!query) return;
-    // Trava: evita perguntas enfileiradas que se atropelam e somem
+    // Se já está pensando, NÃO ignora: enfileira o pedido para rodar
+    // assim que a resposta atual finalizar. Garante que toda fala/escrita
+    // do usuário chegue ao Vini e tenha resposta.
     if (isThinkingRef.current) {
-      console.warn('[Vini] já está pensando, ignorando duplicata:', query);
+      console.warn('[Vini] ocupado — enfileirando próxima pergunta:', query);
+      pendingQueryRef.current = query;
+      pushBubble({ role: 'user', text: query });
+      pushBubble({ role: 'vini', text: 'Anotei. Já te respondo essa também…' });
       return;
     }
     isThinkingRef.current = true;
@@ -483,7 +491,31 @@ const ViniHome = () => {
     setText('');
     emitEmotion('thinking');
 
-    const finalize = () => { isThinkingRef.current = false; };
+    const finalize = () => {
+      isThinkingRef.current = false;
+      if (safetyTimerRef.current) { window.clearTimeout(safetyTimerRef.current); safetyTimerRef.current = null; }
+      // Drena fila: se o usuário falou/escreveu enquanto pensávamos, processa agora
+      const next = pendingQueryRef.current;
+      if (next) {
+        pendingQueryRef.current = null;
+        setTimeout(() => sendQuery(next), 150);
+      }
+    };
+
+    // Failsafe: nunca deixa o Vini "mudo". Se algo travar (rede, SDK,
+    // promise pendurada), libera o lock após 15s e mostra um aviso.
+    safetyTimerRef.current = window.setTimeout(() => {
+      if (!isThinkingRef.current) return;
+      console.warn('[Vini] safety timeout — liberando lock');
+      emitEmotion('sad');
+      pushBubble({
+        role: 'vini',
+        text: 'Demorei demais para responder essa. Pode repetir ou tentar de outra forma?',
+      });
+      isThinkingRef.current = false;
+      const next = pendingQueryRef.current;
+      if (next) { pendingQueryRef.current = null; setTimeout(() => sendQuery(next), 150); }
+    }, 15000);
 
     setTimeout(async () => {
       const intent = analyzeAndRoute(query);
@@ -494,10 +526,15 @@ const ViniHome = () => {
         return;
       }
 
+      // Race: ai-router com timeout duro (8s). Se travar, cai no fallback local.
       let routed: any = null;
       let invokeError: any = null;
       try {
-        const res = await supabase.functions.invoke('ai-router', { body: { message: query, session } });
+        const invokePromise = supabase.functions.invoke('ai-router', { body: { message: query, session } });
+        const timeoutPromise = new Promise<{ data: null; error: any }>((resolve) =>
+          setTimeout(() => resolve({ data: null, error: new Error('ai-router timeout 8s') }), 8000),
+        );
+        const res: any = await Promise.race([invokePromise, timeoutPromise]);
         routed = res?.data;
         invokeError = res?.error;
         if (invokeError) console.error('[Vini] ai-router error:', invokeError);
