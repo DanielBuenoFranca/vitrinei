@@ -608,162 +608,189 @@ const ProviderStorefront = () => {
         )}
       </AnimatePresence>
 
-      {/* Provider Profile Header */}
-      <section className="pt-16 px-4">
-        <div className="container mx-auto max-w-3xl">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            className="rounded-2xl border border-border bg-card overflow-hidden">
-            {/* Banner with carousel */}
-            <div className="h-32 relative overflow-hidden">
-              {/* Background image or gradient */}
-              {currentBanner.imageUrl ? (
-                <div className="absolute inset-0">
-                  <img src={currentBanner.imageUrl} alt="Banner" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/30" />
-                </div>
-              ) : (
+      {/* ──────────────── HERO MAGAZINE ──────────────── */}
+      <section className="pt-14">
+        <div className="relative">
+          {/* Banner backdrop full-bleed */}
+          <div className="relative h-56 sm:h-72 overflow-hidden">
+            {currentBanner.imageUrl ? (
+              <>
+                <img src={currentBanner.imageUrl} alt="Banner" className="absolute inset-0 w-full h-full object-cover scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-background" />
+              </>
+            ) : (
+              <>
                 <div className="absolute inset-0" style={{ background: currentBanner.gradient }} />
-              )}
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.18),transparent_55%),radial-gradient(circle_at_80%_70%,rgba(0,0,0,0.25),transparent_60%)]" />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
+              </>
+            )}
 
-              {/* Banner text */}
-              {currentBanner.text && (
-                <div className="absolute inset-0 flex items-center justify-center px-6">
-                  <span className="text-white font-bold text-lg drop-shadow-lg text-center leading-snug max-w-[80%] truncate">
+            {/* Banner text — editorial */}
+            {currentBanner.text && (
+              <div className="absolute inset-0 flex items-center px-6 sm:px-10">
+                <div className="max-w-2xl">
+                  <span className="inline-block text-[10px] font-bold tracking-[0.25em] uppercase text-white/70 mb-2">Em destaque</span>
+                  <h2 className="text-white font-display text-2xl sm:text-4xl font-extrabold leading-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)]">
                     {currentBanner.text}
-                  </span>
+                  </h2>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Carousel indicators */}
-              {totalBanners > 1 && (
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+            {/* Carousel controls */}
+            {totalBanners > 1 && (
+              <>
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
                   {Array.from({ length: totalBanners }).map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setCurrentBannerIdx(i)}
-                      className={`w-2 h-2 rounded-full transition-all ${i === currentBannerIdx % totalBanners ? 'bg-white w-4' : 'bg-white/50'}`}
-                    />
+                    <button key={i} onClick={() => setCurrentBannerIdx(i)}
+                      className={`h-1.5 rounded-full transition-all ${i === currentBannerIdx % totalBanners ? 'bg-white w-6' : 'bg-white/40 w-1.5 hover:bg-white/70'}`} />
                   ))}
                 </div>
-              )}
+                <button onClick={() => setCurrentBannerIdx(prev => (prev - 1 + totalBanners) % totalBanners)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/15 backdrop-blur-md hover:bg-white/30 flex items-center justify-center text-white border border-white/20 z-10">
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button onClick={() => setCurrentBannerIdx(prev => (prev + 1) % totalBanners)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/15 backdrop-blur-md hover:bg-white/30 flex items-center justify-center text-white border border-white/20 z-10">
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </>
+            )}
 
-              {/* Carousel arrows */}
-              {totalBanners > 1 && (
-                <>
-                  <button onClick={() => setCurrentBannerIdx(prev => (prev - 1 + totalBanners) % totalBanners)}
-                    className="absolute left-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-black/30 flex items-center justify-center text-white hover:bg-black/50">
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => setCurrentBannerIdx(prev => (prev + 1) % totalBanners)}
-                    className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-black/30 flex items-center justify-center text-white hover:bg-black/50">
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </>
-              )}
-
-              {/* Logo — always in foreground, never cropped */}
-              <div className="absolute -bottom-8 left-6 z-10">
-                {provider.logo_url ? (
-                  <div className="w-16 h-16 rounded-2xl border-4 border-card shadow-lg overflow-hidden bg-card">
-                    <img src={provider.logo_url} alt={provider.name} className="w-full h-full object-contain" />
-                  </div>
-                ) : (
-                  <div className="w-16 h-16 rounded-2xl bg-card border-4 border-card shadow-lg flex items-center justify-center">
-                    <SegIcon className="w-8 h-8 text-primary" />
-                  </div>
+            {/* Edit-mode floating actions on banner */}
+            {editMode && (
+              <div className="absolute top-3 right-3 flex gap-1.5 z-20">
+                {provider.logo_url && (
+                  <Button variant="secondary" size="sm" className="gap-1 text-[10px] h-7 bg-white/85 hover:bg-white text-foreground" onClick={downloadLogo}>
+                    <Download className="w-3 h-3" /> Logo
+                  </Button>
                 )}
+                <Button variant="secondary" size="sm" className="gap-1 text-[10px] h-7 bg-white/85 hover:bg-white text-foreground" onClick={generateLogo} disabled={generatingLogo}>
+                  <RefreshCw className={`w-3 h-3 ${generatingLogo ? 'animate-spin' : ''}`} /> {generatingLogo ? 'Gerando...' : 'Logo IA'}
+                </Button>
+                <Button variant="secondary" size="sm" className="gap-1 text-[10px] h-7 bg-white/85 hover:bg-white text-foreground" onClick={() => setProviderFormOpen(true)}>
+                  <Pencil className="w-3 h-3" /> Perfil
+                </Button>
               </div>
+            )}
+          </div>
 
-              {editMode && (
-                <div className="absolute top-2 right-2 flex gap-1 z-10">
-                  {provider.logo_url && (
-                    <Button variant="secondary" size="sm" className="gap-1 text-[10px] h-7 opacity-80 hover:opacity-100" onClick={downloadLogo}>
-                      <Download className="w-3 h-3" /> Logo
-                    </Button>
+          {/* Identity card overlapping banner */}
+          <div className="container mx-auto max-w-5xl px-4">
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+              className="relative -mt-20 sm:-mt-24 rounded-3xl border border-border/60 bg-card/90 backdrop-blur-xl shadow-[0_30px_80px_-30px_hsl(var(--primary)/0.35)] overflow-hidden">
+              <div className="p-5 sm:p-7 flex flex-col sm:flex-row gap-5 sm:gap-6">
+                {/* Logo block */}
+                <div className="shrink-0 mx-auto sm:mx-0">
+                  {provider.logo_url ? (
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl ring-4 ring-card shadow-[0_15px_40px_-12px_hsl(var(--primary)/0.4)] overflow-hidden bg-card">
+                      <img src={provider.logo_url} alt={provider.name} className="w-full h-full object-contain" />
+                    </div>
+                  ) : (
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl ring-4 ring-card bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center shadow-lg">
+                      <SegIcon className="w-10 h-10 text-primary" />
+                    </div>
                   )}
-                  <Button variant="secondary" size="sm" className="gap-1 text-[10px] h-7 opacity-80 hover:opacity-100" onClick={generateLogo} disabled={generatingLogo}>
-                    <RefreshCw className={`w-3 h-3 ${generatingLogo ? 'animate-spin' : ''}`} /> {generatingLogo ? 'Gerando...' : 'Gerar Logo IA'}
-                  </Button>
-                  <Button variant="secondary" size="sm" className="gap-1 text-[10px] h-7 opacity-80 hover:opacity-100" onClick={() => setProviderFormOpen(true)}>
-                    <Pencil className="w-3 h-3" /> Perfil
-                  </Button>
                 </div>
-              )}
-            </div>
 
-            <div className="pt-12 pb-5 px-6">
-              <div className="flex items-start justify-between flex-wrap gap-2">
-                <div>
-                  <h1 className="font-display text-xl font-bold text-foreground">{provider.name}</h1>
-                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                {/* Info block */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-foreground leading-tight">{provider.name}</h1>
+                        <Badge variant="outline" className="text-[10px] uppercase tracking-wider">
+                          {provider.type === 'mei' ? 'MEI' : 'PF'}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1.5 flex-wrap text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1 font-semibold text-foreground">
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" /> {provider.rating}
+                          <span className="font-normal text-muted-foreground ml-0.5">avaliação</span>
+                        </span>
+                        {provider.distance && (
+                          <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {provider.distance}</span>
+                        )}
+                        <span className="hidden sm:flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-emerald-500" /> Verificado</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Segment chips */}
+                  <div className="flex flex-wrap gap-1.5 mt-3">
                     {(Array.isArray(provider.segment) ? provider.segment : [provider.segment]).map(seg => (
-                      <Badge key={seg} className="bg-primary/10 text-primary border-primary/20 text-xs">{seg}</Badge>
+                      <Badge key={seg} className="bg-primary/10 text-primary border-primary/20 text-[11px] hover:bg-primary/15">{seg}</Badge>
                     ))}
-                    <Badge variant="outline" className="text-[10px]">{provider.type === 'mei' ? 'MEI' : 'Pessoa Física'}</Badge>
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Star className="w-3 h-3 fill-accent text-accent" /> {provider.rating}
-                    </span>
-                    {provider.distance && (
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <MapPin className="w-3 h-3" /> {provider.distance}
-                      </span>
-                    )}
+                    {segmentTags.slice(0, 4).map(tag => (
+                      <span key={tag} className="text-[10px] text-muted-foreground bg-muted/60 border border-border/40 px-2 py-0.5 rounded-full">{tag}</span>
+                    ))}
+                  </div>
+
+                  {/* Contact row */}
+                  {((config.showPhone !== false && provider.phone) || (config.showEmail !== false && provider.email) || (config.showAddress !== false && provider.city)) && (
+                    <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-3 text-[11px] text-muted-foreground">
+                      {(config.showPhone !== false) && provider.phone && (
+                        <span className="flex items-center gap-1.5"><Phone className="w-3 h-3 text-primary" /> {provider.phone}</span>
+                      )}
+                      {(config.showEmail !== false) && provider.email && (
+                        <span className="flex items-center gap-1.5"><Mail className="w-3 h-3 text-primary" /> {provider.email}</span>
+                      )}
+                      {(config.showAddress !== false) && provider.city && (
+                        <span className="flex items-center gap-1.5"><MapPinned className="w-3 h-3 text-primary" /> {provider.city}{provider.address ? ` · ${provider.address}` : ''}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Stat strip */}
+              <div className="grid grid-cols-3 border-t border-border/60 divide-x divide-border/60 bg-gradient-to-r from-muted/30 via-transparent to-muted/30">
+                <div className="px-4 py-3 flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <WrenchIcon className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-base font-bold text-foreground leading-none">{providerServices.length}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Serviços</p>
+                  </div>
+                </div>
+                <div className="px-4 py-3 flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                    <Package className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-base font-bold text-foreground leading-none">{providerProducts.length}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Produtos</p>
+                  </div>
+                </div>
+                <div className="px-4 py-3 flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-amber-400/15 flex items-center justify-center">
+                    <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
+                  </div>
+                  <div>
+                    <p className="text-base font-bold text-foreground leading-none">{provider.rating}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Reputação</p>
                   </div>
                 </div>
               </div>
 
-              {/* Contact info */}
-              <div className="flex flex-wrap gap-3 mt-3 text-xs text-muted-foreground">
-                {(config.showPhone !== false) && provider.phone && (
-                  <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {provider.phone}</span>
-                )}
-                {(config.showEmail !== false) && provider.email && (
-                  <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {provider.email}</span>
-                )}
-                {(config.showAddress !== false) && provider.city && (
-                  <span className="flex items-center gap-1"><MapPinned className="w-3 h-3" /> {provider.city}{provider.address ? ` - ${provider.address}` : ''}</span>
-                )}
-              </div>
-
-              {/* Segment tags */}
-              {segmentTags.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-3">
-                  {segmentTags.map(tag => (
-                    <span key={tag} className="text-[10px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">{tag}</span>
-                  ))}
+              {/* Edit quick-actions */}
+              {editMode && (
+                <div className="px-5 py-3 border-t border-border/60 flex flex-wrap gap-2 bg-muted/20">
+                  <Button variant="outline" size="sm" className="gap-1 text-xs h-8" onClick={() => { setEditService(null); setServiceFormOpen(true); }}>
+                    <Plus className="w-3.5 h-3.5" /> Novo Serviço
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1 text-xs h-8" onClick={() => { setEditProduct(null); setProductFormOpen(true); }}>
+                    <Plus className="w-3.5 h-3.5" /> Novo Produto
+                  </Button>
+                  <Button variant="default" size="sm" className="gap-1 text-xs h-8" onClick={() => setKitBuilderOpen(true)}>
+                    <Plus className="w-3.5 h-3.5" /> Novo Kit
+                  </Button>
                 </div>
               )}
-
-              {/* Stats */}
-              <div className="flex gap-4 mt-4 pt-3 border-t border-border items-center">
-                <div className="text-center">
-                  <p className="text-lg font-bold text-foreground">{providerServices.length}</p>
-                  <p className="text-[10px] text-muted-foreground">Serviços</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-lg font-bold text-foreground">{providerProducts.length}</p>
-                  <p className="text-[10px] text-muted-foreground">Produtos</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-lg font-bold text-foreground">{provider.rating}</p>
-                  <p className="text-[10px] text-muted-foreground">Avaliação</p>
-                </div>
-                {editMode && (
-                  <div className="ml-auto flex gap-1.5">
-                    <Button variant="outline" size="sm" className="gap-1 text-xs h-7" onClick={() => { setEditService(null); setServiceFormOpen(true); }}>
-                      <Plus className="w-3 h-3" /> Serviço
-                    </Button>
-                    <Button variant="outline" size="sm" className="gap-1 text-xs h-7" onClick={() => { setEditProduct(null); setProductFormOpen(true); }}>
-                      <Plus className="w-3 h-3" /> Produto
-                    </Button>
-                    <Button variant="default" size="sm" className="gap-1 text-xs h-7" onClick={() => setKitBuilderOpen(true)}>
-                      <Plus className="w-3 h-3" /> Kit
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
@@ -865,57 +892,82 @@ const ProviderStorefront = () => {
     const segImage = (segName?: string) =>
       segName ? dbSegments.find(s => norm(s.name) === norm(segName))?.image_url || null : null;
 
+    const segArr = Array.isArray(provider?.segment) ? provider!.segment : (provider ? [provider.segment as unknown as string] : []);
+
     return (
-      <div className="space-y-8">
-        {/* Search bar — Airbnb-inspired hero search */}
-        <div className="relative group">
-          <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-primary/30 via-accent/20 to-primary/30 opacity-0 group-focus-within:opacity-100 blur-md transition-opacity" />
-          <div className="relative flex items-center bg-card/70 backdrop-blur-xl border border-border/60 rounded-2xl overflow-hidden shadow-[0_8px_30px_-12px_hsl(var(--primary)/0.25)] hover:border-primary/50 transition-colors">
-            <Search className="w-4 h-4 text-muted-foreground absolute left-5" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={`O que você precisa em ${provider?.name}?`}
-              className="border-0 pl-12 pr-4 py-6 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-sm placeholder:text-muted-foreground/70"
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="absolute right-4 text-muted-foreground hover:text-foreground">
-                <X className="w-4 h-4" />
-              </button>
+      <div className="space-y-10">
+        {/* ───── Sticky Marketplace Search ───── */}
+        <div className="sticky top-14 z-30 -mx-4 px-4 py-3 bg-background/85 backdrop-blur-xl border-b border-border/40">
+          <div className="relative">
+            <div className="flex items-center gap-2 bg-card border border-border/60 rounded-full pl-5 pr-2 py-1.5 shadow-[0_10px_40px_-20px_hsl(var(--primary)/0.45)] focus-within:border-primary/60 focus-within:shadow-[0_10px_40px_-15px_hsl(var(--primary)/0.6)] transition-all">
+              <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={`Buscar em ${provider?.name}…`}
+                className="border-0 px-0 h-9 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-sm placeholder:text-muted-foreground/60"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="w-7 h-7 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+              <Button size="sm" className="rounded-full h-8 px-4 text-xs gap-1 shadow-md" onClick={() => { /* visual search trigger */ }}>
+                <Sparkles className="w-3.5 h-3.5" /> Buscar
+              </Button>
+            </div>
+
+            {/* Segment chip rail */}
+            {segArr.length > 0 && (
+              <div className="flex gap-2 mt-3 overflow-x-auto scrollbar-none pb-1">
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className={`shrink-0 text-[11px] font-medium px-3 py-1.5 rounded-full border transition-all ${searchQuery === '' ? 'bg-foreground text-background border-foreground' : 'bg-card border-border/60 text-muted-foreground hover:border-primary/50 hover:text-foreground'}`}>
+                  Todos
+                </button>
+                {segArr.map(seg => (
+                  <button
+                    key={seg}
+                    onClick={() => setSearchQuery(seg)}
+                    className={`shrink-0 text-[11px] font-medium px-3 py-1.5 rounded-full border transition-all flex items-center gap-1 ${searchQuery === seg ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border/60 text-muted-foreground hover:border-primary/50 hover:text-foreground'}`}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
+                    {seg}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
         </div>
 
-        {/* === SERVIÇOS — Fiverr-style gigs === */}
+        {/* ─────────────────── SERVIÇOS ─────────────────── */}
         {filteredServices.length > 0 && (
           <section>
-            <div className="flex items-end justify-between mb-4 px-0.5">
-              <div>
-                <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-primary/80 mb-1">Marketplace</p>
-                <h2 className="font-display text-lg font-bold text-foreground flex items-center gap-2">
-                  Serviços profissionais
-                  <span className="rounded-full bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5">{filteredServices.length}</span>
-                </h2>
+            <div className="flex items-end justify-between mb-5 px-0.5">
+              <div className="flex items-center gap-3">
+                <div className="w-1 h-10 rounded-full bg-gradient-to-b from-primary to-accent" />
+                <div>
+                  <p className="text-[10px] font-bold tracking-[0.25em] uppercase text-primary mb-0.5">Marketplace de serviços</p>
+                  <h2 className="font-display text-xl sm:text-2xl font-extrabold text-foreground">
+                    Contrate com um clique
+                    <span className="ml-2 align-middle inline-flex items-center text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{filteredServices.length}</span>
+                  </h2>
+                </div>
               </div>
-              <span className="hidden sm:flex items-center gap-1 text-[10px] text-muted-foreground">
-                <Sparkles className="w-3 h-3 text-primary" /> Selecionados pelo prestador
+              <span className="hidden sm:flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <Sparkles className="w-3.5 h-3.5 text-primary" /> Curadoria do prestador
               </span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {filteredServices.map((svc: any) => {
+
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+              {filteredServices.map((svc: any, idx: number) => {
                 const inCart = isInServiceCart(svc.id);
                 const img = segImage(svc.segment);
                 return (
-                  <motion.div
+                  <motion.article
                     key={svc.id}
-                    initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-                    whileHover={{ y: -6 }}
-                    transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-                    className={`group relative rounded-2xl overflow-hidden cursor-pointer border backdrop-blur-sm transition-all duration-300 ${
-                      inCart
-                        ? 'border-primary/70 shadow-[0_18px_40px_-18px_hsl(var(--primary)/0.55)] ring-1 ring-primary/30'
-                        : 'border-border/40 bg-card/80 hover:border-primary/50 hover:shadow-[0_18px_40px_-18px_hsl(var(--primary)/0.35)]'
-                    }`}
+                    initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: Math.min(idx * 0.03, 0.3), type: 'spring', stiffness: 220, damping: 24 }}
+                    whileHover={{ y: -8 }}
                     onClick={() => {
                       if (editMode) return;
                       if (accessLevel === 'visitor') {
@@ -926,47 +978,66 @@ const ProviderStorefront = () => {
                       }
                       toggleServiceInCart(svc);
                     }}
+                    className={`group relative cursor-pointer rounded-3xl bg-card overflow-hidden border transition-all duration-300 ${
+                      inCart
+                        ? 'border-primary shadow-[0_25px_60px_-25px_hsl(var(--primary)/0.65)] ring-2 ring-primary/40'
+                        : 'border-border/40 shadow-[0_8px_30px_-15px_rgba(0,0,0,0.15)] hover:shadow-[0_25px_55px_-20px_hsl(var(--primary)/0.4)] hover:border-primary/40'
+                    }`}
                   >
-                    {/* Hero image — Airbnb feel */}
-                    <div className="aspect-[4/3] relative overflow-hidden bg-gradient-to-br from-primary/20 via-card to-card">
+                    {/* Image */}
+                    <div className="aspect-[5/4] relative overflow-hidden bg-gradient-to-br from-primary/15 via-muted/30 to-card">
                       {img ? (
-                        <img src={img} alt={svc.name} loading="lazy" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.12]" />
+                        <img src={img} alt={svc.name} loading="lazy"
+                          className="w-full h-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-110" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <WrenchIcon className="w-10 h-10 text-primary/40" />
+                          <WrenchIcon className="w-12 h-12 text-primary/30" />
                         </div>
                       )}
-                      {/* Subtle gloss */}
-                      <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/0 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      {/* Top-left favorite */}
-                      {!editMode && (
-                        <div className="absolute top-2 left-2 z-10">
+                      {/* Bottom dark gradient for legibility */}
+                      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
+
+                      {/* Top row */}
+                      <div className="absolute top-2.5 left-2.5 right-2.5 flex items-start justify-between z-10">
+                        {!editMode ? (
                           <FavoriteButton kind="service" id={svc.id} name={svc.name} image={img} provider={provider?.name} />
+                        ) : <span />}
+                        <div className="flex items-center gap-1">
+                          <span className="rounded-full bg-white/90 backdrop-blur px-2 py-0.5 text-[9.5px] font-bold tracking-wider uppercase text-foreground shadow-sm">
+                            ⚡ Pro
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Time chip */}
+                      {svc.time && (
+                        <div className="absolute bottom-2.5 left-2.5 z-10 flex items-center gap-1 rounded-full bg-black/50 backdrop-blur-md px-2 py-0.5 border border-white/15">
+                          <Clock className="w-2.5 h-2.5 text-white" />
+                          <span className="text-[10px] font-medium text-white">{svc.time}</span>
                         </div>
                       )}
-                      {/* Pro badge */}
-                      <div className="absolute top-2 right-2 z-10 rounded-md bg-black/60 backdrop-blur-md px-1.5 py-0.5 border border-white/10">
-                        <span className="text-[8.5px] font-bold uppercase tracking-wider text-white/90">Pro</span>
-                      </div>
-                      {/* Cart marker */}
+
+                      {/* Quick add */}
                       {!editMode && (
-                        <div className={`absolute bottom-2 right-2 rounded-full backdrop-blur-md px-1.5 py-1 flex items-center gap-0.5 z-10 border transition-all ${inCart ? 'bg-primary border-primary' : 'bg-black/60 border-white/10 group-hover:bg-primary/80 group-hover:border-primary'}`}>
-                          {inCart ? <CheckCircle2 className="w-3 h-3 text-primary-foreground" /> : <Plus className="w-3 h-3 text-white" />}
+                        <div className={`absolute bottom-2.5 right-2.5 z-10 flex items-center gap-1 rounded-full px-2.5 py-1.5 border transition-all shadow-lg ${inCart ? 'bg-primary border-primary text-primary-foreground' : 'bg-white text-foreground border-white/80 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary'}`}>
+                          {inCart ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                          <span className="text-[10px] font-bold uppercase tracking-wider">{inCart ? 'No carrinho' : 'Contratar'}</span>
                         </div>
                       )}
                       {editMode && (
-                        <div className="absolute bottom-2 right-2 flex gap-1 z-10">
-                          <Button variant="secondary" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setEditService(svc); setServiceFormOpen(true); }}>
+                        <div className="absolute bottom-2.5 right-2.5 flex gap-1 z-10">
+                          <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); setEditService(svc); setServiceFormOpen(true); }}>
                             <Pencil className="w-3 h-3" />
                           </Button>
-                          <Button variant="secondary" size="icon" className="h-6 w-6 text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ open: true, type: 'service', id: svc.id, name: svc.name }); }}>
+                          <Button variant="secondary" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ open: true, type: 'service', id: svc.id, name: svc.name }); }}>
                             <Trash2 className="w-3 h-3" />
                           </Button>
                         </div>
                       )}
                     </div>
-                    {/* Info — Fiverr-style */}
-                    <div className="p-3 space-y-1.5">
+
+                    {/* Card body */}
+                    <div className="p-3.5 space-y-2">
                       <div className="flex items-center gap-1.5">
                         {provider?.logo_url ? (
                           <img src={provider.logo_url} alt="" className="w-5 h-5 rounded-full object-cover border border-border" />
@@ -975,56 +1046,61 @@ const ProviderStorefront = () => {
                             <SegIcon className="w-3 h-3 text-primary" />
                           </div>
                         )}
-                        <span className="text-[10px] text-muted-foreground truncate flex-1">{provider?.name}</span>
-                        <span className="flex items-center gap-0.5 text-[10px] font-semibold text-foreground shrink-0">
+                        <span className="text-[10.5px] text-muted-foreground truncate flex-1">{provider?.name}</span>
+                        <span className="flex items-center gap-0.5 text-[10.5px] font-bold text-foreground shrink-0">
                           <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" /> {svc.rating ?? provider?.rating ?? 4.8}
                         </span>
                       </div>
-                      <h4 className="text-[12.5px] font-semibold text-foreground leading-snug line-clamp-2 min-h-[2.4em]">{svc.name}</h4>
-                      <div className="flex items-center justify-between pt-1 border-t border-border/40">
-                        <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                          <Clock className="w-2.5 h-2.5" /> {svc.time || '—'}
-                        </span>
-                        <div className="text-right">
-                          <span className="block text-[8.5px] uppercase tracking-wider text-muted-foreground/80">A partir de</span>
-                          <span className="text-[13px] font-bold text-foreground"><MaskedPrice value={svc.price} /></span>
+                      <h4 className="text-[13px] font-semibold text-foreground leading-snug line-clamp-2 min-h-[2.5em] group-hover:text-primary transition-colors">
+                        {svc.name}
+                      </h4>
+                      <div className="flex items-end justify-between pt-2 border-t border-dashed border-border/50">
+                        <div>
+                          <span className="block text-[8.5px] uppercase tracking-[0.18em] text-muted-foreground/70 leading-none">A partir de</span>
+                          <span className="text-base font-extrabold text-foreground"><MaskedPrice value={svc.price} /></span>
                         </div>
+                        <span className="text-[10px] font-medium text-emerald-600 flex items-center gap-0.5">
+                          <CheckCircle2 className="w-2.5 h-2.5" /> Disponível
+                        </span>
                       </div>
                     </div>
-                  </motion.div>
+                  </motion.article>
                 );
               })}
             </div>
           </section>
         )}
 
-        {/* === PRODUTOS === */}
+        {/* ─────────────────── PRODUTOS ─────────────────── */}
         {filteredProducts.length > 0 && (
           <section>
-            <div className="flex items-end justify-between mb-4 px-0.5">
-              <div>
-                <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-emerald-600/80 mb-1">Catálogo</p>
-                <h2 className="font-display text-lg font-bold text-foreground flex items-center gap-2">
-                  Produtos disponíveis
-                  <span className="rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-bold px-2 py-0.5">{filteredProducts.length}</span>
-                </h2>
+            <div className="flex items-end justify-between mb-5 px-0.5">
+              <div className="flex items-center gap-3">
+                <div className="w-1 h-10 rounded-full bg-gradient-to-b from-emerald-500 to-teal-400" />
+                <div>
+                  <p className="text-[10px] font-bold tracking-[0.25em] uppercase text-emerald-600 mb-0.5">Catálogo de produtos</p>
+                  <h2 className="font-display text-xl sm:text-2xl font-extrabold text-foreground">
+                    Compre direto da loja
+                    <span className="ml-2 align-middle inline-flex items-center text-[11px] font-bold text-emerald-700 bg-emerald-500/10 px-2 py-0.5 rounded-full">{filteredProducts.length}</span>
+                  </h2>
+                </div>
               </div>
+              <span className="hidden sm:flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <Package className="w-3.5 h-3.5 text-emerald-500" /> Estoque & dropshipping
+              </span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {filteredProducts.map((product: any) => {
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-4">
+              {filteredProducts.map((product: any, idx: number) => {
                 const inCart = isInProductCart(product.id);
                 const img = product.image_url || segImage(product.segment);
+                const isDrop = product.stockType !== 'fisico';
                 return (
-                  <motion.div
+                  <motion.article
                     key={product.id}
-                    initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: Math.min(idx * 0.025, 0.25), type: 'spring', stiffness: 220, damping: 24 }}
                     whileHover={{ y: -6 }}
-                    transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-                    className={`group relative rounded-2xl overflow-hidden cursor-pointer border backdrop-blur-sm transition-all duration-300 ${
-                      inCart
-                        ? 'border-emerald-500/70 shadow-[0_18px_40px_-18px_hsl(160_70%_45%/0.55)] ring-1 ring-emerald-500/30'
-                        : 'border-border/40 bg-card/80 hover:border-emerald-400/60 hover:shadow-[0_18px_40px_-18px_hsl(160_70%_45%/0.35)]'
-                    }`}
                     onClick={() => {
                       if (editMode) return;
                       if (accessLevel === 'visitor') {
@@ -1035,49 +1111,69 @@ const ProviderStorefront = () => {
                       }
                       toggleProductInCart(product);
                     }}
+                    className={`group relative cursor-pointer rounded-2xl bg-card overflow-hidden border transition-all duration-300 ${
+                      inCart
+                        ? 'border-emerald-500 shadow-[0_25px_50px_-20px_hsl(160_70%_45%/0.6)] ring-2 ring-emerald-500/40'
+                        : 'border-border/40 shadow-[0_6px_24px_-12px_rgba(0,0,0,0.15)] hover:shadow-[0_22px_45px_-18px_hsl(160_70%_45%/0.4)] hover:border-emerald-400/50'
+                    }`}
                   >
-                    <div className="aspect-square relative overflow-hidden bg-gradient-to-br from-emerald-500/15 via-card to-card">
+                    <div className="aspect-square relative overflow-hidden bg-gradient-to-br from-emerald-500/10 via-muted/20 to-card">
                       {img ? (
-                        <img src={img} alt={product.name} loading="lazy" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.12]" />
+                        <img src={img} alt={product.name} loading="lazy"
+                          className="w-full h-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-110" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <Package className="w-10 h-10 text-emerald-500/40" />
+                          <Package className="w-10 h-10 text-emerald-500/30" />
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/0 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
 
                       {/* Stock chip */}
-                      <div className="absolute top-2 left-2 rounded-md bg-emerald-500/90 backdrop-blur-md px-1.5 py-0.5 z-10 border border-white/10">
-                        <span className="text-[8.5px] font-bold uppercase tracking-wider text-white">{product.stockType === 'fisico' ? 'Estoque' : 'Drop'}</span>
+                      <div className={`absolute top-2 left-2 z-10 rounded-md px-1.5 py-0.5 border text-[8.5px] font-bold uppercase tracking-wider shadow-sm ${
+                        isDrop ? 'bg-amber-400/95 text-amber-950 border-amber-300' : 'bg-emerald-500/95 text-white border-emerald-400'
+                      }`}>
+                        {isDrop ? 'Drop' : 'Estoque'}
                       </div>
+
                       {!editMode && (
                         <div className="absolute top-2 right-2 z-10">
                           <FavoriteButton kind="product" id={product.id} name={product.name} image={img} provider={provider?.name} />
                         </div>
                       )}
+
+                      {/* Floating price tag */}
+                      <div className="absolute left-2 bottom-2 z-10 rounded-xl bg-white/95 backdrop-blur-md px-2.5 py-1 shadow-lg border border-white/80">
+                        <span className="block text-[8px] uppercase tracking-wider text-muted-foreground leading-none">Preço</span>
+                        <span className="text-[12.5px] font-extrabold text-foreground"><MaskedPrice value={product.price} /></span>
+                      </div>
+
                       {!editMode && (
-                        <div className={`absolute bottom-2 right-2 rounded-full backdrop-blur-md px-1.5 py-1 flex items-center gap-0.5 z-10 border transition-all ${inCart ? 'bg-emerald-500 border-emerald-500' : 'bg-black/60 border-white/10 group-hover:bg-emerald-500/80 group-hover:border-emerald-500'}`}>
-                          {inCart ? <CheckCircle2 className="w-3 h-3 text-white" /> : <Plus className="w-3 h-3 text-white" />}
+                        <div className={`absolute bottom-2 right-2 rounded-full backdrop-blur-md w-9 h-9 flex items-center justify-center z-10 border shadow-lg transition-all ${inCart ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white text-foreground border-white/80 group-hover:bg-emerald-500 group-hover:text-white group-hover:border-emerald-500 group-hover:scale-110'}`}>
+                          {inCart ? <CheckCircle2 className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
                         </div>
                       )}
                       {editMode && (
                         <div className="absolute bottom-2 right-2 flex gap-1 z-10">
-                          <Button variant="secondary" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setEditProduct(product); setProductFormOpen(true); }}>
+                          <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); setEditProduct(product); setProductFormOpen(true); }}>
                             <Pencil className="w-3 h-3" />
                           </Button>
-                          <Button variant="secondary" size="icon" className="h-6 w-6 text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ open: true, type: 'product', id: product.id, name: product.name }); }}>
+                          <Button variant="secondary" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ open: true, type: 'product', id: product.id, name: product.name }); }}>
                             <Trash2 className="w-3 h-3" />
                           </Button>
                         </div>
                       )}
                     </div>
+
                     <div className="p-3 space-y-1.5">
-                      <h4 className="text-[12.5px] font-semibold text-foreground leading-snug line-clamp-2 min-h-[2.4em]">{product.name}</h4>
-                      <div className="flex items-center justify-between pt-1 border-t border-border/40">
-                        <span className="flex items-center gap-0.5 text-[10px] font-semibold text-foreground">
+                      <h4 className="text-[12.5px] font-semibold text-foreground leading-snug line-clamp-2 min-h-[2.4em] group-hover:text-emerald-600 transition-colors">
+                        {product.name}
+                      </h4>
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="flex items-center gap-0.5 font-bold text-foreground">
                           <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" /> {product.rating ?? 4.8}
                         </span>
-                        <span className="text-[13px] font-bold text-foreground"><MaskedPrice value={product.price} /></span>
+                        <span className="text-emerald-600 font-medium flex items-center gap-0.5">
+                          <CheckCircle2 className="w-2.5 h-2.5" /> Em oferta
+                        </span>
                       </div>
                       {product.tags && product.tags.length > 0 && (
                         <div className="flex items-center gap-1 overflow-hidden pt-0.5">
@@ -1087,7 +1183,7 @@ const ProviderStorefront = () => {
                         </div>
                       )}
                     </div>
-                  </motion.div>
+                  </motion.article>
                 );
               })}
             </div>
@@ -1095,13 +1191,18 @@ const ProviderStorefront = () => {
         )}
 
         {filteredServices.length === 0 && filteredProducts.length === 0 && (
-          <div className="text-center py-20 rounded-3xl border border-dashed border-border bg-gradient-to-br from-card/40 to-card/10 backdrop-blur-sm">
-            <Store className="w-14 h-14 text-muted-foreground/60 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">
-              {searchQuery ? `Nenhum resultado para "${searchQuery}" nesta loja.` : 'Este prestador ainda não possui itens cadastrados.'}
+          <div className="text-center py-24 rounded-3xl border border-dashed border-border bg-gradient-to-br from-card/40 via-muted/10 to-card/10 backdrop-blur-sm">
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/15 to-accent/10 flex items-center justify-center mx-auto mb-4">
+              <Store className="w-10 h-10 text-primary/70" />
+            </div>
+            <h3 className="text-base font-bold text-foreground mb-1">
+              {searchQuery ? 'Nada encontrado por aqui' : 'Vitrine em construção'}
+            </h3>
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+              {searchQuery ? `Não encontramos itens para "${searchQuery}" nesta loja. Tente outra palavra.` : 'Este prestador ainda não publicou serviços ou produtos. Volte em breve.'}
             </p>
             {editMode && (
-              <div className="flex gap-2 justify-center mt-4">
+              <div className="flex gap-2 justify-center mt-5">
                 <Button variant="outline" size="sm" className="gap-1" onClick={() => { setEditService(null); setServiceFormOpen(true); }}>
                   <Plus className="w-3 h-3" /> Adicionar Serviço
                 </Button>
