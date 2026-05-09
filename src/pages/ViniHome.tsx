@@ -111,6 +111,7 @@ const ViniHome = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [modalInitialMessage, setModalInitialMessage] = useState<string | null>(null);
   const [modalInitialModality, setModalInitialModality] = useState<'voice' | 'text'>('text');
+  const [modalMode, setModalMode] = useState<'free' | 'commerce'>('free');
   const [searchBarVisible, setSearchBarVisible] = useState(false);
   const [searchBarMode, setSearchBarMode] = useState<'chat' | 'search'>('chat');
   const [radarActive, setRadarActive] = useState(false);
