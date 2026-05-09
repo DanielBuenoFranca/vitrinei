@@ -194,6 +194,10 @@ export function ViniConversationModal({
       setIsStreaming(true);
       const controller = new AbortController();
       abortRef.current = controller;
+      // Watchdog: se a resposta travar por mais de 30s, aborta para liberar o input
+      const watchdog = window.setTimeout(() => {
+        try { controller.abort(); } catch {}
+      }, 30000);
 
       const routedIntent = 'chat';
       // Modo Conversar PURO: sem roteador, sem busca, sem venda, sem redirecionamentos.
