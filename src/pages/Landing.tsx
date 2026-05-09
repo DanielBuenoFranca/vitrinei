@@ -225,15 +225,14 @@ const Landing = () => {
     if (segs) {
       const list = segs.split(',').map(s => s.trim()).filter(Boolean);
       if (list.length) {
-        // aplica após carregar segmentos
         setTimeout(() => {
-          setSelectedSegments(prev => {
-            const filtered = staticSegments
+          setActiveSegments(prev => {
+            const filtered = dbSegments
               .filter(seg => list.some(rs => normalizeText(seg.id).includes(normalizeText(rs)) || normalizeText(seg.name).includes(normalizeText(rs)) || normalizeText(seg.label).includes(normalizeText(rs))))
               .map(s => s.id);
             return filtered.length ? filtered : prev;
           });
-        }, 100);
+        }, 300);
       }
     }
     // dispara a busca de fato
