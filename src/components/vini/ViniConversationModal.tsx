@@ -195,25 +195,9 @@ export function ViniConversationModal({
       const controller = new AbortController();
       abortRef.current = controller;
 
-      let routedIntent = 'chat';
-
-      // Modo Conversar: NUNCA redireciona nem interrompe o papo.
-      // O ai-router roda apenas em background para enriquecer tags/segmentos
-      // do contexto global do Vini — sem bloquear, sem follow-up forçado,
-      // sem transição automática para outras telas.
-      void supabase.functions
-        .invoke('ai-router', { body: { message: text, session } })
-        .then(({ data: routed }) => {
-          if (routed && !routed.error) {
-            update({
-              tags: routed.tags || [],
-              segments: routed.segments || [],
-              lastIntent: routed.intent,
-              lastQuery: routed.query || text,
-            });
-          }
-        })
-        .catch(() => {});
+      const routedIntent = 'chat';
+      // Modo Conversar PURO: sem roteador, sem busca, sem venda, sem redirecionamentos.
+      // Apenas papo livre e humanizado com o Vini.
 
       const assistantId = `${Date.now()}-a`;
       let accumulated = '';
