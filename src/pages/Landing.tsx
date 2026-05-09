@@ -419,47 +419,35 @@ const Landing = () => {
     } else if (!query && activeSegments.length > 0) {
       const norm = (v: string) => v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
       const activeNorm = activeSegments.map(norm);
-      // Tags sugeridas dos segmentos ativos (para casar produtos pelas tags)
-      const activeSegTagsN = new Set<string>();
-      dbSegments.forEach((s: any) => {
-        if (activeNorm.includes(norm(s.name))) {
-          (s.tags || []).forEach((t: string) => activeSegTagsN.add(norm(t)));
+      const matchProductSegment = (p: any): boolean => {
+        const prodSegs: string[] = Array.isArray(p.segments) ? p.segments : [];
+        if (prodSegs.length > 0) {
+          // Fonte da verdade: segmentos vinculados ao próprio produto
+          return prodSegs.some(s => activeNorm.includes(norm(s)));
         }
-      });
+        // Fallback (legado): segmentos do prestador
+        const provSegs = providerSegmentMap.get(p.provider) || [];
+        return provSegs.some(s => activeNorm.includes(norm(s)));
+      };
       const allSvcs = getAllServices().filter((r: any) => activeNorm.includes(norm(r.segment)));
-      const provNamesFromSvcs = new Set(allSvcs.map((s: any) => s.provider));
-      const provNamesFromMap = new Set<string>();
-      providerSegmentMap.forEach((segs, provName) => {
-        if (segs.some(s => activeNorm.includes(norm(s)))) provNamesFromMap.add(provName);
-      });
-      const allProvNames = new Set([...provNamesFromSvcs, ...provNamesFromMap]);
-      const allProds = getAllProducts().filter((p: any) => {
-        if (allProvNames.has(p.provider)) return true;
-        const tagsN = (p.tags || []).map((t: string) => norm(t));
-        return tagsN.some((t: string) => activeSegTagsN.has(t) || activeNorm.includes(t));
-      });
+      const allProds = getAllProducts().filter(matchProductSegment);
       rawResult = { products: allProds, services: allSvcs };
     } else {
       const result = semanticSearch(query);
       const norm = (v: string) => v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
       const activeNorm = activeSegments.map(norm);
-      const activeSegTagsN = new Set<string>();
-      dbSegments.forEach((s: any) => {
-        if (activeNorm.includes(norm(s.name))) {
-          (s.tags || []).forEach((t: string) => activeSegTagsN.add(norm(t)));
-        }
-      });
+      const matchProductSegment = (p: any): boolean => {
+        const prodSegs: string[] = Array.isArray(p.segments) ? p.segments : [];
+        if (prodSegs.length > 0) return prodSegs.some(s => activeNorm.includes(norm(s)));
+        const provSegs = providerSegmentMap.get(p.provider) || [];
+        return provSegs.some(s => activeNorm.includes(norm(s)));
+      };
       const filteredServices = activeSegments.length === 0
         ? result.services
         : result.services.filter(r => activeNorm.includes(norm(r.segment)));
       const filteredProducts = activeSegments.length === 0
         ? result.products
-        : result.products.filter((p: any) => {
-            const provSegs = providerSegmentMap.get(p.provider) || [];
-            if (provSegs.some(s => activeNorm.includes(norm(s)))) return true;
-            const tagsN = (p.tags || []).map((t: string) => norm(t));
-            return tagsN.some((t: string) => activeSegTagsN.has(t) || activeNorm.includes(t));
-          });
+        : result.products.filter(matchProductSegment);
       rawResult = { ...result, services: filteredServices, products: filteredProducts };
 
       // Fallback: nothing matched → show full inventory so user can keep browsing
@@ -467,12 +455,7 @@ const Landing = () => {
         rawResult = {
           products: activeSegments.length === 0
             ? getAllProducts()
-            : getAllProducts().filter((p: any) => {
-                const provSegs = providerSegmentMap.get(p.provider) || [];
-                if (provSegs.some(s => activeNorm.includes(norm(s)))) return true;
-                const tagsN = (p.tags || []).map((t: string) => norm(t));
-                return tagsN.some((t: string) => activeSegTagsN.has(t) || activeNorm.includes(t));
-              }),
+            : getAllProducts().filter(matchProductSegment),
           services: activeSegments.length === 0
             ? getAllServices()
             : getAllServices().filter((r: any) => activeNorm.includes(norm(r.segment))),
