@@ -20,6 +20,8 @@ import { maskPhone, maskCPFCNPJ, unmask, maskCEP, lookupCep, geocodeAddress } fr
 import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlans';
 
 type AppRole = 'master' | 'admin' | 'provider' | 'client' | 'mixed';
+type ProfileType = 'client' | 'provider' | 'mixed';
+type AdminLevel = 'none' | 'admin' | 'master';
 
 interface Segment { id: number; name: string; }
 
@@ -29,6 +31,9 @@ interface UserFormProps {
   onSaved: () => void;
   /** Profile + role atual quando edição. Null = novo. */
   profile?: any | null;
+  /** Lista completa de papéis do usuário (para derivar perfil + papel admin). */
+  currentRoles?: AppRole[] | null;
+  /** @deprecated mantido para compat; preferir currentRoles. */
   currentRole?: AppRole | null;
   currentEmail?: string | null;
   segments: Segment[];
