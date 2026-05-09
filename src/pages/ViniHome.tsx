@@ -656,7 +656,7 @@ const ViniHome = () => {
     { key: 'urgencia', icon: Radar, label: 'Urgência', onClick: handleRadar, active: radarActive, badge: totalCartItems > 0 ? totalCartItems : undefined },
     { key: 'reiniciar', icon: RotateCcw, label: 'Reiniciar', onClick: handleReiniciar },
     { key: 'perfil', icon: UserIcon, label: 'Perfil', onClick: handlePerfil },
-    { key: 'favoritos', icon: Heart, label: 'Favoritos', onClick: () => setFavoritesOpen(true), badge: favoritesCount > 0 ? favoritesCount : undefined },
+    { key: 'favoritos', icon: Heart, label: 'Favoritos', onClick: () => setFavoritesOpen(true) },
     { key: 'indica', icon: Gift, label: 'Indicação', onClick: handleIndicacao, highlight: 'R$ 5,00' },
   ];
 
