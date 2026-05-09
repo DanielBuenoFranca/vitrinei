@@ -1061,6 +1061,92 @@ export type Database = {
         }
         Relationships: []
       }
+      vini_brain_patterns: {
+        Row: {
+          created_at: string
+          follow_up: string | null
+          hits: number
+          id: string
+          keywords: string[]
+          last_used_at: string | null
+          replies: string[]
+          source: string
+          successes: number
+          topic: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          follow_up?: string | null
+          hits?: number
+          id?: string
+          keywords?: string[]
+          last_used_at?: string | null
+          replies?: string[]
+          source?: string
+          successes?: number
+          topic: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          follow_up?: string | null
+          hits?: number
+          id?: string
+          keywords?: string[]
+          last_used_at?: string | null
+          replies?: string[]
+          source?: string
+          successes?: number
+          topic?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      vini_brain_signals: {
+        Row: {
+          assistant_reply: string
+          created_at: string
+          id: string
+          mode: string
+          pattern_id: string | null
+          session_id: string | null
+          signal: string | null
+          user_id: string | null
+          user_message: string
+        }
+        Insert: {
+          assistant_reply: string
+          created_at?: string
+          id?: string
+          mode: string
+          pattern_id?: string | null
+          session_id?: string | null
+          signal?: string | null
+          user_id?: string | null
+          user_message: string
+        }
+        Update: {
+          assistant_reply?: string
+          created_at?: string
+          id?: string
+          mode?: string
+          pattern_id?: string | null
+          session_id?: string | null
+          signal?: string | null
+          user_id?: string | null
+          user_message?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vini_brain_signals_pattern_id_fkey"
+            columns: ["pattern_id"]
+            isOneToOne: false
+            referencedRelation: "vini_brain_patterns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vini_conversations: {
         Row: {
           content: string
@@ -1329,6 +1415,10 @@ export type Database = {
       }
       start_ai_savings_period: { Args: { _user_id?: string }; Returns: string }
       unaccent_safe: { Args: { _text: string }; Returns: string }
+      vini_brain_register_hit: {
+        Args: { p_pattern_id: string; p_success?: boolean }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:
