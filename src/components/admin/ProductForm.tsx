@@ -198,6 +198,17 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
       if (error) { toast.error('Erro ao criar'); setSaving(false); return; }
       toast.success('Produto criado');
     }
+    // Garante que o prestador esteja vinculado a TODOS os segmentos do produto
+    if (form.provider_id && selectedSegments.length > 0) {
+      try {
+        const prov = providers.find(p => p.id === form.provider_id);
+        const current = Array.isArray(prov?.segment) ? (prov!.segment as string[]) : [];
+        const merged = Array.from(new Set([...current, ...selectedSegments]));
+        if (merged.length !== current.length) {
+          await supabase.from('providers').update({ segment: merged }).eq('id', form.provider_id);
+        }
+      } catch {}
+    }
     setSaving(false);
     onSaved();
     onClose();
