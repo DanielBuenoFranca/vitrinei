@@ -73,7 +73,16 @@ const ViniHome = () => {
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
 
   const [hasInteracted, setHasInteracted] = useState(false);
-  const [sideOpen, setSideOpen] = useState(false);
+  const [sideOpen, setSideOpen] = useState(true);
+  const lastSmallTalkRef = useRef<number>(0);
+  const smallTalkCountRef = useRef<number>(0);
+  const greetedKey = (uid?: string | null) => `vini:greeted${uid ? `:${uid}` : ''}`;
+  const wasGreeted = (uid?: string | null) => {
+    try { return !!localStorage.getItem(greetedKey(uid)); } catch { return false; }
+  };
+  const markGreeted = (uid?: string | null) => {
+    try { localStorage.setItem(greetedKey(uid), '1'); } catch {}
+  };
   const [bubbles, setBubbles] = useState<Bubble[]>(() => {
     if (typeof window === 'undefined') return [];
     try {
@@ -251,7 +260,7 @@ const ViniHome = () => {
     }, 60000);
   };
 
-  // Personalized greeting on login (fires only once per user per session)
+  // Personalized greeting on login (fires only once per user, persisted)
   useEffect(() => {
     if (!user) {
       lastGreetedUserRef.current = null;
@@ -259,6 +268,7 @@ const ViniHome = () => {
     }
     if (lastGreetedUserRef.current === user.id) return;
     lastGreetedUserRef.current = user.id;
+    if (wasGreeted(user.id)) return;
 
     const name = displayName?.split(' ')[0] || 'amigo';
     const role = profileLabel || 'usuário';
@@ -273,21 +283,23 @@ const ViniHome = () => {
       try { sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(next)); } catch {}
       return next;
     });
+    markGreeted(user.id);
     setHasInteracted(true);
     setChatExpanded(true);
     resetIdleTimer();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, displayName, profileLabel]);
 
-  // Generic greeting for visitors when they open Home (only once per session)
+  // Generic greeting for visitors when they open Home (only once, persisted)
   useEffect(() => {
     if (user) return; // logged-in path handled above
-    if (hasGreetingInHistory(bubbles)) return;
+    if (wasGreeted(null) || hasGreetingInHistory(bubbles)) return;
     const t = window.setTimeout(() => {
       pushBubble({
         role: 'vini',
         text: `${getGreeting().replace(/^[^\s]+\s/, '')} Sou o Vini, seu assistente do Vitrinei. Pode falar comigo ou tocar no microfone — te ajudo a achar o que precisa. 👋`,
       });
+      markGreeted(null);
       setHasInteracted(true);
       resetIdleTimer();
     }, 800);
@@ -360,8 +372,33 @@ const ViniHome = () => {
 
   const handleAvatarClick = () => {
     wakeUp();
-    setSideOpen((v) => !v);
+    setSideOpen(true);
     window.dispatchEvent(new CustomEvent('vini:click'));
+  };
+
+  // Small-talk variants when the user taps the screen background.
+  // Vini "percebe" que o usuário está olhando e puxa um assunto leve.
+  const SMALL_TALK = [
+    'Tô por aqui se precisar — é só me dizer o que está procurando.',
+    'Posso te sugerir algo perto de você agora mesmo?',
+    'Quer que eu monte uma ideia rápida pro seu dia?',
+    'Pensei em algo que talvez te interesse — quer ouvir?',
+    'Se quiser, eu busco um prestador top da sua região.',
+    'Me conta: tá precisando resolver alguma coisa hoje?',
+  ];
+
+  const handleScreenTap = () => {
+    setSideOpen(true);
+    if (!hasInteracted) { wakeUp(); return; }
+    const now = Date.now();
+    if (now - lastSmallTalkRef.current < 12000) return; // throttle
+    if (smallTalkCountRef.current >= 4) return; // limit per visit
+    lastSmallTalkRef.current = now;
+    smallTalkCountRef.current += 1;
+    const name = user && displayName ? displayName.split(' ')[0] : null;
+    const base = SMALL_TALK[Math.floor(Math.random() * SMALL_TALK.length)];
+    const text = name && Math.random() < 0.4 ? `${name}, ${base.charAt(0).toLowerCase()}${base.slice(1)}` : base;
+    pushBubble({ role: 'vini', text });
   };
 
   const handleVoiceTap = () => {
@@ -779,7 +816,14 @@ const ViniHome = () => {
         </AnimatePresence>
       </div>
 
-      {/* Invisible center tap zone to wake Vini (greeting text removed per spec) */}
+      {/* Full-screen background tap zone — wakes Vini and triggers small talk */}
+      <button
+        type="button"
+        onClick={handleScreenTap}
+        aria-label="Falar com o Vini"
+        className="absolute inset-0 z-[5] bg-transparent border-0 p-0 cursor-pointer"
+      />
+      {/* Direct avatar hit area — keeps quick access to side tools */}
       <button
         type="button"
         onClick={handleAvatarClick}
