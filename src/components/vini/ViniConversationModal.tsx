@@ -49,6 +49,12 @@ interface ViniConversationModalProps {
   initialMessage?: string | null;
   initialModality?: 'voice' | 'text';
   onInitialConsumed?: () => void;
+  /**
+   * 'free'     → papo puro (botão Conversar). Histórico zerado a cada abertura.
+   * 'commerce' → personalidade comercial completa (busca, contextualização,
+   *              agentes do ecossistema). Mantém histórico.
+   */
+  mode?: 'free' | 'commerce';
 }
 
 export function ViniConversationModal({
@@ -58,6 +64,7 @@ export function ViniConversationModal({
   initialMessage,
   initialModality = 'text',
   onInitialConsumed,
+  mode = 'free',
 }: ViniConversationModalProps) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
