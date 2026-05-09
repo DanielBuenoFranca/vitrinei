@@ -275,6 +275,25 @@ export async function classifyMessage(message: string, sessionCtx: any = {}): Pr
       ]))
     : keywords;
   const inv = await searchInventoryByKeywords(expandedKeywords);
+
+  // Refinamento: se a frase é muito vaga (poucas palavras "úteis") e a need
+  // tem follow-up, primeiro pergunta para precisar a busca em vez de chutar.
+  // Ex.: "quero remédio" → "Para qual sintoma?". Já "remédio para dor de
+  // cabeça" tem keywords suficientes (>=2 úteis) e segue para a busca.
+  const isVague = need?.followUp && keywords.length <= 1;
+  if (isVague) {
+    out.intent = "chat";
+    out.next_agent = "vini";
+    out.needs_more_info = true;
+    out.follow_up_question = need!.followUp!.question;
+    out.suggestions = need!.followUp!.suggestions;
+    out.tags = [need!.id];
+    out.query = need!.query;
+    out.item_type = need!.itemType;
+    out.confidence = 0.8;
+    return out;
+  }
+
   if (inv.products.length + inv.services.length > 0) {
     const sample = inv.products[0]?.name || inv.services[0]?.name || inv.matchedKeyword;
     out.intent = "search";
