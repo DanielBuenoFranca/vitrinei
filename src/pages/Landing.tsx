@@ -234,11 +234,15 @@ const Landing = () => {
   };
 
   const executeSearch = () => {
-    setExecutedQuery(searchQuery.trim());
+    const q = searchQuery.trim();
+    if (!q) return;
+    setExecutedQuery(q);
     setSearchExecuted(true);
     setSearchVersion(v => v + 1);
     setSelectedSuggestions(new Set());
     setShowSearchProducts(false);
+    // Limpa a barra para uma nova busca (texto ou voz)
+    setSearchQuery('');
   };
 
   const handleSmartSearch = () => {
