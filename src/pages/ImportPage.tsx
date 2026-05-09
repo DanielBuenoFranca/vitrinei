@@ -1442,7 +1442,8 @@ const ImportPage = () => {
               prodId = p.id; prodName = p.name; prodPrice = p.price;
             } else {
               const price = parseFloat(row.productPrice) || 0;
-              const tags = row.segment ? [row.segment.toLowerCase()] : [];
+              const seg = (row.segment || 'Geral').trim();
+              const tags = seg ? [seg.toLowerCase()] : [];
               const qtyRaw = parseInt(String(row.productQuantity).replace(',', '.'), 10);
               const quantity = Number.isFinite(qtyRaw) && qtyRaw >= 0 ? qtyRaw : 0;
               const { data: ins, error } = await supabase.from('dynamic_products').insert({
@@ -1453,6 +1454,7 @@ const ImportPage = () => {
                 price,
                 stock_type: row.productStockType === 'drop' ? 'drop' : 'fisico',
                 tags,
+                segments: [seg],
                 unit: punit,
                 quantity,
               }).select('id, name, price').single();
