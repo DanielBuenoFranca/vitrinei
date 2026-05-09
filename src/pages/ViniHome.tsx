@@ -113,28 +113,35 @@ const ViniHome = () => {
     window.dispatchEvent(new CustomEvent('vini:emotion', { detail: e }));
   };
 
-  // Sync voice transcript -> text input + auto-submit when user pauses
+  // Sync voice transcript -> text input. Auto-submit assim que o
+  // reconhecimento termina (listening: true -> false) ou após 900ms de pausa.
   useEffect(() => {
     if (!transcript) return;
     setText(transcript);
     lastSpokenRef.current = transcript;
-
     if (autoSubmitTimerRef.current) window.clearTimeout(autoSubmitTimerRef.current);
     autoSubmitTimerRef.current = window.setTimeout(() => {
       const final = lastSpokenRef.current.trim();
-      if (final && listening) {
+      if (final) {
         try { stop(); } catch {}
         openConversationWith(final, 'voice');
-      } else if (final && !listening) {
-        openConversationWith(final, 'voice');
+        lastSpokenRef.current = '';
       }
-    }, 1200);
-
-    return () => {
-      if (autoSubmitTimerRef.current) window.clearTimeout(autoSubmitTimerRef.current);
-    };
+    }, 900);
+    return () => { if (autoSubmitTimerRef.current) window.clearTimeout(autoSubmitTimerRef.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transcript]);
+
+  // Quando o navegador finaliza a captação (onend), envia o que houver.
+  useEffect(() => {
+    if (listening) return;
+    const final = lastSpokenRef.current.trim();
+    if (!final) return;
+    if (autoSubmitTimerRef.current) window.clearTimeout(autoSubmitTimerRef.current);
+    lastSpokenRef.current = '';
+    openConversationWith(final, 'voice');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listening]);
 
   useEffect(() => {
     emitEmotion(listening ? 'listening' : 'idle');
