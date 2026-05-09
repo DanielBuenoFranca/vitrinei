@@ -816,7 +816,14 @@ const ViniHome = () => {
         </AnimatePresence>
       </div>
 
-      {/* Invisible center tap zone to wake Vini (greeting text removed per spec) */}
+      {/* Full-screen background tap zone — wakes Vini and triggers small talk */}
+      <button
+        type="button"
+        onClick={handleScreenTap}
+        aria-label="Falar com o Vini"
+        className="absolute inset-0 z-[5] bg-transparent border-0 p-0 cursor-pointer"
+      />
+      {/* Direct avatar hit area — keeps quick access to side tools */}
       <button
         type="button"
         onClick={handleAvatarClick}
