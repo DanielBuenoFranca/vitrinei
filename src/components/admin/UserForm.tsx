@@ -328,7 +328,7 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
             password,
             name: name.trim(),
             phone: phone.trim() || undefined,
-            role,
+            role: profileType,
           },
         });
         if (error || data?.error) {
@@ -336,21 +336,42 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
           setSaving(false); return;
         }
         userId = data.user_id;
+        // Aplica papel administrativo se solicitado na criação
+        if (adminLevel !== 'none' && userId) {
+          await supabase.from('user_roles').insert({ user_id: userId, role: adminLevel });
+        }
       } else {
-        // Edição: atualizar role se mudou
-        if (currentRole !== role) {
-          // Remove papéis antigos não-master/admin do tipo cliente/prestador/misto
-          const { data: existingRoles } = await supabase.from('user_roles').select('id, role').eq('user_id', userId);
-          const businessRoles = ['client', 'provider', 'mixed'];
+        // Edição: sincroniza Perfil + Papel administrativo independentemente
+        const { data: existingRoles } = await supabase.from('user_roles').select('id, role').eq('user_id', userId);
+
+        // (a) Perfil de negócio: client / provider / mixed
+        const businessRoles = ['client', 'provider', 'mixed'];
+        const currentBusiness = existingRoles?.find(r => businessRoles.includes(r.role));
+        if (!currentBusiness || currentBusiness.role !== profileType) {
           const toRemove = existingRoles?.filter(r => businessRoles.includes(r.role)) || [];
           for (const r of toRemove) await supabase.from('user_roles').delete().eq('id', r.id);
+          await supabase.from('user_roles').insert({ user_id: userId, role: profileType });
+        }
 
-          // Adiciona novo (admin/master mantidos via toggle separado)
-          if (businessRoles.includes(role)) {
-            await supabase.from('user_roles').insert({ user_id: userId, role });
-          } else if (role === 'admin' || role === 'master') {
-            const has = existingRoles?.some(r => r.role === role);
-            if (!has) await supabase.from('user_roles').insert({ user_id: userId, role });
+        // (b) Papel administrativo: none / admin / master
+        const adminRoles = ['admin', 'master'];
+        const currentAdmin = existingRoles?.find(r => adminRoles.includes(r.role))?.role as AdminLevel | undefined;
+        const desired: AdminLevel = adminLevel;
+        if ((currentAdmin || 'none') !== desired) {
+          // Bloqueia remoção do último Master
+          if (currentAdmin === 'master' && desired !== 'master') {
+            const { count } = await supabase.from('user_roles').select('id', { count: 'exact', head: true }).eq('role', 'master');
+            if ((count || 0) <= 1) {
+              toast.error('Não é possível remover o último Master do sistema.');
+              setSaving(false); return;
+            }
+          }
+          // Remove o atual
+          const toRemoveAdmin = existingRoles?.filter(r => adminRoles.includes(r.role)) || [];
+          for (const r of toRemoveAdmin) await supabase.from('user_roles').delete().eq('id', r.id);
+          // Adiciona o novo (se não for 'none')
+          if (desired !== 'none') {
+            await supabase.from('user_roles').insert({ user_id: userId, role: desired });
           }
         }
 
