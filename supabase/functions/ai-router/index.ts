@@ -1,4 +1,5 @@
 import { getAiMode, autoOffOnFailure, logAiSavings } from "../_shared/aiCredits.ts";
+import { classifyMessage } from "../_shared/intentEngine.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
