@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useBackgroundJobs } from '@/contexts/BackgroundJobsContext';
 import { toast } from 'sonner';
 import {
   ArrowLeft, Upload, FileSpreadsheet, CheckCircle2, AlertTriangle,
@@ -622,6 +623,7 @@ const validateBusinessRules = (
 const ImportPage = () => {
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
+  const { startJob, isRunning } = useBackgroundJobs();
   const fileRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [errors, setErrors] = useState<RowError[]>([]);
