@@ -1125,7 +1125,14 @@ const ImportPage = () => {
 
     setImporting(true);
     setImportProgress({ step: 'Preparando dados...', percent: 5 });
-    try {
+    const reportProgress = (step: string, percent: number) => setImportProgress({ step, percent });
+    await startJob({
+      id: 'import-spreadsheet',
+      label: `Importando planilha (${rows.length} linhas)`,
+      run: async (report) => {
+        const tick = (step: string, percent: number) => { reportProgress(step, percent); report(step, percent); };
+        tick('Preparando dados...', 5);
+        try {
       const res: ImportResult = {
         providersCreated: 0, providersLinked: 0, servicesCreated: 0,
         productsCreated: 0, segmentsCreated: 0, errors: [], fixes: [],
