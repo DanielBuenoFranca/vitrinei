@@ -68,6 +68,7 @@ const ViniHome = () => {
   const { supported, listening, transcript, start, stop } = useSpeechRecognition();
   
   const [favoritesOpen, setFavoritesOpen] = useState(false);
+  const { count: favoritesCount } = useFavorites();
 
   const [city, setCity] = useState<string | null>(null);
   const [planLabel, setPlanLabel] = useState<string | null>(null);
@@ -657,7 +658,7 @@ const ViniHome = () => {
     { key: 'urgencia', icon: Radar, label: 'Urgência', onClick: handleRadar, active: radarActive, badge: totalCartItems > 0 ? totalCartItems : undefined },
     { key: 'reiniciar', icon: RotateCcw, label: 'Reiniciar', onClick: handleReiniciar },
     { key: 'perfil', icon: UserIcon, label: 'Perfil', onClick: handlePerfil },
-    { key: 'favoritos', icon: Heart, label: 'Favoritos', onClick: () => setFavoritesOpen(true) },
+    { key: 'favoritos', icon: Heart, label: 'Favoritos', onClick: () => setFavoritesOpen(true), iconClassName: favoritesCount > 0 ? 'text-rose-400 fill-rose-400 drop-shadow-[0_0_6px_rgba(244,63,94,0.75)]' : undefined },
     { key: 'indica', icon: Gift, label: 'Indicação', onClick: handleIndicacao, highlight: 'R$ 5,00' },
   ];
 
