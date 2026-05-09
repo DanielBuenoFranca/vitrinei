@@ -1047,7 +1047,7 @@ const AdminPanel = () => {
                 const pDoc = normDoc(p.cpf_cnpj);
                 const prof = userProfiles.find((u: any) =>
                   (pDoc && (normDoc(u.cpf_cnpj) === pDoc || u.cpf_cnpj_normalized === pDoc)) ||
-                  (p.user_id && u.user_id === p.user_id) ||
+                  ((p as any).user_id && u.user_id === (p as any).user_id) ||
                   (!pDoc && u.display_name === p.name)
                 );
                 if (prof) {
