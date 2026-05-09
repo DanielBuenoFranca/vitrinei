@@ -156,6 +156,7 @@ export function ImageSanitizationPanel() {
               startJob({
                 id: 'bulk-catalog-images',
                 label: 'Gerando imagens IA do catálogo',
+                route: '/admin',
                 run: async (report) => {
                   report('Disparando geração no servidor...', 10);
                   const { data, error } = await supabase.functions.invoke('bulk-generate-catalog-images', {
@@ -182,6 +183,7 @@ export function ImageSanitizationPanel() {
               startJob({
                 id: 'bulk-catalog-images-force',
                 label: 'Regerando todas as imagens do catálogo',
+                route: '/admin',
                 run: async (report) => {
                   report('Disparando regeração...', 10);
                   const { data, error } = await supabase.functions.invoke('bulk-generate-catalog-images', {
