@@ -730,9 +730,11 @@ const AdminPanel = () => {
                           const segTagsN = ((seg as any).suggested_tags || []).map((t: string) => norm(t));
                           const segProviders = providers.filter(p => (p.segment || []).some(s => norm(s) === segNameN)).length;
                           const segServices = services.filter(s => norm(s.segment) === segNameN).length;
-                          // Produto pertence ao segmento se: prestador tem o segmento OU alguma tag bate com tags sugeridas do segmento
+                          // Produto pertence ao segmento se: tem segments próprios incluindo este, OU (legado) prestador tem o segmento OU tag bate com tags do segmento
                           const provIdsInSeg = new Set(providers.filter(p => (p.segment || []).some(s => norm(s) === segNameN)).map(p => p.id));
-                          const segProducts = products.filter(p => {
+                          const segProducts = products.filter((p: any) => {
+                            const prodSegs: string[] = Array.isArray(p.segments) ? p.segments : [];
+                            if (prodSegs.length > 0) return prodSegs.some(s => norm(s) === segNameN);
                             if (p.provider_id && provIdsInSeg.has(p.provider_id)) return true;
                             const tagsN = (p.tags || []).map(norm);
                             return tagsN.some(t => segTagsN.includes(t) || t === segNameN);
