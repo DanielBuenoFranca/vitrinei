@@ -1129,6 +1129,7 @@ const ImportPage = () => {
     await startJob({
       id: 'import-spreadsheet',
       label: `Importando planilha (${rows.length} linhas)`,
+      route: '/importar',
       run: async (report) => {
         const tick = (step: string, percent: number) => { reportProgress(step, percent); report(step, percent); };
         tick('Preparando dados...', 5);

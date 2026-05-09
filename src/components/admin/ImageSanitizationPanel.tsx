@@ -89,6 +89,7 @@ export function ImageSanitizationPanel() {
     await startJob({
       id: 'sanitize-images',
       label: `Saneamento de imagens (${total})`,
+      route: '/admin',
       run: async (report) => {
         let ok = 0, fail = 0;
         const remaining: Item[] = [];
