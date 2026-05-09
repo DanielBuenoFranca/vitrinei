@@ -278,13 +278,24 @@ export function ViniConversationModal({
           void persistMessage('assistant', accumulated, modality, routedIntent);
         }
       } catch (e: any) {
-        if (e?.name === 'AbortError') return;
+        if (e?.name === 'AbortError') {
+          // timeout/abort: avisa o usuário em vez de ficar mudo
+          setMessages((m) =>
+            m.map((x) =>
+              x.id === assistantId
+                ? { ...x, content: x.content?.trim() ? x.content : '⚠️ Demorei demais para responder. Pode mandar de novo?' }
+                : x,
+            ),
+          );
+          return;
+        }
         const msg = e?.message || 'Não consegui responder agora.';
         setError(msg);
         setMessages((m) =>
           m.map((x) => (x.id === assistantId ? { ...x, content: `⚠️ ${msg}` } : x)),
         );
       } finally {
+        window.clearTimeout(watchdog);
         setIsStreaming(false);
       }
     },
