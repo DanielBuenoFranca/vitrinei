@@ -521,7 +521,6 @@ const ViniHome = () => {
     setRefinementCount(0); // Reset count on new query
     setText('');
     emitEmotion('thinking');
-    lastSubmittedVoiceRef.current = ''; // Reset once query is accepted
 
     const finalize = () => {
       console.log('[Vini] Finalizing interaction...');
