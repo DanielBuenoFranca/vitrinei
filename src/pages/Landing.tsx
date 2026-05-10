@@ -269,8 +269,7 @@ const Landing = () => {
     setSearchVersion(v => v + 1);
     setSelectedSuggestions(new Set());
     setShowSearchProducts(false);
-    // Limpa a barra para uma nova busca (texto ou voz)
-    setSearchQuery('');
+    // Removemos o setSearchQuery('') para manter o contexto visual da busca
   };
 
   const handleSmartSearch = () => {
