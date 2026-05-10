@@ -134,12 +134,12 @@ const ViniHome = () => {
   const [searchBarVisible, setSearchBarVisible] = useState(false);
   const [searchBarMode, setSearchBarMode] = useState<'chat' | 'search'>('chat');
   const [radarActive, setRadarActive] = useState(false);
-  const [hudOpacity, setHudOpacity] = useState(0.45);
-  const [hudBlur, setHudBlur] = useState(12);
+  const [hudOpacity, setHudOpacity] = useState(0.85);
+  const [hudBlur, setHudBlur] = useState(16);
   const [hudScroll, setHudScroll] = useState(0);
   const [showHudSettings, setShowHudSettings] = useState(false);
-  const [hudHighContrast, setHudHighContrast] = useState(false);
-  const [hudScale, setHudScale] = useState(1.05);
+  const [hudHighContrast, setHudHighContrast] = useState(true);
+  const [hudScale, setHudScale] = useState(1.1);
   const saveTimeoutRef = useRef<number | null>(null);
 
   // Load preferences from profile
@@ -1202,7 +1202,7 @@ const ViniHome = () => {
               className={cn(
                 "w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5",
                 showHudSettings ? "bg-primary/20 text-primary" : "text-foreground/50",
-                "first:rounded-t-2xl"
+                "first:rounded-t-2xl last:border-b-0"
               )}
               title="Ajustes de visibilidade da conversa"
             >
