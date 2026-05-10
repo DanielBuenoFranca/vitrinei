@@ -45,7 +45,7 @@ export function SystemStatusIndicator() {
 
   return (
     // Posicionado verticalmente acima do botão flutuante "+" (que costuma ficar bottom-3 right-3, ~h-12)
-    <div className="fixed right-3 bottom-20 z-[60] pointer-events-none">
+    <div className="fixed right-3 bottom-[124px] z-[60] pointer-events-none">
       <motion.button
         type="button"
         initial={{ opacity: 0, scale: 0.5 }}
