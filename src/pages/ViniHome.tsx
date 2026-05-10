@@ -151,7 +151,7 @@ const ViniHome = () => {
     if (autoSubmitTimerRef.current) window.clearTimeout(autoSubmitTimerRef.current);
     autoSubmitTimerRef.current = window.setTimeout(() => {
       const final = lastSpokenRef.current.trim();
-      if (final) {
+      if (final && listening) {
         try { stop(); } catch {}
         console.log('[Vini] Voice auto-submit:', final);
         sendQuery(final);
