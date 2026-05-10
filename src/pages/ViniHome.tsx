@@ -1083,7 +1083,7 @@ const ViniHome = () => {
                 color: hudHighContrast ? '#000' : undefined,
                 borderColor: hudHighContrast ? 'rgba(0,0,0,0.2)' : `rgba(255, 255, 255, ${hudOpacity / 2})`,
                 backdropFilter: `blur(${hudBlur}px)`,
-                fontSize: hudHighContrast ? '13px' : '12px'
+                fontSize: hudHighContrast ? '16px' : '14px'
               }}
             >
               <p className={cn("drop-shadow-sm", hudHighContrast && "drop-shadow-none")}>{b.text}</p>
