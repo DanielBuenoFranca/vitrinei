@@ -524,7 +524,8 @@ const Landing = () => {
 
   const filteredResults = searchResult.services;
   const hasResults = searchExecuted && (filteredResults.length > 0 || searchResult.products.length > 0);
-  const noResults = searchExecuted && executedQuery && !fallbackToAll && filteredResults.length === 0 && searchResult.products.length === 0;
+  const forceSupportParam = searchParams.get('force_support') === '1';
+  const noResults = (searchExecuted && executedQuery && !fallbackToAll && filteredResults.length === 0 && searchResult.products.length === 0) || forceSupportParam;
   const providerEntries = (() => {
     const providerMap = new Map<string, { products: typeof searchResult.products; services: typeof filteredResults }>();
     searchResult.products.forEach(p => {
