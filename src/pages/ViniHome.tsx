@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, Wallet, User as UserIcon, Sparkles, Mic, Plus,
   Bot, LogIn, Settings, X, Send, Radar, Gift, MapPin, ShoppingBag, Store, RotateCcw, Heart,
-  Search, LifeBuoy, Loader2
+  Search, LifeBuoy, Loader2, Sliders, ZapOff, Sun, Contrast
 } from 'lucide-react';
 import { FavoritesModal } from '@/components/FavoritesModal';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -132,9 +132,11 @@ const ViniHome = () => {
   const [searchBarVisible, setSearchBarVisible] = useState(false);
   const [searchBarMode, setSearchBarMode] = useState<'chat' | 'search'>('chat');
   const [radarActive, setRadarActive] = useState(false);
-  const [hudOpacity, setHudOpacity] = useState(0.1);
-  const [hudBlur, setHudBlur] = useState(2);
+  const [hudOpacity, setHudOpacity] = useState(0.12);
+  const [hudBlur, setHudBlur] = useState(4);
   const [hudScroll, setHudScroll] = useState(0);
+  const [showHudSettings, setShowHudSettings] = useState(false);
+  const [hudHighContrast, setHudHighContrast] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   
@@ -1010,7 +1012,7 @@ const ViniHome = () => {
       {/* Banner de transcrição superior removido — a transcrição aparece
           apenas dentro da barra de busca para evitar duplicidade visual. */}
 
-      {/* ─── Chat History Bubbles (Refined Integrated HUD with HUD Controls) ─── */}
+      {/* ─── Chat History Bubbles (Refined Integrated HUD) ─── */}
       <div 
         className="absolute left-1/2 bottom-[44%] -translate-x-1/2 z-10 w-[85%] max-w-[320px] pointer-events-none flex flex-col-reverse gap-3 py-6"
         style={{ 
@@ -1025,34 +1027,40 @@ const ViniHome = () => {
               layout
               initial={{ opacity: 0, y: 40, scale: 0.8, filter: `blur(${hudBlur * 5}px)` }}
               animate={{ 
-                opacity: (1 - (i * 0.2)) * (hudOpacity * 10), // Scale visibility with HUD control
+                opacity: (1 - (i * 0.2)) * (hudOpacity * 8), // Sensitivity adjusted for better feel
                 y: 0, 
                 scale: 1 - (i * 0.05),
-                filter: `blur(${i > 0 ? hudBlur : 0}px)` // First bubble always clear
+                filter: `blur(${i > 0 ? hudBlur : 0}px)`
               }}
               exit={{ opacity: 0, y: -60, scale: 0.8, filter: `blur(${hudBlur * 6}px)` }}
               transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
               className={cn(
                 "px-5 py-3 rounded-[2rem] text-[12px] leading-snug pointer-events-auto",
                 "border-[0.5px] shadow-none text-center transition-all duration-300",
+                hudHighContrast ? "font-bold tracking-tight" : "font-normal",
                 b.role === 'vini' 
-                  ? "bg-primary text-primary-foreground font-medium" 
-                  : "bg-white/10 text-foreground italic font-light backdrop-blur-sm"
+                  ? "bg-primary text-primary-foreground" 
+                  : "bg-white/10 text-foreground italic backdrop-blur-sm"
               )}
               style={{ 
                 backgroundColor: b.role === 'vini' 
-                  ? `hsla(var(--primary) / ${hudOpacity})` 
-                  : `rgba(255, 255, 255, ${hudOpacity / 2})`,
-                borderColor: `rgba(255, 255, 255, ${hudOpacity / 3})`,
-                backdropFilter: `blur(${hudBlur}px)`
+                  ? `hsla(var(--primary) / ${hudHighContrast ? 0.95 : hudOpacity * 2})` 
+                  : `rgba(255, 255, 255, ${hudHighContrast ? 0.9 : hudOpacity})`,
+                color: hudHighContrast ? '#000' : undefined,
+                borderColor: hudHighContrast ? 'rgba(0,0,0,0.2)' : `rgba(255, 255, 255, ${hudOpacity / 2})`,
+                backdropFilter: `blur(${hudBlur}px)`,
+                fontSize: hudHighContrast ? '13px' : '12px'
               }}
             >
-              <p className="drop-shadow-sm">{b.text}</p>
+              <p className={cn("drop-shadow-sm", hudHighContrast && "drop-shadow-none")}>{b.text}</p>
               {b.action && (
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="mt-2.5 h-8 w-full text-[10.5px] font-bold bg-white/20 hover:bg-white/30 text-inherit rounded-full backdrop-blur-sm"
+                  className={cn(
+                    "mt-2.5 h-8 w-full text-[10.5px] font-bold rounded-full backdrop-blur-sm",
+                    hudHighContrast ? "bg-black text-white hover:bg-black/80" : "bg-white/20 hover:bg-white/30 text-inherit"
+                  )}
                   onClick={() => runAction(b.action)}
                 >
                   {b.action.label}
@@ -1063,35 +1071,75 @@ const ViniHome = () => {
         </AnimatePresence>
       </div>
 
-      {/* HUD Accessibility Controls */}
-      <div className="absolute left-4 bottom-[25%] z-40 flex flex-col gap-3 pointer-events-auto bg-black/10 backdrop-blur-md p-3 rounded-2xl border border-white/5 opacity-40 hover:opacity-100 transition-opacity">
-        <div className="flex flex-col gap-1">
-          <span className="text-[9px] uppercase tracking-tighter text-white/60 font-bold">Opacidade</span>
-          <input 
-            type="range" min="0.05" max="0.9" step="0.01" 
-            value={hudOpacity} 
-            onChange={(e) => setHudOpacity(parseFloat(e.target.value))}
-            className="w-24 accent-primary"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <span className="text-[9px] uppercase tracking-tighter text-white/60 font-bold">Desfoque</span>
-          <input 
-            type="range" min="0" max="10" step="0.5" 
-            value={hudBlur} 
-            onChange={(e) => setHudBlur(parseFloat(e.target.value))}
-            className="w-24 accent-primary"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <span className="text-[9px] uppercase tracking-tighter text-white/60 font-bold">Posição</span>
-          <input 
-            type="range" min="-200" max="200" step="5" 
-            value={hudScroll} 
-            onChange={(e) => setHudScroll(parseInt(e.target.value))}
-            className="w-24 accent-primary"
-          />
-        </div>
+      {/* Discrete HUD & Credits Toggle Area */}
+      <div className="absolute right-3 bottom-[76px] z-40 flex flex-col gap-2 pointer-events-auto">
+        <AnimatePresence>
+          {showHudSettings && (
+            <motion.div
+              initial={{ opacity: 0, x: 20, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 20, scale: 0.9 }}
+              className="mb-2 p-3 rounded-2xl glass-strong border border-white/10 flex flex-col gap-3 min-w-[140px] shadow-2xl"
+            >
+              <div className="flex flex-col gap-1">
+                <div className="flex justify-between items-center px-1">
+                  <span className="text-[9px] uppercase tracking-tighter text-foreground/60 font-bold">Visibilidade</span>
+                  <span className="text-[9px] font-mono opacity-50">{Math.round(hudOpacity * 100)}%</span>
+                </div>
+                <input 
+                  type="range" min="0.02" max="0.5" step="0.01" 
+                  value={hudOpacity} 
+                  onChange={(e) => setHudOpacity(parseFloat(e.target.value))}
+                  className="w-full accent-primary h-1.5"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <div className="flex justify-between items-center px-1">
+                  <span className="text-[9px] uppercase tracking-tighter text-foreground/60 font-bold">Foco</span>
+                  <span className="text-[9px] font-mono opacity-50">{hudBlur}px</span>
+                </div>
+                <input 
+                  type="range" min="0" max="12" step="0.5" 
+                  value={hudBlur} 
+                  onChange={(e) => setHudBlur(parseFloat(e.target.value))}
+                  className="w-full accent-primary h-1.5"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] uppercase tracking-tighter text-foreground/60 font-bold px-1">Posição HUD</span>
+                <input 
+                  type="range" min="-300" max="250" step="5" 
+                  value={hudScroll} 
+                  onChange={(e) => setHudScroll(parseInt(e.target.value))}
+                  className="w-full accent-primary h-1.5"
+                />
+              </div>
+              <button 
+                onClick={() => setHudHighContrast(!hudHighContrast)}
+                className={cn(
+                  "flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg transition-colors text-[10px] font-bold",
+                  hudHighContrast ? "bg-primary text-primary-foreground" : "bg-white/5 text-foreground/70"
+                )}
+              >
+                {hudHighContrast ? <Contrast className="w-3 h-3" /> : <Sun className="w-3 h-3" />}
+                {hudHighContrast ? "Contraste Ativo" : "Modo Discreto"}
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setShowHudSettings(!showHudSettings)}
+          className={cn(
+            "w-9 h-9 rounded-full border backdrop-blur-xl flex items-center justify-center shadow-lg transition-all duration-300",
+            showHudSettings ? "bg-primary border-primary text-primary-foreground ring-4 ring-primary/20" : "bg-white/10 border-white/20 text-foreground"
+          )}
+          title="Ajustes de visibilidade da conversa"
+        >
+          <Sliders className="w-4 h-4" />
+        </motion.button>
       </div>
 
       {/* ─── Search bar: hidden by default, slides up between left grid and right mic ─── */}
