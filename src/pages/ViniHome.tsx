@@ -136,6 +136,7 @@ const ViniHome = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const lastSpokenRef = useRef('');
+  const lastSubmittedVoiceRef = useRef('');
   const autoSubmitTimerRef = useRef<number | null>(null);
 
   const emitEmotion = (e: 'idle' | 'happy' | 'sad' | 'angry' | 'thinking' | 'listening') => {
