@@ -632,7 +632,7 @@ const AdminPanel = () => {
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         {/* Tabs (cards de contagem do topo removidos — números agora ficam no menu lateral/trigger) */}
-        <Tabs defaultValue="users">
+        <Tabs defaultValue="crm">
           <TabsList className="flex flex-wrap h-auto gap-1 p-1">
             <TabsTrigger value="crm" className="text-xs gap-1 px-2 py-1.5 bg-primary/10 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <LifeBuoy className="h-3 w-3" /> CRM (Suporte)
