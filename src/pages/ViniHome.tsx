@@ -588,7 +588,7 @@ const ViniHome = () => {
             pushBubble({
               role: 'vini',
               text: routed.follow_up_question || `Me conte mais um detalhe sobre "${query}" para eu buscar com precisão.`,
-              action: (routed.suggestions || [])[0] ? { label: routed.suggestions[0], intent: 'search', payload: `${query} ${routed.suggestions[0]}` } : undefined,
+              action: (routed.suggestions || [])[0] ? { label: routed.suggestions[0], intent: 'search', payload: `${query} ${routed.suggestions[0]}` } : { label: 'Tentar de novo', intent: 'open-search' },
             });
             finalize();
             return;
