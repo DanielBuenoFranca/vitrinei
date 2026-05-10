@@ -24,7 +24,7 @@ export function SystemStatusIndicator() {
   const isMaster = profileLabel?.toLowerCase() === 'master';
   const isAdmin = profileLabel?.toLowerCase() === 'admin';
   const isPrivileged = !!(isMaster || isAdmin);
-  const showChip = !isOn && isPrivileged;
+  const showChip = isPrivileged; // Sempre mostrar para Adm/Master, independente do modo (isOn)
 
   const loadSavings = async () => {
     try {
@@ -58,13 +58,18 @@ export function SystemStatusIndicator() {
         onClick={() => isPrivileged && setExpanded(true)}
         className={cn(
           "w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5",
-          "bg-amber-500/5 text-amber-500/60 dark:text-amber-500/50 border-amber-500/20 rounded-t-2xl",
+          isOn 
+            ? "bg-emerald-500/5 text-emerald-500/60 dark:text-emerald-500/40 border-emerald-500/10" 
+            : "bg-amber-500/5 text-amber-500/60 dark:text-amber-500/50 border-amber-500/20",
+          "rounded-t-2xl",
           isPrivileged ? "cursor-pointer" : "cursor-default"
         )}
-        title={isPrivileged ? "IA em contingência — clique para detalhes" : "Sistema operando em modo economia"}
-        aria-label="IA em modo economia"
+        title={isPrivileged 
+          ? (isOn ? "Sistema com IA Full — clique para detalhes" : "IA em contingência — clique para detalhes")
+          : "Status do Sistema"}
+        aria-label="Status da IA"
       >
-        <ZapOff className="w-4 h-4" />
+        {isOn ? <Sparkles className="w-4 h-4" /> : <ZapOff className="w-4 h-4" />}
       </motion.button>
 
       <AnimatePresence>
@@ -77,8 +82,8 @@ export function SystemStatusIndicator() {
           >
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center gap-1.5 text-xs font-semibold">
-                <Power className="w-3.5 h-3.5 text-amber-500" />
-                IA em modo economia
+                {isOn ? <Sparkles className="w-3.5 h-3.5 text-emerald-500" /> : <Power className="w-3.5 h-3.5 text-amber-500" />}
+                {isOn ? "IA em modo Full" : "IA em modo economia"}
               </div>
               <button onClick={() => setExpanded(false)} className="text-muted-foreground hover:text-foreground" aria-label="Fechar">
                 <X className="w-3.5 h-3.5" />
