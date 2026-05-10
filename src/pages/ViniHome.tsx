@@ -1062,52 +1062,44 @@ const ViniHome = () => {
       {/* Banner de transcrição superior removido — a transcrição aparece
           apenas dentro da barra de busca para evitar duplicidade visual. */}
 
-      {/* ─── Chat History Bubbles (Harmonious Scroll HUD) ─── */}
+      {/* ─── Chat History Bubbles (Refined Integrated HUD) ─── */}
       <div 
-        className="absolute left-[45%] bottom-[44%] -translate-x-1/2 z-10 w-[80%] max-w-[260px] pointer-events-none h-[120px] flex items-center justify-center"
+        className="absolute left-[45%] bottom-[44%] -translate-x-1/2 z-10 w-[80%] max-w-[260px] pointer-events-none flex flex-col-reverse gap-3 py-6"
         style={{ 
-          transform: `translateX(-50%) translateY(${hudScroll}px) scale(${hudScale})`,
-          transition: 'transform 0.4s cubic-bezier(0.22, 1, 0.36, 1)'
+          transform: `translateX(-50%) scale(${hudScale})`,
+          transition: 'transform 0.1s ease-out'
         }}
       >
         <AnimatePresence initial={false} mode="popLayout">
-          {bubbles.length > 0 && (
+          {[...bubbles].reverse().slice(0, 5).map((b, i) => (
             <motion.div
-              key={bubbles[bubbles.length - 1].id}
+              key={b.id}
+              layout
               drag="y"
-              dragConstraints={{ top: 0, bottom: 0 }}
-              dragElastic={0.2}
-              onDragEnd={(e, info) => {
-                if (info.offset.y > 50) {
-                  // Scroll to previous
-                  setBubbles(prev => {
-                    if (prev.length <= 1) return prev;
-                    const last = prev[prev.length - 1];
-                    return [last, ...prev.slice(0, -1)];
-                  });
-                } else if (info.offset.y < -50) {
-                  // Scroll to next (if we were keeping a hidden queue, but here we just shift)
-                  setBubbles(prev => {
-                    if (prev.length <= 1) return prev;
-                    const first = prev[0];
-                    return [...prev.slice(1), first];
-                  });
-                }
+              dragConstraints={{ top: -300, bottom: 300 }}
+              dragElastic={0.1}
+              onDrag={(e, info) => {
+                setHudScroll(prev => prev + info.delta.y);
               }}
-              initial={{ opacity: 0, y: 20, scale: 0.9, filter: 'blur(10px)' }}
-              animate={{ opacity: hudOpacity * 2, y: 0, scale: 1, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, y: -20, scale: 0.9, filter: 'blur(10px)' }}
-              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              initial={{ opacity: 0, y: 40, scale: 0.8, filter: `blur(${hudBlur * 5}px)` }}
+              animate={{ 
+                opacity: (1 - (i * 0.15)) * (hudOpacity * 2), 
+                y: hudScroll, 
+                scale: 1 - (i * 0.04),
+                filter: `blur(${i > 0 ? (hudBlur / 2) : 0}px)`
+              }}
+              exit={{ opacity: 0, y: -60, scale: 0.8, filter: `blur(${hudBlur * 2}px)` }}
+              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
               className={cn(
                 "px-6 py-4 rounded-[2rem] text-[14px] leading-snug pointer-events-auto",
-                "border-[0.5px] shadow-2xl text-center transition-all duration-300 w-full",
+                "border-[0.5px] shadow-lg text-center transition-all duration-300",
                 hudHighContrast ? "font-bold tracking-tight" : "font-semibold tracking-tight",
-                bubbles[bubbles.length - 1].role === 'vini' 
+                b.role === 'vini' 
                   ? "bg-primary text-primary-foreground" 
                   : "bg-white/15 text-foreground backdrop-blur-md"
               )}
               style={{ 
-                backgroundColor: bubbles[bubbles.length - 1].role === 'vini' 
+                backgroundColor: b.role === 'vini' 
                   ? `hsla(var(--primary) / ${hudHighContrast ? 0.95 : hudOpacity * 2})` 
                   : `rgba(255, 255, 255, ${hudHighContrast ? 0.9 : hudOpacity})`,
                 color: hudHighContrast ? '#000' : undefined,
@@ -1117,10 +1109,8 @@ const ViniHome = () => {
                 cursor: 'grab'
               }}
             >
-              <p className={cn("drop-shadow-md", hudHighContrast && "drop-shadow-none")}>
-                {bubbles[bubbles.length - 1].text}
-              </p>
-              {bubbles[bubbles.length - 1].action && (
+              <p className={cn("drop-shadow-md", hudHighContrast && "drop-shadow-none")}>{b.text}</p>
+              {b.action && (
                 <Button
                   size="sm"
                   variant="ghost"
@@ -1128,13 +1118,13 @@ const ViniHome = () => {
                     "mt-2.5 h-8 w-full text-[10.5px] font-bold rounded-full backdrop-blur-sm",
                     hudHighContrast ? "bg-black text-white hover:bg-black/80" : "bg-white/20 hover:bg-white/30 text-inherit"
                   )}
-                  onClick={() => runAction(bubbles[bubbles.length - 1].action)}
+                  onClick={() => runAction(b.action)}
                 >
-                  {bubbles[bubbles.length - 1].action.label}
+                  {b.action.label}
                 </Button>
               )}
             </motion.div>
-          )}
+          ))}
         </AnimatePresence>
       </div>
 
