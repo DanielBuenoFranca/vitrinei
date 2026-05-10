@@ -137,6 +137,7 @@ const ViniHome = () => {
       if (final) {
         try { stop(); } catch {}
         // Voz da tela principal → perfil SUPER VENDEDOR (busca/ai-router)
+        console.log('[Vini] Voice auto-submit:', final);
         sendQuery(final);
         lastSpokenRef.current = '';
       }
@@ -153,6 +154,7 @@ const ViniHome = () => {
     if (autoSubmitTimerRef.current) window.clearTimeout(autoSubmitTimerRef.current);
     lastSpokenRef.current = '';
     // Tela principal: voz finaliza → vai para o vendedor (busca)
+    console.log('[Vini] Voice final capture:', final);
     sendQuery(final);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listening]);
@@ -471,6 +473,7 @@ const ViniHome = () => {
   const safetyTimerRef = useRef<number | null>(null);
 
   const sendQuery = (q: string) => {
+    console.log('[Vini] sendQuery starting for:', q);
     const query = q.trim();
     if (!query) return;
     // Se já está pensando, NÃO ignora: enfileira o pedido para rodar
