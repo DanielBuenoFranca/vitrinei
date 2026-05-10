@@ -1125,7 +1125,7 @@ const ViniHome = () => {
         </AnimatePresence>
 
         <div className="flex flex-col gap-2 items-end">
-          {/* Botão de Economia de Crédito integrado aqui para evitar sobreposição */}
+          {/* Unidade unificada de botões de ação à direita */}
           <SystemStatusIndicator />
           
           <motion.button
@@ -1139,6 +1139,42 @@ const ViniHome = () => {
             title="Ajustes de visibilidade da conversa"
           >
             <Sliders className="w-4 h-4" />
+          </motion.button>
+
+          {/* Novos botões integrados: Pesquisa, Conversa, Sobre o Vini */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleSideSearch}
+            className="w-9 h-9 rounded-full border border-white/20 bg-white/10 backdrop-blur-xl flex items-center justify-center shadow-lg text-foreground hover:bg-white/20"
+            title="Pesquisar no ecossistema"
+          >
+            <Search className="w-4 h-4" strokeWidth={1.5} />
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleSideConverse}
+            className="w-9 h-9 rounded-full border border-white/20 bg-white/10 backdrop-blur-xl flex items-center justify-center shadow-lg text-foreground hover:bg-white/20"
+            title="Conversar com o Vini"
+          >
+            <MessageCircle className="w-4 h-4" strokeWidth={1.5} />
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleSideStory}
+            className="w-9 h-9 rounded-full border border-[hsl(var(--vini-glow)/0.5)] bg-white/10 backdrop-blur-xl overflow-hidden flex items-center justify-center shadow-lg"
+            title="Sobre o Vini"
+          >
+            <img
+              src={viniMini}
+              alt="Sobre o Vini"
+              className="w-[280%] h-[280%] object-cover drop-shadow-[0_0_4px_hsl(var(--vini-glow)/0.7)]"
+              style={{ objectPosition: '50% 8%' }}
+            />
           </motion.button>
         </div>
       </div>
