@@ -38,6 +38,7 @@ import { semanticSearch } from '@/data/searchData';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAiSession } from '@/contexts/AiSessionContext';
+import { SystemStatusIndicator } from '@/components/SystemStatusIndicator';
 
 /**
  * Toda sugestão do Vini pode carregar uma `action` clicável.
@@ -1072,7 +1073,7 @@ const ViniHome = () => {
       </div>
 
       {/* Discrete HUD & Credits Toggle Area */}
-      <div className="absolute right-3 bottom-[76px] z-40 flex flex-col gap-2 pointer-events-auto">
+      <div className="absolute right-3 bottom-[82px] z-40 flex flex-col gap-2 pointer-events-auto">
         <AnimatePresence>
           {showHudSettings && (
             <motion.div
@@ -1128,18 +1129,23 @@ const ViniHome = () => {
           )}
         </AnimatePresence>
 
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setShowHudSettings(!showHudSettings)}
-          className={cn(
-            "w-9 h-9 rounded-full border backdrop-blur-xl flex items-center justify-center shadow-lg transition-all duration-300",
-            showHudSettings ? "bg-primary border-primary text-primary-foreground ring-4 ring-primary/20" : "bg-white/10 border-white/20 text-foreground"
-          )}
-          title="Ajustes de visibilidade da conversa"
-        >
-          <Sliders className="w-4 h-4" />
-        </motion.button>
+        <div className="flex flex-col gap-2 items-end">
+          {/* Botão de Economia de Crédito integrado aqui para evitar sobreposição */}
+          <SystemStatusIndicator />
+          
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowHudSettings(!showHudSettings)}
+            className={cn(
+              "w-9 h-9 rounded-full border backdrop-blur-xl flex items-center justify-center shadow-lg transition-all duration-300",
+              showHudSettings ? "bg-primary border-primary text-primary-foreground ring-4 ring-primary/20" : "bg-white/10 border-white/20 text-foreground"
+            )}
+            title="Ajustes de visibilidade da conversa"
+          >
+            <Sliders className="w-4 h-4" />
+          </motion.button>
+        </div>
       </div>
 
       {/* ─── Search bar: hidden by default, slides up between left grid and right mic ─── */}
