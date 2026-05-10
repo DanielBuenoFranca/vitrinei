@@ -1145,6 +1145,18 @@ const ViniHome = () => {
               </div>
               <div className="flex flex-col gap-1">
                 <div className="flex justify-between items-center px-1">
+                  <span className="text-[9px] uppercase tracking-tighter text-foreground/60 font-bold">Tamanho</span>
+                  <span className="text-[9px] font-mono opacity-50">{Math.round(hudScale * 100)}%</span>
+                </div>
+                <input 
+                  type="range" min="0.5" max="1.5" step="0.05" 
+                  value={hudScale} 
+                  onChange={(e) => setHudScale(parseFloat(e.target.value))}
+                  className="w-full accent-primary h-1.5"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <div className="flex justify-between items-center px-1">
                   <span className="text-[9px] uppercase tracking-tighter text-foreground/60 font-bold">Foco</span>
                   <span className="text-[9px] font-mono opacity-50">{hudBlur}px</span>
                 </div>
