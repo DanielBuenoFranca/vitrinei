@@ -12,6 +12,8 @@ export interface AiSessionState {
 
 interface Ctx {
   session: AiSessionState;
+  isThinking: boolean;
+  setIsThinking: (val: boolean) => void;
   update: (patch: Partial<AiSessionState>) => void;
   clear: () => void;
 }
