@@ -1101,7 +1101,7 @@ const ViniHome = () => {
               const zOffset = reverseIndex * -120;
               const yOffset = reverseIndex * -32;
               const rotateX = reverseIndex * 15;
-              const blurValue = reverseIndex * 4;
+              const blurValue = reverseIndex > 0 ? (reverseIndex * hudBlur * 0.5) : 0; // FOCO atua nos cards secundários
               const opacityValue = Math.max(0.1, 1 - (reverseIndex * 0.4));
 
               return (
@@ -1132,7 +1132,7 @@ const ViniHome = () => {
                   }}
                   initial={{ opacity: 0, z: -300, y: 100 }}
                   animate={{ 
-                    opacity: 1, // Text and card always visible, opacity control applies to background below
+                    opacity: 1, 
                     y: yOffset,
                     z: zOffset,
                     rotateX: rotateX,
@@ -1155,11 +1155,12 @@ const ViniHome = () => {
                     width: '100%',
                     backgroundColor: b.role === 'vini' 
                       ? `hsla(var(--primary) / ${hudHighContrast ? 0.95 : (hudOpacity * opacityValue)})` 
-                      : `rgba(255, 255, 255, ${hudHighContrast ? 0.9 : (hudOpacity * 0.7 * opacityValue)})`,
+                      : `rgba(255, 255, 255, ${hudHighContrast ? 0.9 : (hudOpacity * opacityValue)})`,
                     color: hudHighContrast ? '#000' : 'inherit',
                     transformStyle: 'preserve-3d',
                     cursor: 'grab',
                     zIndex: 100 - reverseIndex,
+                    backdropFilter: isMain ? `blur(${hudBlur}px)` : 'none'
                   }}
                 >
                   {isMain && (
