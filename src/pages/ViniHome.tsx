@@ -586,6 +586,7 @@ const ViniHome = () => {
     const finalize = () => {
       console.log('[Vini] Finalizing interaction...');
       isThinkingRef.current = false;
+      setIsThinking(false);
       if (safetyTimerRef.current) { window.clearTimeout(safetyTimerRef.current); safetyTimerRef.current = null; }
       // Drena fila: se o usuário falou/escreveu enquanto pensávamos, processa agora
       const next = pendingQueryRef.current;
