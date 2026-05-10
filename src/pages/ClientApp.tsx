@@ -106,16 +106,23 @@ const ClientApp = () => {
     let didFilter = false;
     const q = searchQuery.toLowerCase().trim();
     
+    // Strict search for "cerveja" since we know it doesn't exist yet
+    // and the user wants to see the support card for it
     if (q.length >= 2) {
-      // Precise search
       const filtered = svcs.filter(s =>
         s.name.toLowerCase().includes(q) ||
         s.category.toLowerCase().includes(q) ||
         s.provider.toLowerCase().includes(q)
       );
+      
       if (filtered.length > 0) { 
         svcs = filtered; 
         didFilter = true; 
+      } else {
+        // If query doesn't match anything, we force it to show 0 results
+        // so the Support Center card appears.
+        setNoResultsFallback(true);
+        return [];
       }
     }
     
@@ -128,13 +135,7 @@ const ClientApp = () => {
       }
     }
     
-    // Detect: searched something but filters returned 0 -> empty state with Support Center CTA
-    const hasSearch = q.length >= 2 || selectedSegments.length > 0;
-    setNoResultsFallback(hasSearch && !didFilter);
-    
-    // If no results, return empty to show only the support card
-    if (hasSearch && !didFilter) return [];
-    
+    setNoResultsFallback(q.length >= 2 && !didFilter);
     return svcs;
   }, [searchQuery, selectedSegments]);
 
