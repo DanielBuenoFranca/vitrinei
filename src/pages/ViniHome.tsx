@@ -1149,7 +1149,7 @@ const ViniHome = () => {
                   <span className="text-[9px] font-mono opacity-50">{hudBlur}px</span>
                 </div>
                 <input 
-                  type="range" min="0" max="12" step="0.5" 
+                  type="range" min="0" max="30" step="0.5" 
                   value={hudBlur} 
                   onChange={(e) => setHudBlur(parseFloat(e.target.value))}
                   className="w-full accent-primary h-1.5"
