@@ -4,10 +4,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, Wallet, User as UserIcon, Sparkles, Mic, Plus,
   Bot, LogIn, Settings, X, Send, Radar, Gift, MapPin, ShoppingBag, Store, RotateCcw, Heart,
-  Search, LifeBuoy
+  Search, LifeBuoy, Loader2
 } from 'lucide-react';
 import { FavoritesModal } from '@/components/FavoritesModal';
 import { useFavorites } from '@/hooks/useFavorites';
+import { toast } from 'sonner';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
