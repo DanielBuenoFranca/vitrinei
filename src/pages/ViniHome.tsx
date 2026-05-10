@@ -492,11 +492,13 @@ const ViniHome = () => {
     emitEmotion('thinking');
 
     const finalize = () => {
+      console.log('[Vini] Finalizing interaction...');
       isThinkingRef.current = false;
       if (safetyTimerRef.current) { window.clearTimeout(safetyTimerRef.current); safetyTimerRef.current = null; }
       // Drena fila: se o usuário falou/escreveu enquanto pensávamos, processa agora
       const next = pendingQueryRef.current;
       if (next) {
+        console.log('[Vini] Processing pending query:', next);
         pendingQueryRef.current = null;
         setTimeout(() => sendQuery(next), 150);
       }
@@ -531,16 +533,20 @@ const ViniHome = () => {
         let routed: any = null;
         let invokeError: any = null;
         try {
+          console.log('[Vini] Invoking ai-router with query:', query);
           const invokePromise = supabase.functions.invoke('ai-router', { body: { message: query, session } });
           const timeoutPromise = new Promise<{ data: null; error: any }>((resolve) =>
-            setTimeout(() => resolve({ data: null, error: new Error('ai-router timeout 8s') }), 8000),
+            setTimeout(() => {
+              console.warn('[Vini] ai-router 8s timeout reached');
+              resolve({ data: null, error: new Error('ai-router timeout 8s') });
+            }, 8000),
           );
           const res: any = await Promise.race([invokePromise, timeoutPromise]);
           routed = res?.data;
           invokeError = res?.error;
-          if (invokeError) console.error('[Vini] ai-router error:', invokeError);
+          if (invokeError) console.error('[Vini] ai-router error details:', invokeError);
         } catch (e) {
-          console.error('[Vini] ai-router exception:', e);
+          console.error('[Vini] ai-router invocation exception:', e);
         }
 
         if (routed && !routed.error) {

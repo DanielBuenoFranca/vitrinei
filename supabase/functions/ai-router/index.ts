@@ -53,14 +53,17 @@ Deno.serve(async (req) => {
     //    (segments + dynamic_services + dynamic_products). Se houver match
     //    consistente, devolve imediatamente sem gastar crédito de IA.
     try {
+      console.log(`[ai-router] running engine for message: "${message.substring(0, 50)}..."`);
       const engine = await classifyMessage(message, session);
       if (engine && engine.confidence >= 0.6) {
+        console.log(`[ai-router] engine match found (conf: ${engine.confidence})`);
         return new Response(JSON.stringify(engine), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      console.log(`[ai-router] engine result too low confidence or null`);
     } catch (err) {
-      console.warn("[ai-router] engine error:", err);
+      console.error("[ai-router] engine fatal error:", err);
     }
 
     const apiKey = Deno.env.get('LOVABLE_API_KEY');
