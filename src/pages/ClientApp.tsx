@@ -104,8 +104,10 @@ const ClientApp = () => {
   const filteredServices = useMemo(() => {
     let svcs = clientServices;
     let didFilter = false;
-    if (searchQuery.length >= 2) {
-      const q = searchQuery.toLowerCase();
+    const q = searchQuery.toLowerCase().trim();
+    
+    if (q.length >= 2) {
+      // Precise search
       const filtered = svcs.filter(s =>
         s.name.toLowerCase().includes(q) ||
         s.category.toLowerCase().includes(q) ||
@@ -116,9 +118,10 @@ const ClientApp = () => {
         didFilter = true; 
       }
     }
+    
     if (selectedSegments.length > 0) {
       const cats = selectedSegments.map(id => segments.find(s => s.id === id)?.category).filter(Boolean);
-      const filtered = svcs.filter(s => cats.includes(s.category));
+      const filtered = (didFilter ? svcs : clientServices).filter(s => cats.includes(s.category));
       if (filtered.length > 0) { 
         svcs = filtered; 
         didFilter = true; 
@@ -126,7 +129,7 @@ const ClientApp = () => {
     }
     
     // Detect: searched something but filters returned 0 -> empty state with Support Center CTA
-    const hasSearch = searchQuery.length >= 2 || selectedSegments.length > 0;
+    const hasSearch = q.length >= 2 || selectedSegments.length > 0;
     setNoResultsFallback(hasSearch && !didFilter);
     
     // If no results, return empty to show only the support card
