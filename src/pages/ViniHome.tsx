@@ -152,11 +152,11 @@ const ViniHome = () => {
     if (autoSubmitTimerRef.current) window.clearTimeout(autoSubmitTimerRef.current);
     autoSubmitTimerRef.current = window.setTimeout(() => {
       const final = lastSpokenRef.current.trim();
-      if (final) {
+      if (final && final !== lastSubmittedVoiceRef.current) {
+        lastSubmittedVoiceRef.current = final;
         try { stop(); } catch {}
         console.log('[Vini] Voice auto-submit:', final);
         sendQuery(final);
-        lastSpokenRef.current = '';
         setText('');
       }
     }, 1200);
