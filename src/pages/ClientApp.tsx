@@ -553,7 +553,7 @@ const ClientApp = () => {
       </AnimatePresence>
 
       {/* Content */}
-      <div className="p-3 pb-8 space-y-3">
+      <div className={cn("p-3 pb-8 space-y-3", noResultsFallback && "hidden")}>
 
         {/* AI Suggestions */}
         <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5">
