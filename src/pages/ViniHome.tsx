@@ -134,12 +134,12 @@ const ViniHome = () => {
   const [searchBarVisible, setSearchBarVisible] = useState(false);
   const [searchBarMode, setSearchBarMode] = useState<'chat' | 'search'>('chat');
   const [radarActive, setRadarActive] = useState(false);
-  const [hudOpacity, setHudOpacity] = useState(0.12);
-  const [hudBlur, setHudBlur] = useState(4);
+  const [hudOpacity, setHudOpacity] = useState(0.45);
+  const [hudBlur, setHudBlur] = useState(12);
   const [hudScroll, setHudScroll] = useState(0);
   const [showHudSettings, setShowHudSettings] = useState(false);
   const [hudHighContrast, setHudHighContrast] = useState(false);
-  const [hudScale, setHudScale] = useState(1);
+  const [hudScale, setHudScale] = useState(1.05);
   const saveTimeoutRef = useRef<number | null>(null);
 
   // Load preferences from profile
@@ -182,6 +182,22 @@ const ViniHome = () => {
         .eq('user_id', user.id);
     }, 1000);
   };
+  
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    savePreferences({
+      opacity: hudOpacity,
+      blur: hudBlur,
+      scroll: hudScroll,
+      highContrast: hudHighContrast,
+      scale: hudScale
+    });
+  }, [hudOpacity, hudBlur, hudScroll, hudHighContrast, hudScale]);
 
   const inputRef = useRef<HTMLInputElement>(null);
   
@@ -1061,20 +1077,20 @@ const ViniHome = () => {
               layout
               initial={{ opacity: 0, y: 40, scale: 0.8, filter: `blur(${hudBlur * 5}px)` }}
               animate={{ 
-                opacity: (1 - (i * 0.2)) * (hudOpacity * 8), // Sensitivity adjusted for better feel
+                opacity: (1 - (i * 0.15)) * (hudOpacity * 2), // Improved curve for visibility
                 y: 0, 
-                scale: 1 - (i * 0.05),
-                filter: `blur(${i > 0 ? hudBlur : 0}px)`
+                scale: 1 - (i * 0.04),
+                filter: `blur(${i > 0 ? (hudBlur / 2) : 0}px)`
               }}
-              exit={{ opacity: 0, y: -60, scale: 0.8, filter: `blur(${hudBlur * 6}px)` }}
+              exit={{ opacity: 0, y: -60, scale: 0.8, filter: `blur(${hudBlur * 2}px)` }}
               transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
               className={cn(
-                "px-5 py-3 rounded-[2rem] text-[12px] leading-snug pointer-events-auto",
-                "border-[0.5px] shadow-none text-center transition-all duration-300",
-                hudHighContrast ? "font-bold tracking-tight" : "font-normal",
+                "px-6 py-4 rounded-[2rem] text-[14px] leading-snug pointer-events-auto",
+                "border-[0.5px] shadow-lg text-center transition-all duration-300",
+                hudHighContrast ? "font-bold tracking-tight" : "font-semibold tracking-tight",
                 b.role === 'vini' 
                   ? "bg-primary text-primary-foreground" 
-                  : "bg-white/10 text-foreground italic backdrop-blur-sm"
+                  : "bg-white/15 text-foreground backdrop-blur-md"
               )}
               style={{ 
                 backgroundColor: b.role === 'vini' 
@@ -1083,10 +1099,10 @@ const ViniHome = () => {
                 color: hudHighContrast ? '#000' : undefined,
                 borderColor: hudHighContrast ? 'rgba(0,0,0,0.2)' : `rgba(255, 255, 255, ${hudOpacity / 2})`,
                 backdropFilter: `blur(${hudBlur}px)`,
-                fontSize: hudHighContrast ? '13px' : '12px'
+                fontSize: hudHighContrast ? '16px' : '14px'
               }}
             >
-              <p className={cn("drop-shadow-sm", hudHighContrast && "drop-shadow-none")}>{b.text}</p>
+              <p className={cn("drop-shadow-md", hudHighContrast && "drop-shadow-none")}>{b.text}</p>
               {b.action && (
                 <Button
                   size="sm"
@@ -1121,9 +1137,21 @@ const ViniHome = () => {
                   <span className="text-[9px] font-mono opacity-50">{Math.round(hudOpacity * 100)}%</span>
                 </div>
                 <input 
-                  type="range" min="0.02" max="0.5" step="0.01" 
+                  type="range" min="0.05" max="0.95" step="0.01" 
                   value={hudOpacity} 
                   onChange={(e) => setHudOpacity(parseFloat(e.target.value))}
+                  className="w-full accent-primary h-1.5"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <div className="flex justify-between items-center px-1">
+                  <span className="text-[9px] uppercase tracking-tighter text-foreground/60 font-bold">Tamanho</span>
+                  <span className="text-[9px] font-mono opacity-50">{Math.round(hudScale * 100)}%</span>
+                </div>
+                <input 
+                  type="range" min="0.5" max="1.5" step="0.05" 
+                  value={hudScale} 
+                  onChange={(e) => setHudScale(parseFloat(e.target.value))}
                   className="w-full accent-primary h-1.5"
                 />
               </div>
@@ -1133,7 +1161,7 @@ const ViniHome = () => {
                   <span className="text-[9px] font-mono opacity-50">{hudBlur}px</span>
                 </div>
                 <input 
-                  type="range" min="0" max="12" step="0.5" 
+                  type="range" min="0" max="30" step="0.5" 
                   value={hudBlur} 
                   onChange={(e) => setHudBlur(parseFloat(e.target.value))}
                   className="w-full accent-primary h-1.5"
