@@ -38,6 +38,7 @@ import { semanticSearch } from '@/data/searchData';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAiSession } from '@/contexts/AiSessionContext';
+import { SystemStatusIndicator } from '@/components/SystemStatusIndicator';
 
 /**
  * Toda sugestão do Vini pode carregar uma `action` clicável.
