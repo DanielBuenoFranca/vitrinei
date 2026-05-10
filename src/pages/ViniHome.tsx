@@ -440,7 +440,6 @@ const ViniHome = () => {
   ];
 
   const handleScreenTap = () => {
-    setSideOpen(true);
     if (!hasInteracted) { wakeUp(); return; }
     const now = Date.now();
     if (now - lastSmallTalkRef.current < 12000) return; // throttle
