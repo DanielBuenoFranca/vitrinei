@@ -611,10 +611,8 @@ const ViniHome = () => {
             text: `Infelizmente não encontrei "${query}" no estoque agora. Gostaria que eu acionasse a nossa Central de Atendimento para buscarem isso para você?`,
             action: { 
               label: 'Acionar Central', 
-              onClick: () => {
-                setSupportItem(query);
-                setSupportDialogOpen(true);
-              }
+              intent: 'support',
+              payload: query
             },
           });
           finalize();
