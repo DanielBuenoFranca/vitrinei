@@ -76,7 +76,8 @@ export const CrmPanel = () => {
             <TableRow>
               <TableHead>Data</TableHead>
               <TableHead>Item Solicitado</TableHead>
-              <TableHead>Detalhes</TableHead>
+              <TableHead>Contexto (Análise Vini)</TableHead>
+              <TableHead>Explicação do Cliente</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Ações</TableHead>
             </TableRow>
@@ -84,11 +85,28 @@ export const CrmPanel = () => {
           <TableBody>
             {requests.map((req) => (
               <TableRow key={req.id}>
-                <TableCell className="text-sm">
+                <TableCell className="text-sm whitespace-nowrap">
                   {format(new Date(req.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                 </TableCell>
                 <TableCell className="font-medium">{req.requested_item}</TableCell>
-                <TableCell className="max-w-xs truncate">{req.details}</TableCell>
+                <TableCell className="max-w-[200px]">
+                  {req.context_analyzed ? (
+                    <div className="text-[10px] space-y-1">
+                      {req.context_analyzed.analyzed_intent && (
+                        <div><span className="font-bold opacity-60">Intenção:</span> {req.context_analyzed.analyzed_intent}</div>
+                      )}
+                      {req.context_analyzed.tags?.length > 0 && (
+                        <div><span className="font-bold opacity-60">Tags:</span> {req.context_analyzed.tags.join(', ')}</div>
+                      )}
+                      {req.context_analyzed.segments?.length > 0 && (
+                        <div><span className="font-bold opacity-60">Segm.:</span> {req.context_analyzed.segments.join(', ')}</div>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground text-xs italic">Sem contexto</span>
+                  )}
+                </TableCell>
+                <TableCell className="max-w-xs text-sm italic">"{req.details}"</TableCell>
                 <TableCell>{getStatusBadge(req.status)}</TableCell>
                 <TableCell>
                   <div className="flex gap-2">

@@ -1136,9 +1136,19 @@ const ViniHome = () => {
                 }
                 setSendingSupport(true);
                 try {
+                  // Capture current session context to help admin understand the "intelligence" analysis
+                  const contextData = {
+                    analyzed_intent: session?.lastIntent,
+                    analyzed_query: session?.lastQuery,
+                    tags: session?.tags,
+                    segments: session?.segments,
+                    timestamp: new Date().toISOString()
+                  };
+
                   const { error } = await supabase.from('support_requests').insert({
                     requested_item: supportItem,
                     details: supportDetails,
+                    context_analyzed: contextData,
                     user_id: user?.id || null
                   });
 
@@ -1149,9 +1159,10 @@ const ViniHome = () => {
                   setSupportDetails('');
                   pushBubble({
                     role: 'vini',
-                    text: `Prontinho! Já registrei sua necessidade de "${supportItem}" na nossa Central de Atendimento. Eles vão correr atrás disso para você e te avisamos assim que tivermos novidades! 🚀`
+                    text: `Prontinho! Já registrei sua necessidade de "${supportItem}" na nossa Central de Atendimento. Eles vão correr atrás disso para você e te avisamos em até 24h assim que tivermos novidades! 🚀`
                   });
                 } catch (err) {
+                  console.error('Error sending support request:', err);
                   toast.error('Erro ao enviar solicitação.');
                 } finally {
                   setSendingSupport(false);

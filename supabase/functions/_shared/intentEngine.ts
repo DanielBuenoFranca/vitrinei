@@ -386,6 +386,18 @@ export async function classifyMessage(message: string, sessionCtx: any = {}): Pr
     return out;
   }
 
+  // Se chegou aqui e temos uma necessidade clara (com keywords ou conceitos) 
+  // mas o estoque deu vazio, marcamos como intent 'support' para a UI dar a opção de CRM.
+  if (need && (keywords.length > 0 || concepts.length > 0)) {
+    out.intent = "support";
+    out.next_agent = "support";
+    out.query = raw;
+    out.tags = [need.id, ...keywords.slice(0, 3)];
+    out.transition_message = `Infelizmente não encontrei "${raw}" no estoque de nenhuma loja agora. Quer que eu acione nossa Central de Atendimento para buscar para você com um SLA de 24h?`;
+    out.confidence = 0.85;
+    return out;
+  }
+
   if (!need) return null; // deixa o caller decidir (chat puro / IA)
 
   // Busca segmentos reais no banco que casem com os candidatos
