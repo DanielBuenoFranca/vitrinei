@@ -1126,7 +1126,7 @@ const ViniHome = () => {
             </motion.div>
           ))}
         </AnimatePresence>
-      </motion.div>
+      </div>
 
       {/* Discrete HUD & Credits Toggle Area */}
       <div className="absolute right-3 bottom-[82px] z-40 flex flex-col gap-2 pointer-events-auto">
