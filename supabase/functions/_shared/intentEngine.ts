@@ -466,14 +466,14 @@ export async function classifyMessage(message: string, sessionCtx: any = {}): Pr
     return out;
   }
 
-  // matched mas sem itens → ainda assim abre a busca
-  out.intent = "search";
-  out.next_agent = "search";
+  // matched mas sem itens → Sugere acionar central
+  out.intent = "support";
+  out.next_agent = "vini";
   out.segments = matched.slice(0, 3).map((s) => s.name);
   out.tags = [need.id];
   out.query = need.query;
   out.item_type = need.itemType;
-  out.transition_message = `Vou tentar uma busca em ${out.segments.join(", ")}.`;
+  out.transition_message = `Infelizmente não encontrei itens disponíveis em ${out.segments.join(", ")} no momento. Gostaria que eu acionasse a nossa Central de Atendimento para buscarem o que você precisa?`;
   out.confidence = 0.6;
   return out;
 }
