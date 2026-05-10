@@ -1064,6 +1064,86 @@ const ViniHome = () => {
         mode={modalMode}
       />
       <FavoritesModal open={favoritesOpen} onOpenChange={setFavoritesOpen} />
+
+      <Dialog open={supportDialogOpen} onOpenChange={setSupportDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-white border-2 border-[hsl(var(--vini-glow)/0.3)] shadow-[0_0_25px_hsl(var(--vini-glow)/0.2)]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-primary">
+              <LifeBuoy className="w-5 h-5" /> Acionar Central de Atendimento
+            </DialogTitle>
+            <DialogDescription>
+              Não encontramos seu item no ecossistema atual. Descreva o que você precisa e nossa central buscará para você.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="item" className="text-xs uppercase font-bold tracking-wider text-muted-foreground">Item Desejado</Label>
+              <Input 
+                id="item" 
+                value={supportItem} 
+                onChange={(e) => setSupportItem(e.target.value)}
+                placeholder="Ex: Hambúrguer de costela, Remédio X, etc"
+                className="bg-muted/50 border-border/50"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="details" className="text-xs uppercase font-bold tracking-wider text-muted-foreground">O que você não encontrou? (Texto simples)</Label>
+              <Textarea 
+                id="details" 
+                value={supportDetails} 
+                onChange={(e) => setSupportDetails(e.target.value)}
+                placeholder="Descreva detalhes como marca, tipo ou qualquer observação que ajude a Central..."
+                className="min-h-[100px] bg-muted/50 border-border/50 resize-none"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setSupportDialogOpen(false)}
+              disabled={sendingSupport}
+              className="border-primary/20 hover:bg-primary/5"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={async () => {
+                if (!supportDetails.trim()) {
+                  toast.error('Por favor, descreva o que você deseja.');
+                  return;
+                }
+                setSendingSupport(true);
+                try {
+                  const { error } = await supabase.from('support_requests').insert({
+                    requested_item: supportItem,
+                    details: supportDetails,
+                    user_id: user?.id || null
+                  });
+
+                  if (error) throw error;
+
+                  toast.success('Solicitação enviada para a Central!');
+                  setSupportDialogOpen(false);
+                  setSupportDetails('');
+                  pushBubble({
+                    role: 'vini',
+                    text: `Prontinho! Já registrei sua necessidade de "${supportItem}" na nossa Central de Atendimento. Eles vão correr atrás disso para você e te avisamos assim que tivermos novidades! 🚀`
+                  });
+                } catch (err) {
+                  toast.error('Erro ao enviar solicitação.');
+                } finally {
+                  setSendingSupport(false);
+                }
+              }}
+              disabled={sendingSupport || !supportDetails.trim()}
+              className="bg-primary hover:bg-primary/90 text-white shadow-[0_4px_12px_hsl(var(--primary)/0.3)]"
+            >
+              {sendingSupport ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+              Confirmar Registro
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
