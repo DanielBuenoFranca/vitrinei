@@ -24,7 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { ViniScene } from '@/components/vini/ViniScene';
-import { ViniSideButtons } from '@/components/vini/ViniSideButtons';
+
 import { ViniBottomGrid, type GridItem } from '@/components/vini/ViniBottomGrid';
 import { ViniStoryCard } from '@/components/vini/ViniStoryCard';
 import { RadarPulse } from '@/components/vini/RadarPulse';
