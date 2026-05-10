@@ -687,7 +687,6 @@ const ViniHome = () => {
   };
 
   const handleSideStory = () => {
-    setSideOpen(false);
     setStoryOpen(true);
   };
 
