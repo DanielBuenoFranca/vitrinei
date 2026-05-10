@@ -139,6 +139,49 @@ const ViniHome = () => {
   const [hudScroll, setHudScroll] = useState(0);
   const [showHudSettings, setShowHudSettings] = useState(false);
   const [hudHighContrast, setHudHighContrast] = useState(false);
+  const [hudScale, setHudScale] = useState(1);
+  const saveTimeoutRef = useRef<number | null>(null);
+
+  // Load preferences from profile
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('vini_preferences')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (!error && data?.vini_preferences) {
+        const prefs = data.vini_preferences as any;
+        if (typeof prefs.opacity === 'number') setHudOpacity(prefs.opacity);
+        if (typeof prefs.blur === 'number') setHudBlur(prefs.blur);
+        if (typeof prefs.scroll === 'number') setHudScroll(prefs.scroll);
+        if (typeof prefs.highContrast === 'boolean') setHudHighContrast(prefs.highContrast);
+        if (typeof prefs.scale === 'number') setHudScale(prefs.scale);
+      }
+    })();
+  }, [user]);
+
+  // Debounced save to Supabase
+  const savePreferences = (updates: any) => {
+    if (!user) return;
+    if (saveTimeoutRef.current) window.clearTimeout(saveTimeoutRef.current);
+    
+    saveTimeoutRef.current = window.setTimeout(async () => {
+      const { data: current } = await supabase
+        .from('profiles')
+        .select('vini_preferences')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      const newPrefs = { ...(current?.vini_preferences as any || {}), ...updates };
+      await supabase
+        .from('profiles')
+        .update({ vini_preferences: newPrefs })
+        .eq('user_id', user.id);
+    }, 1000);
+  };
 
   const inputRef = useRef<HTMLInputElement>(null);
   
@@ -1005,9 +1048,9 @@ const ViniHome = () => {
 
       {/* ─── Chat History Bubbles (Refined Integrated HUD) ─── */}
       <div 
-        className="absolute left-1/2 bottom-[44%] -translate-x-1/2 z-10 w-[85%] max-w-[320px] pointer-events-none flex flex-col-reverse gap-3 py-6"
+        className="absolute left-[45%] bottom-[44%] -translate-x-1/2 z-10 w-[80%] max-w-[260px] pointer-events-none flex flex-col-reverse gap-3 py-6"
         style={{ 
-          transform: `translateX(-50%) translateY(${hudScroll}px)`,
+          transform: `translateX(-50%) translateY(${hudScroll}px) scale(${hudScale})`,
           transition: 'transform 0.1s ease-out'
         }}
       >
@@ -1121,16 +1164,16 @@ const ViniHome = () => {
 
         <div className="absolute right-3 sm:right-4 bottom-[64px] z-40 flex flex-col items-end">
           {/* Stack unificada e conectada de ações do Vini */}
-          <div className="flex flex-col rounded-2xl glass-strong border border-white/10 shadow-2xl pointer-events-auto">
+          <div className="flex flex-col rounded-2xl bg-white/[0.03] backdrop-blur-3xl border border-white/5 shadow-2xl pointer-events-auto">
             {/* IA em contingência (integrado na stack se visível) */}
             <SystemStatusIndicator />
             
             <motion.button
-              whileHover={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+              whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
               onClick={() => setShowHudSettings(!showHudSettings)}
               className={cn(
                 "w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5",
-                showHudSettings ? "bg-primary/20 text-primary" : "text-foreground/80",
+                showHudSettings ? "bg-primary/20 text-primary" : "text-foreground/50",
                 "first:rounded-t-2xl"
               )}
               title="Ajustes de visibilidade da conversa"
@@ -1139,34 +1182,34 @@ const ViniHome = () => {
             </motion.button>
 
             <motion.button
-              whileHover={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+              whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
               onClick={handleSideSearch}
-              className="w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5 text-foreground/80"
+              className="w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5 text-foreground/50"
               title="Pesquisar no ecossistema"
             >
               <Search className="w-4 h-4" strokeWidth={1.5} />
             </motion.button>
 
             <motion.button
-              whileHover={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+              whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
               onClick={handleSideConverse}
-              className="w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5 text-foreground/80"
+              className="w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5 text-foreground/50"
               title="Conversar com o Vini"
             >
               <MessageCircle className="w-4 h-4" strokeWidth={1.5} />
             </motion.button>
 
             <motion.button
-              whileHover={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+              whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
               onClick={handleSideStory}
               className="w-10 h-10 flex items-center justify-center transition-colors rounded-b-2xl overflow-hidden"
               title="Sobre o Vini"
             >
-              <div className="w-8 h-8 rounded-full overflow-hidden border border-[hsl(var(--vini-glow)/0.4)]">
+              <div className="w-8 h-8 rounded-full overflow-hidden border border-white/5 opacity-50 hover:opacity-100 transition-opacity">
                 <img
                   src={viniMini}
                   alt="Vini"
-                  className="w-[280%] h-[280%] object-cover"
+                  className="w-[280%] h-[280%] object-cover grayscale-[0.5] hover:grayscale-0 transition-all"
                   style={{ objectPosition: '50% 8%' }}
                 />
               </div>
