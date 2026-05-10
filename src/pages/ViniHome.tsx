@@ -1137,7 +1137,7 @@ const ViniHome = () => {
                   <span className="text-[9px] font-mono opacity-50">{Math.round(hudOpacity * 100)}%</span>
                 </div>
                 <input 
-                  type="range" min="0.02" max="0.5" step="0.01" 
+                  type="range" min="0.05" max="0.95" step="0.01" 
                   value={hudOpacity} 
                   onChange={(e) => setHudOpacity(parseFloat(e.target.value))}
                   className="w-full accent-primary h-1.5"
