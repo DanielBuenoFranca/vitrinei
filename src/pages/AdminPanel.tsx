@@ -702,6 +702,9 @@ const AdminPanel = () => {
           <TabsContent value="cardex">
             <CardexPanel />
           </TabsContent>
+          <TabsContent value="crm">
+            <CrmPanel />
+          </TabsContent>
 
           {/* ── SEGMENTS TAB ── */}
           <TabsContent value="segments">
