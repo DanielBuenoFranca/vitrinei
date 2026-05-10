@@ -151,14 +151,14 @@ const ViniHome = () => {
     if (autoSubmitTimerRef.current) window.clearTimeout(autoSubmitTimerRef.current);
     autoSubmitTimerRef.current = window.setTimeout(() => {
       const final = lastSpokenRef.current.trim();
-      if (final && listening) {
+      if (final) {
         try { stop(); } catch {}
         console.log('[Vini] Voice auto-submit:', final);
         sendQuery(final);
         lastSpokenRef.current = '';
         setText('');
       }
-    }, 1500);
+    }, 1200);
     return () => { if (autoSubmitTimerRef.current) window.clearTimeout(autoSubmitTimerRef.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transcript]);
