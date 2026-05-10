@@ -1154,8 +1154,8 @@ const ViniHome = () => {
                   style={{ 
                     width: '100%',
                     backgroundColor: b.role === 'vini' 
-                      ? `hsla(var(--primary) / ${hudHighContrast ? 0.95 : (hudOpacity * 1.5 * opacityValue)})` 
-                      : `rgba(255, 255, 255, ${hudHighContrast ? 0.9 : (hudOpacity * 0.6 * opacityValue)})`,
+                      ? `hsla(var(--primary) / ${hudHighContrast ? 0.95 : (hudOpacity * opacityValue)})` 
+                      : `rgba(255, 255, 255, ${hudHighContrast ? 0.9 : (hudOpacity * 0.7 * opacityValue)})`,
                     color: hudHighContrast ? '#000' : 'inherit',
                     transformStyle: 'preserve-3d',
                     cursor: 'grab',
