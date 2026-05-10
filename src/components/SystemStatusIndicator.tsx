@@ -24,7 +24,7 @@ export function SystemStatusIndicator() {
   const isMaster = profileLabel?.toLowerCase() === 'master';
   const isAdmin = profileLabel?.toLowerCase() === 'admin';
   const isPrivileged = !!(isMaster || isAdmin);
-  const showChip = !isOn && isPrivileged;
+  const showChip = isPrivileged; // Sempre mostrar para Adm/Master, independente do modo (isOn)
 
   const loadSavings = async () => {
     try {
