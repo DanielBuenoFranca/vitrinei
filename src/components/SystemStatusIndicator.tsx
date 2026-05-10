@@ -10,21 +10,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ZapOff, Sparkles, AlertTriangle, X, Power, ImageOff } from "lucide-react";
 import { useAiMode } from "@/hooks/useAiMode";
 import { useAuth } from "@/contexts/AuthContext";
-import { usePermissions } from "@/hooks/usePermissions";
+// usePermissions removed as we use useAuth now
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 export function SystemStatusIndicator() {
   const { mode, isOn } = useAiMode();
-  const { user } = useAuth();
-  const { profileLabel } = usePermissions();
+  const { isAdmin, isMaster } = useAuth();
   const [expanded, setExpanded] = useState(false);
   const [savings, setSavings] = useState({ credits: 0, calls: 0, periodStart: null as string | null });
 
-  const isMaster = profileLabel?.toLowerCase() === 'master';
-  const isAdmin = profileLabel?.toLowerCase() === 'admin';
-  const isPrivileged = !!(isMaster || isAdmin);
-  const showChip = isPrivileged; // Sempre mostrar para Adm/Master, independente do modo (isOn)
+  const isPrivileged = isAdmin || isMaster;
+  const showChip = isPrivileged; 
 
   const loadSavings = async () => {
     try {
