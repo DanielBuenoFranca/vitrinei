@@ -603,7 +603,7 @@ const Landing = () => {
                 {/* Bloco "Prestadores próximos" removido — substituído pela seção "Prestadores / Fornecedores" no hero. */}
 
                 {/* === MARKETPLACE: SERVIÇOS === */}
-                {hasResults && filteredResults.length > 0 && (() => {
+                {hasResults && !noResults && filteredResults.length > 0 && (() => {
                   const useStack = filteredResults.length > 2 && !servicesCarouselOpen;
                   const renderCard = (result: any, idx: number, extraClass = '') => {
                     const seg = getSegmentVisual(result.segment);
