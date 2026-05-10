@@ -1182,34 +1182,34 @@ const ViniHome = () => {
             </motion.button>
 
             <motion.button
-              whileHover={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+              whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
               onClick={handleSideSearch}
-              className="w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5 text-foreground/80"
+              className="w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5 text-foreground/50"
               title="Pesquisar no ecossistema"
             >
               <Search className="w-4 h-4" strokeWidth={1.5} />
             </motion.button>
 
             <motion.button
-              whileHover={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+              whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
               onClick={handleSideConverse}
-              className="w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5 text-foreground/80"
+              className="w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5 text-foreground/50"
               title="Conversar com o Vini"
             >
               <MessageCircle className="w-4 h-4" strokeWidth={1.5} />
             </motion.button>
 
             <motion.button
-              whileHover={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+              whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
               onClick={handleSideStory}
               className="w-10 h-10 flex items-center justify-center transition-colors rounded-b-2xl overflow-hidden"
               title="Sobre o Vini"
             >
-              <div className="w-8 h-8 rounded-full overflow-hidden border border-[hsl(var(--vini-glow)/0.4)]">
+              <div className="w-8 h-8 rounded-full overflow-hidden border border-white/5 opacity-50 hover:opacity-100 transition-opacity">
                 <img
                   src={viniMini}
                   alt="Vini"
-                  className="w-[280%] h-[280%] object-cover"
+                  className="w-[280%] h-[280%] object-cover grayscale-[0.5] hover:grayscale-0 transition-all"
                   style={{ objectPosition: '50% 8%' }}
                 />
               </div>
