@@ -77,7 +77,7 @@ const ViniHome = () => {
   const navigate = useNavigate();
   const { user, signOut, displayName } = useAuth();
   const { profileLabel } = usePermissions();
-  const { session, update: updateAiSession } = useAiSession();
+  const { session, update: updateAiSession, setIsThinking: setGlobalThinking } = useAiSession();
   const { totalCartItems, totalCartValue, productCart, serviceCart, clearCart } = useCart();
   const { supported, listening, transcript, start, stop } = useSpeechRecognition();
   
