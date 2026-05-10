@@ -557,27 +557,25 @@ const ViniHome = () => {
   const pendingQueryRef = useRef<string | null>(null);
   const safetyTimerRef = useRef<number | null>(null);
 
-  const sendQuery = (q: string) => {
+  const sendQuery = (q: string, skipHistoryBubble = false) => {
     console.log('[Vini] sendQuery starting for:', q);
     const query = q.trim();
     if (!query) {
       console.warn('[Vini] Empty query, ignoring');
       return;
     }
-    // Se já está pensando, NÃO ignora: enfileira o pedido para rodar
-    // assim que a resposta atual finalizar. Garante que toda fala/escrita
-    // do usuário chegue ao Vini e tenha resposta.
+    
     if (isThinkingRef.current) {
       console.warn('[Vini] ocupado — enfileirando próxima pergunta:', query);
       pendingQueryRef.current = query;
-      pushBubble({ role: 'user', text: query });
+      if (!skipHistoryBubble) pushBubble({ role: 'user', text: query });
       pushBubble({ role: 'vini', text: 'Anotei. Já te respondo essa também…' });
       return;
     }
     isThinkingRef.current = true;
     wakeUp();
     setLastTranscript(query);
-    pushBubble({ role: 'user', text: query });
+    if (!skipHistoryBubble) pushBubble({ role: 'user', text: query });
     setHistory((h) => [...h, query]);
     setRefinementCount(0); // Reset count on new query
     setText('');
