@@ -378,17 +378,6 @@ export async function classifyMessage(message: string, sessionCtx: any = {}): Pr
     out.confidence = 0.9;
     return out;
   }
-    out.intent = "chat";
-    out.next_agent = "vini";
-    out.needs_more_info = true;
-    out.follow_up_question = need!.followUp!.question;
-    out.suggestions = need!.followUp!.suggestions;
-    out.tags = [need!.id];
-    out.query = need!.query;
-    out.item_type = need!.itemType;
-    out.confidence = 0.8;
-    return out;
-  }
 
   if (inv.products.length + inv.services.length > 0) {
     const sample = inv.products[0]?.name || inv.services[0]?.name || inv.matchedKeyword;
