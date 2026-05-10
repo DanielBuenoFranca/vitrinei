@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAiSession } from '@/contexts/AiSessionContext';
 import { Sparkles, Send, Headphones, DollarSign, Clock, MapPin, Star, Package, ArrowRight, ChevronDown, ShoppingBag, Wrench as WrenchIcon, Store, Plus, CheckCircle2, ListChecks } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
