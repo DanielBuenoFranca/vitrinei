@@ -168,9 +168,9 @@ const ViniHome = () => {
   useEffect(() => {
     if (listening) return;
     const final = lastSpokenRef.current.trim();
-    if (!final) return;
+    if (!final || final === lastSubmittedVoiceRef.current) return;
     if (autoSubmitTimerRef.current) window.clearTimeout(autoSubmitTimerRef.current);
-    lastSpokenRef.current = '';
+    lastSubmittedVoiceRef.current = final;
     // Tela principal: voz finaliza → vai para o vendedor (busca)
     console.log('[Vini] Voice final capture:', final);
     sendQuery(final);
