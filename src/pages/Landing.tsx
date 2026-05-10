@@ -367,10 +367,12 @@ const Landing = () => {
       try {
         const params = new URLSearchParams(window.location.search);
         const incomingQ = (params.get('q') || '').trim();
+        const forceSupport = params.get('force_support') === '1';
         const incomingType = params.get('type') as 'service' | 'product' | 'both' | null;
         const incomingSegs = (params.get('segments') || '').split(',').map(s => s.trim()).filter(Boolean);
-        if (incomingQ) {
-          setSearchQuery(incomingQ);
+        
+        if (incomingQ || forceSupport) {
+          if (incomingQ) setSearchQuery(incomingQ);
           if (incomingType === 'service') setTypeFilter('service');
           else if (incomingType === 'product') setTypeFilter('product');
           else setTypeFilter('all');
@@ -389,6 +391,7 @@ const Landing = () => {
           setExecutedQuery(incomingQ);
           setSearchExecuted(true);
           setSearchVersion(v => v + 1);
+          if (forceSupport) setFallbackToAll(false);
           return;
         }
       } catch {}
