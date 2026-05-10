@@ -398,12 +398,12 @@ export async function classifyMessage(message: string, sessionCtx: any = {}): Pr
   // Se nada na base, retorna search com a query natural (a tela busca filtra
   // por nome/descrição mesmo sem segmento explícito).
   if (matched.length === 0) {
-    out.intent = "search";
-    out.next_agent = "search";
+    out.intent = "support";
+    out.next_agent = "vini";
     out.query = raw;
     out.item_type = need.itemType;
     out.tags = [need.id];
-    out.transition_message = `Vou abrir a busca por "${raw}".`;
+    out.transition_message = `Infelizmente não encontrei "${raw}" no estoque agora. Gostaria que eu acionasse a nossa Central de Atendimento para buscarem isso para você?`;
     out.confidence = 0.7;
     return out;
   }
