@@ -819,8 +819,45 @@ const Landing = () => {
                     </div>
                   );
                 })()}
+                {noResults && (
+                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+                    <Card className="border-2 border-violet-500/30 bg-violet-950/20 backdrop-blur-xl shadow-2xl overflow-hidden rounded-3xl">
+                      <CardContent className="p-6 text-center space-y-4">
+                        <div className="w-16 h-16 bg-violet-500/20 rounded-full flex items-center justify-center mx-auto mb-2 border border-violet-500/30">
+                          <Headphones className="w-8 h-8 text-violet-300" />
+                        </div>
+                        <h3 className="text-xl font-bold text-white tracking-tight">Acionar Central de Atendimento</h3>
+                        <p className="text-sm text-white/70 max-w-xs mx-auto">
+                          Não encontramos "{executedQuery}" no estoque atual. Mas não se preocupe! Nossa central buscará em todo o ecossistema para você em até 24h.
+                        </p>
+                        <Button 
+                          onClick={() => {
+                            const summary = `Busca sem resultados para "${executedQuery}". Usuário solicita acionamento da central.`;
+                            const params = new URLSearchParams({ 
+                              query: executedQuery, 
+                              context: 'Busca Sem Resultados', 
+                              summary, 
+                              type: 'both' 
+                            });
+                            navigate(`/central-atendimento?${params.toString()}`);
+                          }}
+                          className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold py-6 rounded-2xl shadow-[0_4px_15px_rgba(139,92,246,0.3)] transition-all"
+                        >
+                          <Headphones className="w-5 h-5 mr-2" />
+                          Enviar para Central
+                        </Button>
+                        <button 
+                          onClick={() => handleRefineSearch()}
+                          className="text-xs text-white/50 hover:text-white underline underline-offset-4"
+                        >
+                          Tentar outra pesquisa
+                        </button>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                )}
 
-                {/* Card "Sugestões da IA" (no-results) removido a pedido. */}
+                {/* Card "Sugestões da IA" removido a pedido. */}
               </motion.div>
             )}
           </Search3DHero>
