@@ -10,15 +10,19 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ZapOff, Sparkles, AlertTriangle, X, Power, ImageOff } from "lucide-react";
 import { useAiMode } from "@/hooks/useAiMode";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 export function SystemStatusIndicator() {
   const { mode, isOn } = useAiMode();
-  const { isMaster, isAdmin } = useAuth() as any;
+  const { user } = useAuth();
+  const { profileLabel } = usePermissions();
   const [expanded, setExpanded] = useState(false);
   const [savings, setSavings] = useState({ credits: 0, calls: 0, periodStart: null as string | null });
 
+  const isMaster = profileLabel?.toLowerCase() === 'master';
+  const isAdmin = profileLabel?.toLowerCase() === 'admin';
   const isPrivileged = !!(isMaster || isAdmin);
   const showChip = !isOn && isPrivileged;
 
