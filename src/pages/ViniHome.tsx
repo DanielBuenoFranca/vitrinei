@@ -89,7 +89,7 @@ const ViniHome = () => {
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
 
   const [hasInteracted, setHasInteracted] = useState(false);
-  const [sideOpen, setSideOpen] = useState(true);
+  
   const lastSmallTalkRef = useRef<number>(0);
   const smallTalkCountRef = useRef<number>(0);
   const greetedKey = (uid?: string | null) => `vini:greeted${uid ? `:${uid}` : ''}`;
