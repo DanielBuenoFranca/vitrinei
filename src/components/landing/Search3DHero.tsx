@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Search, Sparkles, Star, Store, Wrench as WrenchIcon, Package as PackageIcon, LayoutGrid, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Mic, Search, Sparkles, Star, Store, Wrench as WrenchIcon, Package as PackageIcon, LayoutGrid, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import {
   Wrench, Scissors, Droplets, Sprout, Truck, Hammer, Stethoscope,
   GraduationCap, Car, Home, Brush, ShoppingBag,
@@ -187,15 +187,28 @@ export function Search3DHero({
             animate={{ y: [0, -3, 0] }}
             transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
           />
-          <input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && onSearch()}
-            placeholder="Digite ou fale o que precisa…"
-            className="flex-1 min-w-0 bg-black/30 border border-white/10 rounded-lg px-2.5 py-1.5 text-[13px] text-white placeholder:text-white/40 focus:outline-none focus:border-violet-400/60"
-          />
+          <div className="flex-1 relative">
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && onSearch()}
+              placeholder="Digite ou fale o que precisa…"
+              className="w-full bg-black/30 border border-white/10 rounded-lg pl-2.5 pr-8 py-1.5 text-[13px] text-white placeholder:text-white/40 focus:outline-none focus:border-violet-400/60"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
           <button
-            onClick={onMic}
+            onClick={(e) => {
+              e.preventDefault();
+              onMic();
+            }}
             disabled={!micSupported}
             className={`shrink-0 flex items-center justify-center gap-1 rounded-lg px-2.5 py-1.5 text-[12px] font-bold transition-all
               ${micListening
@@ -207,8 +220,11 @@ export function Search3DHero({
             <Mic className="w-3.5 h-3.5" /> Falar
           </button>
           <button
-            onClick={onSearch}
-            className="shrink-0 flex items-center justify-center gap-1 rounded-lg px-2.5 py-1.5 text-[12px] font-bold bg-white/95 text-violet-700 hover:bg-white"
+            onClick={(e) => {
+              e.preventDefault();
+              onSearch();
+            }}
+            className="shrink-0 flex items-center justify-center gap-1 rounded-lg px-2.5 py-1.5 text-[12px] font-bold bg-white/95 text-violet-700 hover:bg-white active:scale-95 transition-all"
           >
             <Search className="w-3.5 h-3.5" /> Buscar
           </button>

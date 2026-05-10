@@ -203,14 +203,16 @@ const Landing = () => {
     }
   };
   useEffect(() => {
-    if (speech.transcript) setSearchQuery(speech.transcript);
-  }, [speech.transcript]);
+    if (speech.listening && speech.transcript) {
+      setSearchQuery(speech.transcript);
+    }
+  }, [speech.transcript, speech.listening]);
+
   useEffect(() => {
-    if (!speech.listening && speech.transcript) {
-      // auto-execute on stop
+    if (!speech.listening && speech.transcript && searchQuery === speech.transcript) {
+      // auto-execute on stop if the query matches the final transcript
       setTimeout(() => executeSearch(), 150);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [speech.listening]);
   // Pré-preenche e EXECUTA a busca via ?q= (vinda do Vini ou outras telas).
   // Também aplica ?type= (service/product/both) e ?segments=a,b,c quando presentes.
@@ -242,7 +244,10 @@ const Landing = () => {
   }, []);
 
   const handleMic = () => {
-    if (!speech.supported) return;
+    if (!speech.supported) {
+      toast.error("O reconhecimento de voz não é suportado neste navegador.");
+      return;
+    }
     if (speech.listening) speech.stop();
     else speech.start();
   };
@@ -264,8 +269,7 @@ const Landing = () => {
     setSearchVersion(v => v + 1);
     setSelectedSuggestions(new Set());
     setShowSearchProducts(false);
-    // Limpa a barra para uma nova busca (texto ou voz)
-    setSearchQuery('');
+    // Removemos o setSearchQuery('') para manter o contexto visual da busca
   };
 
   const handleSmartSearch = () => {
@@ -365,10 +369,12 @@ const Landing = () => {
       try {
         const params = new URLSearchParams(window.location.search);
         const incomingQ = (params.get('q') || '').trim();
+        const forceSupport = params.get('force_support') === '1';
         const incomingType = params.get('type') as 'service' | 'product' | 'both' | null;
         const incomingSegs = (params.get('segments') || '').split(',').map(s => s.trim()).filter(Boolean);
-        if (incomingQ) {
-          setSearchQuery(incomingQ);
+        
+        if (incomingQ || forceSupport) {
+          if (incomingQ) setSearchQuery(incomingQ);
           if (incomingType === 'service') setTypeFilter('service');
           else if (incomingType === 'product') setTypeFilter('product');
           else setTypeFilter('all');
@@ -387,6 +393,7 @@ const Landing = () => {
           setExecutedQuery(incomingQ);
           setSearchExecuted(true);
           setSearchVersion(v => v + 1);
+          if (forceSupport) setFallbackToAll(false);
           return;
         }
       } catch {}
@@ -519,7 +526,8 @@ const Landing = () => {
 
   const filteredResults = searchResult.services;
   const hasResults = searchExecuted && (filteredResults.length > 0 || searchResult.products.length > 0);
-  const noResults = searchExecuted && executedQuery && !fallbackToAll && filteredResults.length === 0 && searchResult.products.length === 0;
+  const forceSupportParam = searchParams.get('force_support') === '1';
+  const noResults = (searchExecuted && executedQuery && !fallbackToAll && filteredResults.length === 0 && searchResult.products.length === 0) || forceSupportParam;
   const providerEntries = (() => {
     const providerMap = new Map<string, { products: typeof searchResult.products; services: typeof filteredResults }>();
     searchResult.products.forEach(p => {
@@ -595,7 +603,7 @@ const Landing = () => {
                 {/* Bloco "Prestadores próximos" removido — substituído pela seção "Prestadores / Fornecedores" no hero. */}
 
                 {/* === MARKETPLACE: SERVIÇOS === */}
-                {hasResults && filteredResults.length > 0 && (() => {
+                {hasResults && !noResults && filteredResults.length > 0 && (() => {
                   const useStack = filteredResults.length > 2 && !servicesCarouselOpen;
                   const renderCard = (result: any, idx: number, extraClass = '') => {
                     const seg = getSegmentVisual(result.segment);
@@ -704,7 +712,7 @@ const Landing = () => {
                 })()}
 
                 {/* === MARKETPLACE: PRODUTOS === */}
-                {hasResults && searchResult.products.length > 0 && (() => {
+                {hasResults && !noResults && searchResult.products.length > 0 && (() => {
                   const useStack = searchResult.products.length > 2 && !productsCarouselOpen;
                   const renderCard = (product: any, idx: number) => {
                     const PIcon = getVisualIcon(product.name);
@@ -813,8 +821,45 @@ const Landing = () => {
                     </div>
                   );
                 })()}
+                {noResults && (
+                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+                    <Card className="border-2 border-violet-500/30 bg-violet-950/20 backdrop-blur-xl shadow-2xl overflow-hidden rounded-3xl">
+                      <CardContent className="p-6 text-center space-y-4">
+                        <div className="w-16 h-16 bg-violet-500/20 rounded-full flex items-center justify-center mx-auto mb-2 border border-violet-500/30">
+                          <Headphones className="w-8 h-8 text-violet-300" />
+                        </div>
+                        <h3 className="text-xl font-bold text-white tracking-tight">Acionar Central de Atendimento</h3>
+                        <p className="text-sm text-white/70 max-w-xs mx-auto">
+                          Não encontramos "{executedQuery}" no estoque atual. Mas não se preocupe! Nossa central buscará em todo o ecossistema para você em até 24h.
+                        </p>
+                        <Button 
+                          onClick={() => {
+                            const summary = `Busca sem resultados para "${executedQuery}". Usuário solicita acionamento da central.`;
+                            const params = new URLSearchParams({ 
+                              query: executedQuery, 
+                              context: 'Busca Sem Resultados', 
+                              summary, 
+                              type: 'both' 
+                            });
+                            navigate(`/central-atendimento?${params.toString()}`);
+                          }}
+                          className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold py-6 rounded-2xl shadow-[0_4px_15px_rgba(139,92,246,0.3)] transition-all"
+                        >
+                          <Headphones className="w-5 h-5 mr-2" />
+                          Enviar para Central
+                        </Button>
+                        <button 
+                          onClick={() => handleRefineSearch()}
+                          className="text-xs text-white/50 hover:text-white underline underline-offset-4"
+                        >
+                          Tentar outra pesquisa
+                        </button>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                )}
 
-                {/* Card "Sugestões da IA" (no-results) removido a pedido. */}
+                {/* Card "Sugestões da IA" removido a pedido. */}
               </motion.div>
             )}
           </Search3DHero>
