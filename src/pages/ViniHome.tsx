@@ -1064,44 +1064,48 @@ const ViniHome = () => {
 
       {/* ─── Chat History Bubbles (Cylindrical 3D Scroll HUD) ─── */}
       <div 
-        className="absolute left-[45%] bottom-[45%] -translate-x-1/2 z-10 w-[80%] max-w-[260px] pointer-events-none h-[300px] flex items-center justify-center perspective-[1000px]"
+        className="absolute left-[45%] bottom-[45%] -translate-x-1/2 z-10 w-[80%] max-w-[260px] pointer-events-none h-[220px] flex items-center justify-center perspective-[1200px]"
         style={{ 
           transform: `translateX(-50%) translateY(${hudScroll}px) scale(${hudScale})`,
           transition: 'transform 0.1s ease-out'
         }}
       >
         <AnimatePresence initial={false}>
-          {[...bubbles].reverse().slice(0, 6).map((b, i) => {
-            // Cylindrical math: distribute bubbles along a vertical curve
-            const totalVisible = 5;
-            const angleStep = 40; // degrees
-            const radius = 180; // distance from center of cylinder
-            const angle = i * angleStep;
+          {[...bubbles].slice(-6).map((b, i, arr) => {
+            // Revert indexing so the LAST message (index arr.length - 1) is at the center (angle 0)
+            const reverseIndex = (arr.length - 1) - i;
+            const angleStep = 45; // steeper angle for cylinder feel
+            const radius = 150; 
+            const angle = reverseIndex * angleStep;
             
+            // Only show bubbles that are "facing" the user or slightly above/below
+            if (angle > 120 || angle < -120) return null;
+
             return (
               <motion.div
                 key={b.id}
                 layout
                 drag="y"
                 dragConstraints={{ top: 0, bottom: 0 }}
-                dragElastic={0.2}
+                dragElastic={0.4}
                 onDrag={(e, info) => {
+                  // Allow the user to "rotate" the cylinder by dragging
                   setHudScroll(prev => prev + info.delta.y);
                 }}
-                initial={{ opacity: 0, z: -radius, rotateX: 90 }}
+                initial={{ opacity: 0, z: -radius, rotateX: 60 }}
                 animate={{ 
-                  opacity: (1 - (i * 0.2)) * (hudOpacity * 2.5), 
-                  y: Math.sin(angle * Math.PI / 180) * radius * 0.5,
-                  z: Math.cos(angle * Math.PI / 180) * -radius,
-                  rotateX: -angle * 0.5,
-                  scale: 1 - (i * 0.05),
-                  filter: `blur(${i * 2}px)`
+                  opacity: Math.max(0, (1 - (reverseIndex * 0.25)) * (hudOpacity * 2.5)), 
+                  y: Math.sin(angle * Math.PI / 180) * radius,
+                  z: Math.cos(angle * Math.PI / 180) * -radius + radius, // bring forward
+                  rotateX: -angle * 0.6,
+                  scale: 1 - (reverseIndex * 0.08),
+                  filter: `blur(${reverseIndex * 1.5}px)`
                 }}
                 exit={{ opacity: 0, scale: 0.5, z: -radius }}
                 transition={{ 
                   type: 'spring',
-                  stiffness: 260,
-                  damping: 20
+                  stiffness: 300,
+                  damping: 25
                 }}
                 className={cn(
                   "absolute px-6 py-4 rounded-[2rem] text-[14px] leading-snug pointer-events-auto",
@@ -1120,7 +1124,8 @@ const ViniHome = () => {
                   backdropFilter: `blur(${hudBlur}px)`,
                   fontSize: hudHighContrast ? '16px' : '14px',
                   transformStyle: 'preserve-3d',
-                  cursor: 'grab'
+                  cursor: 'grab',
+                  zIndex: 10 - reverseIndex
                 }}
               >
                 <p className={cn("drop-shadow-md", hudHighContrast && "drop-shadow-none")}>{b.text}</p>
