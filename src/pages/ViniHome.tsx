@@ -132,6 +132,9 @@ const ViniHome = () => {
   const [searchBarVisible, setSearchBarVisible] = useState(false);
   const [searchBarMode, setSearchBarMode] = useState<'chat' | 'search'>('chat');
   const [radarActive, setRadarActive] = useState(false);
+  const [hudOpacity, setHudOpacity] = useState(0.1);
+  const [hudBlur, setHudBlur] = useState(2);
+  const [hudScroll, setHudScroll] = useState(0);
 
   const inputRef = useRef<HTMLInputElement>(null);
   
@@ -1007,36 +1010,49 @@ const ViniHome = () => {
       {/* Banner de transcrição superior removido — a transcrição aparece
           apenas dentro da barra de busca para evitar duplicidade visual. */}
 
-      {/* ─── Chat History Bubbles (Refined Integrated HUD) ─── */}
-      <div className="absolute left-1/2 bottom-[44%] -translate-x-1/2 z-10 w-[85%] max-w-[320px] pointer-events-none flex flex-col-reverse gap-3 py-6">
+      {/* ─── Chat History Bubbles (Refined Integrated HUD with HUD Controls) ─── */}
+      <div 
+        className="absolute left-1/2 bottom-[44%] -translate-x-1/2 z-10 w-[85%] max-w-[320px] pointer-events-none flex flex-col-reverse gap-3 py-6"
+        style={{ 
+          transform: `translateX(-50%) translateY(${hudScroll}px)`,
+          transition: 'transform 0.1s ease-out'
+        }}
+      >
         <AnimatePresence initial={false} mode="popLayout">
-          {[...bubbles].reverse().slice(0, 3).map((b, i) => (
+          {[...bubbles].reverse().slice(0, 5).map((b, i) => (
             <motion.div
               key={b.id}
               layout
-              initial={{ opacity: 0, y: 40, scale: 0.8, filter: 'blur(10px)' }}
+              initial={{ opacity: 0, y: 40, scale: 0.8, filter: `blur(${hudBlur * 5}px)` }}
               animate={{ 
-                opacity: 1 - (i * 0.35), // Gradually fade older messages
+                opacity: (1 - (i * 0.2)) * (hudOpacity * 10), // Scale visibility with HUD control
                 y: 0, 
-                scale: 1 - (i * 0.05), // Slightly shrink older messages
-                filter: 'blur(0px)'
+                scale: 1 - (i * 0.05),
+                filter: `blur(${i > 0 ? hudBlur : 0}px)` // First bubble always clear
               }}
-              exit={{ opacity: 0, y: -60, scale: 0.8, filter: 'blur(12px)' }}
+              exit={{ opacity: 0, y: -60, scale: 0.8, filter: `blur(${hudBlur * 6}px)` }}
               transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
               className={cn(
-                "px-5 py-3 rounded-[2rem] text-[12px] leading-snug pointer-events-auto backdrop-blur-[2px]",
-                "border-[0.5px] border-white/10 shadow-none text-center",
+                "px-5 py-3 rounded-[2rem] text-[12px] leading-snug pointer-events-auto",
+                "border-[0.5px] shadow-none text-center transition-all duration-300",
                 b.role === 'vini' 
-                  ? "bg-primary/10 text-foreground" 
-                  : "bg-white/5 text-muted-foreground/80 italic font-light"
+                  ? "bg-primary text-primary-foreground font-medium" 
+                  : "bg-white/10 text-foreground italic font-light backdrop-blur-sm"
               )}
+              style={{ 
+                backgroundColor: b.role === 'vini' 
+                  ? `hsla(var(--primary) / ${hudOpacity})` 
+                  : `rgba(255, 255, 255, ${hudOpacity / 2})`,
+                borderColor: `rgba(255, 255, 255, ${hudOpacity / 3})`,
+                backdropFilter: `blur(${hudBlur}px)`
+              }}
             >
               <p className="drop-shadow-sm">{b.text}</p>
-              {b.action && i === 0 && (
+              {b.action && (
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="mt-2.5 h-8 w-full text-[10.5px] font-bold bg-primary/20 hover:bg-primary/30 border-white/5 text-primary rounded-full"
+                  className="mt-2.5 h-8 w-full text-[10.5px] font-bold bg-white/20 hover:bg-white/30 text-inherit rounded-full backdrop-blur-sm"
                   onClick={() => runAction(b.action)}
                 >
                   {b.action.label}
@@ -1045,6 +1061,37 @@ const ViniHome = () => {
             </motion.div>
           ))}
         </AnimatePresence>
+      </div>
+
+      {/* HUD Accessibility Controls */}
+      <div className="absolute left-4 bottom-[25%] z-40 flex flex-col gap-3 pointer-events-auto bg-black/10 backdrop-blur-md p-3 rounded-2xl border border-white/5 opacity-40 hover:opacity-100 transition-opacity">
+        <div className="flex flex-col gap-1">
+          <span className="text-[9px] uppercase tracking-tighter text-white/60 font-bold">Opacidade</span>
+          <input 
+            type="range" min="0.05" max="0.9" step="0.01" 
+            value={hudOpacity} 
+            onChange={(e) => setHudOpacity(parseFloat(e.target.value))}
+            className="w-24 accent-primary"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-[9px] uppercase tracking-tighter text-white/60 font-bold">Desfoque</span>
+          <input 
+            type="range" min="0" max="10" step="0.5" 
+            value={hudBlur} 
+            onChange={(e) => setHudBlur(parseFloat(e.target.value))}
+            className="w-24 accent-primary"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-[9px] uppercase tracking-tighter text-white/60 font-bold">Posição</span>
+          <input 
+            type="range" min="-200" max="200" step="5" 
+            value={hudScroll} 
+            onChange={(e) => setHudScroll(parseInt(e.target.value))}
+            className="w-24 accent-primary"
+          />
+        </div>
       </div>
 
       {/* ─── Search bar: hidden by default, slides up between left grid and right mic ─── */}
