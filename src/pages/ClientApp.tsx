@@ -370,7 +370,7 @@ const ClientApp = () => {
                     requested_item: searchQuery,
                     details: 'Solicitação automática via Busca (Item não encontrado)',
                     status: 'pending',
-                    user_id: user.id || null,
+                    user_id: null,
                     context_analyzed: { 
                       source: 'ClientApp_Search',
                       query: searchQuery,
