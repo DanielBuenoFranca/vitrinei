@@ -44,16 +44,18 @@ export function SystemStatusIndicator() {
   if (!showChip) return null;
 
   return (
-    <div className="z-[60] pointer-events-none">
+    <div className="relative">
       <motion.button
         type="button"
         initial={{ opacity: 0, scale: 0.5 }}
-        animate={{ opacity: 0.85, scale: 1 }}
-        whileHover={{ opacity: 1, scale: 1.08 }}
+        animate={{ opacity: 1, scale: 1 }}
+        whileHover={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
         onClick={() => isPrivileged && setExpanded(true)}
-        className={`pointer-events-auto w-9 h-9 rounded-full border backdrop-blur-md flex items-center justify-center shadow-md
-          bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40
-          ${isPrivileged ? "cursor-pointer" : "cursor-default"}`}
+        className={cn(
+          "w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5 shadow-md",
+          "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40",
+          isPrivileged ? "cursor-pointer" : "cursor-default"
+        )}
         title={isPrivileged ? "IA em contingência — clique para detalhes" : "Sistema operando em modo economia"}
         aria-label="IA em modo economia"
       >
