@@ -108,7 +108,7 @@ const ClientApp = () => {
     let didFilter = false;
     const q = searchQuery.toLowerCase().trim();
     
-    // Explicitly check for zero results when searching
+    // Check if there is an active search or segment filter
     const hasSearchTerm = q.length >= 2;
     const hasSelectedSegments = selectedSegments.length > 0;
 
@@ -127,15 +127,24 @@ const ClientApp = () => {
     
     if (selectedSegments.length > 0) {
       const cats = selectedSegments.map(id => segments.find(s => s.id === id)?.category).filter(Boolean);
-      const filtered = (didFilter ? svcs : clientServices).filter(s => cats.includes(s.category));
+      // If we already filtered by text, further filter those results. 
+      // Otherwise, filter the entire catalog.
+      const source = didFilter ? svcs : clientServices;
+      const filtered = source.filter(s => cats.includes(s.category));
+      
       if (filtered.length > 0) { 
         svcs = filtered; 
         didFilter = true; 
+      } else if (didFilter) {
+        // If segment filter results in 0 but text search had results, 
+        // we might want to keep the text search results or show 0.
+        // For strictness, if any filter is active and results are 0, we show support card.
+        didFilter = false;
       }
     }
     
     if ((hasSearchTerm || hasSelectedSegments) && !didFilter) {
-      console.log("[Search] No results found for:", q);
+      console.log("[Search] No results found for query:", q, "segments:", selectedSegments);
       setNoResultsFallback(true);
       return [];
     }
