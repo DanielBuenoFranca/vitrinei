@@ -810,6 +810,7 @@ const ViniHome = () => {
    */
   const runAction = (action?: BubbleAction) => {
     if (!action) return;
+    
     // 1) Intent interno tem prioridade sobre rota
     if (action.intent) {
       switch (action.intent) {
@@ -819,7 +820,7 @@ const ViniHome = () => {
           // Preenche a barra como se o usuário tivesse digitado e dispara
           setSearchBarVisible(true);
           setText(q);
-          setTimeout(() => sendQuery(q), 80);
+          setTimeout(() => sendQuery(q, true), 80); // Passamos um flag para evitar msg redundante
           return;
         }
         case 'open-search':
@@ -849,6 +850,10 @@ const ViniHome = () => {
         case 'mystore':
           if (storeSlug) navigate(`/loja/${storeSlug}`);
           else navigate(user ? '/mei' : '/auth');
+          return;
+        case 'support':
+          setSupportItem(action.payload || '');
+          setSupportDialogOpen(true);
           return;
       }
     }
