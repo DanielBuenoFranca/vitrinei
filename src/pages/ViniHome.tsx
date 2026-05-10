@@ -1427,6 +1427,40 @@ const ViniHome = () => {
       />
       <FavoritesModal open={favoritesOpen} onOpenChange={setFavoritesOpen} />
 
+      <AnimatePresence>
+        {isThinking && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            className="fixed bottom-[110px] left-1/2 -translate-x-1/2 z-[100] pointer-events-none"
+          >
+            <div className="glass-strong px-5 py-2.5 rounded-full border border-primary/30 flex items-center gap-3 shadow-2xl shadow-primary/20">
+              <div className="flex gap-1.5">
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    animate={{ 
+                      scale: [1, 1.4, 1],
+                      opacity: [0.5, 1, 0.5]
+                    }}
+                    transition={{ 
+                      duration: 1, 
+                      repeat: Infinity, 
+                      delay: i * 0.2 
+                    }}
+                    className="w-1.5 h-1.5 rounded-full bg-primary"
+                  />
+                ))}
+              </div>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-primary drop-shadow-sm">
+                Vini está pensando...
+              </span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <Dialog open={supportDialogOpen} onOpenChange={setSupportDialogOpen}>
         <DialogContent className="sm:max-w-md bg-white border-2 border-[hsl(var(--vini-glow)/0.3)] shadow-[0_0_25px_hsl(var(--vini-glow)/0.2)]">
           <DialogHeader>
