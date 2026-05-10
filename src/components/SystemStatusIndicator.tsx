@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ZapOff, Sparkles, AlertTriangle, X, Power, ImageOff } from "lucide-react";
 import { useAiMode } from "@/hooks/useAiMode";
 import { useAuth } from "@/contexts/AuthContext";
-import { usePermissions } from "@/hooks/usePermissions";
+// usePermissions removed as we use useAuth now
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
