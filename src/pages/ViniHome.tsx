@@ -182,6 +182,22 @@ const ViniHome = () => {
         .eq('user_id', user.id);
     }, 1000);
   };
+  
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    savePreferences({
+      opacity: hudOpacity,
+      blur: hudBlur,
+      scroll: hudScroll,
+      highContrast: hudHighContrast,
+      scale: hudScale
+    });
+  }, [hudOpacity, hudBlur, hudScroll, hudHighContrast, hudScale]);
 
   const inputRef = useRef<HTMLInputElement>(null);
   
