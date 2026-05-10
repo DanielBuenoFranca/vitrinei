@@ -102,8 +102,14 @@ const ClientApp = () => {
 
   // Filter services by search & segments. If search/segment yields 0 results,
   // fall back to the full inventory so the user can still browse.
-  const [noResultsFallback, setNoResultsFallback] = useState(initialQuery.length >= 2);
+  const [noResultsFallback, setNoResultsFallback] = useState(initialQuery.length >= 2 || searchParams.get('force_support') === '1');
   const filteredServices = useMemo(() => {
+    // Se forçado pelo Vini, mostramos direto o card de suporte
+    if (searchParams.get('force_support') === '1') {
+      setNoResultsFallback(true);
+      return [];
+    }
+
     let svcs = clientServices;
     let didFilter = false;
     const q = searchQuery.toLowerCase().trim();
