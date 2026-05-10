@@ -1132,7 +1132,7 @@ const ViniHome = () => {
                   }}
                   initial={{ opacity: 0, z: -300, y: 100 }}
                   animate={{ 
-                    opacity: opacityValue * (hudOpacity * 2.2),
+                    opacity: 1, // Text and card always visible, opacity control applies to background below
                     y: yOffset,
                     z: zOffset,
                     rotateX: rotateX,
@@ -1154,8 +1154,8 @@ const ViniHome = () => {
                   style={{ 
                     width: '100%',
                     backgroundColor: b.role === 'vini' 
-                      ? `hsla(var(--primary) / ${hudHighContrast ? 0.95 : hudOpacity * 1.5})` 
-                      : `rgba(255, 255, 255, ${hudHighContrast ? 0.9 : hudOpacity * 0.6})`,
+                      ? `hsla(var(--primary) / ${hudHighContrast ? 0.95 : (hudOpacity * 1.5 * opacityValue)})` 
+                      : `rgba(255, 255, 255, ${hudHighContrast ? 0.9 : (hudOpacity * 0.6 * opacityValue)})`,
                     color: hudHighContrast ? '#000' : 'inherit',
                     transformStyle: 'preserve-3d',
                     cursor: 'grab',
