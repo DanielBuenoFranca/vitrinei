@@ -32,7 +32,7 @@ export const CrmPanel = () => {
     // Subscribe to changes
     const channel = supabase
       .channel('schema-db-changes')
-      .on('postgres_changes', { event: '*', table: 'support_requests' }, () => {
+      .on('postgres_changes' as any, { event: '*', table: 'support_requests' }, () => {
         fetchRequests();
       })
       .subscribe();
