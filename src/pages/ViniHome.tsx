@@ -860,7 +860,18 @@ const ViniHome = () => {
       }
     }
     // 2) Fallback: navegação por rota
-    if (action.route) navigate(action.route);
+    if (action.route) {
+      navigate(action.route);
+      return;
+    }
+
+    // 3) Último recurso: se tem label mas nada específico, trata como busca
+    if (action.label) {
+      const q = action.label.trim();
+      setSearchBarVisible(true);
+      setText(q);
+      setTimeout(() => sendQuery(q, true), 80);
+    }
   };
 
   const gridItems: GridItem[] = [
