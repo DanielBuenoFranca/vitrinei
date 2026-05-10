@@ -1123,7 +1123,7 @@ const ViniHome = () => {
                   {b.action.label}
                 </Button>
               )}
-            </motion.div>
+      </div>
           ))}
         </AnimatePresence>
       </div>
