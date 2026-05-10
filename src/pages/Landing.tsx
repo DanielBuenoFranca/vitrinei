@@ -712,7 +712,7 @@ const Landing = () => {
                 })()}
 
                 {/* === MARKETPLACE: PRODUTOS === */}
-                {hasResults && searchResult.products.length > 0 && (() => {
+                {hasResults && !noResults && searchResult.products.length > 0 && (() => {
                   const useStack = searchResult.products.length > 2 && !productsCarouselOpen;
                   const renderCard = (product: any, idx: number) => {
                     const PIcon = getVisualIcon(product.name);
