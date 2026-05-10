@@ -995,6 +995,39 @@ export type Database = {
         }
         Relationships: []
       }
+      support_requests: {
+        Row: {
+          created_at: string
+          details: string | null
+          id: string
+          requested_item: string
+          source: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          requested_item: string
+          source?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          requested_item?: string
+          source?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       system_logs: {
         Row: {
           action: string
