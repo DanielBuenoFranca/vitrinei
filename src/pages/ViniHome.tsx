@@ -575,6 +575,7 @@ const ViniHome = () => {
     }
     isThinkingRef.current = true;
     setIsThinking(true);
+    setGlobalThinking(true);
     wakeUp();
     setLastTranscript(query);
     if (!skipHistoryBubble) pushBubble({ role: 'user', text: query });
