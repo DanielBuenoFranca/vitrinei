@@ -418,6 +418,7 @@ export type Database = {
           subscription_paid_at: string | null
           updated_at: string
           user_id: string
+          vini_preferences: Json | null
         }
         Insert: {
           address?: string | null
@@ -456,6 +457,7 @@ export type Database = {
           subscription_paid_at?: string | null
           updated_at?: string
           user_id: string
+          vini_preferences?: Json | null
         }
         Update: {
           address?: string | null
@@ -494,6 +496,7 @@ export type Database = {
           subscription_paid_at?: string | null
           updated_at?: string
           user_id?: string
+          vini_preferences?: Json | null
         }
         Relationships: []
       }
