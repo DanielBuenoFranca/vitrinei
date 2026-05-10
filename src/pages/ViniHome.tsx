@@ -1062,7 +1062,7 @@ const ViniHome = () => {
       {/* Banner de transcrição superior removido — a transcrição aparece
           apenas dentro da barra de busca para evitar duplicidade visual. */}
 
-      {/* ─── Chat History "Conveyor Belt" (Esteira de Cards) ─── */}
+      {/* ─── Chat History "Vertical Conveyor Belt" (Esteira Vertical) ─── */}
       <div 
         className="absolute left-[45%] bottom-[44%] -translate-x-1/2 z-10 w-[80%] max-w-[280px] pointer-events-none h-[180px] flex items-center justify-center overflow-visible"
         style={{ 
@@ -1075,10 +1075,8 @@ const ViniHome = () => {
               // Index reverse: 0 is the most recent (main card)
               const reverseIndex = (arr.length - 1) - i;
               
-              // Horizontal offset for the conveyor effect
-              // Cards move to the right as they get older
-              const xOffset = reverseIndex * 12;
-              const yOffset = reverseIndex * -8;
+              // Vertical offset: cards move up as they get older
+              const yOffset = reverseIndex * -12;
               const zIndex = 100 - reverseIndex;
               const isMain = reverseIndex === 0;
 
@@ -1086,24 +1084,22 @@ const ViniHome = () => {
                 <motion.div
                   key={b.id}
                   layout
-                  drag="x"
-                  dragConstraints={{ left: 0, right: 0 }}
+                  drag="y"
+                  dragConstraints={{ top: 0, bottom: 0 }}
                   dragElastic={0.6}
                   onDragEnd={(e, info) => {
-                    // Swipe left to discard/move to next in belt
-                    if (info.offset.x < -60) {
+                    // Swipe up to see previous
+                    if (info.offset.y < -60) {
                       setBubbles(prev => {
                         if (prev.length <= 1) return prev;
-                        // Rotate the belt: move oldest to front or just shift?
-                        // Usually "Esteira" means shifting through.
                         const newArr = [...prev];
                         const last = newArr.pop();
                         if (last) newArr.unshift(last);
                         return newArr;
                       });
                     } 
-                    // Swipe right to bring back
-                    else if (info.offset.x > 60) {
+                    // Swipe down to bring back
+                    else if (info.offset.y > 60) {
                       setBubbles(prev => {
                         if (prev.length <= 1) return prev;
                         const newArr = [...prev];
@@ -1113,16 +1109,16 @@ const ViniHome = () => {
                       });
                     }
                   }}
-                  initial={{ opacity: 0, x: -100, scale: 0.8 }}
+                  initial={{ opacity: 0, y: 100, scale: 0.8 }}
                   animate={{ 
                     opacity: Math.max(0, 1 - (reverseIndex * 0.25)) * (hudOpacity * 2.5),
-                    x: xOffset,
+                    x: 0,
                     y: yOffset,
                     scale: 1 - (reverseIndex * 0.05),
                     filter: `blur(${reverseIndex * 1.5}px)`,
                     zIndex: zIndex,
                   }}
-                  exit={{ opacity: 0, x: 100, scale: 0.8 }}
+                  exit={{ opacity: 0, y: -100, scale: 0.8 }}
                   transition={{ 
                     type: 'spring',
                     stiffness: 300,
