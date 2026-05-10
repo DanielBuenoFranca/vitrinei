@@ -139,6 +139,49 @@ const ViniHome = () => {
   const [hudScroll, setHudScroll] = useState(0);
   const [showHudSettings, setShowHudSettings] = useState(false);
   const [hudHighContrast, setHudHighContrast] = useState(false);
+  const [hudScale, setHudScale] = useState(1);
+  const saveTimeoutRef = useRef<number | null>(null);
+
+  // Load preferences from profile
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('vini_preferences')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (!error && data?.vini_preferences) {
+        const prefs = data.vini_preferences as any;
+        if (typeof prefs.opacity === 'number') setHudOpacity(prefs.opacity);
+        if (typeof prefs.blur === 'number') setHudBlur(prefs.blur);
+        if (typeof prefs.scroll === 'number') setHudScroll(prefs.scroll);
+        if (typeof prefs.highContrast === 'boolean') setHudHighContrast(prefs.highContrast);
+        if (typeof prefs.scale === 'number') setHudScale(prefs.scale);
+      }
+    })();
+  }, [user]);
+
+  // Debounced save to Supabase
+  const savePreferences = (updates: any) => {
+    if (!user) return;
+    if (saveTimeoutRef.current) window.clearTimeout(saveTimeoutRef.current);
+    
+    saveTimeoutRef.current = window.setTimeout(async () => {
+      const { data: current } = await supabase
+        .from('profiles')
+        .select('vini_preferences')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      const newPrefs = { ...(current?.vini_preferences as any || {}), ...updates };
+      await supabase
+        .from('profiles')
+        .update({ vini_preferences: newPrefs })
+        .eq('user_id', user.id);
+    }, 1000);
+  };
 
   const inputRef = useRef<HTMLInputElement>(null);
   
