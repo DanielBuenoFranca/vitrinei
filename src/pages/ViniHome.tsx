@@ -140,7 +140,8 @@ const ViniHome = () => {
   const [showHudSettings, setShowHudSettings] = useState(false);
   const [hudHighContrast, setHudHighContrast] = useState(true);
   const [hudScale, setHudScale] = useState(1.1);
-  const saveTimeoutRef = useRef<number | null>(null);
+   const saveTimeoutRef = useRef<number | null>(null);
+  const [isThinking, setIsThinking] = useState(false);
 
   // Load preferences from profile
   useEffect(() => {
