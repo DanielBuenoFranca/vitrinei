@@ -223,7 +223,21 @@ const ViniHome = () => {
         try { stop(); } catch {}
         console.log('[Vini] Voice auto-submit:', final);
         sendQuery(final);
-...
+        setText('');
+      }
+    }, 1000);
+    return () => { if (autoSubmitTimerRef.current) window.clearTimeout(autoSubmitTimerRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transcript]);
+
+  // Quando o navegador finaliza a captação (onend), envia o que houver.
+  useEffect(() => {
+    if (listening) return;
+    const final = lastSpokenRef.current.trim();
+    if (!final || final === lastSubmittedVoiceRef.current) return;
+    if (autoSubmitTimerRef.current) window.clearTimeout(autoSubmitTimerRef.current);
+    lastSubmittedVoiceRef.current = final;
+    // Tela principal: voz finaliza → vai para o vendedor (busca)
     console.log('[Vini] Voice final capture:', final);
     sendQuery(final);
     setText('');
