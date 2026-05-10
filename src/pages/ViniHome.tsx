@@ -1129,7 +1129,7 @@ const ViniHome = () => {
           )}
         </AnimatePresence>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 items-end">
           {/* Botão de Economia de Crédito integrado aqui para evitar sobreposição */}
           <SystemStatusIndicator />
           
@@ -1138,7 +1138,7 @@ const ViniHome = () => {
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowHudSettings(!showHudSettings)}
             className={cn(
-              "w-9 h-9 rounded-full border backdrop-blur-xl flex items-center justify-center shadow-lg transition-all duration-300 self-end",
+              "w-9 h-9 rounded-full border backdrop-blur-xl flex items-center justify-center shadow-lg transition-all duration-300",
               showHudSettings ? "bg-primary border-primary text-primary-foreground ring-4 ring-primary/20" : "bg-white/10 border-white/20 text-foreground"
             )}
             title="Ajustes de visibilidade da conversa"
