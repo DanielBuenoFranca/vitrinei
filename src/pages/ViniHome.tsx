@@ -369,7 +369,7 @@ const ViniHome = () => {
     setChatExpanded(true);
     if (b.action?.intent === 'support') {
       setSupportItem(b.action.payload || '');
-      setSupportDialogOpen(true);
+      setTimeout(() => setSupportDialogOpen(true), 1200);
     }
     requestAnimationFrame(() => {
       chatScrollRef.current?.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: 'smooth' });
