@@ -1164,16 +1164,16 @@ const ViniHome = () => {
 
         <div className="absolute right-3 sm:right-4 bottom-[64px] z-40 flex flex-col items-end">
           {/* Stack unificada e conectada de ações do Vini */}
-          <div className="flex flex-col rounded-2xl glass-strong border border-white/10 shadow-2xl pointer-events-auto">
+          <div className="flex flex-col rounded-2xl bg-white/[0.03] backdrop-blur-3xl border border-white/5 shadow-2xl pointer-events-auto">
             {/* IA em contingência (integrado na stack se visível) */}
             <SystemStatusIndicator />
             
             <motion.button
-              whileHover={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+              whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
               onClick={() => setShowHudSettings(!showHudSettings)}
               className={cn(
                 "w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5",
-                showHudSettings ? "bg-primary/20 text-primary" : "text-foreground/80",
+                showHudSettings ? "bg-primary/20 text-primary" : "text-foreground/50",
                 "first:rounded-t-2xl"
               )}
               title="Ajustes de visibilidade da conversa"
