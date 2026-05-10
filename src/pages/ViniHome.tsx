@@ -1063,18 +1063,11 @@ const ViniHome = () => {
           apenas dentro da barra de busca para evitar duplicidade visual. */}
 
       {/* ─── Chat History Bubbles (Refined Integrated HUD) ─── */}
-      <motion.div 
-        drag="y"
-        dragConstraints={{ top: -300, bottom: 300 }}
-        dragElastic={0.1}
-        onDrag={(e, info) => {
-          setHudScroll(prev => prev + info.delta.y);
-        }}
+      <div 
         className="absolute left-[45%] bottom-[44%] -translate-x-1/2 z-10 w-[80%] max-w-[260px] pointer-events-none flex flex-col-reverse gap-3 py-6"
         style={{ 
-          transform: `translateX(-50%) translateY(${hudScroll}px) scale(${hudScale})`,
-          transition: 'transform 0.1s ease-out',
-          cursor: 'grab'
+          transform: `translateX(-50%) scale(${hudScale})`,
+          transition: 'transform 0.1s ease-out'
         }}
       >
         <AnimatePresence initial={false} mode="popLayout">
@@ -1082,10 +1075,16 @@ const ViniHome = () => {
             <motion.div
               key={b.id}
               layout
+              drag="y"
+              dragConstraints={{ top: -300, bottom: 300 }}
+              dragElastic={0.1}
+              onDrag={(e, info) => {
+                setHudScroll(prev => prev + info.delta.y);
+              }}
               initial={{ opacity: 0, y: 40, scale: 0.8, filter: `blur(${hudBlur * 5}px)` }}
               animate={{ 
-                opacity: (1 - (i * 0.15)) * (hudOpacity * 2), // Improved curve for visibility
-                y: 0, 
+                opacity: (1 - (i * 0.15)) * (hudOpacity * 2), 
+                y: hudScroll, 
                 scale: 1 - (i * 0.04),
                 filter: `blur(${i > 0 ? (hudBlur / 2) : 0}px)`
               }}
@@ -1106,7 +1105,8 @@ const ViniHome = () => {
                 color: hudHighContrast ? '#000' : undefined,
                 borderColor: hudHighContrast ? 'rgba(0,0,0,0.2)' : `rgba(255, 255, 255, ${hudOpacity / 2})`,
                 backdropFilter: `blur(${hudBlur}px)`,
-                fontSize: hudHighContrast ? '16px' : '14px'
+                fontSize: hudHighContrast ? '16px' : '14px',
+                cursor: 'grab'
               }}
             >
               <p className={cn("drop-shadow-md", hudHighContrast && "drop-shadow-none")}>{b.text}</p>
@@ -1123,7 +1123,7 @@ const ViniHome = () => {
                   {b.action.label}
                 </Button>
               )}
-      </div>
+            </motion.div>
           ))}
         </AnimatePresence>
       </div>
