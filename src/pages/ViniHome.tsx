@@ -608,7 +608,10 @@ const ViniHome = () => {
   const handleTextSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Texto digitado na barra principal → super vendedor (busca)
-    if (text.trim()) sendQuery(text);
+    if (text.trim()) {
+      console.log('[Vini] Text submit:', text.trim());
+      sendQuery(text);
+    }
     setText('');
     setSearchBarVisible(false);
   };
