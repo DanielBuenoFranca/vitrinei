@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle, Megaphone, Mail, Gift, CheckCircle, KeyRound, BarChart3, ImageOff, TrendingUp as TrendingUpIcon } from 'lucide-react';
+import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle, Megaphone, Mail, Gift, CheckCircle, KeyRound, BarChart3, ImageOff, TrendingUp as TrendingUpIcon, LifeBuoy } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { UserForm } from '@/components/admin/UserForm';
@@ -18,6 +18,7 @@ import { SegmentForm } from '@/components/admin/SegmentForm';
 import { ClearDataDialog } from '@/components/admin/ClearDataDialog';
 import { InconsistencyPanel } from '@/components/admin/InconsistencyPanel';
 import { ImageSanitizationPanel } from '@/components/admin/ImageSanitizationPanel';
+import { CrmPanel } from '@/components/admin/CrmPanel';
 import { AiGovernancePanel } from '@/components/admin/AiGovernancePanel';
 import { CardexPanel } from '@/components/admin/CardexPanel';
 import { LeadsJourneyPanel } from '@/components/admin/LeadsJourneyPanel';
@@ -683,6 +684,9 @@ const AdminPanel = () => {
             <TabsTrigger value="cardex" className="text-xs gap-1 px-2 py-1.5">
               <Database className="h-3 w-3" /> CARDEX
             </TabsTrigger>
+            <TabsTrigger value="crm" className="text-xs gap-1 px-2 py-1.5">
+              <LifeBuoy className="h-3 w-3" /> CRM (Suporte)
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="leads">
@@ -697,6 +701,9 @@ const AdminPanel = () => {
           </TabsContent>
           <TabsContent value="cardex">
             <CardexPanel />
+          </TabsContent>
+          <TabsContent value="crm">
+            <CrmPanel />
           </TabsContent>
 
           {/* ── SEGMENTS TAB ── */}

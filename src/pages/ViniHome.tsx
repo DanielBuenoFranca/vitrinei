@@ -4,10 +4,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, Wallet, User as UserIcon, Sparkles, Mic, Plus,
   Bot, LogIn, Settings, X, Send, Radar, Gift, MapPin, ShoppingBag, Store, RotateCcw, Heart,
-  Search,
+  Search, LifeBuoy, Loader2
 } from 'lucide-react';
 import { FavoritesModal } from '@/components/FavoritesModal';
 import { useFavorites } from '@/hooks/useFavorites';
+import { toast } from 'sonner';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,7 +58,8 @@ type BubbleIntent =
   | 'profile'       // abrir perfil
   | 'referral'      // página de indicação
   | 'demos'         // central de demos
-  | 'mystore';      // minha loja
+  | 'mystore'       // minha loja
+  | 'support';      // acionar central de atendimento (CRM)
 
 type BubbleAction = {
   label: string;
@@ -110,6 +122,10 @@ const ViniHome = () => {
   const [storyOpen, setStoryOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [refinementCount, setRefinementCount] = useState(0);
+  const [supportDialogOpen, setSupportDialogOpen] = useState(false);
+  const [supportItem, setSupportItem] = useState('');
+  const [supportDetails, setSupportDetails] = useState('');
+  const [sendingSupport, setSendingSupport] = useState(false);
   const [modalInitialMessage, setModalInitialMessage] = useState<string | null>(null);
   const [modalInitialModality, setModalInitialModality] = useState<'voice' | 'text'>('text');
   const [modalMode, setModalMode] = useState<'free' | 'commerce'>('free');
@@ -349,6 +365,10 @@ const ViniHome = () => {
       return next;
     });
     setChatExpanded(true);
+    if (b.action?.intent === 'support') {
+      setSupportItem(b.action.payload || '');
+      setSupportDialogOpen(true);
+    }
     requestAnimationFrame(() => {
       chatScrollRef.current?.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: 'smooth' });
     });
@@ -568,6 +588,17 @@ const ViniHome = () => {
             return;
           }
 
+          if (routed.intent === 'support') {
+            emitEmotion('sad');
+            pushBubble({
+              role: 'vini',
+              text: routed.transition_message || `Não encontrei "${query}" agora. Quer que eu peça para nossa Central de Atendimento buscar para você?`,
+              action: { label: 'Acionar Central', intent: 'support', payload: query }
+            });
+            finalize();
+            return;
+          }
+
           if (routed.intent !== 'search' || (routed.needs_more_info && refinementCount >= 1)) {
             // Se já refinamos uma vez ou não é busca, abre busca direta com o que temos para evitar loop
             const params = new URLSearchParams({ q: routed.query || query, type: routed.item_type || 'both' });
@@ -603,8 +634,12 @@ const ViniHome = () => {
           emitEmotion('sad');
           pushBubble({
             role: 'vini',
-            text: `Não encontrei exatamente "${query}" no estoque local. Posso abrir a busca completa pra você ou refinar aqui mesmo — me dá mais um detalhe?`,
-            action: { label: 'Abrir busca completa', route: `/buscar?q=${encodeURIComponent(query)}&fora=1` },
+            text: `Infelizmente não encontrei "${query}" no estoque agora. Gostaria que eu acionasse a nossa Central de Atendimento para buscarem isso para você?`,
+            action: { 
+              label: 'Acionar Central', 
+              intent: 'support',
+              payload: query
+            },
           });
           finalize();
         }
@@ -1051,6 +1086,86 @@ const ViniHome = () => {
         mode={modalMode}
       />
       <FavoritesModal open={favoritesOpen} onOpenChange={setFavoritesOpen} />
+
+      <Dialog open={supportDialogOpen} onOpenChange={setSupportDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-white border-2 border-[hsl(var(--vini-glow)/0.3)] shadow-[0_0_25px_hsl(var(--vini-glow)/0.2)]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-primary">
+              <LifeBuoy className="w-5 h-5" /> Acionar Central de Atendimento
+            </DialogTitle>
+            <DialogDescription>
+              Não encontramos seu item no ecossistema atual. Descreva o que você precisa e nossa central buscará para você.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="item" className="text-xs uppercase font-bold tracking-wider text-muted-foreground">Item Desejado</Label>
+              <Input 
+                id="item" 
+                value={supportItem} 
+                onChange={(e) => setSupportItem(e.target.value)}
+                placeholder="Ex: Hambúrguer de costela, Remédio X, etc"
+                className="bg-muted/50 border-border/50"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="details" className="text-xs uppercase font-bold tracking-wider text-muted-foreground">O que você não encontrou? (Texto simples)</Label>
+              <Textarea 
+                id="details" 
+                value={supportDetails} 
+                onChange={(e) => setSupportDetails(e.target.value)}
+                placeholder="Descreva detalhes como marca, tipo ou qualquer observação que ajude a Central..."
+                className="min-h-[100px] bg-muted/50 border-border/50 resize-none"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setSupportDialogOpen(false)}
+              disabled={sendingSupport}
+              className="border-primary/20 hover:bg-primary/5"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={async () => {
+                if (!supportDetails.trim()) {
+                  toast.error('Por favor, descreva o que você deseja.');
+                  return;
+                }
+                setSendingSupport(true);
+                try {
+                  const { error } = await supabase.from('support_requests').insert({
+                    requested_item: supportItem,
+                    details: supportDetails,
+                    user_id: user?.id || null
+                  });
+
+                  if (error) throw error;
+
+                  toast.success('Solicitação enviada para a Central!');
+                  setSupportDialogOpen(false);
+                  setSupportDetails('');
+                  pushBubble({
+                    role: 'vini',
+                    text: `Prontinho! Já registrei sua necessidade de "${supportItem}" na nossa Central de Atendimento. Eles vão correr atrás disso para você e te avisamos assim que tivermos novidades! 🚀`
+                  });
+                } catch (err) {
+                  toast.error('Erro ao enviar solicitação.');
+                } finally {
+                  setSendingSupport(false);
+                }
+              }}
+              disabled={sendingSupport || !supportDetails.trim()}
+              className="bg-primary hover:bg-primary/90 text-white shadow-[0_4px_12px_hsl(var(--primary)/0.3)]"
+            >
+              {sendingSupport ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+              Confirmar Registro
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
