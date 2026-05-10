@@ -1085,23 +1085,24 @@ const ViniHome = () => {
       {/* Banner de transcrição superior removido — a transcrição aparece
           apenas dentro da barra de busca para evitar duplicidade visual. */}
 
-      {/* ─── Chat History "Interactive Conveyor Belt" ─── */}
+      {/* ─── Chat History "Hyper-Fluid HUD" (Esteira de Próxima Geração) ─── */}
       <div 
-        className="absolute left-[45%] bottom-[44%] -translate-x-1/2 z-10 w-[80%] max-w-[280px] pointer-events-none h-[180px] flex items-center justify-center overflow-visible"
+        className="absolute left-[45%] bottom-[43%] -translate-x-1/2 z-10 w-full max-w-[320px] pointer-events-none h-[260px] flex items-center justify-center perspective-[1500px]"
         style={{ 
           transform: `translateX(-50%) translateY(${hudScroll}px) scale(${hudScale})`,
         }}
       >
-        <div className="relative w-full h-full flex items-center justify-center">
+        <div className="relative w-full h-full flex items-center justify-center preserve-3d">
           <AnimatePresence initial={false} mode="popLayout">
             {[...bubbles].slice(-3).map((b, i, arr) => {
-              // 0 is the main card (bottom), 1 and 2 are background (above)
               const reverseIndex = (arr.length - 1) - i;
-              
-              const yOffset = reverseIndex * -24;
-              const scale = 1 - (reverseIndex * 0.1);
-              const zIndex = 100 - reverseIndex;
               const isMain = reverseIndex === 0;
+              
+              const zOffset = reverseIndex * -120;
+              const yOffset = reverseIndex * -32;
+              const rotateX = reverseIndex * 15;
+              const blurValue = reverseIndex * 4;
+              const opacityValue = Math.max(0.1, 1 - (reverseIndex * 0.4));
 
               return (
                 <motion.div
@@ -1109,7 +1110,7 @@ const ViniHome = () => {
                   layout
                   drag="y"
                   dragConstraints={{ top: 0, bottom: 0 }}
-                  dragElastic={0.4}
+                  dragElastic={0.5}
                   onDragEnd={(e, info) => {
                     if (info.offset.y < -40) {
                       setBubbles(prev => {
@@ -1129,58 +1130,78 @@ const ViniHome = () => {
                       });
                     }
                   }}
-                  initial={{ opacity: 0, y: 100, scale: 0.8 }}
+                  initial={{ opacity: 0, z: -300, y: 100 }}
                   animate={{ 
-                    opacity: Math.max(0.2, 1 - (reverseIndex * 0.35)) * (hudOpacity * 2.5),
+                    opacity: opacityValue * (hudOpacity * 2.2),
                     y: yOffset,
-                    scale: scale,
-                    filter: `blur(${reverseIndex * 2.5}px)`,
-                    zIndex: zIndex,
+                    z: zOffset,
+                    rotateX: rotateX,
+                    filter: `blur(${blurValue}px) brightness(${1 - (reverseIndex * 0.15)})`,
                   }}
-                  exit={{ opacity: 0, y: -120, scale: 0.8 }}
+                  exit={{ opacity: 0, scale: 0.5, y: -150, z: -500 }}
                   transition={{ 
                     type: 'spring',
-                    stiffness: 280,
-                    damping: 28
+                    stiffness: 220,
+                    damping: 28,
+                    mass: 1.2
                   }}
                   className={cn(
-                    "absolute px-6 py-4 rounded-[2rem] text-[14px] leading-snug pointer-events-auto",
-                    "border-[0.5px] shadow-2xl text-center transition-all duration-300 w-full",
-                    hudHighContrast ? "font-bold tracking-tight" : "font-semibold tracking-tight",
-                    b.role === 'vini' 
-                      ? "bg-primary text-primary-foreground" 
-                      : "bg-white/10 text-foreground backdrop-blur-2xl"
+                    "absolute px-8 py-5 rounded-[2.5rem] text-[15px] leading-relaxed pointer-events-auto",
+                    "border border-white/10 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] text-center",
+                    "backdrop-blur-[24px] select-none group",
+                    hudHighContrast ? "font-bold tracking-tight" : "font-medium tracking-tight"
                   )}
                   style={{ 
+                    width: '100%',
                     backgroundColor: b.role === 'vini' 
-                      ? `hsla(var(--primary) / ${hudHighContrast ? 0.95 : hudOpacity * 1.8})` 
-                      : `rgba(255, 255, 255, ${hudHighContrast ? 0.9 : hudOpacity * 0.7})`,
-                    color: hudHighContrast ? '#000' : undefined,
-                    borderColor: hudHighContrast ? 'rgba(0,0,0,0.2)' : `rgba(255, 255, 255, ${hudOpacity / 3})`,
-                    backdropFilter: `blur(${hudBlur}px)`,
-                    fontSize: hudHighContrast ? '16px' : '14px',
+                      ? `hsla(var(--primary) / ${hudHighContrast ? 0.95 : hudOpacity * 1.5})` 
+                      : `rgba(255, 255, 255, ${hudHighContrast ? 0.9 : hudOpacity * 0.6})`,
+                    color: hudHighContrast ? '#000' : 'inherit',
+                    transformStyle: 'preserve-3d',
                     cursor: 'grab',
-                    boxShadow: isMain ? '0 30px 60px -12px rgba(0, 0, 0, 0.5)' : 'none'
+                    zIndex: 100 - reverseIndex,
                   }}
                 >
-                  <p className={cn("drop-shadow-md", hudHighContrast && "drop-shadow-none")}>{b.text}</p>
-                  {isMain && b.action && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className={cn(
-                        "mt-2.5 h-8 w-full text-[10.5px] font-bold rounded-full backdrop-blur-sm",
-                        hudHighContrast ? "bg-black text-white hover:bg-black/80" : "bg-white/20 hover:bg-white/30 text-inherit"
-                      )}
-                      onClick={() => runAction(b.action)}
-                    >
-                      {b.action.label}
-                    </Button>
+                  {isMain && (
+                    <div className="absolute inset-0 rounded-[2.5rem] bg-primary/20 blur-2xl -z-10 animate-pulse opacity-50" />
                   )}
+                  
+                  <div style={{ transform: 'translateZ(30px)' }}>
+                    <p className={cn(
+                      "drop-shadow-sm transition-all duration-500",
+                      isMain ? "scale-100" : "scale-95 opacity-80"
+                    )}>
+                      {b.text}
+                    </p>
+                    
+                    {isMain && b.action && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-4"
+                      >
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className={cn(
+                            "h-10 w-full rounded-full transition-all duration-300",
+                            "bg-white/10 hover:bg-white/20 border border-white/10 active:scale-95",
+                            "text-[11px] font-bold uppercase tracking-widest"
+                          )}
+                          onClick={() => runAction(b.action)}
+                        >
+                          <Sparkles className="w-3 h-3 mr-2 text-primary" />
+                          {b.action.label}
+                        </Button>
+                      </motion.div>
+                    )}
+                  </div>
                 </motion.div>
               );
             })}
           </AnimatePresence>
+        </div>
+      </div>
         </div>
       </div>
 
