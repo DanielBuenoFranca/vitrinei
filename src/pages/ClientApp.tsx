@@ -148,7 +148,7 @@ const ClientApp = () => {
       setNoResultsFallback(true);
       return [];
     }
-    
+
     setNoResultsFallback(false);
     return svcs;
   }, [searchQuery, selectedSegments]);
