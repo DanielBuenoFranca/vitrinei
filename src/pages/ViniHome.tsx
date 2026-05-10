@@ -1175,9 +1175,9 @@ const ViniHome = () => {
                   style={{ 
                     width: '100%',
                     backgroundColor: b.role === 'vini' 
-                      ? `hsla(var(--primary) / ${hudHighContrast ? 0.95 : (hudOpacity * opacityValue)})` 
-                      : `rgba(255, 255, 255, ${hudHighContrast ? 0.9 : (hudOpacity * opacityValue)})`,
-                    color: hudHighContrast ? '#000' : 'inherit',
+                      ? `hsla(var(--primary) / ${isMain ? hudOpacity : (hudOpacity * opacityValue)})` 
+                      : `rgba(255, 255, 255, ${isMain ? hudOpacity : (hudOpacity * opacityValue)})`,
+                    color: isMain && hudOpacity < 0.3 ? (b.role === 'vini' ? 'white' : 'black') : (hudHighContrast ? '#000' : 'inherit'),
                     transformStyle: 'preserve-3d',
                     cursor: isMain && b.action ? 'pointer' : 'grab',
                     zIndex: 100 - reverseIndex,
@@ -1238,7 +1238,7 @@ const ViniHome = () => {
                   <span className="text-[9px] font-mono opacity-50">{Math.round(hudOpacity * 100)}%</span>
                 </div>
                 <input 
-                  type="range" min="0.05" max="0.95" step="0.01" 
+                  type="range" min="0" max="1" step="0.01" 
                   value={hudOpacity} 
                   onChange={(e) => setHudOpacity(parseFloat(e.target.value))}
                   className="w-full accent-primary h-1.5"
