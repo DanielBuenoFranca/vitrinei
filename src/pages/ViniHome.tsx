@@ -425,7 +425,6 @@ const ViniHome = () => {
 
   const handleAvatarClick = () => {
     wakeUp();
-    setSideOpen(true);
     window.dispatchEvent(new CustomEvent('vini:click'));
   };
 
