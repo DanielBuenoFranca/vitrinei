@@ -122,6 +122,17 @@ const NEEDS: Need[] = [
     },
   },
   {
+    id: "bebida",
+    triggers: /\b(bebida|suco|refrigerante|cerveja|vinho|drink|coquetel|caipirinha|agua|água|sede|beber)\b/,
+    segments: ["bebida", "conveniencia", "mercado", "distribuidora", "adega"],
+    itemType: "product",
+    query: "bebida",
+    followUp: {
+      question: "Qual bebida você gostaria? Cerveja, vinho, suco, refrigerante ou água?",
+      suggestions: ["Cerveja", "Vinho", "Suco", "Refrigerante", "Água"],
+    },
+  },
+  {
     id: "dor",
     triggers:
       /\b(dor|dores|doendo|doi|d[oó]i|machucad|desconforto|com dor|febre|gripe|resfriad|enxaqueca|inflama|c[oó]lica|n[aá]usea|enj[oô]o|tontura|tosse|alergia|al[eé]rgic|coceira|azia|refluxo|diarr[eé]ia|prisao de ventre|intestino|garganta|sinusite|rinite|otite|cistite|infec[cç]ao|mal estar|adoec|doente|ferida|queimadura|pressao alta|diabet|inson[ií]a|ansied|estress|depress|enxaqueca)\b/,
@@ -354,7 +365,8 @@ export async function classifyMessage(message: string, sessionCtx: any = {}): Pr
   // Se o grafo conceitual já trouxe expansão (termo específico como
   // "hamburguer"), não pedimos refinamento — vamos direto pra busca.
   const refinementDone = sessionCtx?.lastIntent === "chat" && sessionCtx?.needs_more_info;
-  const isVague = need?.followUp && keywords.length <= 1 && concepts.length === 0 && !refinementDone;
+  // Se for a primeira vez (refinementDone=false), forçamos o refinamento se a query for curta ou se não houver estoque.
+  const isVague = need?.followUp && !refinementDone && (keywords.length <= 1 && concepts.length <= 1);
 
   if (isVague) {
     out.intent = "chat";
@@ -387,8 +399,22 @@ export async function classifyMessage(message: string, sessionCtx: any = {}): Pr
   }
 
   // Se chegou aqui e temos uma necessidade clara (com keywords ou conceitos) 
-  // mas o estoque deu vazio, marcamos como intent 'support' para a UI dar a opção de CRM.
+  // mas o estoque deu vazio, verificamos se já refinamos.
   if (need && (keywords.length > 0 || concepts.length > 0)) {
+    if (!refinementDone && need.followUp) {
+      out.intent = "chat";
+      out.next_agent = "vini";
+      out.needs_more_info = true;
+      out.follow_up_question = need.followUp.question;
+      out.suggestions = need.followUp.suggestions;
+      out.tags = [need.id, ...keywords];
+      out.query = raw;
+      out.item_type = need.itemType;
+      out.confidence = 0.8;
+      return out;
+    }
+
+    // Se já refinou e ainda assim não achou nada no estoque:
     out.intent = "support";
     out.next_agent = "support";
     out.query = raw;

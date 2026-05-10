@@ -634,6 +634,13 @@ const AdminPanel = () => {
         {/* Tabs (cards de contagem do topo removidos — números agora ficam no menu lateral/trigger) */}
         <Tabs defaultValue="users">
           <TabsList className="flex flex-wrap h-auto gap-1 p-1">
+            <TabsTrigger value="crm" className="text-xs gap-1 px-2 py-1.5 bg-primary/10 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <LifeBuoy className="h-3 w-3" /> CRM (Suporte)
+            </TabsTrigger>
+            <TabsTrigger value="users" className="text-xs gap-1 px-2 py-1.5">
+              <UserCog className="h-3 w-3" /> Usuários
+              <Badge variant="secondary" className="ml-1 h-4 px-1 text-[9px]">{userProfiles.length}</Badge>
+            </TabsTrigger>
             <TabsTrigger value="segments" className="text-xs gap-1 px-2 py-1.5">
               <Tag className="h-3 w-3" /> Segmentos
               <Badge variant="secondary" className="ml-1 h-4 px-1 text-[9px]">{segments.length}</Badge>
@@ -683,9 +690,6 @@ const AdminPanel = () => {
             </TabsTrigger>
             <TabsTrigger value="cardex" className="text-xs gap-1 px-2 py-1.5">
               <Database className="h-3 w-3" /> CARDEX
-            </TabsTrigger>
-            <TabsTrigger value="crm" className="text-xs gap-1 px-2 py-1.5">
-              <LifeBuoy className="h-3 w-3" /> CRM (Suporte)
             </TabsTrigger>
           </TabsList>
 
