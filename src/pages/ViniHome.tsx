@@ -1061,12 +1061,12 @@ const ViniHome = () => {
               layout
               initial={{ opacity: 0, y: 40, scale: 0.8, filter: `blur(${hudBlur * 5}px)` }}
               animate={{ 
-                opacity: (1 - (i * 0.2)) * (hudOpacity * 8), // Sensitivity adjusted for better feel
+                opacity: (1 - (i * 0.15)) * (hudOpacity * 2), // Improved curve for visibility
                 y: 0, 
-                scale: 1 - (i * 0.05),
-                filter: `blur(${i > 0 ? hudBlur : 0}px)`
+                scale: 1 - (i * 0.04),
+                filter: `blur(${i > 0 ? (hudBlur / 2) : 0}px)`
               }}
-              exit={{ opacity: 0, y: -60, scale: 0.8, filter: `blur(${hudBlur * 6}px)` }}
+              exit={{ opacity: 0, y: -60, scale: 0.8, filter: `blur(${hudBlur * 2}px)` }}
               transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
               className={cn(
                 "px-5 py-3 rounded-[2rem] text-[12px] leading-snug pointer-events-auto",
