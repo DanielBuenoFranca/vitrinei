@@ -588,6 +588,17 @@ const ViniHome = () => {
             return;
           }
 
+          if (routed.intent === 'support') {
+            emitEmotion('sad');
+            pushBubble({
+              role: 'vini',
+              text: routed.transition_message || `Não encontrei "${query}" agora. Quer que eu peça para nossa Central de Atendimento buscar para você?`,
+              action: { label: 'Acionar Central', intent: 'support', payload: query }
+            });
+            finalize();
+            return;
+          }
+
           if (routed.intent !== 'search' || (routed.needs_more_info && refinementCount >= 1)) {
             // Se já refinamos uma vez ou não é busca, abre busca direta com o que temos para evitar loop
             const params = new URLSearchParams({ q: routed.query || query, type: routed.item_type || 'both' });
