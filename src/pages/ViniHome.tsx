@@ -1139,9 +1139,13 @@ const ViniHome = () => {
                     }
                   }}
                   onTap={() => {
-                    if (isMain && b.action) {
-                      console.log('[Vini] Card tapped - executing action:', b.action.label);
-                      runAction(b.action);
+                    if (isMain) {
+                      if (b.action) {
+                        console.log("[Vini] Card tapped - executing action:", b.action.label);
+                        runAction(b.action);
+                      } else {
+                        emitEmotion("happy");
+                      }
                     }
                   }}
                   initial={{ opacity: 0, z: -300, y: 100 }}

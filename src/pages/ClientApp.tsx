@@ -102,7 +102,7 @@ const ClientApp = () => {
 
   // Filter services by search & segments. If search/segment yields 0 results,
   // fall back to the full inventory so the user can still browse.
-  const [noResultsFallback, setNoResultsFallback] = useState(false);
+  const [noResultsFallback, setNoResultsFallback] = useState(initialQuery.length >= 2);
   const filteredServices = useMemo(() => {
     let svcs = clientServices;
     let didFilter = false;
@@ -148,7 +148,7 @@ const ClientApp = () => {
       setNoResultsFallback(true);
       return [];
     }
-    
+
     setNoResultsFallback(false);
     return svcs;
   }, [searchQuery, selectedSegments]);
