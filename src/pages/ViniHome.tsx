@@ -136,6 +136,7 @@ const ViniHome = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const lastSpokenRef = useRef('');
+  const lastSubmittedVoiceRef = useRef('');
   const autoSubmitTimerRef = useRef<number | null>(null);
 
   const emitEmotion = (e: 'idle' | 'happy' | 'sad' | 'angry' | 'thinking' | 'listening') => {
@@ -151,14 +152,14 @@ const ViniHome = () => {
     if (autoSubmitTimerRef.current) window.clearTimeout(autoSubmitTimerRef.current);
     autoSubmitTimerRef.current = window.setTimeout(() => {
       const final = lastSpokenRef.current.trim();
-      if (final && listening) {
+      if (final && final !== lastSubmittedVoiceRef.current) {
+        lastSubmittedVoiceRef.current = final;
         try { stop(); } catch {}
         console.log('[Vini] Voice auto-submit:', final);
         sendQuery(final);
-        lastSpokenRef.current = '';
         setText('');
       }
-    }, 1500);
+    }, 1200);
     return () => { if (autoSubmitTimerRef.current) window.clearTimeout(autoSubmitTimerRef.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transcript]);
@@ -167,9 +168,9 @@ const ViniHome = () => {
   useEffect(() => {
     if (listening) return;
     const final = lastSpokenRef.current.trim();
-    if (!final) return;
+    if (!final || final === lastSubmittedVoiceRef.current) return;
     if (autoSubmitTimerRef.current) window.clearTimeout(autoSubmitTimerRef.current);
-    lastSpokenRef.current = '';
+    lastSubmittedVoiceRef.current = final;
     // Tela principal: voz finaliza → vai para o vendedor (busca)
     console.log('[Vini] Voice final capture:', final);
     sendQuery(final);
@@ -368,7 +369,7 @@ const ViniHome = () => {
     setChatExpanded(true);
     if (b.action?.intent === 'support') {
       setSupportItem(b.action.payload || '');
-      setSupportDialogOpen(true);
+      setTimeout(() => setSupportDialogOpen(true), 1200);
     }
     requestAnimationFrame(() => {
       chatScrollRef.current?.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -460,8 +461,9 @@ const ViniHome = () => {
     if (supported) {
       setSearchBarVisible(true);
       setSearchBarMode('search');
+      lastSubmittedVoiceRef.current = ''; // Reset on mic start
       start();
-      setTimeout(() => pushBubble({ role: 'vini', text: 'Estou ouvindo… 🎙️ Me diga o que você precisa.' }), 200);
+      setTimeout(() => pushBubble({ role: 'vini', text: 'Estou ouvindo… 🎙️ Pode falar.' }), 200);
     } else {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
@@ -497,7 +499,10 @@ const ViniHome = () => {
   const sendQuery = (q: string) => {
     console.log('[Vini] sendQuery starting for:', q);
     const query = q.trim();
-    if (!query) return;
+    if (!query) {
+      console.warn('[Vini] Empty query, ignoring');
+      return;
+    }
     // Se já está pensando, NÃO ignora: enfileira o pedido para rodar
     // assim que a resposta atual finalizar. Garante que toda fala/escrita
     // do usuário chegue ao Vini e tenha resposta.
@@ -513,6 +518,7 @@ const ViniHome = () => {
     setLastTranscript(query);
     pushBubble({ role: 'user', text: query });
     setHistory((h) => [...h, query]);
+    setRefinementCount(0); // Reset count on new query
     setText('');
     emitEmotion('thinking');
 
@@ -531,18 +537,17 @@ const ViniHome = () => {
 
     // Failsafe: nunca deixa o Vini "mudo". Se algo travar (rede, SDK,
     // promise pendurada), libera o lock após 15s e mostra um aviso.
+    if (safetyTimerRef.current) window.clearTimeout(safetyTimerRef.current);
     safetyTimerRef.current = window.setTimeout(() => {
       if (!isThinkingRef.current) return;
-      console.warn('[Vini] safety timeout — liberando lock');
+      console.warn('[Vini] safety timeout (10s) — liberando lock');
       emitEmotion('sad');
       pushBubble({
         role: 'vini',
-        text: 'Demorei demais para responder essa. Pode repetir ou tentar de outra forma?',
+        text: 'Desculpe a demora! Tive um pequeno soluço aqui. Pode tentar perguntar de novo?',
       });
-      isThinkingRef.current = false;
-      const next = pendingQueryRef.current;
-      if (next) { pendingQueryRef.current = null; setTimeout(() => sendQuery(next), 150); }
-    }, 15000);
+      finalize();
+    }, 10000);
 
     setTimeout(async () => {
       try {
