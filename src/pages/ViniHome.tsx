@@ -109,6 +109,7 @@ const ViniHome = () => {
   const [lastTranscript, setLastTranscript] = useState<string>('');
   const [storyOpen, setStoryOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [refinementCount, setRefinementCount] = useState(0);
   const [modalInitialMessage, setModalInitialMessage] = useState<string | null>(null);
   const [modalInitialModality, setModalInitialModality] = useState<'voice' | 'text'>('text');
   const [modalMode, setModalMode] = useState<'free' | 'commerce'>('free');
@@ -554,7 +555,9 @@ const ViniHome = () => {
 
         if (routed && !routed.error) {
           updateAiSession({ tags: routed.tags || [], segments: routed.segments || [], lastIntent: routed.intent, lastQuery: routed.query || query });
-          if (routed.needs_more_info || routed.intent !== 'search') {
+          
+          if (routed.needs_more_info && refinementCount < 1) {
+            setRefinementCount(prev => prev + 1);
             emitEmotion('thinking');
             pushBubble({
               role: 'vini',
@@ -564,11 +567,24 @@ const ViniHome = () => {
             finalize();
             return;
           }
+
+          if (routed.intent !== 'search' || (routed.needs_more_info && refinementCount >= 1)) {
+            // Se já refinamos uma vez ou não é busca, abre busca direta com o que temos para evitar loop
+            const params = new URLSearchParams({ q: routed.query || query, type: routed.item_type || 'both' });
+            if ((routed.segments || []).length) params.set('segments', routed.segments.join(','));
+            emitEmotion('happy');
+            pushBubble({ role: 'vini', text: routed.transition_message || `Entendi. Já estou abrindo a busca com o que conversamos.` });
+            setTimeout(() => { navigate(`/buscar?${params.toString()}`); finalize(); }, 900);
+            setRefinementCount(0); // Reseta após concluir
+            return;
+          }
+
           const params = new URLSearchParams({ q: routed.query || query, type: routed.item_type || 'both' });
           if ((routed.segments || []).length) params.set('segments', routed.segments.join(','));
           emitEmotion('happy');
           pushBubble({ role: 'vini', text: routed.transition_message || `Entendi o que você precisa. Já estou abrindo a busca filtrada.` });
           setTimeout(() => { navigate(`/buscar?${params.toString()}`); finalize(); }, 900);
+          setRefinementCount(0); // Reseta após concluir
           return;
         }
 

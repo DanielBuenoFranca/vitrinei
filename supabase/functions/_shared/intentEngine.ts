@@ -353,7 +353,9 @@ export async function classifyMessage(message: string, sessionCtx: any = {}): Pr
   // cabeça" tem keywords suficientes (>=2 úteis) e segue para a busca.
   // Se o grafo conceitual já trouxe expansão (termo específico como
   // "hamburguer"), não pedimos refinamento — vamos direto pra busca.
-  const isVague = need?.followUp && keywords.length <= 1 && concepts.length === 0;
+  const refinementDone = sessionCtx?.lastIntent === "chat" && sessionCtx?.needs_more_info;
+  const isVague = need?.followUp && keywords.length <= 1 && concepts.length === 0 && !refinementDone;
+
   if (isVague) {
     out.intent = "chat";
     out.next_agent = "vini";
