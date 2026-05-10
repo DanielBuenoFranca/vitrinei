@@ -76,7 +76,8 @@ export const CrmPanel = () => {
             <TableRow>
               <TableHead>Data</TableHead>
               <TableHead>Item Solicitado</TableHead>
-              <TableHead>Detalhes</TableHead>
+              <TableHead>Contexto (Análise Vini)</TableHead>
+              <TableHead>Explicação do Cliente</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Ações</TableHead>
             </TableRow>
