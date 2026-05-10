@@ -360,27 +360,22 @@ export async function classifyMessage(message: string, sessionCtx: any = {}): Pr
   ]));
   const inv = await searchInventoryByKeywords(expandedKeywords);
 
-  // Refinamento: se a frase é muito vaga (poucas palavras "úteis") e a need
-  // tem follow-up, primeiro pergunta para precisar a busca em vez de chutar.
-  // Ex.: "quero remédio" → "Para qual sintoma?". Já "remédio para dor de
-  // cabeça" tem keywords suficientes (>=2 úteis) e segue para a busca.
-  // Se o grafo conceitual já trouxe expansão (termo específico como
-  // "hamburguer"), não pedimos refinamento — vamos direto pra busca.
+  // Regra de refinamento: Se o estoque deu vazio (inv.total === 0) e ainda não refinamos,
+  // SEMPRE entra no refinamento se a necessidade tiver followUp.
   const refinementDone = sessionCtx?.lastIntent === "chat" && sessionCtx?.needs_more_info;
-  // Se for a primeira vez (refinementDone=false), forçamos o refinamento se a query for curta.
-  // Removi concepts.length <= 1 para garantir que termos específicos como "cerveja" passem pelo refinamento se o estoque estiver vazio.
-  const isVague = need?.followUp && !refinementDone && keywords.length <= 1;
+  const hasNoInventory = (inv.products.length + inv.services.length) === 0;
+  const shouldRefine = need?.followUp && !refinementDone && hasNoInventory;
 
-  if (isVague) {
+  if (shouldRefine) {
     out.intent = "chat";
     out.next_agent = "vini";
     out.needs_more_info = true;
     out.follow_up_question = need!.followUp!.question;
     out.suggestions = need!.followUp!.suggestions;
-    out.tags = [need!.id];
-    out.query = need!.query;
+    out.tags = [need!.id, ...keywords];
+    out.query = raw;
     out.item_type = need!.itemType;
-    out.confidence = 0.8;
+    out.confidence = 0.9;
     return out;
   }
 
@@ -401,23 +396,8 @@ export async function classifyMessage(message: string, sessionCtx: any = {}): Pr
     return out;
   }
 
-  // Se chegou aqui e temos uma necessidade clara (com keywords ou conceitos) 
-  // mas o estoque deu vazio, verificamos se já refinamos.
+  // Se o estoque deu vazio e já passamos pelo refinamento (ou não tem followUp):
   if (need && (keywords.length > 0 || concepts.length > 0)) {
-    if (!refinementDone && need.followUp) {
-      out.intent = "chat";
-      out.next_agent = "vini";
-      out.needs_more_info = true;
-      out.follow_up_question = need.followUp.question;
-      out.suggestions = need.followUp.suggestions;
-      out.tags = [need.id, ...keywords];
-      out.query = raw;
-      out.item_type = need.itemType;
-      out.confidence = 0.8;
-      return out;
-    }
-
-    // Se já refinou e ainda assim não achou nada no estoque:
     out.intent = "support";
     out.next_agent = "support";
     out.query = raw;
