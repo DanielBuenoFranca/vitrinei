@@ -1190,7 +1190,7 @@ const ViniHome = () => {
           )}
         </AnimatePresence>
 
-        <div className="absolute right-3.5 sm:right-[18px] bottom-[60px] z-40 flex flex-col items-end">
+        <div className="absolute right-[13px] sm:right-[17px] bottom-[58px] z-40 flex flex-col items-center">
           {/* Stack unificada e conectada de ações do Vini */}
           <div className="flex flex-col rounded-2xl bg-white/[0.03] backdrop-blur-3xl border border-white/5 shadow-2xl pointer-events-auto">
             {/* IA em contingência (integrado na stack se visível) */}
@@ -1294,7 +1294,7 @@ const ViniHome = () => {
         whileTap={{ scale: 0.92 }}
         onClick={handleVoiceTap}
         className={cn(
-          'absolute right-3 sm:right-4 bottom-3 sm:bottom-4 z-40',
+          'absolute right-3 sm:right-4 bottom-3 sm:bottom-4 z-50',
           'w-11 h-11 rounded-full flex items-center justify-center shrink-0',
           'bg-gradient-to-br from-primary via-accent to-primary text-primary-foreground',
           'shadow-[0_4px_22px_hsl(var(--primary)/0.55)]',
