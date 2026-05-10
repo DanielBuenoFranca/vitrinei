@@ -1009,7 +1009,39 @@ const ViniHome = () => {
       {/* Banner de transcrição superior removido — a transcrição aparece
           apenas dentro da barra de busca para evitar duplicidade visual. */}
 
-      {/* Painel de histórico de conversa removido a pedido */}
+      {/* ─── Chat History Bubbles ─── */}
+      <div className="absolute top-20 left-4 z-20 w-[280px] max-h-[50vh] pointer-events-none flex flex-col gap-2 overflow-hidden">
+        <AnimatePresence initial={false}>
+          {bubbles.slice(-5).map((b, i) => (
+            <motion.div
+              key={b.id}
+              initial={{ opacity: 0, x: -20, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8, x: -10 }}
+              transition={{ duration: 0.4, delay: i * 0.05 }}
+              className={cn(
+                "p-3 rounded-2xl text-xs shadow-lg pointer-events-auto backdrop-blur-md border border-white/10",
+                b.role === 'vini' 
+                  ? "bg-primary/80 text-primary-foreground self-start rounded-tl-none mr-8" 
+                  : "bg-white/10 text-foreground self-end rounded-tr-none ml-8"
+              )}
+            >
+              <p className="leading-relaxed">{b.text}</p>
+              {b.action && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="mt-2 h-7 w-full text-[10px] font-bold bg-white/20 hover:bg-white/30 border-0"
+                  onClick={() => runAction(b.action)}
+                >
+                  {b.action.label}
+                </Button>
+              )}
+            </motion.div>
+          ))}
+        </AnimatePresence>
+        <div ref={chatScrollRef} />
+      </div>
 
       {/* ─── Search bar: hidden by default, slides up between left grid and right mic ─── */}
       <AnimatePresence>
