@@ -637,10 +637,6 @@ const AdminPanel = () => {
             <TabsTrigger value="crm" className="text-xs gap-1 px-2 py-1.5 bg-primary/10 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <LifeBuoy className="h-3 w-3" /> CRM (Suporte)
             </TabsTrigger>
-            <TabsTrigger value="users" className="text-xs gap-1 px-2 py-1.5">
-              <UserCog className="h-3 w-3" /> Usuários
-              <Badge variant="secondary" className="ml-1 h-4 px-1 text-[9px]">{userProfiles.length}</Badge>
-            </TabsTrigger>
             <TabsTrigger value="segments" className="text-xs gap-1 px-2 py-1.5">
               <Tag className="h-3 w-3" /> Segmentos
               <Badge variant="secondary" className="ml-1 h-4 px-1 text-[9px]">{segments.length}</Badge>
