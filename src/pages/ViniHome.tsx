@@ -703,13 +703,9 @@ const ViniHome = () => {
         } else {
           emitEmotion('sad');
           pushBubble({
-            role: 'vini',
-            text: `Infelizmente não encontrei "${query}" no estoque agora. Gostaria que eu acionasse a nossa Central de Atendimento para buscarem isso para você?`,
-            action: { 
-              label: 'Acionar Central', 
-              intent: 'support',
-              payload: query
-            },
+            text: `Infelizmente não encontrei "${query}" em nosso estoque agora. Vou te levar para a tela de busca para acionarmos nossa Central de Atendimento.`,
+          });
+          setTimeout(() => { navigate(`/buscar?q=${encodeURIComponent(query)}`); finalize(); }, 1200);
           });
           finalize();
         }
