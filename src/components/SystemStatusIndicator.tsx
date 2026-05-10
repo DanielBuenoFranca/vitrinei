@@ -54,7 +54,7 @@ export function SystemStatusIndicator() {
         onClick={() => isPrivileged && setExpanded(true)}
         className={cn(
           "w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5",
-          "bg-amber-500/5 text-amber-500/60 dark:text-amber-500/50 border-amber-500/20",
+          "bg-amber-500/5 text-amber-500/60 dark:text-amber-500/50 border-amber-500/20 rounded-t-2xl",
           isPrivileged ? "cursor-pointer" : "cursor-default"
         )}
         title={isPrivileged ? "IA em contingência — clique para detalhes" : "Sistema operando em modo economia"}
