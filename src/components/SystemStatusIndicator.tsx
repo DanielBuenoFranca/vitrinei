@@ -11,6 +11,7 @@ import { ZapOff, Sparkles, AlertTriangle, X, Power, ImageOff } from "lucide-reac
 import { useAiMode } from "@/hooks/useAiMode";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 export function SystemStatusIndicator() {
   const { mode, isOn } = useAiMode();
