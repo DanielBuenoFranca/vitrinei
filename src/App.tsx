@@ -112,6 +112,7 @@ const App = () => {
         </Routes>
         <AttentionFooterBar />
         <SystemStatusIndicator />
+        <GlobalThinkingIndicator />
         </BackgroundJobsProvider>
         </AiSessionProvider>
         </ConversionProvider>
