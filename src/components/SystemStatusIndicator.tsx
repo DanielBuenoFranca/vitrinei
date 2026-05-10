@@ -69,7 +69,7 @@ export function SystemStatusIndicator() {
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="pointer-events-auto absolute bottom-12 right-0 w-72 rounded-xl border bg-card shadow-xl p-3"
+            className="pointer-events-auto absolute bottom-0 right-[calc(100%+12px)] w-72 rounded-xl border bg-card shadow-xl p-3"
           >
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center gap-1.5 text-xs font-semibold">
