@@ -60,8 +60,10 @@ const CONCEPT_GRAPH: ConceptEntry[] = [
     expand: ["doce", "sobremesa", "comida", "fome", "alimentacao", "lanche"] },
   { match: /\b(salgad|coxinha|pastel|esfiha|empad)\b/,
     expand: ["salgado", "lanche", "comida", "fome", "alimentacao", "padaria"] },
-  { match: /\b(suco|refrigerante|bebida|cerveja|vinho|drink|coquetel|caipirinha|agua)\b/,
+  { match: /\b(suco|refrigerante|bebida|vinho|drink|coquetel|caipirinha|agua)\b/,
     expand: ["bebida", "comida", "fome", "alimentacao", "drink"] },
+  { match: /\b(cerveja|chopp|pilsen|ipa|weiss|malzbier)\b/,
+    expand: ["cerveja", "bebida", "alcool"] },
   { match: /\b(caf[eé] da manh[aã]|caf[eé]|p[aã]o|padaria|bolacha|biscoit)\b/,
     expand: ["padaria", "cafe", "comida", "fome", "alimentacao", "lanche"] },
   { match: /\b(marmita|marmitex|prato feito|pf|self service|comida caseira|vegetariana|vegana|saud[aá]vel|fit)\b/,
@@ -365,8 +367,9 @@ export async function classifyMessage(message: string, sessionCtx: any = {}): Pr
   // Se o grafo conceitual já trouxe expansão (termo específico como
   // "hamburguer"), não pedimos refinamento — vamos direto pra busca.
   const refinementDone = sessionCtx?.lastIntent === "chat" && sessionCtx?.needs_more_info;
-  // Se for a primeira vez (refinementDone=false), forçamos o refinamento se a query for curta ou se não houver estoque.
-  const isVague = need?.followUp && !refinementDone && (keywords.length <= 1 && concepts.length <= 1);
+  // Se for a primeira vez (refinementDone=false), forçamos o refinamento se a query for curta.
+  // Removi concepts.length <= 1 para garantir que termos específicos como "cerveja" passem pelo refinamento se o estoque estiver vazio.
+  const isVague = need?.followUp && !refinementDone && keywords.length <= 1;
 
   if (isVague) {
     out.intent = "chat";
