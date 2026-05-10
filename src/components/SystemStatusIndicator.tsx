@@ -82,8 +82,8 @@ export function SystemStatusIndicator() {
           >
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center gap-1.5 text-xs font-semibold">
-                <Power className="w-3.5 h-3.5 text-amber-500" />
-                IA em modo economia
+                {isOn ? <Sparkles className="w-3.5 h-3.5 text-emerald-500" /> : <Power className="w-3.5 h-3.5 text-amber-500" />}
+                {isOn ? "IA em modo Full" : "IA em modo economia"}
               </div>
               <button onClick={() => setExpanded(false)} className="text-muted-foreground hover:text-foreground" aria-label="Fechar">
                 <X className="w-3.5 h-3.5" />
