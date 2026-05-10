@@ -1063,11 +1063,18 @@ const ViniHome = () => {
           apenas dentro da barra de busca para evitar duplicidade visual. */}
 
       {/* ─── Chat History Bubbles (Refined Integrated HUD) ─── */}
-      <div 
+      <motion.div 
+        drag="y"
+        dragConstraints={{ top: -300, bottom: 300 }}
+        dragElastic={0.1}
+        onDrag={(e, info) => {
+          setHudScroll(prev => prev + info.delta.y);
+        }}
         className="absolute left-[45%] bottom-[44%] -translate-x-1/2 z-10 w-[80%] max-w-[260px] pointer-events-none flex flex-col-reverse gap-3 py-6"
         style={{ 
           transform: `translateX(-50%) translateY(${hudScroll}px) scale(${hudScale})`,
-          transition: 'transform 0.1s ease-out'
+          transition: 'transform 0.1s ease-out',
+          cursor: 'grab'
         }}
       >
         <AnimatePresence initial={false} mode="popLayout">
@@ -1119,7 +1126,7 @@ const ViniHome = () => {
             </motion.div>
           ))}
         </AnimatePresence>
-      </div>
+      </motion.div>
 
       {/* Discrete HUD & Credits Toggle Area */}
       <div className="absolute right-3 bottom-[82px] z-40 flex flex-col gap-2 pointer-events-auto">
