@@ -1086,7 +1086,7 @@ const ViniHome = () => {
                 fontSize: hudHighContrast ? '16px' : '14px'
               }}
             >
-              <p className={cn("drop-shadow-sm", hudHighContrast && "drop-shadow-none")}>{b.text}</p>
+              <p className={cn("drop-shadow-md", hudHighContrast && "drop-shadow-none")}>{b.text}</p>
               {b.action && (
                 <Button
                   size="sm"
