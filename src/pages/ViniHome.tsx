@@ -535,18 +535,17 @@ const ViniHome = () => {
 
     // Failsafe: nunca deixa o Vini "mudo". Se algo travar (rede, SDK,
     // promise pendurada), libera o lock após 15s e mostra um aviso.
+    if (safetyTimerRef.current) window.clearTimeout(safetyTimerRef.current);
     safetyTimerRef.current = window.setTimeout(() => {
       if (!isThinkingRef.current) return;
-      console.warn('[Vini] safety timeout — liberando lock');
+      console.warn('[Vini] safety timeout (10s) — liberando lock');
       emitEmotion('sad');
       pushBubble({
         role: 'vini',
-        text: 'Demorei demais para responder essa. Pode repetir ou tentar de outra forma?',
+        text: 'Desculpe a demora! Tive um pequeno soluço aqui. Pode tentar perguntar de novo?',
       });
-      isThinkingRef.current = false;
-      const next = pendingQueryRef.current;
-      if (next) { pendingQueryRef.current = null; setTimeout(() => sendQuery(next), 150); }
-    }, 15000);
+      finalize();
+    }, 10000);
 
     setTimeout(async () => {
       try {
