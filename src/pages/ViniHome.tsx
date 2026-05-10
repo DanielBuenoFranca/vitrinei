@@ -134,7 +134,7 @@ const ViniHome = () => {
   const [radarActive, setRadarActive] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
-  const chatScrollRef = useRef<HTMLDivElement>(null);
+  
   const lastSpokenRef = useRef('');
   const lastSubmittedVoiceRef = useRef('');
   const autoSubmitTimerRef = useRef<number | null>(null);
