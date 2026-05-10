@@ -372,9 +372,6 @@ const ViniHome = () => {
       setSupportItem(b.action.payload || '');
       setTimeout(() => setSupportDialogOpen(true), 1200);
     }
-    requestAnimationFrame(() => {
-      chatScrollRef.current?.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: 'smooth' });
-    });
     // Any new bubble counts as activity — restart the 5s idle clock
     resetIdleTimer();
   };
