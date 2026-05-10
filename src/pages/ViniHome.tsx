@@ -1119,58 +1119,58 @@ const ViniHome = () => {
           )}
         </AnimatePresence>
 
-        <div className="flex flex-col gap-2 items-end">
-          {/* Unidade unificada de botões de ação à direita */}
+        <div className="flex flex-col gap-3 items-end">
+          {/* Status de Créditos (ia em contingência) flutua acima do grupo principal */}
           <SystemStatusIndicator />
           
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowHudSettings(!showHudSettings)}
-            className={cn(
-              "w-9 h-9 rounded-full border backdrop-blur-xl flex items-center justify-center shadow-lg transition-all duration-300",
-              showHudSettings ? "bg-primary border-primary text-primary-foreground ring-4 ring-primary/20" : "bg-white/10 border-white/20 text-foreground"
-            )}
-            title="Ajustes de visibilidade da conversa"
-          >
-            <Sliders className="w-4 h-4" />
-          </motion.button>
+          {/* Stack unificada e conectada de ações do Vini */}
+          <div className="flex flex-col rounded-2xl glass-strong border border-white/10 shadow-2xl overflow-hidden pointer-events-auto">
+            <motion.button
+              whileHover={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+              onClick={() => setShowHudSettings(!showHudSettings)}
+              className={cn(
+                "w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5",
+                showHudSettings ? "bg-primary/20 text-primary" : "text-foreground/80"
+              )}
+              title="Ajustes de visibilidade da conversa"
+            >
+              <Sliders className="w-4 h-4" />
+            </motion.button>
 
-          {/* Novos botões integrados: Pesquisa, Conversa, Sobre o Vini */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleSideSearch}
-            className="w-9 h-9 rounded-full border border-white/20 bg-white/10 backdrop-blur-xl flex items-center justify-center shadow-lg text-foreground hover:bg-white/20"
-            title="Pesquisar no ecossistema"
-          >
-            <Search className="w-4 h-4" strokeWidth={1.5} />
-          </motion.button>
+            <motion.button
+              whileHover={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+              onClick={handleSideSearch}
+              className="w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5 text-foreground/80"
+              title="Pesquisar no ecossistema"
+            >
+              <Search className="w-4 h-4" strokeWidth={1.5} />
+            </motion.button>
 
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleSideConverse}
-            className="w-9 h-9 rounded-full border border-white/20 bg-white/10 backdrop-blur-xl flex items-center justify-center shadow-lg text-foreground hover:bg-white/20"
-            title="Conversar com o Vini"
-          >
-            <MessageCircle className="w-4 h-4" strokeWidth={1.5} />
-          </motion.button>
+            <motion.button
+              whileHover={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+              onClick={handleSideConverse}
+              className="w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5 text-foreground/80"
+              title="Conversar com o Vini"
+            >
+              <MessageCircle className="w-4 h-4" strokeWidth={1.5} />
+            </motion.button>
 
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleSideStory}
-            className="w-9 h-9 rounded-full border border-[hsl(var(--vini-glow)/0.5)] bg-white/10 backdrop-blur-xl overflow-hidden flex items-center justify-center shadow-lg"
-            title="Sobre o Vini"
-          >
-            <img
-              src={viniMini}
-              alt="Sobre o Vini"
-              className="w-[280%] h-[280%] object-cover drop-shadow-[0_0_4px_hsl(var(--vini-glow)/0.7)]"
-              style={{ objectPosition: '50% 8%' }}
-            />
-          </motion.button>
+            <motion.button
+              whileHover={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+              onClick={handleSideStory}
+              className="w-10 h-10 flex items-center justify-center transition-colors overflow-hidden"
+              title="Sobre o Vini"
+            >
+              <div className="w-8 h-8 rounded-full overflow-hidden border border-[hsl(var(--vini-glow)/0.4)]">
+                <img
+                  src={viniMini}
+                  alt="Vini"
+                  className="w-[280%] h-[280%] object-cover"
+                  style={{ objectPosition: '50% 8%' }}
+                />
+              </div>
+            </motion.button>
+          </div>
         </div>
       </div>
 
