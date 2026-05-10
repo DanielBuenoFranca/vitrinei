@@ -1150,6 +1150,17 @@ const ViniHome = () => {
                       } else {
                         emitEmotion("happy");
                       }
+                    } else {
+                      // Se tocar em um card que está atrás, traz ele para frente
+                      setBubbles(prev => {
+                        const newArr = [...prev];
+                        const idx = newArr.findIndex(item => item.id === b.id);
+                        if (idx !== -1) {
+                          const item = newArr.splice(idx, 1)[0];
+                          newArr.push(item);
+                        }
+                        return newArr;
+                      });
                     }
                   }}
                   initial={{ opacity: 0, z: -300, y: 100 }}
@@ -1206,10 +1217,14 @@ const ViniHome = () => {
                         className="mt-4"
                       >
                         <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isMain && b.action) runAction(b.action);
+                          }}
                           className={cn(
                             "h-10 w-full rounded-full transition-all duration-300 flex items-center justify-center",
-                            "bg-white/10 group-hover:bg-white/20 border border-white/10",
-                            "text-[11px] font-bold uppercase tracking-widest"
+                            "bg-white/10 group-hover:bg-white/20 border border-white/10 cursor-pointer",
+                            "text-[11px] font-bold uppercase tracking-widest active:scale-95"
                           )}
                         >
                           <Sparkles className="w-3 h-3 mr-2 text-primary" />
