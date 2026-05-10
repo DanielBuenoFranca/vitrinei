@@ -354,6 +354,10 @@ const ViniHome = () => {
       return next;
     });
     setChatExpanded(true);
+    if (b.action?.intent === 'support') {
+      setSupportItem(b.action.payload || '');
+      setSupportDialogOpen(true);
+    }
     requestAnimationFrame(() => {
       chatScrollRef.current?.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: 'smooth' });
     });
