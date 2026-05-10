@@ -461,8 +461,9 @@ const ViniHome = () => {
     if (supported) {
       setSearchBarVisible(true);
       setSearchBarMode('search');
+      lastSubmittedVoiceRef.current = ''; // Reset on mic start
       start();
-      setTimeout(() => pushBubble({ role: 'vini', text: 'Estou ouvindo… 🎙️ Me diga o que você precisa.' }), 200);
+      setTimeout(() => pushBubble({ role: 'vini', text: 'Estou ouvindo… 🎙️ Pode falar.' }), 200);
     } else {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
