@@ -20,7 +20,7 @@ export function SystemStatusIndicator() {
   const [savings, setSavings] = useState({ credits: 0, calls: 0, periodStart: null as string | null });
 
   const isPrivileged = !!(isMaster || isAdmin);
-  const showChip = !isOn;
+  const showChip = !isOn && isPrivileged;
 
   const loadSavings = async () => {
     try {
