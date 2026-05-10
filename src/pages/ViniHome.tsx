@@ -1090,7 +1090,7 @@ const ViniHome = () => {
                 hudHighContrast ? "font-bold tracking-tight" : "font-semibold tracking-tight",
                 b.role === 'vini' 
                   ? "bg-primary text-primary-foreground" 
-                  : "bg-white/10 text-foreground italic backdrop-blur-sm"
+                  : "bg-white/15 text-foreground backdrop-blur-md"
               )}
               style={{ 
                 backgroundColor: b.role === 'vini' 
