@@ -1069,9 +1069,9 @@ const ViniHome = () => {
               exit={{ opacity: 0, y: -60, scale: 0.8, filter: `blur(${hudBlur * 2}px)` }}
               transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
               className={cn(
-                "px-5 py-3 rounded-[2rem] text-[12px] leading-snug pointer-events-auto",
-                "border-[0.5px] shadow-none text-center transition-all duration-300",
-                hudHighContrast ? "font-bold tracking-tight" : "font-normal",
+                "px-6 py-4 rounded-[2rem] text-[14px] leading-snug pointer-events-auto",
+                "border-[0.5px] shadow-lg text-center transition-all duration-300",
+                hudHighContrast ? "font-bold tracking-tight" : "font-semibold tracking-tight",
                 b.role === 'vini' 
                   ? "bg-primary text-primary-foreground" 
                   : "bg-white/10 text-foreground italic backdrop-blur-sm"
