@@ -559,7 +559,7 @@ const ViniHome = () => {
           return;
         }
 
-        // Race: ai-router com timeout duro (8s). Se travar, cai no fallback local.
+        // Race: ai-router com timeout duro (5s). Se travar, cai no fallback local.
         let routed: any = null;
         let invokeError: any = null;
         try {
@@ -567,9 +567,9 @@ const ViniHome = () => {
           const invokePromise = supabase.functions.invoke('ai-router', { body: { message: query, session } });
           const timeoutPromise = new Promise<{ data: null; error: any }>((resolve) =>
             setTimeout(() => {
-              console.warn('[Vini] ai-router 8s timeout reached');
-              resolve({ data: null, error: new Error('ai-router timeout 8s') });
-            }, 8000),
+              console.warn('[Vini] ai-router 5s timeout reached');
+              resolve({ data: null, error: new Error('ai-router timeout 5s') });
+            }, 5000),
           );
           const res: any = await Promise.race([invokePromise, timeoutPromise]);
           routed = res?.data;
