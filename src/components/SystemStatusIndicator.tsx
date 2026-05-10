@@ -50,11 +50,11 @@ export function SystemStatusIndicator() {
         type="button"
         initial={{ opacity: 0, scale: 0.5 }}
         animate={{ opacity: 1, scale: 1 }}
-        whileHover={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+        whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
         onClick={() => isPrivileged && setExpanded(true)}
         className={cn(
-          "w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5 shadow-md rounded-t-2xl",
-          "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40",
+          "w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5",
+          "bg-amber-500/5 text-amber-500/60 dark:text-amber-500/50 border-amber-500/20",
           isPrivileged ? "cursor-pointer" : "cursor-default"
         )}
         title={isPrivileged ? "IA em contingência — clique para detalhes" : "Sistema operando em modo economia"}
