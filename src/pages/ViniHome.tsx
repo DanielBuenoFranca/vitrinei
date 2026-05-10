@@ -866,7 +866,30 @@ const ViniHome = () => {
   ];
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-background text-foreground">
+    <div 
+      className="fixed inset-0 overflow-hidden bg-background text-foreground"
+      onWheel={(e) => {
+        if (e.deltaY < 0) {
+          // Scroll up -> previous
+          setBubbles(prev => {
+            if (prev.length <= 1) return prev;
+            const newArr = [...prev];
+            const last = newArr.pop();
+            if (last) newArr.unshift(last);
+            return newArr;
+          });
+        } else if (e.deltaY > 0) {
+          // Scroll down -> next
+          setBubbles(prev => {
+            if (prev.length <= 1) return prev;
+            const newArr = [...prev];
+            const first = newArr.shift();
+            if (first) newArr.push(first);
+            return newArr;
+          });
+        }
+      }}
+    >
       <ViniScene />
       <RadarPulse active={radarActive} city={city} itemCount={totalCartItems} />
 
@@ -1062,7 +1085,7 @@ const ViniHome = () => {
       {/* Banner de transcrição superior removido — a transcrição aparece
           apenas dentro da barra de busca para evitar duplicidade visual. */}
 
-      {/* ─── Chat History "Vertical Conveyor Belt" (Esteira Vertical) ─── */}
+      {/* ─── Chat History "Interactive Conveyor Belt" ─── */}
       <div 
         className="absolute left-[45%] bottom-[44%] -translate-x-1/2 z-10 w-[80%] max-w-[280px] pointer-events-none h-[180px] flex items-center justify-center overflow-visible"
         style={{ 
@@ -1071,13 +1094,15 @@ const ViniHome = () => {
       >
         <div className="relative w-full h-full flex items-center justify-center">
           <AnimatePresence initial={false} mode="popLayout">
-            {[...bubbles].slice(-3).map((b, i, arr) => {
-              // Index reverse: 0 is the most recent (main card)
+            {[...bubbles].slice(-4).map((b, i, arr) => {
+              // 0 is the main card (bottom), others are background (above)
               const reverseIndex = (arr.length - 1) - i;
               
-              // Vertical offset: cards stack slightly behind and above
-              const yOffset = reverseIndex * -18;
-              const scale = 1 - (reverseIndex * 0.08);
+              // Only show the main card + up to 3 background cards
+              if (reverseIndex > 3) return null;
+
+              const yOffset = reverseIndex * -22;
+              const scale = 1 - (reverseIndex * 0.1);
               const zIndex = 100 - reverseIndex;
               const isMain = reverseIndex === 0;
 
@@ -1087,10 +1112,9 @@ const ViniHome = () => {
                   layout
                   drag="y"
                   dragConstraints={{ top: 0, bottom: 0 }}
-                  dragElastic={0.6}
+                  dragElastic={0.4}
                   onDragEnd={(e, info) => {
-                    // Swipe up to see previous
-                    if (info.offset.y < -60) {
+                    if (info.offset.y < -40) {
                       setBubbles(prev => {
                         if (prev.length <= 1) return prev;
                         const newArr = [...prev];
@@ -1098,9 +1122,7 @@ const ViniHome = () => {
                         if (last) newArr.unshift(last);
                         return newArr;
                       });
-                    } 
-                    // Swipe down to bring back
-                    else if (info.offset.y > 60) {
+                    } else if (info.offset.y > 40) {
                       setBubbles(prev => {
                         if (prev.length <= 1) return prev;
                         const newArr = [...prev];
@@ -1112,17 +1134,17 @@ const ViniHome = () => {
                   }}
                   initial={{ opacity: 0, y: 100, scale: 0.8 }}
                   animate={{ 
-                    opacity: Math.max(0, 1 - (reverseIndex * 0.35)) * (hudOpacity * 2.5),
+                    opacity: Math.max(0, 1 - (reverseIndex * 0.3)) * (hudOpacity * 2.5),
                     y: yOffset,
                     scale: scale,
-                    filter: `blur(${reverseIndex * 1.5}px)`,
+                    filter: `blur(${reverseIndex * 2}px)`,
                     zIndex: zIndex,
                   }}
-                  exit={{ opacity: 0, y: -100, scale: 0.8 }}
+                  exit={{ opacity: 0, y: -120, scale: 0.8 }}
                   transition={{ 
                     type: 'spring',
-                    stiffness: 300,
-                    damping: 30
+                    stiffness: 280,
+                    damping: 28
                   }}
                   className={cn(
                     "absolute px-6 py-4 rounded-[2rem] text-[14px] leading-snug pointer-events-auto",
@@ -1141,7 +1163,7 @@ const ViniHome = () => {
                     backdropFilter: `blur(${hudBlur}px)`,
                     fontSize: hudHighContrast ? '16px' : '14px',
                     cursor: 'grab',
-                    boxShadow: isMain ? '0 25px 50px -12px rgba(0, 0, 0, 0.5)' : 'none'
+                    boxShadow: isMain ? '0 30px 60px -12px rgba(0, 0, 0, 0.5)' : 'none'
                   }}
                 >
                   <p className={cn("drop-shadow-md", hudHighContrast && "drop-shadow-none")}>{b.text}</p>
