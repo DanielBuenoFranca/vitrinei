@@ -16,15 +16,12 @@ import { cn } from "@/lib/utils";
 
 export function SystemStatusIndicator() {
   const { mode, isOn } = useAiMode();
-  const { user } = useAuth();
-  const { profileLabel } = usePermissions();
+  const { isAdmin, isMaster } = useAuth();
   const [expanded, setExpanded] = useState(false);
   const [savings, setSavings] = useState({ credits: 0, calls: 0, periodStart: null as string | null });
 
-  const isMaster = profileLabel?.toLowerCase() === 'master';
-  const isAdmin = profileLabel?.toLowerCase() === 'admin';
-  const isPrivileged = !!(isMaster || isAdmin);
-  const showChip = isPrivileged; // Sempre mostrar para Adm/Master, independente do modo (isOn)
+  const isPrivileged = isAdmin || isMaster;
+  const showChip = isPrivileged; 
 
   const loadSavings = async () => {
     try {
