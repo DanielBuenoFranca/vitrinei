@@ -94,8 +94,9 @@ const ClientApp = () => {
   // Sync URL ?q= when it changes
   useEffect(() => {
     const q = searchParams.get('q');
-    if (q !== null && q !== searchQuery) setSearchQuery(q);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (q !== null && q !== searchQuery) {
+      setSearchQuery(q);
+    }
   }, [searchParams]);
 
   // Filter services by search & segments. If search/segment yields 0 results,
