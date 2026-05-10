@@ -1071,12 +1071,13 @@ const ViniHome = () => {
       >
         <div className="relative w-full h-full flex items-center justify-center">
           <AnimatePresence initial={false} mode="popLayout">
-            {[...bubbles].slice(-8).map((b, i, arr) => {
+            {[...bubbles].slice(-3).map((b, i, arr) => {
               // Index reverse: 0 is the most recent (main card)
               const reverseIndex = (arr.length - 1) - i;
               
-              // Vertical offset: cards move up as they get older
-              const yOffset = reverseIndex * -12;
+              // Vertical offset: cards stack slightly behind and above
+              const yOffset = reverseIndex * -18;
+              const scale = 1 - (reverseIndex * 0.08);
               const zIndex = 100 - reverseIndex;
               const isMain = reverseIndex === 0;
 
@@ -1111,10 +1112,9 @@ const ViniHome = () => {
                   }}
                   initial={{ opacity: 0, y: 100, scale: 0.8 }}
                   animate={{ 
-                    opacity: Math.max(0, 1 - (reverseIndex * 0.25)) * (hudOpacity * 2.5),
-                    x: 0,
+                    opacity: Math.max(0, 1 - (reverseIndex * 0.35)) * (hudOpacity * 2.5),
                     y: yOffset,
-                    scale: 1 - (reverseIndex * 0.05),
+                    scale: scale,
                     filter: `blur(${reverseIndex * 1.5}px)`,
                     zIndex: zIndex,
                   }}
