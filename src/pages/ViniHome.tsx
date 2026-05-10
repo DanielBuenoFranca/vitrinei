@@ -673,6 +673,10 @@ const ViniHome = () => {
             // Se já refinamos uma vez ou não é busca, abre busca direta com o que temos para evitar loop
             const params = new URLSearchParams({ q: routed.query || query, type: routed.item_type || 'both' });
             if ((routed.segments || []).length) params.set('segments', routed.segments.join(','));
+            
+            // Se o Vini ou a IA detectar que não há resultados (intent support), força o card
+            if (routed.intent === 'support') params.set('force_support', '1');
+
             emitEmotion('happy');
             pushBubble({ role: 'vini', text: routed.transition_message || `Entendi. Já estou abrindo a busca com o que conversamos.` });
             setTimeout(() => { navigate(`/buscar?${params.toString()}`); finalize(); }, 900);
@@ -706,7 +710,7 @@ const ViniHome = () => {
             role: "vini",
             text: `Infelizmente não encontrei "${query}" em nosso estoque agora. Vou te levar para a tela de busca para acionarmos nossa Central de Atendimento.`,
           });
-          setTimeout(() => { navigate(`/buscar?q=${encodeURIComponent(query)}`); finalize(); }, 1200);
+          setTimeout(() => { navigate(`/buscar?q=${encodeURIComponent(query)}&force_support=1`); finalize(); }, 1200);
         }
       } catch (err) {
         // Qualquer erro síncrono/inesperado: NUNCA deixar o Vini mudo.
@@ -856,7 +860,18 @@ const ViniHome = () => {
       }
     }
     // 2) Fallback: navegação por rota
-    if (action.route) navigate(action.route);
+    if (action.route) {
+      navigate(action.route);
+      return;
+    }
+
+    // 3) Último recurso: se tem label mas nada específico, trata como busca
+    if (action.label) {
+      const q = action.label.trim();
+      setSearchBarVisible(true);
+      setText(q);
+      setTimeout(() => sendQuery(q, true), 80);
+    }
   };
 
   const gridItems: GridItem[] = [
@@ -1146,6 +1161,17 @@ const ViniHome = () => {
                       } else {
                         emitEmotion("happy");
                       }
+                    } else {
+                      // Se tocar em um card que está atrás, traz ele para frente
+                      setBubbles(prev => {
+                        const newArr = [...prev];
+                        const idx = newArr.findIndex(item => item.id === b.id);
+                        if (idx !== -1) {
+                          const item = newArr.splice(idx, 1)[0];
+                          newArr.push(item);
+                        }
+                        return newArr;
+                      });
                     }
                   }}
                   initial={{ opacity: 0, z: -300, y: 100 }}
@@ -1202,10 +1228,14 @@ const ViniHome = () => {
                         className="mt-4"
                       >
                         <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isMain && b.action) runAction(b.action);
+                          }}
                           className={cn(
                             "h-10 w-full rounded-full transition-all duration-300 flex items-center justify-center",
-                            "bg-white/10 group-hover:bg-white/20 border border-white/10",
-                            "text-[11px] font-bold uppercase tracking-widest"
+                            "bg-white/10 group-hover:bg-white/20 border border-white/10 cursor-pointer",
+                            "text-[11px] font-bold uppercase tracking-widest active:scale-95"
                           )}
                         >
                           <Sparkles className="w-3 h-3 mr-2 text-primary" />
