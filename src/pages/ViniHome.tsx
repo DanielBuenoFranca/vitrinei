@@ -701,17 +701,12 @@ const ViniHome = () => {
           });
           setTimeout(() => { navigate(`/buscar?q=${encodeURIComponent(query)}`); finalize(); }, 1000);
         } else {
-          emitEmotion('sad');
+          emitEmotion("sad");
           pushBubble({
-            role: 'vini',
-            text: `Infelizmente não encontrei "${query}" no estoque agora. Gostaria que eu acionasse a nossa Central de Atendimento para buscarem isso para você?`,
-            action: { 
-              label: 'Acionar Central', 
-              intent: 'support',
-              payload: query
-            },
+            role: "vini",
+            text: `Infelizmente não encontrei "${query}" em nosso estoque agora. Vou te levar para a tela de busca para acionarmos nossa Central de Atendimento.`,
           });
-          finalize();
+          setTimeout(() => { navigate(`/buscar?q=${encodeURIComponent(query)}`); finalize(); }, 1200);
         }
       } catch (err) {
         // Qualquer erro síncrono/inesperado: NUNCA deixar o Vini mudo.
