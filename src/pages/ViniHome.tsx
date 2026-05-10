@@ -1094,14 +1094,11 @@ const ViniHome = () => {
       >
         <div className="relative w-full h-full flex items-center justify-center">
           <AnimatePresence initial={false} mode="popLayout">
-            {[...bubbles].slice(-4).map((b, i, arr) => {
-              // 0 is the main card (bottom), others are background (above)
+            {[...bubbles].slice(-3).map((b, i, arr) => {
+              // 0 is the main card (bottom), 1 and 2 are background (above)
               const reverseIndex = (arr.length - 1) - i;
               
-              // Only show the main card + up to 3 background cards
-              if (reverseIndex > 3) return null;
-
-              const yOffset = reverseIndex * -22;
+              const yOffset = reverseIndex * -24;
               const scale = 1 - (reverseIndex * 0.1);
               const zIndex = 100 - reverseIndex;
               const isMain = reverseIndex === 0;
@@ -1134,10 +1131,10 @@ const ViniHome = () => {
                   }}
                   initial={{ opacity: 0, y: 100, scale: 0.8 }}
                   animate={{ 
-                    opacity: Math.max(0, 1 - (reverseIndex * 0.3)) * (hudOpacity * 2.5),
+                    opacity: Math.max(0.2, 1 - (reverseIndex * 0.35)) * (hudOpacity * 2.5),
                     y: yOffset,
                     scale: scale,
-                    filter: `blur(${reverseIndex * 2}px)`,
+                    filter: `blur(${reverseIndex * 2.5}px)`,
                     zIndex: zIndex,
                   }}
                   exit={{ opacity: 0, y: -120, scale: 0.8 }}
