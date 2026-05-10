@@ -517,6 +517,7 @@ const ViniHome = () => {
     setLastTranscript(query);
     pushBubble({ role: 'user', text: query });
     setHistory((h) => [...h, query]);
+    setRefinementCount(0); // Reset count on new query
     setText('');
     emitEmotion('thinking');
 
