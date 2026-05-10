@@ -1190,11 +1190,15 @@ const ViniHome = () => {
                           size="sm"
                           variant="ghost"
                           className={cn(
-                            "h-10 w-full rounded-full transition-all duration-300",
+                            "h-10 w-full rounded-full transition-all duration-300 pointer-events-auto",
                             "bg-white/10 hover:bg-white/20 border border-white/10 active:scale-95",
                             "text-[11px] font-bold uppercase tracking-widest"
                           )}
-                          onClick={() => runAction(b.action)}
+                          onClick={(e) => {
+                            e.stopPropagation(); // Evita interferência com gestos do card
+                            console.log('[Vini] Action button clicked:', b.action?.label);
+                            runAction(b.action);
+                          }}
                         >
                           <Sparkles className="w-3 h-3 mr-2 text-primary" />
                           {b.action.label}
