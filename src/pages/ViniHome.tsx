@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, Wallet, User as UserIcon, Sparkles, Mic, Plus,
   Bot, LogIn, Settings, X, Send, Radar, Gift, MapPin, ShoppingBag, Store, RotateCcw, Heart,
-  Search, LifeBuoy, Loader2, Sliders, ZapOff, Sun, Contrast
+  Search, LifeBuoy, Loader2, Sliders, ZapOff, Sun, Contrast, MessageCircle
 } from 'lucide-react';
 import { FavoritesModal } from '@/components/FavoritesModal';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -24,11 +24,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { ViniScene } from '@/components/vini/ViniScene';
-import { ViniSideButtons } from '@/components/vini/ViniSideButtons';
+
 import { ViniBottomGrid, type GridItem } from '@/components/vini/ViniBottomGrid';
 import { ViniStoryCard } from '@/components/vini/ViniStoryCard';
 import { RadarPulse } from '@/components/vini/RadarPulse';
 import { ViniConversationModal } from '@/components/vini/ViniConversationModal';
+import viniMini from '@/assets/vini-avatar.png';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useCart } from '@/contexts/CartContext';
@@ -88,7 +89,7 @@ const ViniHome = () => {
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
 
   const [hasInteracted, setHasInteracted] = useState(false);
-  const [sideOpen, setSideOpen] = useState(true);
+  
   const lastSmallTalkRef = useRef<number>(0);
   const smallTalkCountRef = useRef<number>(0);
   const greetedKey = (uid?: string | null) => `vini:greeted${uid ? `:${uid}` : ''}`;
@@ -373,7 +374,7 @@ const ViniHome = () => {
       return next;
     });
     setChatExpanded(true);
-    setSideOpen(false); // Close side buttons when a new bubble appears to clean up UI
+    
     if (b.action?.intent === 'support') {
       setSupportItem(b.action.payload || '');
       setTimeout(() => setSupportDialogOpen(true), 1200);
@@ -384,7 +385,6 @@ const ViniHome = () => {
 
   const openConversationWith = (message?: string, modality: 'voice' | 'text' = 'text') => {
     wakeUp();
-    setSideOpen(false);
     setSearchBarVisible(false);
     setModalInitialModality(modality);
     setModalInitialMessage(message?.trim() || null);
@@ -425,7 +425,6 @@ const ViniHome = () => {
 
   const handleAvatarClick = () => {
     wakeUp();
-    setSideOpen(true);
     window.dispatchEvent(new CustomEvent('vini:click'));
   };
 
@@ -441,7 +440,6 @@ const ViniHome = () => {
   ];
 
   const handleScreenTap = () => {
-    setSideOpen(true);
     if (!hasInteracted) { wakeUp(); return; }
     const now = Date.now();
     if (now - lastSmallTalkRef.current < 12000) return; // throttle
@@ -679,7 +677,6 @@ const ViniHome = () => {
 
   const handleSideSearch = () => {
     wakeUp();
-    setSideOpen(false);
     setSearchBarMode('search');
     setSearchBarVisible(true);
     setTimeout(() => inputRef.current?.focus(), 80);
@@ -690,7 +687,6 @@ const ViniHome = () => {
   };
 
   const handleSideStory = () => {
-    setSideOpen(false);
     setStoryOpen(true);
   };
 
@@ -999,13 +995,7 @@ const ViniHome = () => {
       {/* keep motion import used elsewhere */}
       {false && <motion.span />}
 
-      {/* ─── Right-edge action buttons (open from avatar click) ─── */}
-      <ViniSideButtons
-        open={sideOpen}
-        onSearch={handleSideSearch}
-        onConverse={handleSideConverse}
-        onStory={handleSideStory}
-      />
+      {/* Side buttons integrated into unified stack below */}
 
       {/* ─── Bottom-left grid (Home, Radar, Indicação, Perfil, Demos) ─── */}
       <ViniBottomGrid items={gridItems} />
@@ -1129,22 +1119,58 @@ const ViniHome = () => {
           )}
         </AnimatePresence>
 
-        <div className="flex flex-col gap-2 items-end">
-          {/* Botão de Economia de Crédito integrado aqui para evitar sobreposição */}
-          <SystemStatusIndicator />
-          
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowHudSettings(!showHudSettings)}
-            className={cn(
-              "w-9 h-9 rounded-full border backdrop-blur-xl flex items-center justify-center shadow-lg transition-all duration-300",
-              showHudSettings ? "bg-primary border-primary text-primary-foreground ring-4 ring-primary/20" : "bg-white/10 border-white/20 text-foreground"
-            )}
-            title="Ajustes de visibilidade da conversa"
-          >
-            <Sliders className="w-4 h-4" />
-          </motion.button>
+        <div className="flex flex-col gap-3 items-end">
+          {/* Stack unificada e conectada de ações do Vini */}
+          <div className="flex flex-col rounded-2xl glass-strong border border-white/10 shadow-2xl overflow-hidden pointer-events-auto">
+            {/* IA em contingência (integrado na stack se visível) */}
+            <SystemStatusIndicator />
+            
+            <motion.button
+              whileHover={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+              onClick={() => setShowHudSettings(!showHudSettings)}
+              className={cn(
+                "w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5",
+                showHudSettings ? "bg-primary/20 text-primary" : "text-foreground/80"
+              )}
+              title="Ajustes de visibilidade da conversa"
+            >
+              <Sliders className="w-4 h-4" />
+            </motion.button>
+
+            <motion.button
+              whileHover={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+              onClick={handleSideSearch}
+              className="w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5 text-foreground/80"
+              title="Pesquisar no ecossistema"
+            >
+              <Search className="w-4 h-4" strokeWidth={1.5} />
+            </motion.button>
+
+            <motion.button
+              whileHover={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+              onClick={handleSideConverse}
+              className="w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5 text-foreground/80"
+              title="Conversar com o Vini"
+            >
+              <MessageCircle className="w-4 h-4" strokeWidth={1.5} />
+            </motion.button>
+
+            <motion.button
+              whileHover={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+              onClick={handleSideStory}
+              className="w-10 h-10 flex items-center justify-center transition-colors overflow-hidden"
+              title="Sobre o Vini"
+            >
+              <div className="w-8 h-8 rounded-full overflow-hidden border border-[hsl(var(--vini-glow)/0.4)]">
+                <img
+                  src={viniMini}
+                  alt="Vini"
+                  className="w-[280%] h-[280%] object-cover"
+                  style={{ objectPosition: '50% 8%' }}
+                />
+              </div>
+            </motion.button>
+          </div>
         </div>
       </div>
 
