@@ -684,6 +684,9 @@ const AdminPanel = () => {
             <TabsTrigger value="cardex" className="text-xs gap-1 px-2 py-1.5">
               <Database className="h-3 w-3" /> CARDEX
             </TabsTrigger>
+            <TabsTrigger value="crm" className="text-xs gap-1 px-2 py-1.5">
+              <LifeBuoy className="h-3 w-3" /> CRM (Suporte)
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="leads">
