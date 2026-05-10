@@ -1062,69 +1062,84 @@ const ViniHome = () => {
       {/* Banner de transcrição superior removido — a transcrição aparece
           apenas dentro da barra de busca para evitar duplicidade visual. */}
 
-      {/* ─── Chat History Bubbles (Refined Integrated HUD) ─── */}
+      {/* ─── Chat History Bubbles (Cylindrical 3D Scroll HUD) ─── */}
       <div 
-        className="absolute left-[45%] bottom-[44%] -translate-x-1/2 z-10 w-[80%] max-w-[260px] pointer-events-none flex flex-col-reverse gap-3 py-6"
+        className="absolute left-[45%] bottom-[45%] -translate-x-1/2 z-10 w-[80%] max-w-[260px] pointer-events-none h-[300px] flex items-center justify-center perspective-[1000px]"
         style={{ 
-          transform: `translateX(-50%) scale(${hudScale})`,
+          transform: `translateX(-50%) translateY(${hudScroll}px) scale(${hudScale})`,
           transition: 'transform 0.1s ease-out'
         }}
       >
-        <AnimatePresence initial={false} mode="popLayout">
-          {[...bubbles].reverse().slice(0, 5).map((b, i) => (
-            <motion.div
-              key={b.id}
-              layout
-              drag="y"
-              dragConstraints={{ top: -300, bottom: 300 }}
-              dragElastic={0.1}
-              onDrag={(e, info) => {
-                setHudScroll(prev => prev + info.delta.y);
-              }}
-              initial={{ opacity: 0, y: 40, scale: 0.8, filter: `blur(${hudBlur * 5}px)` }}
-              animate={{ 
-                opacity: (1 - (i * 0.15)) * (hudOpacity * 2), 
-                y: hudScroll, 
-                scale: 1 - (i * 0.04),
-                filter: `blur(${i > 0 ? (hudBlur / 2) : 0}px)`
-              }}
-              exit={{ opacity: 0, y: -60, scale: 0.8, filter: `blur(${hudBlur * 2}px)` }}
-              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-              className={cn(
-                "px-6 py-4 rounded-[2rem] text-[14px] leading-snug pointer-events-auto",
-                "border-[0.5px] shadow-lg text-center transition-all duration-300",
-                hudHighContrast ? "font-bold tracking-tight" : "font-semibold tracking-tight",
-                b.role === 'vini' 
-                  ? "bg-primary text-primary-foreground" 
-                  : "bg-white/15 text-foreground backdrop-blur-md"
-              )}
-              style={{ 
-                backgroundColor: b.role === 'vini' 
-                  ? `hsla(var(--primary) / ${hudHighContrast ? 0.95 : hudOpacity * 2})` 
-                  : `rgba(255, 255, 255, ${hudHighContrast ? 0.9 : hudOpacity})`,
-                color: hudHighContrast ? '#000' : undefined,
-                borderColor: hudHighContrast ? 'rgba(0,0,0,0.2)' : `rgba(255, 255, 255, ${hudOpacity / 2})`,
-                backdropFilter: `blur(${hudBlur}px)`,
-                fontSize: hudHighContrast ? '16px' : '14px',
-                cursor: 'grab'
-              }}
-            >
-              <p className={cn("drop-shadow-md", hudHighContrast && "drop-shadow-none")}>{b.text}</p>
-              {b.action && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className={cn(
-                    "mt-2.5 h-8 w-full text-[10.5px] font-bold rounded-full backdrop-blur-sm",
-                    hudHighContrast ? "bg-black text-white hover:bg-black/80" : "bg-white/20 hover:bg-white/30 text-inherit"
-                  )}
-                  onClick={() => runAction(b.action)}
-                >
-                  {b.action.label}
-                </Button>
-              )}
-            </motion.div>
-          ))}
+        <AnimatePresence initial={false}>
+          {[...bubbles].reverse().slice(0, 6).map((b, i) => {
+            // Cylindrical math: distribute bubbles along a vertical curve
+            const totalVisible = 5;
+            const angleStep = 40; // degrees
+            const radius = 180; // distance from center of cylinder
+            const angle = i * angleStep;
+            
+            return (
+              <motion.div
+                key={b.id}
+                layout
+                drag="y"
+                dragConstraints={{ top: 0, bottom: 0 }}
+                dragElastic={0.2}
+                onDrag={(e, info) => {
+                  setHudScroll(prev => prev + info.delta.y);
+                }}
+                initial={{ opacity: 0, z: -radius, rotateX: 90 }}
+                animate={{ 
+                  opacity: (1 - (i * 0.2)) * (hudOpacity * 2.5), 
+                  y: Math.sin(angle * Math.PI / 180) * radius * 0.5,
+                  z: Math.cos(angle * Math.PI / 180) * -radius,
+                  rotateX: -angle * 0.5,
+                  scale: 1 - (i * 0.05),
+                  filter: `blur(${i * 2}px)`
+                }}
+                exit={{ opacity: 0, scale: 0.5, z: -radius }}
+                transition={{ 
+                  type: 'spring',
+                  stiffness: 260,
+                  damping: 20
+                }}
+                className={cn(
+                  "absolute px-6 py-4 rounded-[2rem] text-[14px] leading-snug pointer-events-auto",
+                  "border-[0.5px] shadow-2xl text-center transition-shadow duration-300 w-full",
+                  hudHighContrast ? "font-bold tracking-tight" : "font-semibold tracking-tight",
+                  b.role === 'vini' 
+                    ? "bg-primary text-primary-foreground" 
+                    : "bg-white/15 text-foreground backdrop-blur-md"
+                )}
+                style={{ 
+                  backgroundColor: b.role === 'vini' 
+                    ? `hsla(var(--primary) / ${hudHighContrast ? 0.95 : hudOpacity * 2})` 
+                    : `rgba(255, 255, 255, ${hudHighContrast ? 0.9 : hudOpacity})`,
+                  color: hudHighContrast ? '#000' : undefined,
+                  borderColor: hudHighContrast ? 'rgba(0,0,0,0.2)' : `rgba(255, 255, 255, ${hudOpacity / 2})`,
+                  backdropFilter: `blur(${hudBlur}px)`,
+                  fontSize: hudHighContrast ? '16px' : '14px',
+                  transformStyle: 'preserve-3d',
+                  cursor: 'grab'
+                }}
+              >
+                <p className={cn("drop-shadow-md", hudHighContrast && "drop-shadow-none")}>{b.text}</p>
+                {b.action && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className={cn(
+                      "mt-2.5 h-8 w-full text-[10.5px] font-bold rounded-full backdrop-blur-sm",
+                      hudHighContrast ? "bg-black text-white hover:bg-black/80" : "bg-white/20 hover:bg-white/30 text-inherit"
+                    )}
+                    onClick={() => runAction(b.action)}
+                  >
+                    {b.action.label}
+                  </Button>
+                )}
+              </motion.div>
+            );
+          })}
         </AnimatePresence>
       </div>
 
