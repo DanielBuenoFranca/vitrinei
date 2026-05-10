@@ -20,7 +20,7 @@ export function SystemStatusIndicator() {
   const [savings, setSavings] = useState({ credits: 0, calls: 0, periodStart: null as string | null });
 
   const isPrivileged = !!(isMaster || isAdmin);
-  const showChip = !isOn;
+  const showChip = !isOn && isPrivileged;
 
   const loadSavings = async () => {
     try {
@@ -53,7 +53,7 @@ export function SystemStatusIndicator() {
         whileHover={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
         onClick={() => isPrivileged && setExpanded(true)}
         className={cn(
-          "w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5 shadow-md",
+          "w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5 shadow-md rounded-t-2xl",
           "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40",
           isPrivileged ? "cursor-pointer" : "cursor-default"
         )}
@@ -69,7 +69,7 @@ export function SystemStatusIndicator() {
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="pointer-events-auto absolute bottom-12 right-0 w-72 rounded-xl border bg-card shadow-xl p-3"
+            className="pointer-events-auto absolute bottom-0 right-[calc(100%+12px)] w-72 rounded-xl border bg-card shadow-xl p-3"
           >
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center gap-1.5 text-xs font-semibold">

@@ -1070,7 +1070,7 @@ const ViniHome = () => {
               initial={{ opacity: 0, x: 20, scale: 0.9 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: 20, scale: 0.9 }}
-              className="mb-2 p-3 rounded-2xl glass-strong border border-white/10 flex flex-col gap-3 min-w-[140px] shadow-2xl"
+              className="absolute right-[calc(100%+12px)] bottom-0 p-3 rounded-2xl glass-strong border border-white/10 flex flex-col gap-3 min-w-[160px] shadow-2xl"
             >
               <div className="flex flex-col gap-1">
                 <div className="flex justify-between items-center px-1">
@@ -1119,9 +1119,9 @@ const ViniHome = () => {
           )}
         </AnimatePresence>
 
-        <div className="flex flex-col gap-3 items-end">
+        <div className="absolute right-3 sm:right-4 bottom-[64px] z-40 flex flex-col items-end">
           {/* Stack unificada e conectada de ações do Vini */}
-          <div className="flex flex-col rounded-2xl glass-strong border border-white/10 shadow-2xl overflow-hidden pointer-events-auto">
+          <div className="flex flex-col rounded-2xl glass-strong border border-white/10 shadow-2xl pointer-events-auto">
             {/* IA em contingência (integrado na stack se visível) */}
             <SystemStatusIndicator />
             
@@ -1130,7 +1130,8 @@ const ViniHome = () => {
               onClick={() => setShowHudSettings(!showHudSettings)}
               className={cn(
                 "w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5",
-                showHudSettings ? "bg-primary/20 text-primary" : "text-foreground/80"
+                showHudSettings ? "bg-primary/20 text-primary" : "text-foreground/80",
+                "first:rounded-t-2xl"
               )}
               title="Ajustes de visibilidade da conversa"
             >
@@ -1158,7 +1159,7 @@ const ViniHome = () => {
             <motion.button
               whileHover={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
               onClick={handleSideStory}
-              className="w-10 h-10 flex items-center justify-center transition-colors overflow-hidden"
+              className="w-10 h-10 flex items-center justify-center transition-colors rounded-b-2xl overflow-hidden"
               title="Sobre o Vini"
             >
               <div className="w-8 h-8 rounded-full overflow-hidden border border-[hsl(var(--vini-glow)/0.4)]">
