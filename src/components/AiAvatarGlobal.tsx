@@ -183,6 +183,11 @@ export const FloatingAiAvatar = () => {
   const [chat, setChat] = useState<ChatMsg[]>([]);
   const [speaking, setSpeaking] = useState(false);
   const [thinking, setThinking] = useState(false);
+  const { setIsThinking: setGlobalThinking } = useAiSession();
+
+  useEffect(() => {
+    setGlobalThinking(thinking);
+  }, [thinking, setGlobalThinking]);
   const [expandedProducts, setExpandedProducts] = useState<number | null>(null);
   const [expandedServices, setExpandedServices] = useState<number | null>(null);
   const [pendingSuggestions, setPendingSuggestions] = useState<Map<number, Set<string>>>(new Map());
