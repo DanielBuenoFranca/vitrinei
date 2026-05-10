@@ -110,6 +110,10 @@ const ViniHome = () => {
   const [storyOpen, setStoryOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [refinementCount, setRefinementCount] = useState(0);
+  const [supportDialogOpen, setSupportDialogOpen] = useState(false);
+  const [supportItem, setSupportItem] = useState('');
+  const [supportDetails, setSupportDetails] = useState('');
+  const [sendingSupport, setSendingSupport] = useState(false);
   const [modalInitialMessage, setModalInitialMessage] = useState<string | null>(null);
   const [modalInitialModality, setModalInitialModality] = useState<'voice' | 'text'>('text');
   const [modalMode, setModalMode] = useState<'free' | 'commerce'>('free');
