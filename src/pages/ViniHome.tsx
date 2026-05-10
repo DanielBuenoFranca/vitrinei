@@ -1138,6 +1138,12 @@ const ViniHome = () => {
                       });
                     }
                   }}
+                  onTap={() => {
+                    if (isMain && b.action) {
+                      console.log('[Vini] Card tapped - executing action:', b.action.label);
+                      runAction(b.action);
+                    }
+                  }}
                   initial={{ opacity: 0, z: -300, y: 100 }}
                   animate={{ 
                     opacity: 1, 
@@ -1147,6 +1153,7 @@ const ViniHome = () => {
                     filter: `blur(${blurValue}px) brightness(${1 - (reverseIndex * 0.15)})`,
                   }}
                   exit={{ opacity: 0, scale: 0.5, y: -150, z: -500 }}
+                  whileTap={isMain && b.action ? { scale: 0.98, opacity: 0.9 } : undefined}
                   transition={{ 
                     type: 'spring',
                     stiffness: 220,
@@ -1156,7 +1163,8 @@ const ViniHome = () => {
                   className={cn(
                     "absolute px-8 py-5 rounded-[2.5rem] text-[15px] leading-relaxed pointer-events-auto",
                     "border border-white/10 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] text-center",
-                    "backdrop-blur-[24px] select-none group",
+                    "backdrop-blur-[24px] select-none group transition-shadow duration-300",
+                    isMain && b.action && "hover:shadow-primary/20 hover:border-primary/30",
                     hudHighContrast ? "font-bold tracking-tight" : "font-medium tracking-tight"
                   )}
                   style={{ 
@@ -1166,7 +1174,7 @@ const ViniHome = () => {
                       : `rgba(255, 255, 255, ${hudHighContrast ? 0.9 : (hudOpacity * opacityValue)})`,
                     color: hudHighContrast ? '#000' : 'inherit',
                     transformStyle: 'preserve-3d',
-                    cursor: 'grab',
+                    cursor: isMain && b.action ? 'pointer' : 'grab',
                     zIndex: 100 - reverseIndex,
                     backdropFilter: isMain ? `blur(${hudBlur}px)` : 'none'
                   }}
@@ -1189,23 +1197,16 @@ const ViniHome = () => {
                         animate={{ opacity: 1, y: 0 }}
                         className="mt-4"
                       >
-                        <Button
-                          size="sm"
-                          variant="ghost"
+                        <div
                           className={cn(
-                            "h-10 w-full rounded-full transition-all duration-300 pointer-events-auto",
-                            "bg-white/10 hover:bg-white/20 border border-white/10 active:scale-95",
+                            "h-10 w-full rounded-full transition-all duration-300 flex items-center justify-center",
+                            "bg-white/10 group-hover:bg-white/20 border border-white/10",
                             "text-[11px] font-bold uppercase tracking-widest"
                           )}
-                          onClick={(e) => {
-                            e.stopPropagation(); // Evita interferência com gestos do card
-                            console.log('[Vini] Action button clicked:', b.action?.label);
-                            runAction(b.action);
-                          }}
                         >
                           <Sparkles className="w-3 h-3 mr-2 text-primary" />
                           {b.action.label}
-                        </Button>
+                        </div>
                       </motion.div>
                     )}
                   </div>
