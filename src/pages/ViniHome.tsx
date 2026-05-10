@@ -1120,11 +1120,11 @@ const ViniHome = () => {
         </AnimatePresence>
 
         <div className="flex flex-col gap-3 items-end">
-          {/* Status de Créditos (ia em contingência) flutua acima do grupo principal */}
-          <SystemStatusIndicator />
-          
           {/* Stack unificada e conectada de ações do Vini */}
           <div className="flex flex-col rounded-2xl glass-strong border border-white/10 shadow-2xl overflow-hidden pointer-events-auto">
+            {/* IA em contingência (integrado na stack se visível) */}
+            <SystemStatusIndicator />
+            
             <motion.button
               whileHover={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
               onClick={() => setShowHudSettings(!showHudSettings)}
