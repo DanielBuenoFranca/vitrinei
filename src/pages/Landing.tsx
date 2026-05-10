@@ -244,7 +244,10 @@ const Landing = () => {
   }, []);
 
   const handleMic = () => {
-    if (!speech.supported) return;
+    if (!speech.supported) {
+      toast.error("O reconhecimento de voz não é suportado neste navegador.");
+      return;
+    }
     if (speech.listening) speech.stop();
     else speech.start();
   };
