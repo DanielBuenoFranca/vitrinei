@@ -1190,9 +1190,9 @@ const ViniHome = () => {
           )}
         </AnimatePresence>
 
-        <div className="absolute right-[13px] sm:right-[17px] bottom-[58px] z-40 flex flex-col items-center">
+        <div className="absolute right-3 sm:right-4 bottom-[58px] z-40 flex flex-col items-center">
           {/* Stack unificada e conectada de ações do Vini */}
-          <div className="flex flex-col rounded-2xl bg-white/[0.03] backdrop-blur-3xl border border-white/5 shadow-2xl pointer-events-auto">
+          <div className="flex flex-col rounded-2xl bg-white/[0.03] backdrop-blur-3xl border border-white/5 shadow-2xl pointer-events-auto w-11 items-center">
             {/* IA em contingência (integrado na stack se visível) */}
             <SystemStatusIndicator />
             
@@ -1200,7 +1200,7 @@ const ViniHome = () => {
               whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
               onClick={() => setShowHudSettings(!showHudSettings)}
               className={cn(
-                "w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5",
+                "w-full h-10 flex items-center justify-center transition-colors border-b border-white/5",
                 showHudSettings ? "bg-primary/20 text-primary" : "text-foreground/50",
                 "first:rounded-t-2xl last:border-b-0"
               )}
@@ -1212,7 +1212,7 @@ const ViniHome = () => {
             <motion.button
               whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
               onClick={handleSideSearch}
-              className="w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5 text-foreground/50"
+              className="w-full h-10 flex items-center justify-center transition-colors border-b border-white/5 text-foreground/50"
               title="Pesquisar no ecossistema"
             >
               <Search className="w-4 h-4" strokeWidth={1.5} />
@@ -1221,7 +1221,7 @@ const ViniHome = () => {
             <motion.button
               whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
               onClick={handleSideConverse}
-              className="w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5 text-foreground/50"
+              className="w-full h-10 flex items-center justify-center transition-colors border-b border-white/5 text-foreground/50"
               title="Conversar com o Vini"
             >
               <MessageCircle className="w-4 h-4" strokeWidth={1.5} />
@@ -1230,7 +1230,7 @@ const ViniHome = () => {
             <motion.button
               whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
               onClick={handleSideStory}
-              className="w-10 h-10 flex items-center justify-center transition-colors rounded-b-2xl overflow-hidden"
+              className="w-full h-10 flex items-center justify-center transition-colors rounded-b-2xl overflow-hidden"
               title="Sobre o Vini"
             >
               <div className="w-8 h-8 rounded-full overflow-hidden border border-white/5 opacity-50 hover:opacity-100 transition-opacity">
