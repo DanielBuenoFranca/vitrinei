@@ -1430,31 +1430,32 @@ const ViniHome = () => {
       <AnimatePresence>
         {isThinking && (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="fixed bottom-[110px] left-1/2 -translate-x-1/2 z-[100] pointer-events-none"
+            initial={{ opacity: 0, x: 20, scale: 0.9 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 10, scale: 0.9 }}
+            className="fixed bottom-6 right-6 z-[100] pointer-events-none"
           >
-            <div className="glass-strong px-5 py-2.5 rounded-full border border-primary/30 flex items-center gap-3 shadow-2xl shadow-primary/20">
-              <div className="flex gap-1.5">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/20 backdrop-blur-md border border-white/10 shadow-lg">
+              <div className="flex gap-1">
                 {[0, 1, 2].map((i) => (
                   <motion.div
                     key={i}
                     animate={{ 
-                      scale: [1, 1.4, 1],
-                      opacity: [0.5, 1, 0.5]
+                      opacity: [0.3, 1, 0.3],
+                      scale: [0.8, 1, 0.8]
                     }}
                     transition={{ 
-                      duration: 1, 
+                      duration: 1.2, 
                       repeat: Infinity, 
-                      delay: i * 0.2 
+                      delay: i * 0.2,
+                      ease: "easeInOut"
                     }}
-                    className="w-1.5 h-1.5 rounded-full bg-primary"
+                    className="w-1 h-1 rounded-full bg-primary"
                   />
                 ))}
               </div>
-              <span className="text-[11px] font-bold uppercase tracking-widest text-primary drop-shadow-sm">
-                Vini está pensando...
+              <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-white/70">
+                Processando
               </span>
             </div>
           </motion.div>
