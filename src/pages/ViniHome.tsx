@@ -385,7 +385,6 @@ const ViniHome = () => {
 
   const openConversationWith = (message?: string, modality: 'voice' | 'text' = 'text') => {
     wakeUp();
-    setSideOpen(false);
     setSearchBarVisible(false);
     setModalInitialModality(modality);
     setModalInitialMessage(message?.trim() || null);
