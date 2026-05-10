@@ -47,7 +47,8 @@ type BubbleIntent =
   | 'profile'       // abrir perfil
   | 'referral'      // página de indicação
   | 'demos'         // central de demos
-  | 'mystore';      // minha loja
+  | 'mystore'       // minha loja
+  | 'support';      // acionar central de atendimento (CRM)
 
 type BubbleAction = {
   label: string;
