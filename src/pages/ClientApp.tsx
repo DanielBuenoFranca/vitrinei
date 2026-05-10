@@ -107,7 +107,11 @@ const ClientApp = () => {
     let didFilter = false;
     const q = searchQuery.toLowerCase().trim();
     
-    if (q.length >= 2) {
+    // Explicitly check for zero results when searching
+    const hasSearchTerm = q.length >= 2;
+    const hasSelectedSegments = selectedSegments.length > 0;
+
+    if (hasSearchTerm) {
       const filtered = svcs.filter(s =>
         s.name.toLowerCase().includes(q) ||
         s.category.toLowerCase().includes(q) ||
@@ -129,11 +133,8 @@ const ClientApp = () => {
       }
     }
     
-    // Explicitly check for zero results when searching
-    const hasSearchTerm = q.length >= 2;
-    const hasSelectedSegments = selectedSegments.length > 0;
-    
     if ((hasSearchTerm || hasSelectedSegments) && !didFilter) {
+      console.log("[Search] No results found for:", q);
       setNoResultsFallback(true);
       return [];
     }
