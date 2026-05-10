@@ -153,12 +153,12 @@ const ViniHome = () => {
       const final = lastSpokenRef.current.trim();
       if (final) {
         try { stop(); } catch {}
-        // Voz da tela principal → perfil SUPER VENDEDOR (busca/ai-router)
         console.log('[Vini] Voice auto-submit:', final);
         sendQuery(final);
         lastSpokenRef.current = '';
+        setText('');
       }
-    }, 900);
+    }, 1500);
     return () => { if (autoSubmitTimerRef.current) window.clearTimeout(autoSubmitTimerRef.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transcript]);
@@ -173,6 +173,7 @@ const ViniHome = () => {
     // Tela principal: voz finaliza → vai para o vendedor (busca)
     console.log('[Vini] Voice final capture:', final);
     sendQuery(final);
+    setText('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listening]);
 
