@@ -159,7 +159,7 @@ const ViniHome = () => {
         sendQuery(final);
         setText('');
       }
-    }, 1200);
+    }, 1000);
     return () => { if (autoSubmitTimerRef.current) window.clearTimeout(autoSubmitTimerRef.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transcript]);
