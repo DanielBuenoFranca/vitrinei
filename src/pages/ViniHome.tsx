@@ -132,9 +132,11 @@ const ViniHome = () => {
   const [searchBarVisible, setSearchBarVisible] = useState(false);
   const [searchBarMode, setSearchBarMode] = useState<'chat' | 'search'>('chat');
   const [radarActive, setRadarActive] = useState(false);
-  const [hudOpacity, setHudOpacity] = useState(0.1);
-  const [hudBlur, setHudBlur] = useState(2);
+  const [hudOpacity, setHudOpacity] = useState(0.12);
+  const [hudBlur, setHudBlur] = useState(4);
   const [hudScroll, setHudScroll] = useState(0);
+  const [showHudSettings, setShowHudSettings] = useState(false);
+  const [hudHighContrast, setHudHighContrast] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   
