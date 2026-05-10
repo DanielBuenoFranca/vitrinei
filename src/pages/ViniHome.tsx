@@ -367,6 +367,7 @@ const ViniHome = () => {
       return next;
     });
     setChatExpanded(true);
+    setSideOpen(false); // Close side buttons when a new bubble appears to clean up UI
     if (b.action?.intent === 'support') {
       setSupportItem(b.action.payload || '');
       setTimeout(() => setSupportDialogOpen(true), 1200);
