@@ -1000,13 +1000,7 @@ const ViniHome = () => {
       {/* keep motion import used elsewhere */}
       {false && <motion.span />}
 
-      {/* ─── Right-edge action buttons (open from avatar click) ─── */}
-      <ViniSideButtons
-        open={sideOpen}
-        onSearch={handleSideSearch}
-        onConverse={handleSideConverse}
-        onStory={handleSideStory}
-      />
+      {/* Side buttons integrated into unified stack below */}
 
       {/* ─── Bottom-left grid (Home, Radar, Indicação, Perfil, Demos) ─── */}
       <ViniBottomGrid items={gridItems} />
