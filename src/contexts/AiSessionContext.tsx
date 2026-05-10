@@ -31,6 +31,7 @@ const load = (): AiSessionState => {
 
 export const AiSessionProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<AiSessionState>(load);
+  const [isThinking, setIsThinking] = useState(false);
 
   useEffect(() => {
     try { sessionStorage.setItem(KEY, JSON.stringify(session)); } catch {}
@@ -47,7 +48,11 @@ export const AiSessionProvider = ({ children }: { children: ReactNode }) => {
 
   const clear = useCallback(() => setSession({ tags: [], segments: [] }), []);
 
-  return <AiSessionCtx.Provider value={{ session, update, clear }}>{children}</AiSessionCtx.Provider>;
+  return (
+    <AiSessionCtx.Provider value={{ session, isThinking, setIsThinking, update, clear }}>
+      {children}
+    </AiSessionCtx.Provider>
+  );
 };
 
 export const useAiSession = () => {
