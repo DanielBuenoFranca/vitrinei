@@ -203,14 +203,16 @@ const Landing = () => {
     }
   };
   useEffect(() => {
-    if (speech.transcript) setSearchQuery(speech.transcript);
-  }, [speech.transcript]);
+    if (speech.listening && speech.transcript) {
+      setSearchQuery(speech.transcript);
+    }
+  }, [speech.transcript, speech.listening]);
+
   useEffect(() => {
-    if (!speech.listening && speech.transcript) {
-      // auto-execute on stop
+    if (!speech.listening && speech.transcript && searchQuery === speech.transcript) {
+      // auto-execute on stop if the query matches the final transcript
       setTimeout(() => executeSearch(), 150);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [speech.listening]);
   // Pré-preenche e EXECUTA a busca via ?q= (vinda do Vini ou outras telas).
   // Também aplica ?type= (service/product/both) e ?segments=a,b,c quando presentes.
