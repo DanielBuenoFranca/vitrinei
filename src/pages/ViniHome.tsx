@@ -1098,10 +1098,12 @@ const ViniHome = () => {
               const reverseIndex = (arr.length - 1) - i;
               const isMain = reverseIndex === 0;
               
+              // Invertendo yOffset para empilhar acima: principal é 0, secundário 1 é -32, secundário 2 é -64
+              // Invertendo rotateX para inclinar para trás na parte de cima
               const zOffset = reverseIndex * -120;
-              const yOffset = reverseIndex * -32;
-              const rotateX = reverseIndex * 15;
-              const blurValue = reverseIndex > 0 ? (reverseIndex * hudBlur * 0.5) : 0; // FOCO atua nos cards secundários
+              const yOffset = reverseIndex * -45; 
+              const rotateX = reverseIndex * -10; 
+              const blurValue = reverseIndex > 0 ? (reverseIndex * hudBlur * 0.5) : 0;
               const opacityValue = Math.max(0.1, 1 - (reverseIndex * 0.4));
 
               return (
@@ -1110,22 +1112,25 @@ const ViniHome = () => {
                   layout
                   drag="y"
                   dragConstraints={{ top: 0, bottom: 0 }}
-                  dragElastic={0.5}
+                  dragElastic={0.8}
                   onDragEnd={(e, info) => {
-                    if (info.offset.y < -40) {
-                      setBubbles(prev => {
-                        if (prev.length <= 1) return prev;
-                        const newArr = [...prev];
-                        const last = newArr.pop();
-                        if (last) newArr.unshift(last);
-                        return newArr;
-                      });
-                    } else if (info.offset.y > 40) {
+                    // Ajustando lógica de rolagem para ser mais intuitiva com o empilhamento superior
+                    // Arrastar para baixo (info.offset.y > 40) traz o card de trás para frente
+                    if (info.offset.y > 40) {
                       setBubbles(prev => {
                         if (prev.length <= 1) return prev;
                         const newArr = [...prev];
                         const first = newArr.shift();
                         if (first) newArr.push(first);
+                        return newArr;
+                      });
+                    } else if (info.offset.y < -40) {
+                      // Arrastar para cima (info.offset.y < -40) joga o card da frente para o final da fila
+                      setBubbles(prev => {
+                        if (prev.length <= 1) return prev;
+                        const newArr = [...prev];
+                        const last = newArr.pop();
+                        if (last) newArr.unshift(last);
                         return newArr;
                       });
                     }
