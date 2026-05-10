@@ -8,9 +8,11 @@ import { plans, clientProducts, clientServices, mockUser, checkEligibility, meiP
 import {
   ArrowLeft, Star, ShoppingBag, Wrench, CreditCard, Zap, CheckCircle2, Lock,
   Clock, ArrowUpCircle, Coins, ShieldCheck, Package, ChevronRight, X, Search,
-  Sparkles, Calendar, MapPin, ShoppingCart, TrendingDown, Heart, Plus, Minus, Brain
+  Sparkles, Calendar, MapPin, ShoppingCart, TrendingDown, Heart, Plus, Minus, Brain, LifeBuoy, Megaphone
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 /* ─── SEGMENT DEFINITIONS ─── */
 const segments = [
@@ -109,15 +111,27 @@ const ClientApp = () => {
         s.category.toLowerCase().includes(q) ||
         s.provider.toLowerCase().includes(q)
       );
-      if (filtered.length > 0) { svcs = filtered; didFilter = true; }
+      if (filtered.length > 0) { 
+        svcs = filtered; 
+        didFilter = true; 
+      }
     }
     if (selectedSegments.length > 0) {
       const cats = selectedSegments.map(id => segments.find(s => s.id === id)?.category).filter(Boolean);
       const filtered = svcs.filter(s => cats.includes(s.category));
-      if (filtered.length > 0) { svcs = filtered; didFilter = true; }
+      if (filtered.length > 0) { 
+        svcs = filtered; 
+        didFilter = true; 
+      }
     }
-    // Detect: searched something but original filter returned 0 → we're using fallback
-    setNoResultsFallback(searchQuery.length >= 2 && !didFilter);
+    
+    // Detect: searched something but filters returned 0 -> empty state with Support Center CTA
+    const hasSearch = searchQuery.length >= 2 || selectedSegments.length > 0;
+    setNoResultsFallback(hasSearch && !didFilter);
+    
+    // If no results, return empty to show only the support card
+    if (hasSearch && !didFilter) return [];
+    
     return svcs;
   }, [searchQuery, selectedSegments]);
 
@@ -326,16 +340,73 @@ const ClientApp = () => {
         ))}
       </motion.div>
 
-      {/* Fallback notice when search yielded 0 results */}
+      {/* Fallback notice when search yielded 0 results - Central de Atendimento Card */}
       {noResultsFallback && (
-        <div className="px-3 pt-2">
-          <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[10.5px] text-foreground flex items-start gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-            <p>
-              Não encontrei <span className="font-semibold">"{searchQuery}"</span> no estoque local. Mostrando o catálogo completo para você explorar
-              {isFora && <> — incluindo opções de fora da sua região</>}.
+        <div className="px-3 pt-4 space-y-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="rounded-[2rem] border border-primary/30 bg-primary/5 p-6 text-center shadow-xl backdrop-blur-md relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <Sparkles className="w-12 h-12 text-primary" />
+            </div>
+            
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-primary/20">
+              <LifeBuoy className="w-8 h-8 text-primary" />
+            </div>
+            
+            <h3 className="text-lg font-bold text-foreground mb-2">Item não encontrado</h3>
+            <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+              Não conseguimos localizar <span className="text-primary font-semibold">"{searchQuery}"</span> em nosso estoque local agora.
+              Deseja que nossa Central de Atendimento procure para você?
             </p>
-          </div>
+            
+            <div className="space-y-3">
+              <Button 
+                className="w-full rounded-full py-6 font-bold text-sm shadow-lg shadow-primary/20 group"
+                onClick={async () => {
+                  const { error } = await supabase.from('support_requests').insert({
+                    requested_item: searchQuery,
+                    details: 'Solicitação automática via Busca (Item não encontrado)',
+                    status: 'pending',
+                    user_id: null,
+                    context_analyzed: { 
+                      source: 'ClientApp_Search',
+                      query: searchQuery,
+                      timestamp: new Date().toISOString()
+                    }
+                  });
+
+                  if (error) {
+                    toast.error('Erro ao enviar para central');
+                  } else {
+                    toast.success('Solicitação enviada para Central de Atendimento!');
+                    setNoResultsFallback(false);
+                    setSearchQuery('');
+                  }
+                }}
+              >
+                <Megaphone className="w-4 h-4 mr-2 group-hover:rotate-12 transition-transform" />
+                ENVIAR PARA CENTRAL
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                className="w-full text-xs text-muted-foreground hover:text-primary transition-colors"
+                onClick={() => {
+                  setSearchQuery('');
+                  setNoResultsFallback(false);
+                }}
+              >
+                Tentar nova pesquisa
+              </Button>
+            </div>
+            
+            <p className="mt-6 text-[10px] text-muted-foreground/60 uppercase tracking-widest font-bold">
+              ADMIN DRM / CRM INTEGRADO
+            </p>
+          </motion.div>
         </div>
       )}
       <AnimatePresence>
