@@ -497,7 +497,10 @@ const ViniHome = () => {
   const sendQuery = (q: string) => {
     console.log('[Vini] sendQuery starting for:', q);
     const query = q.trim();
-    if (!query) return;
+    if (!query) {
+      console.warn('[Vini] Empty query, ignoring');
+      return;
+    }
     // Se já está pensando, NÃO ignora: enfileira o pedido para rodar
     // assim que a resposta atual finalizar. Garante que toda fala/escrita
     // do usuário chegue ao Vini e tenha resposta.
