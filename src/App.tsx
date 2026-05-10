@@ -18,6 +18,7 @@ import { SystemStatusIndicator } from "@/components/SystemStatusIndicator";
 import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import { DefaultRouteSkeleton, RadarSkeleton, CardexSkeleton } from "@/components/RouteSkeletons";
 import { loadDynamicEntries } from "@/data/searchData";
+import { GlobalThinkingIndicator } from "@/components/vini/GlobalThinkingIndicator";
 
 // Eager (críticos para 1ª pintura)
 import ViniHome from "./pages/ViniHome.tsx";
