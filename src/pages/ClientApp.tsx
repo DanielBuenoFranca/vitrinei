@@ -376,10 +376,10 @@ const ClientApp = () => {
             
             <h3 className="text-lg font-bold text-foreground mb-2">Item não encontrado</h3>
             <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-              Não conseguimos localizar <span className="text-primary font-semibold">"{searchQuery}"</span> em nosso estoque local agora.
+              Não conseguimos localizar <span className="text-primary font-semibold">"{searchQuery || "o item solicitado"}"</span> em nosso estoque local agora.
               Deseja que nossa Central de Atendimento procure para você?
             </p>
-            
+
             <div className="space-y-3">
               <Button 
                 className="w-full rounded-full py-6 font-bold text-sm shadow-lg shadow-primary/20 group"
