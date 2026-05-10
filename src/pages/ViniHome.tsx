@@ -1062,24 +1062,26 @@ const ViniHome = () => {
       {/* Banner de transcrição superior removido — a transcrição aparece
           apenas dentro da barra de busca para evitar duplicidade visual. */}
 
-      {/* ─── Chat History Bubbles (Cylindrical 3D Scroll HUD) ─── */}
+      {/* ─── Chat History Bubbles (Professional Cylindrical 3D Scroll) ─── */}
       <div 
-        className="absolute left-[45%] bottom-[45%] -translate-x-1/2 z-10 w-[80%] max-w-[260px] pointer-events-none h-[220px] flex items-center justify-center perspective-[1200px]"
+        className="absolute left-[45%] bottom-[42%] -translate-x-1/2 z-10 w-[80%] max-w-[260px] pointer-events-none h-[280px] flex items-center justify-center perspective-[1500px]"
         style={{ 
-          transform: `translateX(-50%) translateY(${hudScroll}px) scale(${hudScale})`,
-          transition: 'transform 0.1s ease-out'
+          transform: `translateX(-50%) scale(${hudScale})`,
+          transition: 'transform 0.2s ease-out'
         }}
       >
         <AnimatePresence initial={false}>
-          {[...bubbles].slice(-6).map((b, i, arr) => {
-            // Revert indexing so the LAST message (index arr.length - 1) is at the center (angle 0)
+          {[...bubbles].slice(-5).map((b, i, arr) => {
+            // Revert indexing: the LAST message (index arr.length - 1) is at the bottom (angle 0)
+            // Previous messages go UPWARDS (positive angles)
             const reverseIndex = (arr.length - 1) - i;
-            const angleStep = 45; // steeper angle for cylinder feel
-            const radius = 150; 
-            const angle = reverseIndex * angleStep;
+            const angleStep = 32; // Professional suttle step
+            const radius = 160; 
+            const angle = (reverseIndex * angleStep) + (hudScroll * 0.5); // hudScroll affects rotation
             
-            // Only show bubbles that are "facing" the user or slightly above/below
-            if (angle > 120 || angle < -120) return null;
+            // Focus and distance calculations for a smooth feel
+            const isLatest = reverseIndex === 0;
+            const opacityMultiplier = Math.max(0, 1 - (reverseIndex * 0.22));
 
             return (
               <motion.div
@@ -1087,61 +1089,68 @@ const ViniHome = () => {
                 layout
                 drag="y"
                 dragConstraints={{ top: 0, bottom: 0 }}
-                dragElastic={0.4}
+                dragElastic={0.3}
                 onDrag={(e, info) => {
-                  // Allow the user to "rotate" the cylinder by dragging
+                  // Intuitive drag to rotate cylinder
                   setHudScroll(prev => prev + info.delta.y);
                 }}
-                initial={{ opacity: 0, z: -radius, rotateX: 60 }}
-                animate={{ 
-                  opacity: Math.max(0, (1 - (reverseIndex * 0.25)) * (hudOpacity * 2.5)), 
-                  y: Math.sin(angle * Math.PI / 180) * radius,
-                  z: Math.cos(angle * Math.PI / 180) * -radius + radius, // bring forward
-                  rotateX: -angle * 0.6,
-                  scale: 1 - (reverseIndex * 0.08),
-                  filter: `blur(${reverseIndex * 1.5}px)`
+                onDragEnd={() => {
+                  // Suttle snap back or dampening could be here, but keeping it free for now
                 }}
-                exit={{ opacity: 0, scale: 0.5, z: -radius }}
+                initial={{ opacity: 0, y: 100, rotateX: 45, z: -radius }}
+                animate={{ 
+                  opacity: opacityMultiplier * (hudOpacity * 2.2), 
+                  y: Math.sin((angle - 90) * Math.PI / 180) * radius + radius, // Offset to keep bottom aligned
+                  z: Math.cos((angle - 90) * Math.PI / 180) * radius - radius,
+                  rotateX: angle * 0.45,
+                  scale: 1 - (reverseIndex * 0.06),
+                  filter: `blur(${reverseIndex * 1.2}px)`
+                }}
+                exit={{ opacity: 0, scale: 0.8, y: -50 }}
                 transition={{ 
                   type: 'spring',
-                  stiffness: 300,
-                  damping: 25
+                  stiffness: 180,
+                  damping: 24,
+                  mass: 0.8
                 }}
                 className={cn(
-                  "absolute px-6 py-4 rounded-[2rem] text-[14px] leading-snug pointer-events-auto",
-                  "border-[0.5px] shadow-2xl text-center transition-shadow duration-300 w-full",
+                  "absolute px-6 py-4 rounded-[1.8rem] text-[14px] leading-snug pointer-events-auto",
+                  "border-[0.5px] shadow-2xl text-center w-full select-none",
                   hudHighContrast ? "font-bold tracking-tight" : "font-semibold tracking-tight",
                   b.role === 'vini' 
                     ? "bg-primary text-primary-foreground" 
-                    : "bg-white/15 text-foreground backdrop-blur-md"
+                    : "bg-white/10 text-foreground backdrop-blur-xl"
                 )}
                 style={{ 
                   backgroundColor: b.role === 'vini' 
-                    ? `hsla(var(--primary) / ${hudHighContrast ? 0.95 : hudOpacity * 2})` 
-                    : `rgba(255, 255, 255, ${hudHighContrast ? 0.9 : hudOpacity})`,
+                    ? `hsla(var(--primary) / ${hudHighContrast ? 0.95 : hudOpacity * 1.8})` 
+                    : `rgba(255, 255, 255, ${hudHighContrast ? 0.9 : hudOpacity * 0.8})`,
                   color: hudHighContrast ? '#000' : undefined,
-                  borderColor: hudHighContrast ? 'rgba(0,0,0,0.2)' : `rgba(255, 255, 255, ${hudOpacity / 2})`,
+                  borderColor: hudHighContrast ? 'rgba(0,0,0,0.2)' : `rgba(255, 255, 255, ${hudOpacity / 3})`,
                   backdropFilter: `blur(${hudBlur}px)`,
                   fontSize: hudHighContrast ? '16px' : '14px',
                   transformStyle: 'preserve-3d',
                   cursor: 'grab',
-                  zIndex: 10 - reverseIndex
+                  zIndex: 10 - reverseIndex,
+                  boxShadow: isLatest ? '0 20px 40px -10px rgba(0,0,0,0.3)' : 'none'
                 }}
               >
-                <p className={cn("drop-shadow-md", hudHighContrast && "drop-shadow-none")}>{b.text}</p>
-                {b.action && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className={cn(
-                      "mt-2.5 h-8 w-full text-[10.5px] font-bold rounded-full backdrop-blur-sm",
-                      hudHighContrast ? "bg-black text-white hover:bg-black/80" : "bg-white/20 hover:bg-white/30 text-inherit"
-                    )}
-                    onClick={() => runAction(b.action)}
-                  >
-                    {b.action.label}
-                  </Button>
-                )}
+                <div style={{ transform: 'translateZ(20px)' }}>
+                  <p className={cn("drop-shadow-md", hudHighContrast && "drop-shadow-none")}>{b.text}</p>
+                  {b.action && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className={cn(
+                        "mt-2.5 h-8 w-full text-[10.5px] font-bold rounded-full backdrop-blur-sm",
+                        hudHighContrast ? "bg-black text-white hover:bg-black/80" : "bg-white/20 hover:bg-white/30 text-inherit"
+                      )}
+                      onClick={() => runAction(b.action)}
+                    >
+                      {b.action.label}
+                    </Button>
+                  )}
+                </div>
               </motion.div>
             );
           })}
