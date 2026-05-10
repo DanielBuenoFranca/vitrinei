@@ -1190,7 +1190,7 @@ const ViniHome = () => {
           )}
         </AnimatePresence>
 
-        <div className="absolute right-3 sm:right-4 bottom-[58px] z-40 flex flex-col items-end">
+        <div className="absolute right-3.5 sm:right-[18px] bottom-[60px] z-40 flex flex-col items-end">
           {/* Stack unificada e conectada de ações do Vini */}
           <div className="flex flex-col rounded-2xl bg-white/[0.03] backdrop-blur-3xl border border-white/5 shadow-2xl pointer-events-auto">
             {/* IA em contingência (integrado na stack se visível) */}
