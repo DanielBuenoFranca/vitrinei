@@ -607,8 +607,14 @@ const ViniHome = () => {
           emitEmotion('sad');
           pushBubble({
             role: 'vini',
-            text: `Não encontrei exatamente "${query}" no estoque local. Posso abrir a busca completa pra você ou refinar aqui mesmo — me dá mais um detalhe?`,
-            action: { label: 'Abrir busca completa', route: `/buscar?q=${encodeURIComponent(query)}&fora=1` },
+            text: `Infelizmente não encontrei "${query}" no estoque agora. Gostaria que eu acionasse a nossa Central de Atendimento para buscarem isso para você?`,
+            action: { 
+              label: 'Acionar Central', 
+              onClick: () => {
+                setSupportItem(query);
+                setSupportDialogOpen(true);
+              }
+            },
           });
           finalize();
         }
