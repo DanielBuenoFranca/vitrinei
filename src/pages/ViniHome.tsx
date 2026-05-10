@@ -677,7 +677,6 @@ const ViniHome = () => {
 
   const handleSideSearch = () => {
     wakeUp();
-    setSideOpen(false);
     setSearchBarMode('search');
     setSearchBarVisible(true);
     setTimeout(() => inputRef.current?.focus(), 80);
