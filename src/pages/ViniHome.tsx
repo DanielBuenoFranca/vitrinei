@@ -134,12 +134,12 @@ const ViniHome = () => {
   const [searchBarVisible, setSearchBarVisible] = useState(false);
   const [searchBarMode, setSearchBarMode] = useState<'chat' | 'search'>('chat');
   const [radarActive, setRadarActive] = useState(false);
-  const [hudOpacity, setHudOpacity] = useState(0.12);
-  const [hudBlur, setHudBlur] = useState(4);
+  const [hudOpacity, setHudOpacity] = useState(0.45);
+  const [hudBlur, setHudBlur] = useState(12);
   const [hudScroll, setHudScroll] = useState(0);
   const [showHudSettings, setShowHudSettings] = useState(false);
   const [hudHighContrast, setHudHighContrast] = useState(false);
-  const [hudScale, setHudScale] = useState(1);
+  const [hudScale, setHudScale] = useState(1.05);
   const saveTimeoutRef = useRef<number | null>(null);
 
   // Load preferences from profile
