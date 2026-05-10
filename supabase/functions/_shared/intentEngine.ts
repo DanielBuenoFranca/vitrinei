@@ -407,23 +407,8 @@ export async function classifyMessage(message: string, sessionCtx: any = {}): Pr
     return out;
   }
 
-  // Se chegou aqui e temos uma necessidade clara (com keywords ou conceitos) 
-  // mas o estoque deu vazio, verificamos se já refinamos.
+  // Se o estoque deu vazio e já passamos pelo refinamento (ou não tem followUp):
   if (need && (keywords.length > 0 || concepts.length > 0)) {
-    if (!refinementDone && need.followUp) {
-      out.intent = "chat";
-      out.next_agent = "vini";
-      out.needs_more_info = true;
-      out.follow_up_question = need.followUp.question;
-      out.suggestions = need.followUp.suggestions;
-      out.tags = [need.id, ...keywords];
-      out.query = raw;
-      out.item_type = need.itemType;
-      out.confidence = 0.8;
-      return out;
-    }
-
-    // Se já refinou e ainda assim não achou nada no estoque:
     out.intent = "support";
     out.next_agent = "support";
     out.query = raw;
