@@ -673,6 +673,10 @@ const ViniHome = () => {
             // Se já refinamos uma vez ou não é busca, abre busca direta com o que temos para evitar loop
             const params = new URLSearchParams({ q: routed.query || query, type: routed.item_type || 'both' });
             if ((routed.segments || []).length) params.set('segments', routed.segments.join(','));
+            
+            // Se o Vini ou a IA detectar que não há resultados (intent support), força o card
+            if (routed.intent === 'support') params.set('force_support', '1');
+
             emitEmotion('happy');
             pushBubble({ role: 'vini', text: routed.transition_message || `Entendi. Já estou abrindo a busca com o que conversamos.` });
             setTimeout(() => { navigate(`/buscar?${params.toString()}`); finalize(); }, 900);
@@ -706,7 +710,7 @@ const ViniHome = () => {
             role: "vini",
             text: `Infelizmente não encontrei "${query}" em nosso estoque agora. Vou te levar para a tela de busca para acionarmos nossa Central de Atendimento.`,
           });
-          setTimeout(() => { navigate(`/buscar?q=${encodeURIComponent(query)}`); finalize(); }, 1200);
+          setTimeout(() => { navigate(`/buscar?q=${encodeURIComponent(query)}&force_support=1`); finalize(); }, 1200);
         }
       } catch (err) {
         // Qualquer erro síncrono/inesperado: NUNCA deixar o Vini mudo.
