@@ -306,6 +306,7 @@ export function findRelevantMeis(service: ServiceItem): MeiProfessional[] {
 // ══════════════════════════════════════════════════
 
 export const clientServices: ServiceItem[] = [
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n  // 0. ALIMENTAÇÃO & BEBIDAS\n  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n  { id: 1000, name: 'Cerveja Artesanal (Entrega)', icon: '🍺', category: 'Alimentação & Bebidas', provider: 'Empório do Malte', rating: 4.9, creditCost: 20, minMonths: 0, minPlan: 'bronze', allowComplement: true, monetaryValue: 45.00, relatedProductIds: [] },\n  { id: 1001, name: 'Kit Churrasco (Delivery)', icon: '🥩', category: 'Alimentação & Bebidas', provider: 'Casa de Carnes Prime', rating: 4.8, creditCost: 50, minMonths: 0, minPlan: 'bronze', allowComplement: true, monetaryValue: 120.00, relatedProductIds: [] },
   // ────────────────────────────────────────────────
   // 1. MANUTENÇÃO & REPAROS (20 serviços)
   // ────────────────────────────────────────────────

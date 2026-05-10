@@ -13,6 +13,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
 
 /* ─── SEGMENT DEFINITIONS ─── */
 const segments = [
@@ -94,8 +95,9 @@ const ClientApp = () => {
   // Sync URL ?q= when it changes
   useEffect(() => {
     const q = searchParams.get('q');
-    if (q !== null && q !== searchQuery) setSearchQuery(q);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (q !== null && q !== searchQuery) {
+      setSearchQuery(q);
+    }
   }, [searchParams]);
 
   // Filter services by search & segments. If search/segment yields 0 results,
@@ -106,13 +108,17 @@ const ClientApp = () => {
     let didFilter = false;
     const q = searchQuery.toLowerCase().trim();
     
-    if (q.length >= 2) {
-      // Precise search
+    // Check if there is an active search or segment filter
+    const hasSearchTerm = q.length >= 2;
+    const hasSelectedSegments = selectedSegments.length > 0;
+
+    if (hasSearchTerm) {
       const filtered = svcs.filter(s =>
         s.name.toLowerCase().includes(q) ||
         s.category.toLowerCase().includes(q) ||
         s.provider.toLowerCase().includes(q)
       );
+      
       if (filtered.length > 0) { 
         svcs = filtered; 
         didFilter = true; 
@@ -121,20 +127,29 @@ const ClientApp = () => {
     
     if (selectedSegments.length > 0) {
       const cats = selectedSegments.map(id => segments.find(s => s.id === id)?.category).filter(Boolean);
-      const filtered = (didFilter ? svcs : clientServices).filter(s => cats.includes(s.category));
+      // If we already filtered by text, further filter those results. 
+      // Otherwise, filter the entire catalog.
+      const source = didFilter ? svcs : clientServices;
+      const filtered = source.filter(s => cats.includes(s.category));
+      
       if (filtered.length > 0) { 
         svcs = filtered; 
         didFilter = true; 
+      } else if (didFilter) {
+        // If segment filter results in 0 but text search had results, 
+        // we might want to keep the text search results or show 0.
+        // For strictness, if any filter is active and results are 0, we show support card.
+        didFilter = false;
       }
     }
     
-    // Detect: searched something but filters returned 0 -> empty state with Support Center CTA
-    const hasSearch = q.length >= 2 || selectedSegments.length > 0;
-    setNoResultsFallback(hasSearch && !didFilter);
+    if ((hasSearchTerm || hasSelectedSegments) && !didFilter) {
+      console.log("[Search] No results found for query:", q, "segments:", selectedSegments);
+      setNoResultsFallback(true);
+      return [];
+    }
     
-    // If no results, return empty to show only the support card
-    if (hasSearch && !didFilter) return [];
-    
+    setNoResultsFallback(false);
     return svcs;
   }, [searchQuery, selectedSegments]);
 
@@ -312,7 +327,7 @@ const ClientApp = () => {
         initial="hidden"
         animate="visible"
         variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.1, delayChildren: 0.1 } } }}
-        className="px-3 pt-3 grid grid-cols-3 gap-2 sm:gap-3"
+        className={cn("px-3 pt-3 grid grid-cols-3 gap-2 sm:gap-3", noResultsFallback && "hidden")}
       >
         {[
           { key: 'urgencia', icon: '⚡', label: 'Urgência', desc: isUrgencia ? 'Radar acionado' : 'Atendimento imediato', tone: isUrgencia ? 'from-destructive/40 to-orange-500/30 border-destructive ring-2 ring-destructive/40 animate-pulse' : 'from-destructive/15 to-orange-500/10 border-destructive/30', onClick: () => navigate(isUrgencia ? '/client' : '/jornada-cliente?urgencia=1'), badge: isUrgencia ? '● ATIVO' : null },
@@ -361,10 +376,10 @@ const ClientApp = () => {
             
             <h3 className="text-lg font-bold text-foreground mb-2">Item não encontrado</h3>
             <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-              Não conseguimos localizar <span className="text-primary font-semibold">"{searchQuery}"</span> em nosso estoque local agora.
+              Não conseguimos localizar <span className="text-primary font-semibold">"{searchQuery || "o item solicitado"}"</span> em nosso estoque local agora.
               Deseja que nossa Central de Atendimento procure para você?
             </p>
-            
+
             <div className="space-y-3">
               <Button 
                 className="w-full rounded-full py-6 font-bold text-sm shadow-lg shadow-primary/20 group"
@@ -548,7 +563,7 @@ const ClientApp = () => {
       </AnimatePresence>
 
       {/* Content */}
-      <div className="p-3 pb-8 space-y-3">
+      <div className={cn("p-3 pb-8 space-y-3", noResultsFallback && "hidden")}>
 
         {/* AI Suggestions */}
         <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5">
