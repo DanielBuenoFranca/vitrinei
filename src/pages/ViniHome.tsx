@@ -1211,8 +1211,6 @@ const ViniHome = () => {
                     )}
                   </div>
                 </motion.div>
-                  </div>
-                </motion.div>
               );
             })}
           </AnimatePresence>
