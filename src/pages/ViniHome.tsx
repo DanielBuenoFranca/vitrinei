@@ -1048,9 +1048,9 @@ const ViniHome = () => {
 
       {/* ─── Chat History Bubbles (Refined Integrated HUD) ─── */}
       <div 
-        className="absolute left-1/2 bottom-[44%] -translate-x-1/2 z-10 w-[85%] max-w-[320px] pointer-events-none flex flex-col-reverse gap-3 py-6"
+        className="absolute left-[45%] bottom-[44%] -translate-x-1/2 z-10 w-[80%] max-w-[260px] pointer-events-none flex flex-col-reverse gap-3 py-6"
         style={{ 
-          transform: `translateX(-50%) translateY(${hudScroll}px)`,
+          transform: `translateX(-50%) translateY(${hudScroll}px) scale(${hudScale})`,
           transition: 'transform 0.1s ease-out'
         }}
       >
