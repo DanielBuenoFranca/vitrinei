@@ -162,9 +162,13 @@ const ClientApp = () => {
     }
 
     const q = searchQuery.toLowerCase().trim();
+    console.log('[Search] Filtering services with query:', q, 'and segments:', selectedSegments);
+    
     
     // Filtros por segmentos (se houver algum selecionado)
     const selectedCats = selectedSegments.map(id => segments.find(s => s.id === id)?.category).filter(Boolean);
+    console.log('[Search] Selected Categories:', selectedCats);
+    
 
     // Se não houver busca nem segmentos, retorna tudo
     if (!q && selectedSegments.length === 0) {
@@ -175,16 +179,35 @@ const ClientApp = () => {
     // Aplica o filtro de texto
     let svcs = clientServices;
     if (q) {
-      svcs = svcs.filter(s =>
-        s.name.toLowerCase().includes(q) ||
-        s.category.toLowerCase().includes(q) ||
-        s.provider.toLowerCase().includes(q)
-      );
+      svcs = svcs.filter(s => {
+        const nameMatch = s.name.toLowerCase().includes(q);
+        const catMatch = s.category.toLowerCase().includes(q);
+        const provMatch = s.provider.toLowerCase().includes(q);
+        
+        // Busca aprimorada: verificar se o termo de busca está em algum lugar dos metadados
+        // Se nameMatch, catMatch ou provMatch forem verdadeiros, já retorna true
+        if (nameMatch || catMatch || provMatch) return true;
+        
+        // Caso contrário, verificamos tags ou descrição (se existissem)
+        // Aqui simulamos uma busca mais "inteligente" verificando palavras parciais
+        const words = q.split(' ');
+        if (words.length > 1) {
+          return words.every(word => 
+            s.name.toLowerCase().includes(word) || 
+            s.category.toLowerCase().includes(word)
+          );
+        }
+        
+        return false;
+      });
     }
 
-    // Aplica o filtro de segmentos sobre o resultado da busca (ou sobre o total se não houver busca)
+    // Aplica o filtro de segmentos sobre o resultado da busca
     if (selectedSegments.length > 0) {
-      svcs = svcs.filter(s => selectedCats.includes(s.category));
+      svcs = svcs.filter(s => {
+        const segment = segments.find(seg => seg.category === s.category);
+        return segment && selectedSegments.includes(segment.id);
+      });
     }
 
     // Se após os filtros não sobrar nada
@@ -357,7 +380,10 @@ const ClientApp = () => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
+                onChange={e => {
+                  setSearchQuery(e.target.value);
+                  setTriggerSearch(prev => prev + 1); // Força re-render imediato da busca
+                }}
                 placeholder="Buscar serviços, produtos, categorias..."
                 className="w-full pl-9 pr-8 py-2 rounded-xl bg-muted text-xs border-0 outline-none text-foreground placeholder:text-muted-foreground"
               />
@@ -765,7 +791,7 @@ const ClientApp = () => {
         <div data-search-results>
           {activeSegments.map((seg, segIdx) => {
             const services = groupedServices[seg.id];
-          const isExpanded = expandedSegment === seg.id || searchQuery.length >= 2 || selectedSegments.length > 0;
+          const isExpanded = expandedSegment === seg.id || searchQuery.trim().length >= 1 || selectedSegments.length > 0;
 
           return (
             <motion.div key={seg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: segIdx * 0.05 }}>
@@ -869,7 +895,7 @@ const ClientApp = () => {
         })}
 
         {/* Products Section */}
-        {(searchQuery.length >= 2 || selectedSegments.length > 0) && (
+        {(searchQuery.trim().length >= 1 || selectedSegments.length > 0) && (
           <div>
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5"><ShoppingBag className="w-4 h-4 text-primary" /> Resultados de Produtos</h3>
