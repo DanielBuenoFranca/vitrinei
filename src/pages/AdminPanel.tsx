@@ -501,7 +501,10 @@ const AdminPanel = () => {
           setResetPwdValue('');
         } else if (data?.handled_as_warning) {
           // Erro técnico mas devolvido com 200 pela função
-          toast.warning(`Aviso técnico: ${errorMsg}. Tentamos prosseguir com a finalização.`);
+          const ptErrorMsg = errorMsg.toLowerCase().includes('weak and easy to guess') 
+            ? 'A senha é fraca e fácil de adivinhar, escolha uma diferente' 
+            : errorMsg;
+          toast.warning(`Aviso técnico: ${ptErrorMsg}. Tentamos prosseguir com a finalização.`);
           toast.success(`Rotina finalizada para ${resetPwdDialog.userName}.`);
           setResetPwdDialog({ open: false, userId: '', userName: '' });
           setResetPwdValue('');
