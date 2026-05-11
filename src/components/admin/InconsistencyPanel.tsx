@@ -215,6 +215,7 @@ export function InconsistencyPanel({
             </Button>
           </div>
         ))}
+        </div>
       </CardContent>
     </Card>
   );
