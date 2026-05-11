@@ -716,6 +716,20 @@ const ClientApp = () => {
                 <motion.p key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.2 }}
                   className="text-[10px] text-muted-foreground bg-card/80 rounded-lg px-2.5 py-1.5">{s}</motion.p>
               ))}
+              {aiInsight && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 5 }} 
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-2.5 rounded-xl bg-primary/10 border border-primary/20 mt-2"
+                >
+                  <div className="flex items-start gap-2">
+                    <Sparkles className="w-3.5 h-3.5 text-primary mt-0.5" />
+                    <p className="text-[10px] text-foreground leading-relaxed italic">
+                      {aiInsight.replace(/\*\*(.*?)\*\*/g, '$1')}
+                    </p>
+                  </div>
+                </motion.div>
+              )}
             </div>
           </CardContent>
         </Card>
