@@ -380,7 +380,8 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
             </div>
           </div>
         </div>
-        <DialogFooter>
+        </ScrollArea>
+        <DialogFooter className="p-6 pt-2 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
           <Button onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : isEdit ? 'Salvar' : 'Criar'}</Button>
         </DialogFooter>
