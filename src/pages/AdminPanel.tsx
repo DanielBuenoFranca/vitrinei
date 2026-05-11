@@ -1003,17 +1003,16 @@ const AdminPanel = () => {
                 {units.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">Nenhuma unidade cadastrada.</p>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Sigla</TableHead>
-                          <TableHead>Descrição</TableHead>
-                          <TableHead>Criado em</TableHead>
-                          <TableHead></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
+                  <Table wrapperClassName="admin-scroll-area max-h-[60vh] border-t">
+                    <TableHeader className="sticky top-0 z-10 bg-background shadow-sm">
+                      <TableRow>
+                        <TableHead>Sigla</TableHead>
+                        <TableHead>Descrição</TableHead>
+                        <TableHead>Criado em</TableHead>
+                        <TableHead></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                         {units.map(u => (
                           <TableRow key={u.id}>
                             <TableCell className="font-mono font-semibold">{u.name}</TableCell>
