@@ -56,15 +56,8 @@ const profileOptions = [
 
 // Plans loaded dynamically via useSubscriptionPlans hook (site_settings.subscription_plans)
 
-// Generate a 6-digit activation code from user id
-const generateActivationCode = (userId: string) => {
-  let hash = 0;
-  for (let i = 0; i < userId.length; i++) {
-    hash = ((hash << 5) - hash) + userId.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash).toString().slice(0, 6).padStart(6, '0');
-};
+// Activation code is now handled server-side and stored in the database.
+// The user should receive it or have it provided by a Master user.
 
 const AuthPage = () => {
   const navigate = useNavigate();
