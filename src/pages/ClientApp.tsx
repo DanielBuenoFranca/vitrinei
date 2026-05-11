@@ -162,6 +162,8 @@ const ClientApp = () => {
     }
 
     const q = searchQuery.toLowerCase().trim();
+    console.log('[Search] Filtering services with query:', q, 'and segments:', selectedSegments);
+    
     
     // Filtros por segmentos (se houver algum selecionado)
     const selectedCats = selectedSegments.map(id => segments.find(s => s.id === id)?.category).filter(Boolean);
