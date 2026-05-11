@@ -87,6 +87,13 @@ const ClientApp = () => {
 
   // Handle voice transcript auto-submit
   useEffect(() => {
+    if (listening) {
+      // Clear search query when starting a new transcription
+      setSearchQuery('');
+    }
+  }, [listening]);
+
+  useEffect(() => {
     if (transcript && transcript.trim()) {
       setSearchQuery(transcript);
     }
