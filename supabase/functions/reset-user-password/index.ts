@@ -50,14 +50,18 @@ Deno.serve(async (req) => {
     })
 
     if (error) {
-      // Se for erro de senha fraca, retornamos um status que permita o frontend decidir se avisa ou bloqueia
-      // No caso do Master, queremos apenas avisar.
-      const isWeak = error.message.includes('senha é conhecida por ser fraca') || error.message.includes('password is too weak');
+      console.log('Password update error:', error.message)
+      // Normaliza para lowercase para facilitar a comparação de string
+      const errLower = error.message.toLowerCase()
+      const isWeak = errLower.includes('senha é conhecida por ser fraca') || 
+                    errLower.includes('password is too weak') ||
+                    errLower.includes('escolha uma diferente')
+
       return new Response(JSON.stringify({ 
         error: error.message, 
         is_weak: isWeak 
       }), { 
-        status: isWeak ? 200 : 400, // Retorna 200 se for apenas senha fraca para não disparar erro de rede
+        status: isWeak ? 200 : 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       })
     }
