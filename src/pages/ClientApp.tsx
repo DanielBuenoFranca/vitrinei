@@ -87,6 +87,13 @@ const ClientApp = () => {
 
   // Handle voice transcript auto-submit
   useEffect(() => {
+    if (listening) {
+      // Clear search query when starting a new transcription
+      setSearchQuery('');
+    }
+  }, [listening]);
+
+  useEffect(() => {
     if (transcript && transcript.trim()) {
       setSearchQuery(transcript);
     }
@@ -113,7 +120,7 @@ const ClientApp = () => {
           }).filter(Boolean) as string[];
 
           if (matchedSegmentIds.length > 0) {
-            setSelectedSegments(matchedSegmentIds);
+            setSelectedSegments(prev => [...new Set([...prev, ...matchedSegmentIds])]);
           }
         } else {
           setAiInsight(null);
@@ -155,50 +162,40 @@ const ClientApp = () => {
     }
 
     const q = searchQuery.toLowerCase().trim();
+    
+    // Filtros por segmentos (se houver algum selecionado)
+    const selectedCats = selectedSegments.map(id => segments.find(s => s.id === id)?.category).filter(Boolean);
+
+    // Se não houver busca nem segmentos, retorna tudo
     if (!q && selectedSegments.length === 0) {
       setNoResultsFallback(false);
       return clientServices;
     }
 
+    // Aplica o filtro de texto
     let svcs = clientServices;
-    let didFilter = false;
-
     if (q) {
-      const filtered = svcs.filter(s =>
+      svcs = svcs.filter(s =>
         s.name.toLowerCase().includes(q) ||
         s.category.toLowerCase().includes(q) ||
         s.provider.toLowerCase().includes(q)
       );
-      
-      if (filtered.length > 0) {
-        svcs = filtered;
-        didFilter = true;
-      } else {
-        // Se digitou algo e não achou nos serviços, vamos ver se acha nos produtos
-        const productMatch = clientProducts.some(p => 
-          p.name.toLowerCase().includes(q) || 
-          p.category.toLowerCase().includes(q)
-        );
-        
-        if (!productMatch) {
-          setNoResultsFallback(true);
-          return [];
-        }
-        // Se achou produto, não mostra fallback de suporte ainda,
-        // pois a seção de produtos abaixo vai mostrar os resultados.
-        svcs = [];
-        didFilter = true;
-      }
     }
 
+    // Aplica o filtro de segmentos sobre o resultado da busca (ou sobre o total se não houver busca)
     if (selectedSegments.length > 0) {
-      const cats = selectedSegments.map(id => segments.find(s => s.id === id)?.category).filter(Boolean);
-      const source = didFilter ? svcs : clientServices;
-      const filtered = source.filter(s => cats.includes(s.category));
-      
-      if (filtered.length > 0) {
-        svcs = filtered;
-      } else if (didFilter || q) {
+      svcs = svcs.filter(s => selectedCats.includes(s.category));
+    }
+
+    // Se após os filtros não sobrar nada
+    if (svcs.length === 0) {
+      // Verifica se o termo de busca (se houver) está em produtos
+      const productMatch = q ? clientProducts.some(p => 
+        p.name.toLowerCase().includes(q) || 
+        p.category.toLowerCase().includes(q)
+      ) : false;
+
+      if (!productMatch) {
         setNoResultsFallback(true);
         return [];
       }
@@ -422,9 +419,16 @@ const ClientApp = () => {
                         }).filter(Boolean) as string[];
 
                         if (matchedSegmentIds.length > 0) {
-                          setSelectedSegments(matchedSegmentIds);
+                          // Manter os filtros atuais do usuário e ADICIONAR os novos da inteligência (ou vice-versa)
+                          // Conforme solicitado, a barra de pesquisa deve complementar os filtros.
+                          setSelectedSegments(prev => {
+                            const combined = [...new Set([...prev, ...matchedSegmentIds])];
+                            return combined;
+                          });
                         }
                       } else {
+                        // Se não houver match direto, mantemos os filtros selecionados pelo usuário
+                        // e deixamos o filteredServices lidar com o texto.
                         setAiInsight(null);
                       }
                     });
@@ -436,8 +440,9 @@ const ClientApp = () => {
                     }
                   } else {
                     toast.info("Digite algo para buscar");
-                    setSelectedSegments([]);
+                    // Não limpa filtros se buscar vazio, apenas remove o termo de busca
                     setAiInsight(null);
+                    setTriggerSearch(prev => prev + 1);
                   }
                 }}
               >
@@ -864,14 +869,22 @@ const ClientApp = () => {
         })}
 
         {/* Products Section */}
-        {(searchQuery.length >= 2 || selectedSegments.length === 0) && (
+        {(searchQuery.length >= 2 || selectedSegments.length > 0) && (
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5"><ShoppingBag className="w-4 h-4 text-primary" /> Produtos em Destaque</h3>
+              <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5"><ShoppingBag className="w-4 h-4 text-primary" /> Resultados de Produtos</h3>
               {discount > 0 && <Badge className="text-[9px] bg-green-500/10 text-green-600 border-0">-{discount}% plano {currentPlan?.name}</Badge>}
             </div>
             <div className="grid grid-cols-2 gap-2">
-              {clientProducts.filter(p => searchQuery.length < 2 || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.category.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 6).map(product => {
+              {clientProducts.filter(p => {
+                const q = searchQuery.toLowerCase().trim();
+                const matchesSearch = !q || p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q);
+                
+                const selectedCats = selectedSegments.map(id => segments.find(s => s.id === id)?.category).filter(Boolean);
+                const matchesSegments = selectedSegments.length === 0 || selectedCats.includes(p.category);
+                
+                return matchesSearch && matchesSegments;
+              }).slice(0, 6).map(product => {
                 const discountedPrice = product.price * (1 - discount / 100);
                 return (
                   <Card key={product.id} className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
