@@ -158,8 +158,7 @@ const AuthPage = () => {
   };
 
   const handleActivateAndLogin = async () => {
-    const expectedCode = loginActivationModal.expectedCode;
-    if (activationInput !== expectedCode) {
+    if (!activationInput || activationInput.length < 6) {
       toast.error('Código de ativação inválido');
       return;
     }
