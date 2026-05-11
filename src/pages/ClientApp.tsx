@@ -791,7 +791,7 @@ const ClientApp = () => {
         <div data-search-results>
           {activeSegments.map((seg, segIdx) => {
             const services = groupedServices[seg.id];
-          const isExpanded = expandedSegment === seg.id || searchQuery.length >= 2 || selectedSegments.length > 0;
+          const isExpanded = expandedSegment === seg.id || searchQuery.trim().length >= 1 || selectedSegments.length > 0;
 
           return (
             <motion.div key={seg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: segIdx * 0.05 }}>
