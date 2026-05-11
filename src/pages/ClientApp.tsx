@@ -384,6 +384,29 @@ const ClientApp = () => {
                   
                   if (q) {
                     toast.success(`Buscando por: ${searchQuery}`);
+                    
+                    // Lógica de Inteligência do Vini
+                    import('@/data/searchData').then(({ naturalLanguageMap, segments: segmentData }) => {
+                      const match = naturalLanguageMap.find(m => 
+                        m.triggers.some(t => q.includes(t.toLowerCase()))
+                      );
+
+                      if (match) {
+                        setAiInsight(match.aiFollowUp || null);
+                        // Filtra os segmentos baseados na inteligência
+                        const matchedSegmentIds = match.segments.map(sName => {
+                          const seg = segmentData.find(sd => sd.id === sName || sd.label.toLowerCase() === sName.toLowerCase());
+                          return seg?.id;
+                        }).filter(Boolean) as string[];
+
+                        if (matchedSegmentIds.length > 0) {
+                          setSelectedSegments(matchedSegmentIds);
+                        }
+                      } else {
+                        setAiInsight(null);
+                      }
+                    });
+
                     setTriggerSearch(prev => prev + 1);
                     const firstResult = document.querySelector('[data-search-results]');
                     if (firstResult) {
@@ -391,6 +414,8 @@ const ClientApp = () => {
                     }
                   } else {
                     toast.info("Digite algo para buscar");
+                    setSelectedSegments([]);
+                    setAiInsight(null);
                   }
                 }}
               >
