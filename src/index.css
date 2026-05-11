@@ -1,11 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* ═══════════════════════════════════════════════
-   FONTS — Plus Jakarta + Space Grotesk
-   ═══════════════════════════════════════════════ */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 /* ═══════════════════════════════════════════════
    DESIGN SYSTEM TOKENS — Espacial & Comercial
@@ -217,6 +214,39 @@
 /* Hide scrollbar in Vini canvas containers */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
+
+/* Admin Table Scrollbars — UX robusta p/ tabelas longas */
+.admin-scroll-area {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--primary) / 0.3) transparent;
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+.admin-scroll-area::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.admin-scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.admin-scroll-area::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.25);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.admin-scroll-area::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.5);
+  background-clip: content-box;
+}
+
+.admin-scroll-area::-webkit-scrollbar-corner {
+  background: transparent;
+}
 
 /* Import Preview — scrollbars sempre visíveis (UX p/ revisão) */
 .import-preview-scroll {

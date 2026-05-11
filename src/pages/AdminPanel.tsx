@@ -721,14 +721,13 @@ const AdminPanel = () => {
                   <Plus className="h-4 w-4 mr-1" /> Novo Segmento
                 </Button>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0 overflow-hidden">
                 {segments.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">Nenhum segmento cadastrado.</p>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
+                  <Table wrapperClassName="admin-scroll-area max-h-[60vh] border-t">
+                    <TableHeader className="sticky top-0 z-10 bg-background shadow-sm">
+                      <TableRow>
                           <TableHead>Nome</TableHead>
                           <TableHead>Prestadores</TableHead>
                           <TableHead>Serviços</TableHead>
@@ -786,7 +785,6 @@ const AdminPanel = () => {
                         })}
                       </TableBody>
                     </Table>
-                  </div>
                 )}
               </CardContent>
             </Card>
@@ -811,23 +809,22 @@ const AdminPanel = () => {
                 {services.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">Nenhum serviço registrado.</p>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Nome</TableHead>
-                          <TableHead>Segmento</TableHead>
-                          <TableHead>Prestador</TableHead>
-                          <TableHead>Mão de Obra</TableHead>
-                          <TableHead>Produtos</TableHead>
-                          <TableHead>Total</TableHead>
-                          <TableHead>Qtd</TableHead>
-                          <TableHead>Avaliação</TableHead>
-                          <TableHead>Tempo</TableHead>
-                          <TableHead></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
+                  <Table wrapperClassName="admin-scroll-area max-h-[60vh] border-t">
+                    <TableHeader className="sticky top-0 z-10 bg-background shadow-sm">
+                      <TableRow>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Segmento</TableHead>
+                        <TableHead>Prestador</TableHead>
+                        <TableHead>Mão de Obra</TableHead>
+                        <TableHead>Produtos</TableHead>
+                        <TableHead>Total</TableHead>
+                        <TableHead>Qtd</TableHead>
+                        <TableHead>Avaliação</TableHead>
+                        <TableHead>Tempo</TableHead>
+                        <TableHead></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                         {services.map((svc) => (
                           <TableRow key={svc.id}>
                             <TableCell className="font-medium">
@@ -883,7 +880,6 @@ const AdminPanel = () => {
                         ))}
                       </TableBody>
                     </Table>
-                  </div>
                 )}
               </CardContent>
             </Card>
@@ -905,22 +901,21 @@ const AdminPanel = () => {
                 {products.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">Nenhum produto registrado.</p>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Nome</TableHead>
-                          <TableHead>Prestador</TableHead>
-                          <TableHead>Preço</TableHead>
-                          <TableHead>Tipo Estoque</TableHead>
-                          <TableHead>Qtd</TableHead>
-                          <TableHead>Avaliação</TableHead>
-                          <TableHead>Tags</TableHead>
-                          <TableHead>Criado em</TableHead>
-                          <TableHead></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
+                  <Table wrapperClassName="admin-scroll-area max-h-[60vh] border-t">
+                    <TableHeader className="sticky top-0 z-10 bg-background shadow-sm">
+                      <TableRow>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Prestador</TableHead>
+                        <TableHead>Preço</TableHead>
+                        <TableHead>Tipo Estoque</TableHead>
+                        <TableHead>Qtd</TableHead>
+                        <TableHead>Avaliação</TableHead>
+                        <TableHead>Tags</TableHead>
+                        <TableHead>Criado em</TableHead>
+                        <TableHead></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                         {products.map((prod) => (
                           <TableRow key={prod.id}>
                             <TableCell className="font-medium">
@@ -981,7 +976,6 @@ const AdminPanel = () => {
                         ))}
                       </TableBody>
                     </Table>
-                  </div>
                 )}
               </CardContent>
             </Card>
@@ -1009,17 +1003,16 @@ const AdminPanel = () => {
                 {units.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">Nenhuma unidade cadastrada.</p>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Sigla</TableHead>
-                          <TableHead>Descrição</TableHead>
-                          <TableHead>Criado em</TableHead>
-                          <TableHead></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
+                  <Table wrapperClassName="admin-scroll-area max-h-[60vh] border-t">
+                    <TableHeader className="sticky top-0 z-10 bg-background shadow-sm">
+                      <TableRow>
+                        <TableHead>Sigla</TableHead>
+                        <TableHead>Descrição</TableHead>
+                        <TableHead>Criado em</TableHead>
+                        <TableHead></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                         {units.map(u => (
                           <TableRow key={u.id}>
                             <TableCell className="font-mono font-semibold">{u.name}</TableCell>
@@ -1041,7 +1034,6 @@ const AdminPanel = () => {
                         ))}
                       </TableBody>
                     </Table>
-                  </div>
                 )}
               </CardContent>
             </Card>
@@ -1092,28 +1084,27 @@ const AdminPanel = () => {
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto max-h-[60vh]">
+              <CardContent className="flex-1 p-0 overflow-hidden">
                 {userProfiles.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">Nenhum usuário cadastrado ainda.</p>
                 ) : (
-                  <div className="overflow-x-auto">
-                     <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Avatar</TableHead>
-                          <TableHead>Nome</TableHead>
-                          <TableHead>E-mail</TableHead>
-                          <TableHead title="CPF/CNPJ — identidade única no ecossistema">CPF/CNPJ</TableHead>
-                          <TableHead title="O que o usuário faz: Consumidor, Prestador ou Misto">Perfil</TableHead>
-                          <TableHead title="Permissões de gestão: Master, Admin ou Comum">Papel</TableHead>
-                          <TableHead>Plano</TableHead>
-                          <TableHead>Status E-mail</TableHead>
-                          <TableHead title="PIN de ativação para Lead">PIN</TableHead>
-                          <TableHead>Telefone</TableHead>
-                          <TableHead>Criado em</TableHead>
-                          <TableHead>Ações</TableHead>
-                        </TableRow>
-                      </TableHeader>
+                  <Table wrapperClassName="admin-scroll-area max-h-[70vh] border-t">
+                    <TableHeader className="sticky top-0 z-10 bg-background shadow-sm">
+                      <TableRow>
+                        <TableHead>Avatar</TableHead>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>E-mail</TableHead>
+                        <TableHead title="CPF/CNPJ — identidade única no ecossistema">CPF/CNPJ</TableHead>
+                        <TableHead title="O que o usuário faz: Consumidor, Prestador ou Misto">Perfil</TableHead>
+                        <TableHead title="Permissões de gestão: Master, Admin ou Comum">Papel</TableHead>
+                        <TableHead>Plano</TableHead>
+                        <TableHead>Status E-mail</TableHead>
+                        <TableHead title="PIN de ativação para Lead">PIN</TableHead>
+                        <TableHead>Telefone</TableHead>
+                        <TableHead>Criado em</TableHead>
+                        <TableHead>Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
                       <TableBody>
                         {userProfiles.map((profile: any) => {
                           const roles = userRoles.filter((r: any) => r.user_id === profile.user_id);
@@ -1361,7 +1352,6 @@ const AdminPanel = () => {
                         })}
                       </TableBody>
                     </Table>
-                  </div>
                 )}
               </CardContent>
             </Card>
@@ -1477,30 +1467,28 @@ const AdminPanel = () => {
                             <Megaphone className="h-3 w-3" /> Enviar Push em Massa
                           </Button>
                         </div>
-                        <div className="overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Nome</TableHead>
-                                <TableHead>E-mail</TableHead>
-                                <TableHead>Plano</TableHead>
-                                <TableHead>Débito</TableHead>
-                                <TableHead>Criado em</TableHead>
+                        <Table wrapperClassName="admin-scroll-area max-h-[50vh] border rounded-md">
+                          <TableHeader className="sticky top-0 z-10 bg-background shadow-sm">
+                            <TableRow>
+                              <TableHead>Nome</TableHead>
+                              <TableHead>E-mail</TableHead>
+                              <TableHead>Plano</TableHead>
+                              <TableHead>Débito</TableHead>
+                              <TableHead>Criado em</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {debtors.map(d => (
+                              <TableRow key={d.id}>
+                                <TableCell className="text-sm font-medium">{d.profile?.display_name || '—'}</TableCell>
+                                <TableCell className="text-xs text-muted-foreground">{d.email}</TableCell>
+                                <TableCell><Badge variant="outline" className="text-[10px]">{d.sub?.plan || '—'}</Badge></TableCell>
+                                <TableCell className="text-sm font-semibold text-destructive">R$ {Math.abs(d.balance).toFixed(2)}</TableCell>
+                                <TableCell className="text-xs text-muted-foreground">{d.profile ? new Date(d.profile.created_at).toLocaleDateString('pt-BR') : '—'}</TableCell>
                               </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {debtors.map(d => (
-                                <TableRow key={d.id}>
-                                  <TableCell className="text-sm font-medium">{d.profile?.display_name || '—'}</TableCell>
-                                  <TableCell className="text-xs text-muted-foreground">{d.email}</TableCell>
-                                  <TableCell><Badge variant="outline" className="text-[10px]">{d.sub?.plan || '—'}</Badge></TableCell>
-                                  <TableCell className="text-sm font-semibold text-destructive">R$ {Math.abs(d.balance).toFixed(2)}</TableCell>
-                                  <TableCell className="text-xs text-muted-foreground">{d.profile ? new Date(d.profile.created_at).toLocaleDateString('pt-BR') : '—'}</TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
+                            ))}
+                          </TableBody>
+                        </Table>
                         <div className="text-xs text-muted-foreground bg-muted/30 rounded p-2">
                           💡 Total em débitos: <strong className="text-destructive">R$ {debtors.reduce((sum, d) => sum + Math.abs(d.balance), 0).toFixed(2)}</strong>
                         </div>
