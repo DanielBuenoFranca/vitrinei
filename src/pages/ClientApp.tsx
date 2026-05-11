@@ -124,7 +124,8 @@ const ClientApp = () => {
   // fall back to the full inventory so the user can still browse.
   const [noResultsFallback, setNoResultsFallback] = useState(false);
   const [triggerSearch, setTriggerSearch] = useState(0);
-  
+  const [aiInsight, setAiInsight] = useState<string | null>(null);
+
   const filteredServices = useMemo(() => {
     if (searchParams.get('force_support') === '1') {
       setNoResultsFallback(true);
