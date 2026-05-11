@@ -524,7 +524,7 @@ const ClientApp = () => {
         </div>
 
         {/* Filter Pills (Segments + Providers) */}
-        <div className="px-3 pb-2 flex gap-1.5 overflow-x-auto no-scrollbar">
+        <div className="px-3 pb-2 flex gap-1.5 admin-scroll-area shrink-0 no-scrollbar">
           {/* Segments */}
           {segments.map(seg => (
             <button key={seg.id} onClick={() => toggleSegment(seg.id)}
