@@ -950,6 +950,7 @@ const ClientApp = () => {
           </div>
         )}
       </div>
+    </div>
 
       {/* Floating Cart Summary */}
       {cart.length > 0 && !showCart && (
