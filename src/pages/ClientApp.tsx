@@ -895,7 +895,7 @@ const ClientApp = () => {
         })}
 
         {/* Products Section */}
-        {(searchQuery.length >= 2 || selectedSegments.length > 0) && (
+        {(searchQuery.trim().length >= 1 || selectedSegments.length > 0) && (
           <div>
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5"><ShoppingBag className="w-4 h-4 text-primary" /> Resultados de Produtos</h3>
