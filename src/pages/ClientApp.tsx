@@ -8,12 +8,13 @@ import { plans, clientProducts, clientServices, mockUser, checkEligibility, meiP
 import {
   ArrowLeft, Star, ShoppingBag, Wrench, CreditCard, Zap, CheckCircle2, Lock,
   Clock, ArrowUpCircle, Coins, ShieldCheck, Package, ChevronRight, X, Search,
-  Sparkles, Calendar, MapPin, ShoppingCart, TrendingDown, Heart, Plus, Minus, Brain, LifeBuoy, Megaphone
+  Sparkles, Calendar, MapPin, ShoppingCart, TrendingDown, Heart, Plus, Minus, Brain, LifeBuoy, Megaphone, Mic, Send
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 
 /* ─── SEGMENT DEFINITIONS ─── */
 const segments = [
@@ -81,6 +82,27 @@ const ClientApp = () => {
   const [favorites, setFavorites] = useState<number[]>([1, 20, 25]);
   const [showCart, setShowCart] = useState(false);
   const [expandedSegment, setExpandedSegment] = useState<string | null>(null);
+  
+  const { supported, listening, transcript, start, stop } = useSpeechRecognition();
+
+  // Handle voice transcript auto-submit
+  useEffect(() => {
+    if (!transcript) return;
+    setSearchQuery(transcript);
+  }, [transcript]);
+
+  // Handle when voice recognition stops
+  useEffect(() => {
+    if (!listening && transcript) {
+      // Small delay to ensure state update is processed
+      const timer = setTimeout(() => {
+        const q = transcript.toLowerCase().trim();
+        console.log('[Search] Voice search query:', q);
+        // We don't need to do anything else as the Memo will react to searchQuery
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [listening, transcript]);
 
   const selectedPlan = mockUser.plan;
   const currentPlan = plans.find(p => p.id === selectedPlan);
@@ -298,19 +320,50 @@ const ClientApp = () => {
 
         {/* Search */}
         <div className="px-3 pb-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Buscar serviços, produtos, categorias..."
-              className="w-full pl-9 pr-8 py-2 rounded-xl bg-muted text-xs border-0 outline-none text-foreground placeholder:text-muted-foreground"
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2">
-                <X className="w-3.5 h-3.5 text-muted-foreground" />
-              </button>
-            )}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Buscar serviços, produtos, categorias..."
+                className="w-full pl-9 pr-8 py-2 rounded-xl bg-muted text-xs border-0 outline-none text-foreground placeholder:text-muted-foreground"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <X className="w-3.5 h-3.5 text-muted-foreground" />
+                </button>
+              )}
+            </div>
+            
+            <div className="flex gap-1">
+              <Button
+                variant={listening ? "default" : "secondary"}
+                size="icon"
+                className={cn(
+                  "rounded-xl w-9 h-9 shrink-0 transition-all",
+                  listening && "bg-destructive text-white animate-pulse"
+                )}
+                onClick={() => listening ? stop() : start()}
+                disabled={!supported}
+              >
+                {listening ? <X className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </Button>
+              
+              <Button
+                variant="secondary"
+                size="icon"
+                className="rounded-xl w-9 h-9 shrink-0"
+                onClick={() => {
+                  if (searchQuery.trim()) {
+                    // Logic to force search focus or just visually confirm
+                    toast.success(`Buscando por: ${searchQuery}`);
+                  }
+                }}
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
 
