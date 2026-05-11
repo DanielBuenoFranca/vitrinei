@@ -453,11 +453,11 @@ const ClientApp = () => {
                           // Conforme solicitado, a barra de pesquisa deve complementar os filtros.
                           setSelectedSegments(matchedSegmentIds);
                         }
-                      } else {
-                        // Se não houver match direto, mantemos os filtros selecionados pelo usuário
-                        // e deixamos o filteredServices lidar com o texto.
-                        setAiInsight(null);
-                      }
+                        } else {
+                          // Se não houver match direto, limpamos os filtros para priorizar o termo de texto
+                          setSelectedSegments([]);
+                          setAiInsight(null);
+                        }
                     });
 
                     setTriggerSearch(prev => prev + 1);
