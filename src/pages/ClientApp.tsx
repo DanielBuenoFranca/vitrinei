@@ -368,9 +368,13 @@ const ClientApp = () => {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log("[Search] Manual search click:", searchQuery);
-                  if (searchQuery.trim()) {
+                  const q = searchQuery.trim().toLowerCase();
+                  console.log("[Search] Manual search click:", q);
+                  
+                  // Se for cerveja ou qualquer termo sem resultado, a useMemo cuidará do fallback
+                  if (q) {
                     toast.success(`Buscando por: ${searchQuery}`);
+                    // Força o trigger se necessário (já é reativo ao searchQuery)
                   }
                 }}
               >
