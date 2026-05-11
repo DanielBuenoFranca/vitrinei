@@ -685,8 +685,9 @@ const ClientApp = () => {
         </div>
 
         {/* Segmented Service Sections */}
-        {activeSegments.map((seg, segIdx) => {
-          const services = groupedServices[seg.id];
+        <div data-search-results>
+          {activeSegments.map((seg, segIdx) => {
+            const services = groupedServices[seg.id];
           const isExpanded = expandedSegment === seg.id || searchQuery.length >= 2 || selectedSegments.length > 0;
 
           return (
