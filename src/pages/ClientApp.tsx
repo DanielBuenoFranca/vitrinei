@@ -122,10 +122,12 @@ const ClientApp = () => {
           }).filter(Boolean) as string[];
 
           if (matchedSegmentIds.length > 0) {
-            setSelectedSegments(prev => [...new Set([...prev, ...matchedSegmentIds])]);
+            // Ao iniciar nova busca por voz, usamos apenas os segmentos identificados pela IA
+            setSelectedSegments(matchedSegmentIds);
           }
         } else {
           setAiInsight(null);
+          setSelectedSegments([]); // Se não há match na IA, limpa filtros para focar no texto
         }
       });
 
