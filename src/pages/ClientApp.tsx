@@ -320,19 +320,50 @@ const ClientApp = () => {
 
         {/* Search */}
         <div className="px-3 pb-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Buscar serviços, produtos, categorias..."
-              className="w-full pl-9 pr-8 py-2 rounded-xl bg-muted text-xs border-0 outline-none text-foreground placeholder:text-muted-foreground"
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2">
-                <X className="w-3.5 h-3.5 text-muted-foreground" />
-              </button>
-            )}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Buscar serviços, produtos, categorias..."
+                className="w-full pl-9 pr-8 py-2 rounded-xl bg-muted text-xs border-0 outline-none text-foreground placeholder:text-muted-foreground"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <X className="w-3.5 h-3.5 text-muted-foreground" />
+                </button>
+              )}
+            </div>
+            
+            <div className="flex gap-1">
+              <Button
+                variant={listening ? "default" : "secondary"}
+                size="icon"
+                className={cn(
+                  "rounded-xl w-9 h-9 shrink-0 transition-all",
+                  listening && "bg-destructive text-white animate-pulse"
+                )}
+                onClick={() => listening ? stop() : start()}
+                disabled={!supported}
+              >
+                {listening ? <X className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </Button>
+              
+              <Button
+                variant="secondary"
+                size="icon"
+                className="rounded-xl w-9 h-9 shrink-0"
+                onClick={() => {
+                  if (searchQuery.trim()) {
+                    // Logic to force search focus or just visually confirm
+                    toast.success(`Buscando por: ${searchQuery}`);
+                  }
+                }}
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
 
