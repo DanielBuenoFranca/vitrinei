@@ -98,6 +98,7 @@ const ClientApp = () => {
       const q = transcript.toLowerCase().trim();
       console.log('[Search] Voice search finished:', q);
       setSearchQuery(q);
+      setTriggerSearch(prev => prev + 1);
     }
   }, [listening, transcript]);
 
@@ -122,6 +123,7 @@ const ClientApp = () => {
   // Filter services by search & segments. If search/segment yields 0 results,
   // fall back to the full inventory so the user can still browse.
   const [noResultsFallback, setNoResultsFallback] = useState(false);
+  const [triggerSearch, setTriggerSearch] = useState(0);
   
   const filteredServices = useMemo(() => {
     if (searchParams.get('force_support') === '1') {
@@ -181,7 +183,7 @@ const ClientApp = () => {
 
     setNoResultsFallback(false);
     return svcs;
-  }, [searchQuery, selectedSegments, searchParams]);
+  }, [searchQuery, selectedSegments, searchParams, triggerSearch]);
 
   // Group by segment
   const groupedServices = useMemo(() => {
@@ -364,21 +366,26 @@ const ClientApp = () => {
               
               <button
                 type="button"
-                className="flex items-center justify-center rounded-xl w-9 h-9 shrink-0 bg-secondary text-secondary-foreground transition-all border border-transparent active:scale-95"
+                className="flex items-center justify-center rounded-xl w-9 h-9 shrink-0 bg-primary text-primary-foreground transition-all border border-transparent active:scale-95 shadow-sm"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   const q = searchQuery.trim().toLowerCase();
-                  console.log("[Search] Manual search click:", q);
+                  console.log("[Search] Manual search trigger:", q);
                   
-                  // Se for cerveja ou qualquer termo sem resultado, a useMemo cuidará do fallback
                   if (q) {
                     toast.success(`Buscando por: ${searchQuery}`);
-                    // Força o trigger se necessário (já é reativo ao searchQuery)
+                    setTriggerSearch(prev => prev + 1);
+                    const firstResult = document.querySelector('[data-search-results]');
+                    if (firstResult) {
+                      firstResult.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  } else {
+                    toast.info("Digite algo para buscar");
                   }
                 }}
               >
-                <Send className="w-4 h-4" />
+                <Search className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -680,8 +687,9 @@ const ClientApp = () => {
         </div>
 
         {/* Segmented Service Sections */}
-        {activeSegments.map((seg, segIdx) => {
-          const services = groupedServices[seg.id];
+        <div data-search-results>
+          {activeSegments.map((seg, segIdx) => {
+            const services = groupedServices[seg.id];
           const isExpanded = expandedSegment === seg.id || searchQuery.length >= 2 || selectedSegments.length > 0;
 
           return (
@@ -831,8 +839,9 @@ const ClientApp = () => {
             </div>
           </div>
         )}
+      </div>
 
-        {/* Floating Cart Summary */}
+      {/* Floating Cart Summary */}
         {cart.length > 0 && !showCart && (
           <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
             className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[calc(28rem-2rem)] z-40">
