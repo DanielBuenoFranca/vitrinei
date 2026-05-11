@@ -285,9 +285,17 @@ const ClientApp = () => {
     }));
   };
 
-  const toggleSegment = (id: string) => {
-    setSelectedSegments(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
-  };
+  const toggleSegment = useCallback((id: string) => {
+    setSelectedSegments(prev => {
+      const isSelected = prev.includes(id);
+      const newSegments = isSelected ? prev.filter(s => s !== id) : [...prev, id];
+      
+      // Quando seleciona um segmento manualmente, limpamos o insight da IA para não confundir
+      if (!isSelected) setAiInsight(null);
+      
+      return newSegments;
+    });
+  }, []);
 
   const toggleFavorite = (id: number) => {
     setFavorites(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
