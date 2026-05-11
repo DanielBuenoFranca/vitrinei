@@ -809,23 +809,22 @@ const AdminPanel = () => {
                 {services.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">Nenhum serviço registrado.</p>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Nome</TableHead>
-                          <TableHead>Segmento</TableHead>
-                          <TableHead>Prestador</TableHead>
-                          <TableHead>Mão de Obra</TableHead>
-                          <TableHead>Produtos</TableHead>
-                          <TableHead>Total</TableHead>
-                          <TableHead>Qtd</TableHead>
-                          <TableHead>Avaliação</TableHead>
-                          <TableHead>Tempo</TableHead>
-                          <TableHead></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
+                  <Table wrapperClassName="admin-scroll-area max-h-[60vh] border-t">
+                    <TableHeader className="sticky top-0 z-10 bg-background shadow-sm">
+                      <TableRow>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Segmento</TableHead>
+                        <TableHead>Prestador</TableHead>
+                        <TableHead>Mão de Obra</TableHead>
+                        <TableHead>Produtos</TableHead>
+                        <TableHead>Total</TableHead>
+                        <TableHead>Qtd</TableHead>
+                        <TableHead>Avaliação</TableHead>
+                        <TableHead>Tempo</TableHead>
+                        <TableHead></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                         {services.map((svc) => (
                           <TableRow key={svc.id}>
                             <TableCell className="font-medium">
