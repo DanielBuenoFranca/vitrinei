@@ -425,6 +425,25 @@ const ClientApp = () => {
             </div>
             
             <div className="flex gap-1">
+              {/* Clear Filters Button (Discreto) */}
+              {(searchQuery || selectedSegments.length > 0 || aiInsight) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedSegments([]);
+                    setAiInsight(null);
+                    setNoResultsFallback(false);
+                    setTriggerSearch(prev => prev + 1);
+                    toast.info("Filtros limpos");
+                  }}
+                  className="flex items-center justify-center rounded-xl w-9 h-9 shrink-0 bg-muted/40 text-muted-foreground hover:bg-muted/60 transition-all border border-border/40"
+                  title="Limpar filtros"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+
               <button
                 type="button"
                 className={cn(
@@ -475,12 +494,9 @@ const ClientApp = () => {
                         }).filter(Boolean) as string[];
 
                         if (matchedSegmentIds.length > 0) {
-                          // Manter os filtros atuais do usuário e ADICIONAR os novos da inteligência (ou vice-versa)
-                          // Conforme solicitado, a barra de pesquisa deve complementar os filtros.
                           setSelectedSegments(matchedSegmentIds);
                         }
                         } else {
-                          // Se não houver match direto, limpamos os filtros para priorizar o termo de texto
                           setSelectedSegments([]);
                           setAiInsight(null);
                         }
@@ -493,7 +509,6 @@ const ClientApp = () => {
                     }
                   } else {
                     toast.info("Digite algo para buscar");
-                    // Não limpa filtros se buscar vazio, apenas remove o termo de busca
                     setAiInsight(null);
                     setTriggerSearch(prev => prev + 1);
                   }
