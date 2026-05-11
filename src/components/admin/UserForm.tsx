@@ -472,15 +472,18 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? 'Editar Usuário' : 'Novo Usuário'}</DialogTitle>
-          <DialogDescription>
-            Cadastro unificado: ao escolher perfil <strong>Prestador</strong> ou <strong>Misto</strong>, a vitrine é provisionada automaticamente.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-w-2xl p-0 flex flex-col max-h-[90vh] overflow-hidden">
+        <div className="p-6 pb-2 shrink-0">
+          <DialogHeader>
+            <DialogTitle>{isEdit ? 'Editar Usuário' : 'Novo Usuário'}</DialogTitle>
+            <DialogDescription>
+              Cadastro unificado: ao escolher perfil <strong>Prestador</strong> ou <strong>Misto</strong>, a vitrine é provisionada automaticamente.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
-        <div className="grid gap-5 py-2">
+        <ScrollArea className="flex-1 px-6 admin-scroll-area">
+          <div className="grid gap-5 py-4">
           {/* ── Identidade do Usuário (CPF) ── */}
           <div className="rounded-lg border border-dashed border-primary/30 bg-primary/5 p-3">
             <p className="text-[11px] text-muted-foreground leading-snug">
