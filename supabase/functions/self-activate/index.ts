@@ -5,14 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-function generateActivationCode(input: string): string {
-  let hash = 0;
-  for (let i = 0; i < input.length; i++) {
-    hash = ((hash << 5) - hash) + input.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash).toString().slice(0, 6).padStart(6, '0');
-}
+// Activation code is now stored in user_activations table
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
