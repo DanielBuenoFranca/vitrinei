@@ -121,59 +121,62 @@ const ClientApp = () => {
 
   // Filter services by search & segments. If search/segment yields 0 results,
   // fall back to the full inventory so the user can still browse.
-  const [noResultsFallback, setNoResultsFallback] = useState(initialQuery.length >= 2 || searchParams.get('force_support') === '1');
+  const [noResultsFallback, setNoResultsFallback] = useState(false);
   
   const filteredServices = useMemo(() => {
-    // Se forçado pelo Vini, mostramos direto o card de suporte
     if (searchParams.get('force_support') === '1') {
-      console.log("[Search] Force support active");
       setNoResultsFallback(true);
       return [];
     }
 
+    const q = searchQuery.toLowerCase().trim();
+    if (!q && selectedSegments.length === 0) {
+      setNoResultsFallback(false);
+      return clientServices;
+    }
+
     let svcs = clientServices;
     let didFilter = false;
-    const q = searchQuery.toLowerCase().trim();
-    
-    const hasSearchTerm = q.length >= 1; // Permite busca com 1 caractere
-    const hasSelectedSegments = selectedSegments.length > 0;
 
-    if (hasSearchTerm) {
+    if (q) {
       const filtered = svcs.filter(s =>
         s.name.toLowerCase().includes(q) ||
         s.category.toLowerCase().includes(q) ||
         s.provider.toLowerCase().includes(q)
       );
       
-      if (filtered.length > 0) { 
-        svcs = filtered; 
-        didFilter = true; 
+      if (filtered.length > 0) {
+        svcs = filtered;
+        didFilter = true;
       } else {
-        // Se tem termo de busca mas não achou nada, força fallback
-        console.log("[Search] Term active but no results found:", q);
-        setNoResultsFallback(true);
-        return [];
+        // Se digitou algo e não achou nos serviços, vamos ver se acha nos produtos
+        const productMatch = clientProducts.some(p => 
+          p.name.toLowerCase().includes(q) || 
+          p.category.toLowerCase().includes(q)
+        );
+        
+        if (!productMatch) {
+          setNoResultsFallback(true);
+          return [];
+        }
+        // Se achou produto, não mostra fallback de suporte ainda,
+        // pois a seção de produtos abaixo vai mostrar os resultados.
+        svcs = [];
+        didFilter = true;
       }
     }
-    
+
     if (selectedSegments.length > 0) {
       const cats = selectedSegments.map(id => segments.find(s => s.id === id)?.category).filter(Boolean);
       const source = didFilter ? svcs : clientServices;
       const filtered = source.filter(s => cats.includes(s.category));
       
-      if (filtered.length > 0) { 
-        svcs = filtered; 
-        didFilter = true; 
-      } else if (didFilter) {
+      if (filtered.length > 0) {
+        svcs = filtered;
+      } else if (didFilter || q) {
         setNoResultsFallback(true);
         return [];
       }
-    }
-    
-    // Se digitou algo que não existe no estoque (como "cerveja")
-    if (hasSearchTerm && !didFilter) {
-      setNoResultsFallback(true);
-      return [];
     }
 
     setNoResultsFallback(false);
