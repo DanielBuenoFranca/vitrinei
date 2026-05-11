@@ -837,8 +837,9 @@ const ClientApp = () => {
             </div>
           </div>
         )}
+      </div>
 
-        {/* Floating Cart Summary */}
+      {/* Floating Cart Summary */}
         {cart.length > 0 && !showCart && (
           <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
             className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[calc(28rem-2rem)] z-40">
