@@ -215,47 +215,45 @@ export function CardexPanel() {
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead>Loja</TableHead>
-                <TableHead>Item</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead className="text-right">Δ Qtd</TableHead>
-                <TableHead className="text-right">Saldo</TableHead>
-                <TableHead className="text-right">Custo Un.</TableHead>
-                <TableHead>Referência</TableHead>
+      <CardContent className="p-0 overflow-hidden">
+        <Table wrapperClassName="admin-scroll-area max-h-[60vh] border-t">
+          <TableHeader className="sticky top-0 z-10 bg-background shadow-sm">
+            <TableRow>
+              <TableHead>Data</TableHead>
+              <TableHead>Loja</TableHead>
+              <TableHead>Item</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead className="text-right">Δ Qtd</TableHead>
+              <TableHead className="text-right">Saldo</TableHead>
+              <TableHead className="text-right">Custo Un.</TableHead>
+              <TableHead>Referência</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.map((r) => (
+              <TableRow key={r.id}>
+                <TableCell className="text-xs whitespace-nowrap">{new Date(r.created_at).toLocaleString("pt-BR")}</TableCell>
+                <TableCell className="text-xs">
+                  <Badge variant="secondary" className="text-[10px]">{providerNameById(r.provider_id)}</Badge>
+                </TableCell>
+                <TableCell className="text-xs">
+                  <div className="font-medium">{r.item_name}</div>
+                  <div className="text-[10px] text-muted-foreground">{r.item_kind} #{r.item_id}</div>
+                </TableCell>
+                <TableCell><Badge variant="outline" className="text-[10px]">{r.movement_type}</Badge></TableCell>
+                <TableCell className={`text-right tabular-nums text-xs ${r.quantity_delta < 0 ? "text-destructive" : "text-emerald-600"}`}>
+                  {r.quantity_delta > 0 ? "+" : ""}{r.quantity_delta}
+                </TableCell>
+                <TableCell className="text-right tabular-nums text-xs">{r.balance_after ?? "—"}</TableCell>
+                <TableCell className="text-right tabular-nums text-xs">{r.unit_cost ? `R$ ${Number(r.unit_cost).toFixed(2)}` : "—"}</TableCell>
+                <TableCell className="text-xs text-muted-foreground truncate max-w-[280px]">{r.reference_label || "—"}</TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell className="text-xs whitespace-nowrap">{new Date(r.created_at).toLocaleString("pt-BR")}</TableCell>
-                  <TableCell className="text-xs">
-                    <Badge variant="secondary" className="text-[10px]">{providerNameById(r.provider_id)}</Badge>
-                  </TableCell>
-                  <TableCell className="text-xs">
-                    <div className="font-medium">{r.item_name}</div>
-                    <div className="text-[10px] text-muted-foreground">{r.item_kind} #{r.item_id}</div>
-                  </TableCell>
-                  <TableCell><Badge variant="outline" className="text-[10px]">{r.movement_type}</Badge></TableCell>
-                  <TableCell className={`text-right tabular-nums text-xs ${r.quantity_delta < 0 ? "text-destructive" : "text-emerald-600"}`}>
-                    {r.quantity_delta > 0 ? "+" : ""}{r.quantity_delta}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums text-xs">{r.balance_after ?? "—"}</TableCell>
-                  <TableCell className="text-right tabular-nums text-xs">{r.unit_cost ? `R$ ${Number(r.unit_cost).toFixed(2)}` : "—"}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground truncate max-w-[280px]">{r.reference_label || "—"}</TableCell>
-                </TableRow>
-              ))}
-              {filtered.length === 0 && !loading && (
-                <TableRow><TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-8">Nenhuma movimentação encontrada.</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+            ))}
+            {filtered.length === 0 && !loading && (
+              <TableRow><TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-8">Nenhuma movimentação encontrada.</TableCell></TableRow>
+            )}
+          </TableBody>
+        </Table>
       </CardContent>
 
       <Dialog open={open} onOpenChange={setOpen}>
