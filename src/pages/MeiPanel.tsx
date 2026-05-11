@@ -253,10 +253,10 @@ const MeiPanel = () => {
               </div>
 
               <Card>
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
+                <CardContent className="p-0 overflow-hidden">
+                  <div className="admin-scroll-area max-h-[60vh]">
                     <table className="w-full text-sm">
-                      <thead>
+                      <thead className="sticky top-0 z-10 bg-background shadow-sm">
                         <tr className="border-b border-border">
                           <th className="text-left p-4 font-medium text-muted-foreground">Produto</th>
                           <th className="text-left p-4 font-medium text-muted-foreground">Fornecedor</th>
