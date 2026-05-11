@@ -79,7 +79,7 @@ function ScrollableRow({ children, className = '' }: { children: React.ReactNode
       >
         <ChevronLeft className="w-3.5 h-3.5" />
       </button>
-      <div ref={ref} className={`flex gap-2.5 overflow-x-auto no-scrollbar snap-x pb-2 -mx-1 px-1 ${className}`}>
+      <div ref={ref} className={`flex gap-2.5 admin-scroll-area shrink-0 no-scrollbar snap-x pb-2 -mx-1 px-1 ${className}`}>
         {children}
       </div>
       <button
