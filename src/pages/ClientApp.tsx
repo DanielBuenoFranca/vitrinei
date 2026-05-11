@@ -88,8 +88,10 @@ const ClientApp = () => {
   // Handle voice transcript auto-submit
   useEffect(() => {
     if (listening) {
-      // Clear search query when starting a new transcription
+      // Clear search query and segments when starting a new transcription
       setSearchQuery('');
+      setSelectedSegments([]);
+      setAiInsight(null);
     }
   }, [listening]);
 
@@ -120,10 +122,12 @@ const ClientApp = () => {
           }).filter(Boolean) as string[];
 
           if (matchedSegmentIds.length > 0) {
-            setSelectedSegments(prev => [...new Set([...prev, ...matchedSegmentIds])]);
+            // Ao iniciar nova busca por voz, usamos apenas os segmentos identificados pela IA
+            setSelectedSegments(matchedSegmentIds);
           }
         } else {
           setAiInsight(null);
+          setSelectedSegments([]); // Se não há match na IA, limpa filtros para focar no texto
         }
       });
 
@@ -447,16 +451,13 @@ const ClientApp = () => {
                         if (matchedSegmentIds.length > 0) {
                           // Manter os filtros atuais do usuário e ADICIONAR os novos da inteligência (ou vice-versa)
                           // Conforme solicitado, a barra de pesquisa deve complementar os filtros.
-                          setSelectedSegments(prev => {
-                            const combined = [...new Set([...prev, ...matchedSegmentIds])];
-                            return combined;
-                          });
+                          setSelectedSegments(matchedSegmentIds);
                         }
-                      } else {
-                        // Se não houver match direto, mantemos os filtros selecionados pelo usuário
-                        // e deixamos o filteredServices lidar com o texto.
-                        setAiInsight(null);
-                      }
+                        } else {
+                          // Se não houver match direto, limpamos os filtros para priorizar o termo de texto
+                          setSelectedSegments([]);
+                          setAiInsight(null);
+                        }
                     });
 
                     setTriggerSearch(prev => prev + 1);
