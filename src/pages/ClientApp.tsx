@@ -505,8 +505,9 @@ const ClientApp = () => {
           </div>
         </div>
 
-        {/* Segment Pills */}
-        <div className="px-3 pb-2 flex gap-1.5 overflow-x-auto">
+        {/* Filter Pills (Segments + Providers) */}
+        <div className="px-3 pb-2 flex gap-1.5 overflow-x-auto no-scrollbar">
+          {/* Segments */}
           {segments.map(seg => (
             <button key={seg.id} onClick={() => toggleSegment(seg.id)}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-all border ${
@@ -516,6 +517,23 @@ const ClientApp = () => {
               {groupedServices[seg.id]?.length > 0 && <span className="text-[8px] opacity-70">({groupedServices[seg.id].length})</span>}
             </button>
           ))}
+          
+          {/* Providers as Filters (Requisito 2) */}
+          {Array.from(new Set(clientServices.map(s => s.provider))).map(provider => {
+            const providerId = `provider_${provider.replace(/\s+/g, '_').toLowerCase()}`;
+            const isSelected = selectedSegments.includes(providerId);
+            return (
+              <button 
+                key={providerId} 
+                onClick={() => toggleSegment(providerId)}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-all border ${
+                  isSelected ? 'bg-accent text-accent-foreground border-accent' : 'bg-muted/50 text-muted-foreground border-border'
+                }`}
+              >
+                <span>👤</span>{provider}
+              </button>
+            );
+          })}
         </div>
       </div>
 
