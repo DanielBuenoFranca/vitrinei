@@ -206,11 +206,14 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? 'Editar Serviço' : 'Novo Serviço'}</DialogTitle>
-        </DialogHeader>
-        <div className="grid gap-4 py-2">
+      <DialogContent className="max-w-lg p-0 flex flex-col max-h-[90vh] overflow-hidden">
+        <div className="p-6 pb-2 shrink-0">
+          <DialogHeader>
+            <DialogTitle>{isEdit ? 'Editar Serviço' : 'Novo Serviço'}</DialogTitle>
+          </DialogHeader>
+        </div>
+        <ScrollArea className="flex-1 px-6 admin-scroll-area">
+          <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label>Nome *</Label>
             <Input value={form.name} onChange={e => { setForm(f => ({ ...f, name: e.target.value })); suggest(e.target.value, 'service', allServiceNames); }} placeholder="Nome do serviço" />
