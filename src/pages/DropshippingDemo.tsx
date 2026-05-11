@@ -1050,7 +1050,7 @@ const DropshippingDemo = () => {
         )}
 
         {/* Step indicators */}
-        <div className="flex items-center justify-center gap-1 mb-8 flex-wrap">
+        <div className="flex items-center justify-center gap-1 mb-8 flex-wrap admin-scroll-area shrink-0">
           {steps.map((s, i) => (
             <button key={s.id} onClick={() => setCurrentStep(i)}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium transition-all ${
