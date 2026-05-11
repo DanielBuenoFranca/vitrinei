@@ -583,7 +583,7 @@ export function CampaignForm() {
           </CardTitle>
           <CardDescription>Todas as indicações do sistema — status e valores sincronizados com a campanha ativa</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 overflow-hidden">
           {loadingReferrals ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -591,50 +591,48 @@ export function CampaignForm() {
           ) : referrals.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">Nenhuma indicação registrada ainda.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Indicador</TableHead>
-                    <TableHead>Indicado</TableHead>
-                    <TableHead>Perfil</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Fases</TableHead>
-                    <TableHead>Pago</TableHead>
-                    <TableHead>Total</TableHead>
-                    <TableHead>Data</TableHead>
+            <Table wrapperClassName="admin-scroll-area max-h-[60vh] border-t">
+              <TableHeader className="sticky top-0 z-10 bg-background shadow-sm">
+                <TableRow>
+                  <TableHead>Indicador</TableHead>
+                  <TableHead>Indicado</TableHead>
+                  <TableHead>Perfil</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Fases</TableHead>
+                  <TableHead>Pago</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Data</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {referrals.map(ref => (
+                  <TableRow key={ref.id}>
+                    <TableCell className="text-sm font-medium">{ref.referrer_name}</TableCell>
+                    <TableCell>
+                      <div>
+                        <p className="text-sm font-medium">{ref.referred_name || '—'}</p>
+                        <p className="text-[10px] text-muted-foreground">{ref.referred_email || ''}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px]">{roleLabel(ref.referred_role)}</Badge>
+                    </TableCell>
+                    <TableCell>{statusBadge(ref.status)}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        {ref.buyer_released && <Badge variant="outline" className="text-[9px] bg-green-50 text-green-700">Compra ✓</Badge>}
+                        {ref.seller_released && <Badge variant="outline" className="text-[9px] bg-green-50 text-green-700">Venda ✓</Badge>}
+                        {ref.bonus_released && <Badge variant="outline" className="text-[9px] bg-purple-50 text-purple-700">Bônus ✓</Badge>}
+                        {!ref.buyer_released && !ref.seller_released && <span className="text-[10px] text-muted-foreground">Aguardando</span>}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm font-semibold text-green-600">R$ {Number(ref.total_paid).toFixed(2)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">R$ {Number(ref.commission_amount).toFixed(2)}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{new Date(ref.created_at).toLocaleDateString('pt-BR')}</TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {referrals.map(ref => (
-                    <TableRow key={ref.id}>
-                      <TableCell className="text-sm font-medium">{ref.referrer_name}</TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="text-sm font-medium">{ref.referred_name || '—'}</p>
-                          <p className="text-[10px] text-muted-foreground">{ref.referred_email || ''}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-[10px]">{roleLabel(ref.referred_role)}</Badge>
-                      </TableCell>
-                      <TableCell>{statusBadge(ref.status)}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          {ref.buyer_released && <Badge variant="outline" className="text-[9px] bg-green-50 text-green-700">Compra ✓</Badge>}
-                          {ref.seller_released && <Badge variant="outline" className="text-[9px] bg-green-50 text-green-700">Venda ✓</Badge>}
-                          {ref.bonus_released && <Badge variant="outline" className="text-[9px] bg-purple-50 text-purple-700">Bônus ✓</Badge>}
-                          {!ref.buyer_released && !ref.seller_released && <span className="text-[10px] text-muted-foreground">Aguardando</span>}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm font-semibold text-green-600">R$ {Number(ref.total_paid).toFixed(2)}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">R$ {Number(ref.commission_amount).toFixed(2)}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{new Date(ref.created_at).toLocaleDateString('pt-BR')}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>
