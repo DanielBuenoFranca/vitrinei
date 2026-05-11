@@ -376,9 +376,8 @@ const AuthPage = () => {
 
       await processReferral(data.user.id, name, email, phone);
 
-      // Show activation code modal (since email may not arrive)
-      const activationCode = generateActivationCode(data.user.id);
-      setActivationModal({ open: true, code: activationCode, email });
+      // Show activation code modal
+      setActivationModal({ open: true, code: 'SOLICITE AO MASTER', email });
     }
 
     setLoading(false);
