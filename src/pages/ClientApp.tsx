@@ -81,6 +81,27 @@ const ClientApp = () => {
   const [favorites, setFavorites] = useState<number[]>([1, 20, 25]);
   const [showCart, setShowCart] = useState(false);
   const [expandedSegment, setExpandedSegment] = useState<string | null>(null);
+  
+  const { supported, listening, transcript, start, stop } = useSpeechRecognition();
+
+  // Handle voice transcript auto-submit
+  useEffect(() => {
+    if (!transcript) return;
+    setSearchQuery(transcript);
+  }, [transcript]);
+
+  // Handle when voice recognition stops
+  useEffect(() => {
+    if (!listening && transcript) {
+      // Small delay to ensure state update is processed
+      const timer = setTimeout(() => {
+        const q = transcript.toLowerCase().trim();
+        console.log('[Search] Voice search query:', q);
+        // We don't need to do anything else as the Memo will react to searchQuery
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [listening, transcript]);
 
   const selectedPlan = mockUser.plan;
   const currentPlan = plans.find(p => p.id === selectedPlan);
