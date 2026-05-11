@@ -1360,7 +1360,6 @@ const AdminPanel = () => {
                         })}
                       </TableBody>
                     </Table>
-                  </div>
                 )}
               </CardContent>
             </Card>
