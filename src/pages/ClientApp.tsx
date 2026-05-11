@@ -425,24 +425,27 @@ const ClientApp = () => {
             </div>
             
             <div className="flex gap-1">
-              {/* Clear Filters Button (Discreto) */}
-              {(searchQuery || selectedSegments.length > 0 || aiInsight) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSelectedSegments([]);
-                    setAiInsight(null);
-                    setNoResultsFallback(false);
-                    setTriggerSearch(prev => prev + 1);
-                    toast.info("Filtros limpos");
-                  }}
-                  className="flex items-center justify-center rounded-xl w-9 h-9 shrink-0 bg-muted/40 text-muted-foreground hover:bg-muted/60 transition-all border border-border/40"
-                  title="Limpar filtros"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
+              {/* Clear Filters Button (Sempre Visível) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedSegments([]);
+                  setAiInsight(null);
+                  setNoResultsFallback(false);
+                  setTriggerSearch(prev => prev + 1);
+                  toast.info("Filtros limpos");
+                }}
+                className={cn(
+                  "flex items-center justify-center rounded-xl w-9 h-9 shrink-0 transition-all border",
+                  (searchQuery || selectedSegments.length > 0 || aiInsight)
+                    ? "bg-muted text-foreground border-border"
+                    : "bg-muted/20 text-muted-foreground/40 border-transparent opacity-60"
+                )}
+                title="Limpar filtros"
+              >
+                <X className="w-4 h-4" />
+              </button>
 
               <button
                 type="button"
