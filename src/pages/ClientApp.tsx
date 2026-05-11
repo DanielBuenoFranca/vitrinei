@@ -419,9 +419,16 @@ const ClientApp = () => {
                         }).filter(Boolean) as string[];
 
                         if (matchedSegmentIds.length > 0) {
-                          setSelectedSegments(matchedSegmentIds);
+                          // Manter os filtros atuais do usuário e ADICIONAR os novos da inteligência (ou vice-versa)
+                          // Conforme solicitado, a barra de pesquisa deve complementar os filtros.
+                          setSelectedSegments(prev => {
+                            const combined = [...new Set([...prev, ...matchedSegmentIds])];
+                            return combined;
+                          });
                         }
                       } else {
+                        // Se não houver match direto, mantemos os filtros selecionados pelo usuário
+                        // e deixamos o filteredServices lidar com o texto.
                         setAiInsight(null);
                       }
                     });
@@ -433,8 +440,9 @@ const ClientApp = () => {
                     }
                   } else {
                     toast.info("Digite algo para buscar");
-                    setSelectedSegments([]);
+                    // Não limpa filtros se buscar vazio, apenas remove o termo de busca
                     setAiInsight(null);
+                    setTriggerSearch(prev => prev + 1);
                   }
                 }}
               >
