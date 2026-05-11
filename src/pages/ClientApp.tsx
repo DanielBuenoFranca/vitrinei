@@ -87,20 +87,17 @@ const ClientApp = () => {
 
   // Handle voice transcript auto-submit
   useEffect(() => {
-    if (!transcript) return;
-    setSearchQuery(transcript);
+    if (transcript && transcript.trim()) {
+      setSearchQuery(transcript);
+    }
   }, [transcript]);
 
   // Handle when voice recognition stops
   useEffect(() => {
-    if (!listening && transcript) {
-      // Small delay to ensure state update is processed
-      const timer = setTimeout(() => {
-        const q = transcript.toLowerCase().trim();
-        console.log('[Search] Voice search query:', q);
-        // We don't need to do anything else as the Memo will react to searchQuery
-      }, 100);
-      return () => clearTimeout(timer);
+    if (!listening && transcript && transcript.trim()) {
+      const q = transcript.toLowerCase().trim();
+      console.log('[Search] Voice search finished:', q);
+      setSearchQuery(q);
     }
   }, [listening, transcript]);
 
