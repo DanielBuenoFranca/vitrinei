@@ -350,8 +350,8 @@ const ClientApp = () => {
   const isInCart = (serviceId: number) => cart.some(c => c.service?.id === serviceId);
 
   return (
-    <div className="min-h-screen bg-background max-w-md mx-auto relative">
-      {/* Header */}
+    <div className="min-h-screen bg-background max-w-md mx-auto relative pb-20">
+      <div className="pb-10">
       <div className="sticky top-0 z-50 bg-card border-b border-border">
         <div className="flex items-center justify-between p-3">
           <Button variant="ghost" size="icon" onClick={() => navigate('/')}><ArrowLeft className="w-5 h-5" /></Button>
@@ -952,24 +952,35 @@ const ClientApp = () => {
       </div>
 
       {/* Floating Cart Summary */}
-        {cart.length > 0 && !showCart && (
-          <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-            className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[calc(28rem-2rem)] z-40">
-            <Card className="border-primary shadow-xl bg-card/95 backdrop-blur-sm cursor-pointer" onClick={() => setShowCart(true)}>
-              <CardContent className="p-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><ShoppingCart className="w-4 h-4 text-primary-foreground" /></div>
-                  <div>
-                    <p className="text-xs font-bold text-foreground">{cartTotals.serviceCount} serviço(s) + {cart.reduce((s, c) => s + c.products.length, 0)} produto(s)</p>
-                    <p className="text-[10px] text-muted-foreground">{cartTotals.totalCredits} créditos + R$ {cartTotals.grandTotal.toFixed(2)}</p>
-                  </div>
+      {cart.length > 0 && !showCart && (
+        <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+          className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[calc(28rem-2rem)] z-40">
+          <Card className="border-primary shadow-xl bg-card/95 backdrop-blur-sm cursor-pointer" onClick={() => setShowCart(true)}>
+            <CardContent className="p-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><ShoppingCart className="w-4 h-4 text-primary-foreground" /></div>
+                <div>
+                  <p className="text-xs font-bold text-foreground">{cartTotals.serviceCount} serviço(s) + {cart.reduce((s, c) => s + c.products.length, 0)} produto(s)</p>
+                  <p className="text-[10px] text-muted-foreground">{cartTotals.totalCredits} créditos + R$ {cartTotals.grandTotal.toFixed(2)}</p>
                 </div>
-                <Button size="sm" className="text-[10px] gap-1"><Calendar className="w-3 h-3" />Ver Carrinho</Button>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-      </div>
+              </div>
+              <Button size="sm" className="text-[10px] gap-1"><Calendar className="w-3 h-3" />Ver Carrinho</Button>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Floating Support Icon - Right Side */}
+      <motion.button
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => setNoResultsFallback(true)}
+        className="fixed bottom-20 right-4 z-40 w-12 h-12 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center border-2 border-background"
+      >
+        <LifeBuoy className="w-6 h-6" />
+      </motion.button>
     </div>
   );
 };
