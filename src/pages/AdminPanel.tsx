@@ -91,6 +91,7 @@ const AdminPanel = () => {
   const [userProfiles, setUserProfiles] = useState<any[]>([]);
   const [userRoles, setUserRoles] = useState<any[]>([]);
   const [userSubscriptions, setUserSubscriptions] = useState<any[]>([]);
+  const [userActivations, setUserActivations] = useState<any[]>([]);
 
   // Confirmation dialog for provider delete
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; provider: Provider | null }>({ open: false, provider: null });
@@ -180,14 +181,16 @@ const AdminPanel = () => {
   useEffect(() => { fetchData(); fetchUsers(); fetchMarquee(); }, []);
 
   const fetchUsers = async () => {
-    const [profilesRes, rolesRes, subsRes, walletsRes, provLeadsRes] = await Promise.all([
+    const [profilesRes, rolesRes, subsRes, walletsRes, provLeadsRes, activationsRes] = await Promise.all([
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('user_roles').select('*'),
       supabase.from('subscriptions').select('*'),
       supabase.from('wallets').select('*'),
       supabase.from('providers').select('id, name, phone, email, cpf_cnpj, city, address, logo_url, created_at, user_id, segment, type').is('user_id', null),
+      supabase.from('user_activations').select('*').eq('is_used', false),
     ]);
     const profiles = profilesRes.data || [];
+    setUserActivations(activationsRes.data || []);
     const profileDocs = new Set(
       profiles.map((p: any) => (p.cpf_cnpj || '').replace(/\D/g, '')).filter(Boolean)
     );
@@ -1105,6 +1108,7 @@ const AdminPanel = () => {
                           <TableHead title="Permissões de gestão: Master, Admin ou Comum">Papel</TableHead>
                           <TableHead>Plano</TableHead>
                           <TableHead>Status E-mail</TableHead>
+                          <TableHead title="PIN de ativação para Lead">PIN</TableHead>
                           <TableHead>Telefone</TableHead>
                           <TableHead>Criado em</TableHead>
                           <TableHead>Ações</TableHead>
@@ -1190,8 +1194,32 @@ const AdminPanel = () => {
                                   ? <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Verificado</Badge>
                                   : <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Pendente</Badge>
                                 }
-                              </TableCell>
-                              <TableCell className="text-xs text-muted-foreground">{profile.phone || '—'}</TableCell>
+                               </TableCell>
+                               <TableCell className="text-xs">
+                                 {(() => {
+                                   const activation = userActivations.find((a: any) => a.email === (authUserEmails[profile.user_id] || profile.__leadEmail));
+                                   if (!activation) return <span className="text-muted-foreground">—</span>;
+                                   return (
+                                     <div className="flex items-center gap-1 group">
+                                       <code className="bg-muted px-1 py-0.5 rounded font-mono text-[10px] font-bold text-primary">
+                                         {activation.code}
+                                       </code>
+                                       <Button 
+                                         variant="ghost" 
+                                         size="icon" 
+                                         className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                                         onClick={() => {
+                                           navigator.clipboard.writeText(activation.code);
+                                           toast.success('PIN copiado!');
+                                         }}
+                                       >
+                                         <Plus className="h-3 w-3" />
+                                       </Button>
+                                     </div>
+                                   );
+                                 })()}
+                               </TableCell>
+                               <TableCell className="text-xs text-muted-foreground">{profile.phone || '—'}</TableCell>
                               <TableCell className="text-xs text-muted-foreground">
                                 {new Date(profile.created_at).toLocaleDateString('pt-BR')}
                               </TableCell>

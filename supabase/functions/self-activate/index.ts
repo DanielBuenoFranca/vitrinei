@@ -5,14 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-function generateActivationCode(input: string): string {
-  let hash = 0;
-  for (let i = 0; i < input.length; i++) {
-    hash = ((hash << 5) - hash) + input.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash).toString().slice(0, 6).padStart(6, '0');
-}
+// Activation code is now stored in user_activations table
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -46,15 +39,27 @@ Deno.serve(async (req) => {
     })
   }
 
-  // Validate code
-  const codeFromEmail = generateActivationCode(email)
-  const codeFromId = generateActivationCode(user.id)
+  // Validate code against database
+  const { data: activationData, error: tokenErr } = await supabase
+    .from('user_activations')
+    .select('id')
+    .eq('email', email)
+    .eq('code', code)
+    .eq('is_used', false)
+    .gt('expires_at', new Date().toISOString())
+    .maybeSingle()
   
-  if (code !== codeFromEmail && code !== codeFromId) {
-    return new Response(JSON.stringify({ error: 'Código de ativação inválido' }), {
+  if (tokenErr || !activationData) {
+    return new Response(JSON.stringify({ error: 'Código de ativação inválido ou expirado' }), {
       status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }
+
+  // Mark token as used
+  await supabase
+    .from('user_activations')
+    .update({ is_used: true, used_at: new Date().toISOString() })
+    .eq('id', activationData.id)
 
   // Already confirmed
   if (user.email_confirmed_at) {
