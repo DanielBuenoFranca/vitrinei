@@ -142,9 +142,8 @@ const AuthPage = () => {
     if (error) {
       // Check if the error is due to unconfirmed email
       if (error.message?.includes('Email not confirmed') || error.message?.includes('email_not_confirmed')) {
-        const code = generateActivationCode(email);
-        setLoginActivationModal({ open: true, expectedCode: code, userId: '' });
-        setActivationInput(code);
+        setLoginActivationModal({ open: true, expectedCode: 'SERVER_SIDE', userId: '' });
+        setActivationInput('');
         setLoading(false);
         return;
       }
