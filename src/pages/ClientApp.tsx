@@ -993,6 +993,7 @@ const ClientApp = () => {
           </span>
         </motion.button>
       </AnimatePresence>
+      </div>
     </div>
   );
 };
