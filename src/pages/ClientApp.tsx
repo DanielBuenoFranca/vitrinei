@@ -178,7 +178,9 @@ const ClientApp = () => {
       svcs = svcs.filter(s =>
         s.name.toLowerCase().includes(q) ||
         s.category.toLowerCase().includes(q) ||
-        s.provider.toLowerCase().includes(q)
+        s.provider.toLowerCase().includes(q) ||
+        // Adicionada busca por tags se existirem no mockData
+        (s as any).tags?.some((t: string) => t.toLowerCase().includes(q))
       );
     }
 
