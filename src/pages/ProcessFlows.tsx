@@ -250,7 +250,7 @@ const ProcessFlows = () => {
       {/* Module Selector */}
       <section className="sticky top-16 z-40 bg-card/95 backdrop-blur-md border-b border-border">
         <div className="container mx-auto px-4 py-3">
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="flex gap-2 admin-scroll-area shrink-0 pb-1">
             {modules.map(({ id, label, icon: Icon }) => (
               <motion.button
                 key={id}
