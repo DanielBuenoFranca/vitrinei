@@ -1092,28 +1092,27 @@ const AdminPanel = () => {
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto max-h-[60vh]">
+              <CardContent className="flex-1 p-0 overflow-hidden">
                 {userProfiles.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">Nenhum usuário cadastrado ainda.</p>
                 ) : (
-                  <div className="overflow-x-auto">
-                     <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Avatar</TableHead>
-                          <TableHead>Nome</TableHead>
-                          <TableHead>E-mail</TableHead>
-                          <TableHead title="CPF/CNPJ — identidade única no ecossistema">CPF/CNPJ</TableHead>
-                          <TableHead title="O que o usuário faz: Consumidor, Prestador ou Misto">Perfil</TableHead>
-                          <TableHead title="Permissões de gestão: Master, Admin ou Comum">Papel</TableHead>
-                          <TableHead>Plano</TableHead>
-                          <TableHead>Status E-mail</TableHead>
-                          <TableHead title="PIN de ativação para Lead">PIN</TableHead>
-                          <TableHead>Telefone</TableHead>
-                          <TableHead>Criado em</TableHead>
-                          <TableHead>Ações</TableHead>
-                        </TableRow>
-                      </TableHeader>
+                  <Table wrapperClassName="admin-scroll-area max-h-[70vh] border-t">
+                    <TableHeader className="sticky top-0 z-10 bg-background shadow-sm">
+                      <TableRow>
+                        <TableHead>Avatar</TableHead>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>E-mail</TableHead>
+                        <TableHead title="CPF/CNPJ — identidade única no ecossistema">CPF/CNPJ</TableHead>
+                        <TableHead title="O que o usuário faz: Consumidor, Prestador ou Misto">Perfil</TableHead>
+                        <TableHead title="Permissões de gestão: Master, Admin ou Comum">Papel</TableHead>
+                        <TableHead>Plano</TableHead>
+                        <TableHead>Status E-mail</TableHead>
+                        <TableHead title="PIN de ativação para Lead">PIN</TableHead>
+                        <TableHead>Telefone</TableHead>
+                        <TableHead>Criado em</TableHead>
+                        <TableHead>Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
                       <TableBody>
                         {userProfiles.map((profile: any) => {
                           const roles = userRoles.filter((r: any) => r.user_id === profile.user_id);
