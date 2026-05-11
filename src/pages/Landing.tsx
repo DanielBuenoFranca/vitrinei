@@ -1390,7 +1390,7 @@ const Landing = () => {
               <Button variant="ghost" size="sm" onClick={() => setShowAiPanel(false)}>✕</Button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            <div className="flex-1 admin-scroll-area p-4 space-y-3">
               {aiChat.length === 0 && (
                 <div className="bg-muted/50 rounded-xl p-4 text-sm text-muted-foreground">
                   <p className="font-medium text-foreground mb-2">👋 Me diga o que você precisa!</p>
