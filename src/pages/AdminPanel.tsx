@@ -181,12 +181,13 @@ const AdminPanel = () => {
   useEffect(() => { fetchData(); fetchUsers(); fetchMarquee(); }, []);
 
   const fetchUsers = async () => {
-    const [profilesRes, rolesRes, subsRes, walletsRes, provLeadsRes] = await Promise.all([
+    const [profilesRes, rolesRes, subsRes, walletsRes, provLeadsRes, activationsRes] = await Promise.all([
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('user_roles').select('*'),
       supabase.from('subscriptions').select('*'),
       supabase.from('wallets').select('*'),
       supabase.from('providers').select('id, name, phone, email, cpf_cnpj, city, address, logo_url, created_at, user_id, segment, type').is('user_id', null),
+      supabase.from('user_activations').select('*').eq('is_used', false),
     ]);
     const profiles = profilesRes.data || [];
     const profileDocs = new Set(
