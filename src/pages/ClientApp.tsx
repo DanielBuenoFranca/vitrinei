@@ -167,6 +167,8 @@ const ClientApp = () => {
     
     // Filtros por segmentos (se houver algum selecionado)
     const selectedCats = selectedSegments.map(id => segments.find(s => s.id === id)?.category).filter(Boolean);
+    console.log('[Search] Selected Categories:', selectedCats);
+    
 
     // Se não houver busca nem segmentos, retorna tudo
     if (!q && selectedSegments.length === 0) {
