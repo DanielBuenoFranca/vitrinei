@@ -98,6 +98,7 @@ const ClientApp = () => {
       const q = transcript.toLowerCase().trim();
       console.log('[Search] Voice search finished:', q);
       setSearchQuery(q);
+      setTriggerSearch(prev => prev + 1);
     }
   }, [listening, transcript]);
 
