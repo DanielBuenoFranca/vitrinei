@@ -1108,6 +1108,7 @@ const AdminPanel = () => {
                           <TableHead title="Permissões de gestão: Master, Admin ou Comum">Papel</TableHead>
                           <TableHead>Plano</TableHead>
                           <TableHead>Status E-mail</TableHead>
+                          <TableHead title="PIN de ativação para Lead">PIN</TableHead>
                           <TableHead>Telefone</TableHead>
                           <TableHead>Criado em</TableHead>
                           <TableHead>Ações</TableHead>
