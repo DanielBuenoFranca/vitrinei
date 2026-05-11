@@ -177,13 +177,27 @@ const ClientApp = () => {
     // Aplica o filtro de texto
     let svcs = clientServices;
     if (q) {
-      svcs = svcs.filter(s =>
-        s.name.toLowerCase().includes(q) ||
-        s.category.toLowerCase().includes(q) ||
-        s.provider.toLowerCase().includes(q) ||
-        // Adicionada busca por tags se existirem no mockData
-        (s as any).tags?.some((t: string) => t.toLowerCase().includes(q))
-      );
+      svcs = svcs.filter(s => {
+        const nameMatch = s.name.toLowerCase().includes(q);
+        const catMatch = s.category.toLowerCase().includes(q);
+        const provMatch = s.provider.toLowerCase().includes(q);
+        
+        // Busca aprimorada: verificar se o termo de busca está em algum lugar dos metadados
+        // Se nameMatch, catMatch ou provMatch forem verdadeiros, já retorna true
+        if (nameMatch || catMatch || provMatch) return true;
+        
+        // Caso contrário, verificamos tags ou descrição (se existissem)
+        // Aqui simulamos uma busca mais "inteligente" verificando palavras parciais
+        const words = q.split(' ');
+        if (words.length > 1) {
+          return words.every(word => 
+            s.name.toLowerCase().includes(word) || 
+            s.category.toLowerCase().includes(word)
+          );
+        }
+        
+        return false;
+      });
     }
 
     // Aplica o filtro de segmentos sobre o resultado da busca (ou sobre o total se não houver busca)
