@@ -179,19 +179,13 @@ const ClientApp = () => {
     const q = searchQuery.toLowerCase().trim();
     console.log('[Search] Filtering services with query:', q, 'and segments:', selectedSegments);
     
-    
-    // Filtros por segmentos (se houver algum selecionado)
-    const selectedCats = selectedSegments.map(id => segments.find(s => s.id === id)?.category).filter(Boolean);
-    console.log('[Search] Selected Categories:', selectedCats);
-    
-
-    // Se não houver busca nem segmentos, retorna tudo
+    // 1. Se não houver busca nem segmentos, retorna TUDO (Estado inicial: Mostrar todos os itens)
     if (!q && selectedSegments.length === 0) {
       setNoResultsFallback(false);
       return clientServices;
     }
 
-    // Aplica o filtro de texto
+    // 2. Aplica o filtro de texto
     let svcs = clientServices;
     if (q) {
       svcs = svcs.filter(s => {
@@ -199,12 +193,8 @@ const ClientApp = () => {
         const catMatch = s.category.toLowerCase().includes(q);
         const provMatch = s.provider.toLowerCase().includes(q);
         
-        // Busca aprimorada: verificar se o termo de busca está em algum lugar dos metadados
-        // Se nameMatch, catMatch ou provMatch forem verdadeiros, já retorna true
         if (nameMatch || catMatch || provMatch) return true;
         
-        // Caso contrário, verificamos tags ou descrição (se existissem)
-        // Aqui simulamos uma busca mais "inteligente" verificando palavras parciais
         const words = q.split(' ');
         if (words.length > 1) {
           return words.every(word => 
@@ -217,17 +207,25 @@ const ClientApp = () => {
       });
     }
 
-    // Aplica o filtro de segmentos sobre o resultado da busca
+    // 3. Aplica o filtro de segmentos sobre o resultado da busca
     if (selectedSegments.length > 0) {
       svcs = svcs.filter(s => {
+        // Encontrar o segmento baseado na categoria do serviço
         const segment = segments.find(seg => seg.category === s.category);
-        return segment && selectedSegments.includes(segment.id);
+        
+        // Se encontramos o segmento, verificamos se o seu ID está selecionado
+        if (segment && selectedSegments.includes(segment.id)) return true;
+        
+        // Também verificamos se o ID do prestador está selecionado nos filtros (Requisito 2)
+        const providerIdFilter = `provider_${s.provider.replace(/\s+/g, '_').toLowerCase()}`;
+        if (selectedSegments.includes(providerIdFilter)) return true;
+
+        return false;
       });
     }
 
     // Se após os filtros não sobrar nada
     if (svcs.length === 0) {
-      // Verifica se o termo de busca (se houver) está em produtos
       const productMatch = q ? clientProducts.some(p => 
         p.name.toLowerCase().includes(q) || 
         p.category.toLowerCase().includes(q)
@@ -507,8 +505,9 @@ const ClientApp = () => {
           </div>
         </div>
 
-        {/* Segment Pills */}
-        <div className="px-3 pb-2 flex gap-1.5 overflow-x-auto">
+        {/* Filter Pills (Segments + Providers) */}
+        <div className="px-3 pb-2 flex gap-1.5 overflow-x-auto no-scrollbar">
+          {/* Segments */}
           {segments.map(seg => (
             <button key={seg.id} onClick={() => toggleSegment(seg.id)}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-all border ${
@@ -518,6 +517,23 @@ const ClientApp = () => {
               {groupedServices[seg.id]?.length > 0 && <span className="text-[8px] opacity-70">({groupedServices[seg.id].length})</span>}
             </button>
           ))}
+          
+          {/* Providers as Filters (Requisito 2) */}
+          {Array.from(new Set(clientServices.map(s => s.provider))).map(provider => {
+            const providerId = `provider_${provider.replace(/\s+/g, '_').toLowerCase()}`;
+            const isSelected = selectedSegments.includes(providerId);
+            return (
+              <button 
+                key={providerId} 
+                onClick={() => toggleSegment(providerId)}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-all border ${
+                  isSelected ? 'bg-accent text-accent-foreground border-accent' : 'bg-muted/50 text-muted-foreground border-border'
+                }`}
+              >
+                <span>👤</span>{provider}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -820,7 +836,7 @@ const ClientApp = () => {
         <div data-search-results>
           {activeSegments.map((seg, segIdx) => {
             const services = groupedServices[seg.id];
-          const isExpanded = expandedSegment === seg.id || searchQuery.trim().length >= 1 || selectedSegments.length > 0;
+          const isExpanded = expandedSegment === seg.id || searchQuery.trim().length >= 1 || selectedSegments.some(s => s === seg.id || s.startsWith('provider_'));
 
           return (
             <motion.div key={seg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: segIdx * 0.05 }}>
@@ -936,9 +952,13 @@ const ClientApp = () => {
                 const matchesSearch = !q || p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q);
                 
                 const selectedCats = selectedSegments.map(id => segments.find(s => s.id === id)?.category).filter(Boolean);
-                const matchesSegments = selectedSegments.length === 0 || selectedCats.includes(p.category);
+                const matchesSegments = selectedSegments.filter(s => !s.startsWith('provider_')).length === 0 || selectedCats.includes(p.category);
                 
-                return matchesSearch && matchesSegments;
+                // Filtro por prestador (Requisito 2)
+                const providerFilters = selectedSegments.filter(s => s.startsWith('provider_'));
+                const matchesProvider = providerFilters.length === 0 || providerFilters.some(f => f === `provider_${p.supplier.replace(/\s+/g, '_').toLowerCase()}`);
+                
+                return matchesSearch && matchesSegments && matchesProvider;
               }).slice(0, 6).map(product => {
                 const discountedPrice = product.price * (1 - discount / 100);
                 return (
