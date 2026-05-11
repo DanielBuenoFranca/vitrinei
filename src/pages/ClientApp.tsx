@@ -162,50 +162,40 @@ const ClientApp = () => {
     }
 
     const q = searchQuery.toLowerCase().trim();
+    
+    // Filtros por segmentos (se houver algum selecionado)
+    const selectedCats = selectedSegments.map(id => segments.find(s => s.id === id)?.category).filter(Boolean);
+
+    // Se não houver busca nem segmentos, retorna tudo
     if (!q && selectedSegments.length === 0) {
       setNoResultsFallback(false);
       return clientServices;
     }
 
+    // Aplica o filtro de texto
     let svcs = clientServices;
-    let didFilter = false;
-
     if (q) {
-      const filtered = svcs.filter(s =>
+      svcs = svcs.filter(s =>
         s.name.toLowerCase().includes(q) ||
         s.category.toLowerCase().includes(q) ||
         s.provider.toLowerCase().includes(q)
       );
-      
-      if (filtered.length > 0) {
-        svcs = filtered;
-        didFilter = true;
-      } else {
-        // Se digitou algo e não achou nos serviços, vamos ver se acha nos produtos
-        const productMatch = clientProducts.some(p => 
-          p.name.toLowerCase().includes(q) || 
-          p.category.toLowerCase().includes(q)
-        );
-        
-        if (!productMatch) {
-          setNoResultsFallback(true);
-          return [];
-        }
-        // Se achou produto, não mostra fallback de suporte ainda,
-        // pois a seção de produtos abaixo vai mostrar os resultados.
-        svcs = [];
-        didFilter = true;
-      }
     }
 
+    // Aplica o filtro de segmentos sobre o resultado da busca (ou sobre o total se não houver busca)
     if (selectedSegments.length > 0) {
-      const cats = selectedSegments.map(id => segments.find(s => s.id === id)?.category).filter(Boolean);
-      const source = didFilter ? svcs : clientServices;
-      const filtered = source.filter(s => cats.includes(s.category));
-      
-      if (filtered.length > 0) {
-        svcs = filtered;
-      } else if (didFilter || q) {
+      svcs = svcs.filter(s => selectedCats.includes(s.category));
+    }
+
+    // Se após os filtros não sobrar nada
+    if (svcs.length === 0) {
+      // Verifica se o termo de busca (se houver) está em produtos
+      const productMatch = q ? clientProducts.some(p => 
+        p.name.toLowerCase().includes(q) || 
+        p.category.toLowerCase().includes(q)
+      ) : false;
+
+      if (!productMatch) {
         setNoResultsFallback(true);
         return [];
       }
