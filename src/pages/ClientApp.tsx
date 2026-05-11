@@ -952,9 +952,13 @@ const ClientApp = () => {
                 const matchesSearch = !q || p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q);
                 
                 const selectedCats = selectedSegments.map(id => segments.find(s => s.id === id)?.category).filter(Boolean);
-                const matchesSegments = selectedSegments.length === 0 || selectedCats.includes(p.category);
+                const matchesSegments = selectedSegments.filter(s => !s.startsWith('provider_')).length === 0 || selectedCats.includes(p.category);
                 
-                return matchesSearch && matchesSegments;
+                // Filtro por prestador (Requisito 2)
+                const providerFilters = selectedSegments.filter(s => s.startsWith('provider_'));
+                const matchesProvider = providerFilters.length === 0 || providerFilters.some(f => f === `provider_${p.supplier.replace(/\s+/g, '_').toLowerCase()}`);
+                
+                return matchesSearch && matchesSegments && matchesProvider;
               }).slice(0, 6).map(product => {
                 const discountedPrice = product.price * (1 - discount / 100);
                 return (
