@@ -1194,8 +1194,32 @@ const AdminPanel = () => {
                                   ? <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Verificado</Badge>
                                   : <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Pendente</Badge>
                                 }
-                              </TableCell>
-                              <TableCell className="text-xs text-muted-foreground">{profile.phone || '—'}</TableCell>
+                               </TableCell>
+                               <TableCell className="text-xs">
+                                 {(() => {
+                                   const activation = userActivations.find((a: any) => a.email === (authUserEmails[profile.user_id] || profile.__leadEmail));
+                                   if (!activation) return <span className="text-muted-foreground">—</span>;
+                                   return (
+                                     <div className="flex items-center gap-1 group">
+                                       <code className="bg-muted px-1 py-0.5 rounded font-mono text-[10px] font-bold text-primary">
+                                         {activation.code}
+                                       </code>
+                                       <Button 
+                                         variant="ghost" 
+                                         size="icon" 
+                                         className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                                         onClick={() => {
+                                           navigator.clipboard.writeText(activation.code);
+                                           toast.success('PIN copiado!');
+                                         }}
+                                       >
+                                         <Plus className="h-3 w-3" />
+                                       </Button>
+                                     </div>
+                                   );
+                                 })()}
+                               </TableCell>
+                               <TableCell className="text-xs text-muted-foreground">{profile.phone || '—'}</TableCell>
                               <TableCell className="text-xs text-muted-foreground">
                                 {new Date(profile.created_at).toLocaleDateString('pt-BR')}
                               </TableCell>
