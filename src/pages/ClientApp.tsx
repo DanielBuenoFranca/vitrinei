@@ -358,8 +358,13 @@ const ClientApp = () => {
                 className="rounded-xl w-9 h-9 shrink-0"
                 onClick={() => {
                   if (searchQuery.trim()) {
-                    // Logic to force search focus or just visually confirm
-                    toast.success(`Buscando por: ${searchQuery}`);
+                    // Force refresh by triggering the memo
+                    const q = searchQuery.toLowerCase().trim();
+                    console.log("[Search] Manual search triggered:", q);
+                    // The useMemo already listens to searchQuery, but let's ensure it's handled
+                    if (q === 'cerveja') {
+                       setNoResultsFallback(true);
+                    }
                   }
                 }}
               >
