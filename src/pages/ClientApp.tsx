@@ -364,21 +364,26 @@ const ClientApp = () => {
               
               <button
                 type="button"
-                className="flex items-center justify-center rounded-xl w-9 h-9 shrink-0 bg-secondary text-secondary-foreground transition-all border border-transparent active:scale-95"
+                className="flex items-center justify-center rounded-xl w-9 h-9 shrink-0 bg-primary text-primary-foreground transition-all border border-transparent active:scale-95 shadow-sm"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   const q = searchQuery.trim().toLowerCase();
-                  console.log("[Search] Manual search click:", q);
+                  console.log("[Search] Manual search trigger:", q);
                   
-                  // Se for cerveja ou qualquer termo sem resultado, a useMemo cuidará do fallback
                   if (q) {
                     toast.success(`Buscando por: ${searchQuery}`);
-                    // Força o trigger se necessário (já é reativo ao searchQuery)
+                    // O filteredServices já reage ao searchQuery, mas podemos forçar um scroll para resultados
+                    const firstResult = document.querySelector('[data-search-results]');
+                    if (firstResult) {
+                      firstResult.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  } else {
+                    toast.info("Digite algo para buscar");
                   }
                 }}
               >
-                <Send className="w-4 h-4" />
+                <Search className="w-4 h-4" />
               </button>
             </div>
           </div>
