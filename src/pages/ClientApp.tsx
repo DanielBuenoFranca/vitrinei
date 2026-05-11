@@ -380,7 +380,10 @@ const ClientApp = () => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
+                onChange={e => {
+                  setSearchQuery(e.target.value);
+                  setTriggerSearch(prev => prev + 1); // Força re-render imediato da busca
+                }}
                 placeholder="Buscar serviços, produtos, categorias..."
                 className="w-full pl-9 pr-8 py-2 rounded-xl bg-muted text-xs border-0 outline-none text-foreground placeholder:text-muted-foreground"
               />
