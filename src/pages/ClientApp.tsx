@@ -122,6 +122,7 @@ const ClientApp = () => {
   // Filter services by search & segments. If search/segment yields 0 results,
   // fall back to the full inventory so the user can still browse.
   const [noResultsFallback, setNoResultsFallback] = useState(false);
+  const [triggerSearch, setTriggerSearch] = useState(0);
   
   const filteredServices = useMemo(() => {
     if (searchParams.get('force_support') === '1') {
