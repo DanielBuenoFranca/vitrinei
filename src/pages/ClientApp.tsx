@@ -971,16 +971,27 @@ const ClientApp = () => {
       )}
 
       {/* Floating Support Icon - Right Side */}
-      <motion.button
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        onClick={() => setNoResultsFallback(true)}
-        className="fixed bottom-20 right-4 z-40 w-12 h-12 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center border-2 border-background"
-      >
-        <LifeBuoy className="w-6 h-6" />
-      </motion.button>
+      <AnimatePresence>
+        <motion.button
+          initial={{ scale: 0, opacity: 0, x: 20 }}
+          animate={{ scale: 1, opacity: 1, x: 0 }}
+          exit={{ scale: 0, opacity: 0, x: 20 }}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => {
+            setNoResultsFallback(true);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-2xl flex items-center justify-center border-2 border-background ring-4 ring-primary/20"
+          title="Central de Atendimento"
+        >
+          <LifeBuoy className="w-7 h-7" />
+          <span className="absolute -top-1 -right-1 flex h-4 w-4">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-4 w-4 bg-primary border-2 border-background"></span>
+          </span>
+        </motion.button>
+      </AnimatePresence>
     </div>
   );
 };
