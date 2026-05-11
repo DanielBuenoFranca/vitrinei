@@ -901,22 +901,21 @@ const AdminPanel = () => {
                 {products.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">Nenhum produto registrado.</p>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Nome</TableHead>
-                          <TableHead>Prestador</TableHead>
-                          <TableHead>Preço</TableHead>
-                          <TableHead>Tipo Estoque</TableHead>
-                          <TableHead>Qtd</TableHead>
-                          <TableHead>Avaliação</TableHead>
-                          <TableHead>Tags</TableHead>
-                          <TableHead>Criado em</TableHead>
-                          <TableHead></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
+                  <Table wrapperClassName="admin-scroll-area max-h-[60vh] border-t">
+                    <TableHeader className="sticky top-0 z-10 bg-background shadow-sm">
+                      <TableRow>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Prestador</TableHead>
+                        <TableHead>Preço</TableHead>
+                        <TableHead>Tipo Estoque</TableHead>
+                        <TableHead>Qtd</TableHead>
+                        <TableHead>Avaliação</TableHead>
+                        <TableHead>Tags</TableHead>
+                        <TableHead>Criado em</TableHead>
+                        <TableHead></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                         {products.map((prod) => (
                           <TableRow key={prod.id}>
                             <TableCell className="font-medium">
