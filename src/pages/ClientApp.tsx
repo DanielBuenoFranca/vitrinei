@@ -397,6 +397,11 @@ const ClientApp = () => {
                   const val = e.target.value;
                   setSearchQuery(val);
                   
+                  // Reset selection of other filters when searching (Hierarchy Requirement)
+                  if (val.trim() !== '') {
+                    setSelectedSegments([]);
+                  }
+                  
                   // Lógica para detectar saudação em tempo real no input
                   if (val.length > 2) {
                     import('@/data/searchData').then(({ naturalLanguageMap }) => {
