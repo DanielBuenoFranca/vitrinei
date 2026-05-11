@@ -350,8 +350,8 @@ const ClientApp = () => {
   const isInCart = (serviceId: number) => cart.some(c => c.service?.id === serviceId);
 
   return (
-    <div className="min-h-screen bg-background max-w-md mx-auto relative pb-20">
-      <div className="pb-10">
+    <div className="min-h-screen bg-background max-w-md mx-auto relative pb-32">
+      <div>
       <div className="sticky top-0 z-50 bg-card border-b border-border">
         <div className="flex items-center justify-between p-3">
           <Button variant="ghost" size="icon" onClick={() => navigate('/')}><ArrowLeft className="w-5 h-5" /></Button>
@@ -950,6 +950,7 @@ const ClientApp = () => {
           </div>
         )}
       </div>
+    </div>
 
       {/* Floating Cart Summary */}
       {cart.length > 0 && !showCart && (
@@ -971,16 +972,28 @@ const ClientApp = () => {
       )}
 
       {/* Floating Support Icon - Right Side */}
-      <motion.button
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        onClick={() => setNoResultsFallback(true)}
-        className="fixed bottom-20 right-4 z-40 w-12 h-12 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center border-2 border-background"
-      >
-        <LifeBuoy className="w-6 h-6" />
-      </motion.button>
+      <AnimatePresence>
+        <motion.button
+          initial={{ scale: 0, opacity: 0, x: 20 }}
+          animate={{ scale: 1, opacity: 1, x: 0 }}
+          exit={{ scale: 0, opacity: 0, x: 20 }}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => {
+            setNoResultsFallback(true);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-2xl flex items-center justify-center border-2 border-background ring-4 ring-primary/20"
+          title="Central de Atendimento"
+        >
+          <LifeBuoy className="w-7 h-7" />
+          <span className="absolute -top-1 -right-1 flex h-4 w-4">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-4 w-4 bg-primary border-2 border-background"></span>
+          </span>
+        </motion.button>
+      </AnimatePresence>
+      </div>
     </div>
   );
 };
