@@ -1467,30 +1467,28 @@ const AdminPanel = () => {
                             <Megaphone className="h-3 w-3" /> Enviar Push em Massa
                           </Button>
                         </div>
-                        <div className="overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Nome</TableHead>
-                                <TableHead>E-mail</TableHead>
-                                <TableHead>Plano</TableHead>
-                                <TableHead>Débito</TableHead>
-                                <TableHead>Criado em</TableHead>
+                        <Table wrapperClassName="admin-scroll-area max-h-[50vh] border rounded-md">
+                          <TableHeader className="sticky top-0 z-10 bg-background shadow-sm">
+                            <TableRow>
+                              <TableHead>Nome</TableHead>
+                              <TableHead>E-mail</TableHead>
+                              <TableHead>Plano</TableHead>
+                              <TableHead>Débito</TableHead>
+                              <TableHead>Criado em</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {debtors.map(d => (
+                              <TableRow key={d.id}>
+                                <TableCell className="text-sm font-medium">{d.profile?.display_name || '—'}</TableCell>
+                                <TableCell className="text-xs text-muted-foreground">{d.email}</TableCell>
+                                <TableCell><Badge variant="outline" className="text-[10px]">{d.sub?.plan || '—'}</Badge></TableCell>
+                                <TableCell className="text-sm font-semibold text-destructive">R$ {Math.abs(d.balance).toFixed(2)}</TableCell>
+                                <TableCell className="text-xs text-muted-foreground">{d.profile ? new Date(d.profile.created_at).toLocaleDateString('pt-BR') : '—'}</TableCell>
                               </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {debtors.map(d => (
-                                <TableRow key={d.id}>
-                                  <TableCell className="text-sm font-medium">{d.profile?.display_name || '—'}</TableCell>
-                                  <TableCell className="text-xs text-muted-foreground">{d.email}</TableCell>
-                                  <TableCell><Badge variant="outline" className="text-[10px]">{d.sub?.plan || '—'}</Badge></TableCell>
-                                  <TableCell className="text-sm font-semibold text-destructive">R$ {Math.abs(d.balance).toFixed(2)}</TableCell>
-                                  <TableCell className="text-xs text-muted-foreground">{d.profile ? new Date(d.profile.created_at).toLocaleDateString('pt-BR') : '—'}</TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
+                            ))}
+                          </TableBody>
+                        </Table>
                         <div className="text-xs text-muted-foreground bg-muted/30 rounded p-2">
                           💡 Total em débitos: <strong className="text-destructive">R$ {debtors.reduce((sum, d) => sum + Math.abs(d.balance), 0).toFixed(2)}</strong>
                         </div>
