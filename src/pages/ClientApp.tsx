@@ -374,7 +374,7 @@ const ClientApp = () => {
                   
                   if (q) {
                     toast.success(`Buscando por: ${searchQuery}`);
-                    // O filteredServices já reage ao searchQuery, mas podemos forçar um scroll para resultados
+                    setTriggerSearch(prev => prev + 1);
                     const firstResult = document.querySelector('[data-search-results]');
                     if (firstResult) {
                       firstResult.scrollIntoView({ behavior: 'smooth' });
