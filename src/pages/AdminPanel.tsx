@@ -190,6 +190,7 @@ const AdminPanel = () => {
       supabase.from('user_activations').select('*').eq('is_used', false),
     ]);
     const profiles = profilesRes.data || [];
+    setUserActivations(activationsRes.data || []);
     const profileDocs = new Set(
       profiles.map((p: any) => (p.cpf_cnpj || '').replace(/\D/g, '')).filter(Boolean)
     );
