@@ -350,7 +350,7 @@ const ClientApp = () => {
   const isInCart = (serviceId: number) => cart.some(c => c.service?.id === serviceId);
 
   return (
-    <div className="min-h-screen bg-background max-w-md mx-auto relative pb-20">
+    <div className="min-h-screen bg-background max-w-md mx-auto relative pb-32">
       <div className="pb-10">
       <div className="sticky top-0 z-50 bg-card border-b border-border">
         <div className="flex items-center justify-between p-3">
