@@ -8,7 +8,7 @@ import { plans, clientProducts, clientServices, mockUser, checkEligibility, meiP
 import {
   ArrowLeft, Star, ShoppingBag, Wrench, CreditCard, Zap, CheckCircle2, Lock,
   Clock, ArrowUpCircle, Coins, ShieldCheck, Package, ChevronRight, X, Search,
-  Sparkles, Calendar, MapPin, ShoppingCart, TrendingDown, Heart, Plus, Minus, Brain, LifeBuoy, Megaphone
+  Sparkles, Calendar, MapPin, ShoppingCart, TrendingDown, Heart, Plus, Minus, Brain, LifeBuoy, Megaphone, Mic, Send
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
