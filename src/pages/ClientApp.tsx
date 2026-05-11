@@ -451,10 +451,7 @@ const ClientApp = () => {
                         if (matchedSegmentIds.length > 0) {
                           // Manter os filtros atuais do usuário e ADICIONAR os novos da inteligência (ou vice-versa)
                           // Conforme solicitado, a barra de pesquisa deve complementar os filtros.
-                          setSelectedSegments(prev => {
-                            const combined = [...new Set([...prev, ...matchedSegmentIds])];
-                            return combined;
-                          });
+                          setSelectedSegments(matchedSegmentIds);
                         }
                       } else {
                         // Se não houver match direto, mantemos os filtros selecionados pelo usuário
