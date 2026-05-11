@@ -51,7 +51,8 @@ Deno.serve(async (req) => {
 
     if (error) {
       console.log('Password update error:', error.message)
-      // Normaliza para lowercase para facilitar a comparação de string
+      // Para qualquer erro, vamos retornar 200 e informar o tipo do erro
+      // Assim o frontend não trava na rede e pode decidir o que mostrar
       const errLower = error.message.toLowerCase()
       const isWeak = errLower.includes('senha é conhecida por ser fraca') || 
                     errLower.includes('password is too weak') ||
@@ -59,9 +60,10 @@ Deno.serve(async (req) => {
 
       return new Response(JSON.stringify({ 
         error: error.message, 
-        is_weak: isWeak 
+        is_weak: isWeak,
+        handled_as_warning: true
       }), { 
-        status: isWeak ? 200 : 400,
+        status: 200, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       })
     }
