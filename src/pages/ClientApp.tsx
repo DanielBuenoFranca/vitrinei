@@ -182,7 +182,7 @@ const ClientApp = () => {
 
     setNoResultsFallback(false);
     return svcs;
-  }, [searchQuery, selectedSegments, searchParams]);
+  }, [searchQuery, selectedSegments, searchParams, triggerSearch]);
 
   // Group by segment
   const groupedServices = useMemo(() => {
