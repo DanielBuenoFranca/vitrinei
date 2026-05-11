@@ -104,6 +104,18 @@ Deno.serve(async (req) => {
           await supabase.from('profiles').update(updates).eq('user_id', newUser.user.id)
         }
       }
+      // Generate activation PIN if the user is not automatically confirmed
+      // (Actually, create-user currently sets email_confirm: true on line 69)
+      // The user wants Master to be able to manage these tokens.
+      // If we want a PIN flow even when created by Master (for lead activation):
+      const { data: pinData } = await supabase.rpc('generate_random_pin')
+      const pin = pinData as string
+      
+      await supabase.from('user_activations').insert({
+        user_id: newUser.user.id,
+        email: email,
+        code: pin
+      })
     }
 
     return respond(true, { user_id: newUser?.user?.id })
