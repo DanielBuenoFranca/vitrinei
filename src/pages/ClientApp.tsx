@@ -993,8 +993,8 @@ const ClientApp = () => {
           </span>
         </motion.button>
       </AnimatePresence>
+    </div>
   );
-};
 };
 
 export default ClientApp;
