@@ -952,23 +952,24 @@ const ClientApp = () => {
       </div>
 
       {/* Floating Cart Summary */}
-        {cart.length > 0 && !showCart && (
-          <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-            className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[calc(28rem-2rem)] z-40">
-            <Card className="border-primary shadow-xl bg-card/95 backdrop-blur-sm cursor-pointer" onClick={() => setShowCart(true)}>
-              <CardContent className="p-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><ShoppingCart className="w-4 h-4 text-primary-foreground" /></div>
-                  <div>
-                    <p className="text-xs font-bold text-foreground">{cartTotals.serviceCount} serviço(s) + {cart.reduce((s, c) => s + c.products.length, 0)} produto(s)</p>
-                    <p className="text-[10px] text-muted-foreground">{cartTotals.totalCredits} créditos + R$ {cartTotals.grandTotal.toFixed(2)}</p>
-                  </div>
+      {cart.length > 0 && !showCart && (
+        <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+          className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[calc(28rem-2rem)] z-40">
+          <Card className="border-primary shadow-xl bg-card/95 backdrop-blur-sm cursor-pointer" onClick={() => setShowCart(true)}>
+            <CardContent className="p-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><ShoppingCart className="w-4 h-4 text-primary-foreground" /></div>
+                <div>
+                  <p className="text-xs font-bold text-foreground">{cartTotals.serviceCount} serviço(s) + {cart.reduce((s, c) => s + c.products.length, 0)} produto(s)</p>
+                  <p className="text-[10px] text-muted-foreground">{cartTotals.totalCredits} créditos + R$ {cartTotals.grandTotal.toFixed(2)}</p>
                 </div>
-                <Button size="sm" className="text-[10px] gap-1"><Calendar className="w-3 h-3" />Ver Carrinho</Button>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
+              </div>
+              <Button size="sm" className="text-[10px] gap-1"><Calendar className="w-3 h-3" />Ver Carrinho</Button>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
       {/* Floating Support Icon - Right Side */}
       <motion.button
         initial={{ scale: 0, opacity: 0 }}
