@@ -969,7 +969,17 @@ const ClientApp = () => {
             </Card>
           </motion.div>
         )}
-      </div>
+      {/* Floating Support Icon - Right Side */}
+      <motion.button
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => setNoResultsFallback(true)}
+        className="fixed bottom-20 right-4 z-40 w-12 h-12 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center border-2 border-background"
+      >
+        <LifeBuoy className="w-6 h-6" />
+      </motion.button>
     </div>
   );
 };
