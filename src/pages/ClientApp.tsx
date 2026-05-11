@@ -351,7 +351,6 @@ const ClientApp = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-md mx-auto relative pb-20">
-      <div className="flex flex-col">
       <div className="sticky top-0 z-50 bg-card border-b border-border">
         <div className="flex items-center justify-between p-3">
           <Button variant="ghost" size="icon" onClick={() => navigate('/')}><ArrowLeft className="w-5 h-5" /></Button>
