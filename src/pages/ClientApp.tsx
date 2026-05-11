@@ -336,37 +336,43 @@ const ClientApp = () => {
             </div>
             
             <div className="flex gap-1">
-              <Button
-                variant={listening ? "default" : "secondary"}
-                size="icon"
+              <button
+                type="button"
                 className={cn(
-                  "rounded-xl w-9 h-9 shrink-0 transition-all",
-                  listening && "bg-destructive text-white animate-pulse"
+                  "flex items-center justify-center rounded-xl w-9 h-9 shrink-0 transition-all border",
+                  listening 
+                    ? "bg-destructive text-white border-destructive animate-pulse" 
+                    : "bg-secondary text-secondary-foreground border-transparent"
                 )}
-                onClick={() => listening ? stop() : start()}
-                disabled={!supported}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (listening) {
+                    console.log("[Search] Manual voice stop");
+                    stop();
+                  } else {
+                    console.log("[Search] Manual voice start");
+                    start();
+                  }
+                }}
               >
                 {listening ? <X className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-              </Button>
+              </button>
               
-              <Button
-                variant="secondary"
-                size="icon"
-                className="rounded-xl w-9 h-9 shrink-0"
-                onClick={() => {
+              <button
+                type="button"
+                className="flex items-center justify-center rounded-xl w-9 h-9 shrink-0 bg-secondary text-secondary-foreground transition-all border border-transparent active:scale-95"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log("[Search] Manual search click:", searchQuery);
                   if (searchQuery.trim()) {
-                    // Force refresh by triggering the memo
-                    const q = searchQuery.toLowerCase().trim();
-                    console.log("[Search] Manual search triggered:", q);
-                    // The useMemo already listens to searchQuery, but let's ensure it's handled
-                    if (q === 'cerveja') {
-                       setNoResultsFallback(true);
-                    }
+                    toast.success(`Buscando por: ${searchQuery}`);
                   }
                 }}
               >
                 <Send className="w-4 h-4" />
-              </Button>
+              </button>
             </div>
           </div>
         </div>
