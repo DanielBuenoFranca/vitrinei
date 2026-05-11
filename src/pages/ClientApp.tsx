@@ -111,23 +111,34 @@ const ClientApp = () => {
       // Aciona a lógica de inteligência também para voz
       import('@/data/searchData').then(({ naturalLanguageMap, segments: segmentData }) => {
         const match = naturalLanguageMap.find(m => 
-          m.triggers.some(t => q.includes(t.toLowerCase()))
+          m.triggers.some(t => {
+            const trigger = t.toLowerCase();
+            // Match exato para saudações curtas ou contém para frases mais longas
+            return q === trigger || (trigger.length > 3 && q.includes(trigger));
+          })
         );
 
         if (match) {
           setAiInsight(match.aiFollowUp || null);
+          
+          // Se for apenas uma saudação, não aplicamos filtros de busca
+          if (match.isGreeting) {
+            setSelectedSegments([]);
+            setTriggerSearch(prev => prev + 1);
+            return;
+          }
+
           const matchedSegmentIds = match.segments.map(sName => {
             const seg = segmentData.find(sd => sd.id === sName || sd.label.toLowerCase() === sName.toLowerCase());
             return seg?.id;
           }).filter(Boolean) as string[];
 
           if (matchedSegmentIds.length > 0) {
-            // Ao iniciar nova busca por voz, usamos apenas os segmentos identificados pela IA
             setSelectedSegments(matchedSegmentIds);
           }
         } else {
           setAiInsight(null);
-          setSelectedSegments([]); // Se não há match na IA, limpa filtros para focar no texto
+          setSelectedSegments([]);
         }
       });
 
@@ -385,8 +396,25 @@ const ClientApp = () => {
               <input
                 value={searchQuery}
                 onChange={e => {
-                  setSearchQuery(e.target.value);
-                  setTriggerSearch(prev => prev + 1); // Força re-render imediato da busca
+                  const val = e.target.value;
+                  setSearchQuery(val);
+                  
+                  // Lógica para detectar saudação em tempo real no input
+                  if (val.length > 2) {
+                    import('@/data/searchData').then(({ naturalLanguageMap }) => {
+                      const match = naturalLanguageMap.find(m => 
+                        m.isGreeting && m.triggers.some(t => val.toLowerCase().includes(t.toLowerCase()))
+                      );
+                      if (match) {
+                        setAiInsight(match.aiFollowUp || null);
+                      } else {
+                        // Se não for saudação, podemos limpar o insight se ele for de saudação
+                        setAiInsight(prev => (prev?.includes('Como posso ajudar') ? null : prev));
+                      }
+                    });
+                  }
+                  
+                  setTriggerSearch(prev => prev + 1);
                 }}
                 placeholder="Buscar serviços, produtos, categorias..."
                 className="w-full pl-9 pr-8 py-2 rounded-xl bg-muted text-xs border-0 outline-none text-foreground placeholder:text-muted-foreground"

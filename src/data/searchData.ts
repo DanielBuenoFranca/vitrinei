@@ -149,7 +149,15 @@ export const naturalLanguageMap: {
   relevantProductIds?: number[];
   aiFollowUp?: string;
   needLabel?: string;
+  isGreeting?: boolean;
 }[] = [
+  {
+    triggers: ['oi', 'olá', 'ola', 'bom dia', 'boa tarde', 'boa noite', 'tudo bem', 'e aí', 'opa'],
+    segments: [],
+    keywords: [],
+    isGreeting: true,
+    aiFollowUp: 'Olá! Sou o Vini, seu assistente inteligente. Como posso ajudar você hoje? Procuro algum serviço ou produto específico nas lojas parceiras?'
+  },
   {
     triggers: ['dor', 'estou com dor', 'tô com dor', 'to com dor', 'estou sentindo dor', 'sinto dor', 'tenho dor', 'dores', 'desconforto'],
     segments: ['natureza', 'saude_clinica'], keywords: ['remédio', 'remedio', 'analgésico', 'analgesico', 'alívio', 'alivio', 'dor'],
