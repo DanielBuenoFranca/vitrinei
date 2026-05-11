@@ -179,19 +179,13 @@ const ClientApp = () => {
     const q = searchQuery.toLowerCase().trim();
     console.log('[Search] Filtering services with query:', q, 'and segments:', selectedSegments);
     
-    
-    // Filtros por segmentos (se houver algum selecionado)
-    const selectedCats = selectedSegments.map(id => segments.find(s => s.id === id)?.category).filter(Boolean);
-    console.log('[Search] Selected Categories:', selectedCats);
-    
-
-    // Se não houver busca nem segmentos, retorna tudo
+    // 1. Se não houver busca nem segmentos, retorna TUDO (Estado inicial: Mostrar todos os itens)
     if (!q && selectedSegments.length === 0) {
       setNoResultsFallback(false);
       return clientServices;
     }
 
-    // Aplica o filtro de texto
+    // 2. Aplica o filtro de texto
     let svcs = clientServices;
     if (q) {
       svcs = svcs.filter(s => {
@@ -199,12 +193,8 @@ const ClientApp = () => {
         const catMatch = s.category.toLowerCase().includes(q);
         const provMatch = s.provider.toLowerCase().includes(q);
         
-        // Busca aprimorada: verificar se o termo de busca está em algum lugar dos metadados
-        // Se nameMatch, catMatch ou provMatch forem verdadeiros, já retorna true
         if (nameMatch || catMatch || provMatch) return true;
         
-        // Caso contrário, verificamos tags ou descrição (se existissem)
-        // Aqui simulamos uma busca mais "inteligente" verificando palavras parciais
         const words = q.split(' ');
         if (words.length > 1) {
           return words.every(word => 
@@ -217,17 +207,25 @@ const ClientApp = () => {
       });
     }
 
-    // Aplica o filtro de segmentos sobre o resultado da busca
+    // 3. Aplica o filtro de segmentos sobre o resultado da busca
     if (selectedSegments.length > 0) {
       svcs = svcs.filter(s => {
+        // Encontrar o segmento baseado na categoria do serviço
         const segment = segments.find(seg => seg.category === s.category);
-        return segment && selectedSegments.includes(segment.id);
+        
+        // Se encontramos o segmento, verificamos se o seu ID está selecionado
+        if (segment && selectedSegments.includes(segment.id)) return true;
+        
+        // Também verificamos se o ID do prestador está selecionado nos filtros (Requisito 2)
+        const providerIdFilter = `provider_${s.provider.replace(/\s+/g, '_').toLowerCase()}`;
+        if (selectedSegments.includes(providerIdFilter)) return true;
+
+        return false;
       });
     }
 
     // Se após os filtros não sobrar nada
     if (svcs.length === 0) {
-      // Verifica se o termo de busca (se houver) está em produtos
       const productMatch = q ? clientProducts.some(p => 
         p.name.toLowerCase().includes(q) || 
         p.category.toLowerCase().includes(q)
