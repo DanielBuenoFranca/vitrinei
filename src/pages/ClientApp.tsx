@@ -120,7 +120,7 @@ const ClientApp = () => {
           }).filter(Boolean) as string[];
 
           if (matchedSegmentIds.length > 0) {
-            setSelectedSegments(matchedSegmentIds);
+            setSelectedSegments(prev => [...new Set([...prev, ...matchedSegmentIds])]);
           }
         } else {
           setAiInsight(null);
