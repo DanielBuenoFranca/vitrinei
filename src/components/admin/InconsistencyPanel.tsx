@@ -177,7 +177,8 @@ export function InconsistencyPanel({
           {errors.length} erro(s) crítico(s) e {warnings.length} aviso(s) encontrados nos cadastros.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-2 max-h-[500px] overflow-y-auto">
+      <CardContent className="p-0 overflow-hidden">
+        <div className="admin-scroll-area max-h-[60vh] p-6 space-y-2 border-t">
         {/* Errors first, then warnings */}
         {[...errors, ...warnings].map((issue, idx) => (
           <div
@@ -214,6 +215,7 @@ export function InconsistencyPanel({
             </Button>
           </div>
         ))}
+        </div>
       </CardContent>
     </Card>
   );

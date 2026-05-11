@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -226,11 +227,14 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? 'Editar Produto' : 'Novo Produto'}</DialogTitle>
-        </DialogHeader>
-        <div className="grid gap-4 py-2">
+      <DialogContent className="max-w-lg p-0 flex flex-col max-h-[90vh] overflow-hidden">
+        <div className="p-6 pb-2 shrink-0">
+          <DialogHeader>
+            <DialogTitle>{isEdit ? 'Editar Produto' : 'Novo Produto'}</DialogTitle>
+          </DialogHeader>
+        </div>
+        <ScrollArea className="flex-1 px-6 admin-scroll-area">
+          <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label>Nome *</Label>
             <Input value={form.name} onChange={e => { setForm(f => ({ ...f, name: e.target.value })); suggest(e.target.value, 'product', allProductNames); }} placeholder="Nome do produto" />
@@ -377,7 +381,8 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
             </div>
           </div>
         </div>
-        <DialogFooter>
+        </ScrollArea>
+        <DialogFooter className="p-6 pt-2 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
           <Button onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : isEdit ? 'Salvar' : 'Criar'}</Button>
         </DialogFooter>

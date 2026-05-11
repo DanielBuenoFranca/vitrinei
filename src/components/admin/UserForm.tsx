@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -471,15 +472,18 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? 'Editar Usuário' : 'Novo Usuário'}</DialogTitle>
-          <DialogDescription>
-            Cadastro unificado: ao escolher perfil <strong>Prestador</strong> ou <strong>Misto</strong>, a vitrine é provisionada automaticamente.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-w-2xl p-0 flex flex-col max-h-[90vh] overflow-hidden">
+        <div className="p-6 pb-2 shrink-0">
+          <DialogHeader>
+            <DialogTitle>{isEdit ? 'Editar Usuário' : 'Novo Usuário'}</DialogTitle>
+            <DialogDescription>
+              Cadastro unificado: ao escolher perfil <strong>Prestador</strong> ou <strong>Misto</strong>, a vitrine é provisionada automaticamente.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
-        <div className="grid gap-5 py-2">
+        <ScrollArea className="flex-1 px-6 admin-scroll-area">
+          <div className="grid gap-5 py-4">
           {/* ── Identidade do Usuário (CPF) ── */}
           <div className="rounded-lg border border-dashed border-primary/30 bg-primary/5 p-3">
             <p className="text-[11px] text-muted-foreground leading-snug">
@@ -751,9 +755,10 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
               </div>
             </div>
           )}
-        </div>
+          </div>
+        </ScrollArea>
 
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-2 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}

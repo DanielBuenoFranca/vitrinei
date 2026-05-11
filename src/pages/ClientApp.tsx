@@ -387,8 +387,8 @@ const ClientApp = () => {
         </div>
 
         {/* Search */}
-        <div className="px-3 pb-2">
-          <div className="flex gap-2">
+        <div className="px-3 pb-2 flex flex-col min-h-0">
+          <div className="flex gap-2 shrink-0">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
@@ -524,7 +524,7 @@ const ClientApp = () => {
         </div>
 
         {/* Filter Pills (Segments + Providers) */}
-        <div className="px-3 pb-2 flex gap-1.5 overflow-x-auto no-scrollbar">
+        <div className="px-3 pb-2 flex gap-1.5 admin-scroll-area shrink-0 no-scrollbar">
           {/* Segments */}
           {segments.map(seg => (
             <button key={seg.id} onClick={() => toggleSegment(seg.id)}
@@ -664,12 +664,12 @@ const ClientApp = () => {
         {showCart && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/40" onClick={() => setShowCart(false)}>
             <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25 }}
-              className="absolute right-0 top-0 h-full w-[85%] max-w-sm bg-card shadow-2xl overflow-y-auto" onClick={e => e.stopPropagation()}>
-              <div className="p-4 border-b border-border flex items-center justify-between">
+              className="absolute right-0 top-0 h-full w-[85%] max-w-sm bg-card shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
+              <div className="p-4 border-b border-border flex items-center justify-between shrink-0">
                 <h3 className="font-bold text-foreground flex items-center gap-2"><ShoppingCart className="w-4 h-4 text-primary" /> Meu Carrinho</h3>
                 <button onClick={() => setShowCart(false)}><X className="w-5 h-5 text-muted-foreground" /></button>
               </div>
-              <div className="p-4 space-y-3">
+              <div className="flex-1 admin-scroll-area p-4 space-y-3">
                 {cart.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Carrinho vazio — selecione serviços e produtos</p>}
                 {cart.map((item, idx) => {
                   const displayProducts = item.showAllProducts ? item.allProviderProducts : item.contextualProducts;

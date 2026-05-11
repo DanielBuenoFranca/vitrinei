@@ -129,61 +129,59 @@ export function LeadsJourneyPanel() {
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Indicador</TableHead>
-                <TableHead>Indicado</TableHead>
-                <TableHead>Origem</TableHead>
-                <TableHead>Perfil</TableHead>
-                <TableHead className="min-w-[760px]">Jornada</TableHead>
-                <TableHead className="text-right">Pago (R$)</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((r) => {
-                const profileLabel = r.referred_role === "mixed" ? "Bônus Extra" : r.referred_role === "provider" ? "Prestador" : r.referred_role === "client" ? "Comprador" : (r.referred_role || "—");
-                const isMixed = r.referred_role === "mixed" || r.referred_role === "provider";
-                return (
-                  <TableRow key={r.id}>
-                    <TableCell className="text-xs font-medium">{r.referrer_name}</TableCell>
-                    <TableCell className="text-xs">
-                      <div className="font-medium">{r.referred_name || "—"}</div>
-                      <div className="text-[10px] text-muted-foreground">{r.referred_email || ""}</div>
-                    </TableCell>
-                    <TableCell>
+      <CardContent className="p-0 overflow-hidden">
+        <Table wrapperClassName="admin-scroll-area max-h-[65vh] border-t">
+          <TableHeader className="sticky top-0 z-10 bg-background shadow-sm">
+            <TableRow>
+              <TableHead>Indicador</TableHead>
+              <TableHead>Indicado</TableHead>
+              <TableHead>Origem</TableHead>
+              <TableHead>Perfil</TableHead>
+              <TableHead className="min-w-[760px]">Jornada</TableHead>
+              <TableHead className="text-right">Pago (R$)</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.map((r) => {
+              const profileLabel = r.referred_role === "mixed" ? "Bônus Extra" : r.referred_role === "provider" ? "Prestador" : r.referred_role === "client" ? "Comprador" : (r.referred_role || "—");
+              const isMixed = r.referred_role === "mixed" || r.referred_role === "provider";
+              return (
+                <TableRow key={r.id}>
+                  <TableCell className="text-xs font-medium">{r.referrer_name}</TableCell>
+                  <TableCell className="text-xs">
+                    <div className="font-medium">{r.referred_name || "—"}</div>
+                    <div className="text-[10px] text-muted-foreground">{r.referred_email || ""}</div>
+                  </TableCell>
+                  <TableCell>
+                    {(r.source || "link") === "import" ? (
+                      <Badge variant="outline" className="text-[9px] border-amber-500/50 text-amber-600 dark:text-amber-400"><FileSpreadsheet className="h-3 w-3 mr-1" />Importação</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[9px] border-emerald-500/50 text-emerald-600 dark:text-emerald-400"><Link2 className="h-3 w-3 mr-1" />Link</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell><Badge variant="outline" className="text-[9px]">{profileLabel}</Badge></TableCell>
+                  <TableCell>
+                    <div className="flex gap-4 items-center min-w-[700px]">
+                      <Step done={true} label="Indicação" sub={fmt(r.created_at)} />
+                      <Step done={!!r.referred_id} label="Cadastro" sub={fmt(r.joined_at)} />
+                      <Step done={r.has_subscription} label="Assinatura" sub={r.has_subscription ? "ativa" : null} />
+                      <Step done={!!r.first_purchase_at || !!r.first_sale_at} label={isMixed ? "1ª compra/venda" : "1ª compra"} sub={fmt(r.first_purchase_at || r.first_sale_at)} />
                       {(r.source || "link") === "import" ? (
-                        <Badge variant="outline" className="text-[9px] border-amber-500/50 text-amber-600 dark:text-amber-400"><FileSpreadsheet className="h-3 w-3 mr-1" />Importação</Badge>
+                        <Step done={false} label="Bônus liberado" sub="sem bônus (importação)" />
                       ) : (
-                        <Badge variant="outline" className="text-[9px] border-emerald-500/50 text-emerald-600 dark:text-emerald-400"><Link2 className="h-3 w-3 mr-1" />Link</Badge>
+                        <Step done={r.bonus_released || r.status === "activated"} label="Bônus liberado" sub={r.status} />
                       )}
-                    </TableCell>
-                    <TableCell><Badge variant="outline" className="text-[9px]">{profileLabel}</Badge></TableCell>
-                    <TableCell>
-                      <div className="grid grid-cols-5 gap-2 items-center">
-                        <Step done={true} label="Indicação" sub={fmt(r.created_at)} />
-                        <Step done={!!r.referred_id} label="Cadastro" sub={fmt(r.joined_at)} />
-                        <Step done={r.has_subscription} label="Assinatura" sub={r.has_subscription ? "ativa" : null} />
-                        <Step done={!!r.first_purchase_at || !!r.first_sale_at} label={isMixed ? "1ª compra/venda" : "1ª compra"} sub={fmt(r.first_purchase_at || r.first_sale_at)} />
-                        {(r.source || "link") === "import" ? (
-                          <Step done={false} label="Bônus liberado" sub="sem bônus (importação)" />
-                        ) : (
-                          <Step done={r.bonus_released || r.status === "activated"} label="Bônus liberado" sub={r.status} />
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums text-xs">{Number(r.total_paid || 0).toFixed(2)}</TableCell>
-                  </TableRow>
-                );
-              })}
-              {filtered.length === 0 && !loading && (
-                <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">Nenhum lead encontrado.</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums text-xs">{Number(r.total_paid || 0).toFixed(2)}</TableCell>
+                </TableRow>
+              );
+            })}
+            {filtered.length === 0 && !loading && (
+              <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">Nenhum lead encontrado.</TableCell></TableRow>
+            )}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   );
