@@ -200,9 +200,12 @@ const ClientApp = () => {
       });
     }
 
-    // Aplica o filtro de segmentos sobre o resultado da busca (ou sobre o total se não houver busca)
+    // Aplica o filtro de segmentos sobre o resultado da busca
     if (selectedSegments.length > 0) {
-      svcs = svcs.filter(s => selectedCats.includes(s.category));
+      svcs = svcs.filter(s => {
+        const segment = segments.find(seg => seg.category === s.category);
+        return segment && selectedSegments.includes(segment.id);
+      });
     }
 
     // Se após os filtros não sobrar nada
