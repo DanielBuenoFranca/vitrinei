@@ -982,6 +982,7 @@ const ClientApp = () => {
       >
         <LifeBuoy className="w-6 h-6" />
       </motion.button>
+        </div>
       </div>
     </div>
   );
