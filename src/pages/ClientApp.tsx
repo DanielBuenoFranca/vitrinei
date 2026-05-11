@@ -387,8 +387,8 @@ const ClientApp = () => {
         </div>
 
         {/* Search */}
-        <div className="px-3 pb-2">
-          <div className="flex gap-2">
+        <div className="px-3 pb-2 flex flex-col min-h-0">
+          <div className="flex gap-2 shrink-0">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
