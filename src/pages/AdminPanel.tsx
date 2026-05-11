@@ -721,14 +721,13 @@ const AdminPanel = () => {
                   <Plus className="h-4 w-4 mr-1" /> Novo Segmento
                 </Button>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0 overflow-hidden">
                 {segments.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">Nenhum segmento cadastrado.</p>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
+                  <Table wrapperClassName="admin-scroll-area max-h-[60vh] border-t">
+                    <TableHeader className="sticky top-0 z-10 bg-background shadow-sm">
+                      <TableRow>
                           <TableHead>Nome</TableHead>
                           <TableHead>Prestadores</TableHead>
                           <TableHead>Serviços</TableHead>
