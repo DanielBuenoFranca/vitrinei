@@ -351,6 +351,7 @@ const ClientApp = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-md mx-auto relative">
+      <div className="pb-24">
       {/* Header */}
       <div className="sticky top-0 z-50 bg-card border-b border-border">
         <div className="flex items-center justify-between p-3">
