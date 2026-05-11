@@ -98,6 +98,28 @@ const ClientApp = () => {
       const q = transcript.toLowerCase().trim();
       console.log('[Search] Voice search finished:', q);
       setSearchQuery(q);
+      
+      // Aciona a lógica de inteligência também para voz
+      import('@/data/searchData').then(({ naturalLanguageMap, segments: segmentData }) => {
+        const match = naturalLanguageMap.find(m => 
+          m.triggers.some(t => q.includes(t.toLowerCase()))
+        );
+
+        if (match) {
+          setAiInsight(match.aiFollowUp || null);
+          const matchedSegmentIds = match.segments.map(sName => {
+            const seg = segmentData.find(sd => sd.id === sName || sd.label.toLowerCase() === sName.toLowerCase());
+            return seg?.id;
+          }).filter(Boolean) as string[];
+
+          if (matchedSegmentIds.length > 0) {
+            setSelectedSegments(matchedSegmentIds);
+          }
+        } else {
+          setAiInsight(null);
+        }
+      });
+
       setTriggerSearch(prev => prev + 1);
     }
   }, [listening, transcript]);
