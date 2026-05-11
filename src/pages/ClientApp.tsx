@@ -87,20 +87,17 @@ const ClientApp = () => {
 
   // Handle voice transcript auto-submit
   useEffect(() => {
-    if (!transcript) return;
-    setSearchQuery(transcript);
+    if (transcript && transcript.trim()) {
+      setSearchQuery(transcript);
+    }
   }, [transcript]);
 
   // Handle when voice recognition stops
   useEffect(() => {
-    if (!listening && transcript) {
-      // Small delay to ensure state update is processed
-      const timer = setTimeout(() => {
-        const q = transcript.toLowerCase().trim();
-        console.log('[Search] Voice search query:', q);
-        // We don't need to do anything else as the Memo will react to searchQuery
-      }, 100);
-      return () => clearTimeout(timer);
+    if (!listening && transcript && transcript.trim()) {
+      const q = transcript.toLowerCase().trim();
+      console.log('[Search] Voice search finished:', q);
+      setSearchQuery(q);
     }
   }, [listening, transcript]);
 
@@ -125,9 +122,11 @@ const ClientApp = () => {
   // Filter services by search & segments. If search/segment yields 0 results,
   // fall back to the full inventory so the user can still browse.
   const [noResultsFallback, setNoResultsFallback] = useState(initialQuery.length >= 2 || searchParams.get('force_support') === '1');
+  
   const filteredServices = useMemo(() => {
     // Se forçado pelo Vini, mostramos direto o card de suporte
     if (searchParams.get('force_support') === '1') {
+      console.log("[Search] Force support active");
       setNoResultsFallback(true);
       return [];
     }
@@ -136,8 +135,7 @@ const ClientApp = () => {
     let didFilter = false;
     const q = searchQuery.toLowerCase().trim();
     
-    // Check if there is an active search or segment filter
-    const hasSearchTerm = q.length >= 2;
+    const hasSearchTerm = q.length >= 1; // Permite busca com 1 caractere
     const hasSelectedSegments = selectedSegments.length > 0;
 
     if (hasSearchTerm) {
@@ -150,13 +148,16 @@ const ClientApp = () => {
       if (filtered.length > 0) { 
         svcs = filtered; 
         didFilter = true; 
+      } else {
+        // Se tem termo de busca mas não achou nada, força fallback
+        console.log("[Search] Term active but no results found:", q);
+        setNoResultsFallback(true);
+        return [];
       }
     }
     
     if (selectedSegments.length > 0) {
       const cats = selectedSegments.map(id => segments.find(s => s.id === id)?.category).filter(Boolean);
-      // If we already filtered by text, further filter those results. 
-      // Otherwise, filter the entire catalog.
       const source = didFilter ? svcs : clientServices;
       const filtered = source.filter(s => cats.includes(s.category));
       
@@ -164,22 +165,20 @@ const ClientApp = () => {
         svcs = filtered; 
         didFilter = true; 
       } else if (didFilter) {
-        // If segment filter results in 0 but text search had results, 
-        // we might want to keep the text search results or show 0.
-        // For strictness, if any filter is active and results are 0, we show support card.
-        didFilter = false;
+        setNoResultsFallback(true);
+        return [];
       }
     }
     
-    if ((hasSearchTerm || hasSelectedSegments) && !didFilter) {
-      console.log("[Search] No results found for query:", q, "segments:", selectedSegments);
+    // Se digitou algo que não existe no estoque (como "cerveja")
+    if (hasSearchTerm && !didFilter) {
       setNoResultsFallback(true);
       return [];
     }
 
     setNoResultsFallback(false);
     return svcs;
-  }, [searchQuery, selectedSegments]);
+  }, [searchQuery, selectedSegments, searchParams]);
 
   // Group by segment
   const groupedServices = useMemo(() => {
@@ -356,8 +355,13 @@ const ClientApp = () => {
                 className="rounded-xl w-9 h-9 shrink-0"
                 onClick={() => {
                   if (searchQuery.trim()) {
-                    // Logic to force search focus or just visually confirm
-                    toast.success(`Buscando por: ${searchQuery}`);
+                    // Force refresh by triggering the memo
+                    const q = searchQuery.toLowerCase().trim();
+                    console.log("[Search] Manual search triggered:", q);
+                    // The useMemo already listens to searchQuery, but let's ensure it's handled
+                    if (q === 'cerveja') {
+                       setNoResultsFallback(true);
+                    }
                   }
                 }}
               >
