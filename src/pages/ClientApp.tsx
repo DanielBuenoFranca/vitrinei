@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -98,6 +98,28 @@ const ClientApp = () => {
       const q = transcript.toLowerCase().trim();
       console.log('[Search] Voice search finished:', q);
       setSearchQuery(q);
+      
+      // Aciona a lógica de inteligência também para voz
+      import('@/data/searchData').then(({ naturalLanguageMap, segments: segmentData }) => {
+        const match = naturalLanguageMap.find(m => 
+          m.triggers.some(t => q.includes(t.toLowerCase()))
+        );
+
+        if (match) {
+          setAiInsight(match.aiFollowUp || null);
+          const matchedSegmentIds = match.segments.map(sName => {
+            const seg = segmentData.find(sd => sd.id === sName || sd.label.toLowerCase() === sName.toLowerCase());
+            return seg?.id;
+          }).filter(Boolean) as string[];
+
+          if (matchedSegmentIds.length > 0) {
+            setSelectedSegments(matchedSegmentIds);
+          }
+        } else {
+          setAiInsight(null);
+        }
+      });
+
       setTriggerSearch(prev => prev + 1);
     }
   }, [listening, transcript]);
@@ -124,7 +146,8 @@ const ClientApp = () => {
   // fall back to the full inventory so the user can still browse.
   const [noResultsFallback, setNoResultsFallback] = useState(false);
   const [triggerSearch, setTriggerSearch] = useState(0);
-  
+  const [aiInsight, setAiInsight] = useState<string | null>(null);
+
   const filteredServices = useMemo(() => {
     if (searchParams.get('force_support') === '1') {
       setNoResultsFallback(true);
@@ -284,9 +307,17 @@ const ClientApp = () => {
     }));
   };
 
-  const toggleSegment = (id: string) => {
-    setSelectedSegments(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
-  };
+  const toggleSegment = useCallback((id: string) => {
+    setSelectedSegments(prev => {
+      const isSelected = prev.includes(id);
+      const newSegments = isSelected ? prev.filter(s => s !== id) : [...prev, id];
+      
+      // Quando seleciona um segmento manualmente, limpamos o insight da IA para não confundir
+      if (!isSelected) setAiInsight(null);
+      
+      return newSegments;
+    });
+  }, []);
 
   const toggleFavorite = (id: number) => {
     setFavorites(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -375,6 +406,29 @@ const ClientApp = () => {
                   
                   if (q) {
                     toast.success(`Buscando por: ${searchQuery}`);
+                    
+                    // Lógica de Inteligência do Vini
+                    import('@/data/searchData').then(({ naturalLanguageMap, segments: segmentData }) => {
+                      const match = naturalLanguageMap.find(m => 
+                        m.triggers.some(t => q.includes(t.toLowerCase()))
+                      );
+
+                      if (match) {
+                        setAiInsight(match.aiFollowUp || null);
+                        // Filtra os segmentos baseados na inteligência
+                        const matchedSegmentIds = match.segments.map(sName => {
+                          const seg = segmentData.find(sd => sd.id === sName || sd.label.toLowerCase() === sName.toLowerCase());
+                          return seg?.id;
+                        }).filter(Boolean) as string[];
+
+                        if (matchedSegmentIds.length > 0) {
+                          setSelectedSegments(matchedSegmentIds);
+                        }
+                      } else {
+                        setAiInsight(null);
+                      }
+                    });
+
                     setTriggerSearch(prev => prev + 1);
                     const firstResult = document.querySelector('[data-search-results]');
                     if (firstResult) {
@@ -382,6 +436,8 @@ const ClientApp = () => {
                     }
                   } else {
                     toast.info("Digite algo para buscar");
+                    setSelectedSegments([]);
+                    setAiInsight(null);
                   }
                 }}
               >
@@ -660,6 +716,20 @@ const ClientApp = () => {
                 <motion.p key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.2 }}
                   className="text-[10px] text-muted-foreground bg-card/80 rounded-lg px-2.5 py-1.5">{s}</motion.p>
               ))}
+              {aiInsight && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 5 }} 
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-2.5 rounded-xl bg-primary/10 border border-primary/20 mt-2"
+                >
+                  <div className="flex items-start gap-2">
+                    <Sparkles className="w-3.5 h-3.5 text-primary mt-0.5" />
+                    <p className="text-[10px] text-foreground leading-relaxed italic">
+                      {aiInsight.replace(/\*\*(.*?)\*\*/g, '$1')}
+                    </p>
+                  </div>
+                </motion.div>
+              )}
             </div>
           </CardContent>
         </Card>
