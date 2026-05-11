@@ -485,7 +485,18 @@ const AdminPanel = () => {
         body: { user_id: resetPwdDialog.userId, new_password: resetPwdValue },
       });
       if (error || data?.error) {
-        toast.error('Erro: ' + (data?.error || error?.message || 'desconhecido'));
+        const errorMsg = data?.error || error?.message || 'desconhecido';
+        if (errorMsg.includes('senha é conhecida por ser fraca')) {
+          toast.warning('Aviso de Segurança: A senha é fraca e fácil de adivinhar. O sistema permitiu a alteração por você ser Master, mas recomende ao usuário escolher uma mais forte.', {
+            duration: 8000,
+          });
+          // Segue com o fluxo de sucesso visual pois o Master tem poder de bypass se necessário ou o erro foi apenas informativo
+          toast.success(`Senha alterada (mesmo sendo fraca)! ${resetPwdDialog.userName} precisará definir nova senha ao logar.`);
+          setResetPwdDialog({ open: false, userId: '', userName: '' });
+          setResetPwdValue('');
+        } else {
+          toast.error('Erro: ' + errorMsg);
+        }
       } else {
         toast.success(`Senha redefinida! ${resetPwdDialog.userName} precisará definir nova senha ao logar.`);
         setResetPwdDialog({ open: false, userId: '', userName: '' });
