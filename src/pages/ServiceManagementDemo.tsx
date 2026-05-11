@@ -224,7 +224,7 @@ const ServiceManagementDemo = () => {
 
         {/* Step indicator */}
         <div className="max-w-5xl mx-auto px-4 pb-3">
-          <div className="flex items-center gap-1 overflow-x-auto pb-1">
+          <div className="flex items-center gap-1 admin-scroll-area shrink-0 pb-1">
             {steps.map((s, i) => {
               const p = perspectiveColors[s.perspective];
               return (
