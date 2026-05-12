@@ -274,6 +274,7 @@ const Landing = () => {
 
     // Desmarca filtros ao realizar nova pesquisa textual
     setActiveSegments([]);
+    setActiveProvidersFilter([]);
     setTypeFilter('all');
     setAiRoute(null);
 
