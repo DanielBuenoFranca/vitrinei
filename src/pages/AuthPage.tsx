@@ -101,7 +101,8 @@ const AuthPage = () => {
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam === 'signup' || tabParam === 'register') {
+    const urlRef = searchParams.get('ref') || '';
+    if (tabParam === 'signup' || tabParam === 'register' || urlRef) {
       setActiveTab('signup');
     } else {
       setActiveTab('login');
