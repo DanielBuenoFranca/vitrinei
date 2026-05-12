@@ -386,7 +386,7 @@ const Landing = () => {
         explanation: supportExplanation,
         details: supportExplanation,
         context_analysis: `Análise Vini: Busca por "${executedQuery}" não retornou itens em estoque no momento.`
-      } as any);
+      });
 
       if (error) throw error;
 
