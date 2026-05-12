@@ -228,10 +228,16 @@ const Landing = () => {
     const q = searchParams.get('q');
     const type = searchParams.get('type');
     const segs = searchParams.get('segments');
+    const forceSupport = searchParams.get('force_support');
+    
     if (!q) return;
+    
+    console.log('[Landing] Search params detected:', { q, type, segs, forceSupport });
+    
     setSearchQuery(q);
     if (type === 'service' || type === 'product') setTypeFilter(type);
     else if (type === 'both' || type === 'all') setTypeFilter('all');
+    
     if (segs) {
       const list = segs.split(',').map(s => s.trim()).filter(Boolean);
       if (list.length) {
@@ -245,11 +251,19 @@ const Landing = () => {
         }, 300);
       }
     }
+    
     // dispara a busca de fato
     setExecutedQuery(q);
     setSearchExecuted(true);
     setSearchVersion(v => v + 1);
-  }, []);
+    
+    // Se forceSupport estiver presente, garantimos que o estado de "sucesso" anterior seja limpo
+    if (forceSupport === '1') {
+      setSupportSent(false);
+      // Opcional: abrir o modal automaticamente se quiser
+      // setShowSupportModal(true);
+    }
+  }, [searchParams, dbSegments]); // Adicionado searchParams e dbSegments como dependências para reagir a mudanças na URL
 
   const handleMic = () => {
     if (!speech.supported) {
