@@ -1498,7 +1498,7 @@ const Landing = () => {
                         </div>
                         {selectedSuggestions.size > 0 && (
                           <div className="flex gap-2 pt-3">
-                            <Button className="gap-2" onClick={() => ctxSuggestion && handleSendSelectedSuggestions(ctxSuggestion)}>
+                            <Button className="gap-2" onClick={() => handleSendSelectedSuggestions(ctx)}>
                               <Headphones className="w-4 h-4" /> Enviar {selectedSuggestions.size} seleção(ões) para a Central
                             </Button>
                           </div>
