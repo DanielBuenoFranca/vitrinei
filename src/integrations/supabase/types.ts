@@ -1000,8 +1000,10 @@ export type Database = {
       }
       support_requests: {
         Row: {
+          context_analysis: string | null
           created_at: string
           details: string | null
+          explanation: string | null
           id: string
           requested_item: string
           source: string | null
@@ -1010,8 +1012,10 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          context_analysis?: string | null
           created_at?: string
           details?: string | null
+          explanation?: string | null
           id?: string
           requested_item: string
           source?: string | null
@@ -1020,8 +1024,10 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          context_analysis?: string | null
           created_at?: string
           details?: string | null
+          explanation?: string | null
           id?: string
           requested_item?: string
           source?: string | null

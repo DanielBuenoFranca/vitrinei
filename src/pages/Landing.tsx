@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Textarea } from '@/components/ui/textarea';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,7 +13,7 @@ import {
   Search, Zap, Sparkles, Clock, MapPin, DollarSign,
   Headphones, ShoppingCart, BarChart3, Send, Star,
   Package, TrendingDown, Navigation, Users, Shield, MessageCircle,
-  ChevronDown, ChevronRight, ChevronLeft, ShoppingBag, Wrench as WrenchIcon, Store, Plus, CheckCircle2, X, Trash2, Settings, CreditCard, AlertTriangle, Minus, Home, Layers,
+  ChevronDown, ChevronRight, ChevronLeft, ShoppingBag, Wrench as WrenchIcon, Store, Plus, CheckCircle2, X, Trash2, Settings, CreditCard, AlertTriangle, Minus, Home, Layers, Loader2,
   Scissors, Droplets, Sprout, Truck, Hammer, Stethoscope, GraduationCap, Car, Brush, Cpu, Heart, PawPrint, PartyPopper, Leaf, Monitor, Gem, Shirt, Music
 } from 'lucide-react';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
@@ -367,6 +368,44 @@ const Landing = () => {
     }, 4000);
     return () => clearInterval(interval);
   }, []);
+
+  const [showSupportModal, setShowSupportModal] = useState(false);
+  const [supportExplanation, setSupportExplanation] = useState('');
+  const [isSubmittingSupport, setIsSubmittingSupport] = useState(false);
+
+  const handleSendToCentral = async () => {
+    if (isSubmittingSupport) return;
+    setIsSubmittingSupport(true);
+    
+    try {
+      const { error } = await supabase.from('support_requests').insert({
+        user_id: user?.id,
+        query: executedQuery,
+        context: 'Busca Sem Resultados',
+        explanation: supportExplanation,
+        context_analysis: `Análise Vini: Busca por "${executedQuery}" não retornou itens em estoque no momento.`
+      } as any);
+
+      if (error) throw error;
+
+      toast.success('Solicitação enviada para Central de Atendimento!');
+      
+      const summary = `Busca sem resultados para "${executedQuery}". Explicação: ${supportExplanation}`;
+      const params = new URLSearchParams({ 
+        query: executedQuery, 
+        context: 'Busca Sem Resultados', 
+        summary, 
+        type: 'both' 
+      });
+      navigate(`/central-atendimento?${params.toString()}`);
+    } catch (error: any) {
+      console.error('Error sending support request:', error);
+      toast.error('Erro ao enviar solicitação. Tente novamente.');
+    } finally {
+      setIsSubmittingSupport(false);
+      setShowSupportModal(false);
+    }
+  };
 
   const placeholders = [
     'Estou com dor de barriga...',
@@ -859,21 +898,65 @@ const Landing = () => {
                           Não encontramos "{executedQuery}" no estoque atual. Mas não se preocupe! Nossa central buscará em todo o ecossistema para você em até 24h.
                         </p>
                         <Button 
-                          onClick={() => {
-                            const summary = `Busca sem resultados para "${executedQuery}". Usuário solicita acionamento da central.`;
-                            const params = new URLSearchParams({ 
-                              query: executedQuery, 
-                              context: 'Busca Sem Resultados', 
-                              summary, 
-                              type: 'both' 
-                            });
-                            navigate(`/central-atendimento?${params.toString()}`);
-                          }}
+                          onClick={() => setShowSupportModal(true)}
                           className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold py-6 rounded-2xl shadow-[0_4px_15px_rgba(139,92,246,0.3)] transition-all"
                         >
                           <Headphones className="w-5 h-5 mr-2" />
                           Enviar para Central
                         </Button>
+
+                        <AnimatePresence>
+                          {showSupportModal && (
+                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                              <motion.div 
+                                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                                className="w-full max-w-md bg-zinc-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl"
+                              >
+                                <div className="p-6 space-y-4">
+                                  <div className="flex items-center justify-between">
+                                    <h3 className="text-xl font-bold text-white">Nova Solicitação</h3>
+                                    <button onClick={() => setShowSupportModal(false)} className="text-white/40 hover:text-white">
+                                      <X className="w-6 h-6" />
+                                    </button>
+                                  </div>
+                                  
+                                  <div className="space-y-3">
+                                    <div className="space-y-1">
+                                      <label className="text-xs font-medium text-white/50 uppercase tracking-wider">Contexto (Análise Vini)</label>
+                                      <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-sm text-white/80 italic">
+                                        Busca por "{executedQuery}" não retornou itens em estoque no momento.
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="space-y-1">
+                                      <label className="text-xs font-medium text-white/50 uppercase tracking-wider">Complemento / Explicação</label>
+                                      <Textarea 
+                                        placeholder="Diga-nos mais detalhes do que você precisa..."
+                                        value={supportExplanation}
+                                        onChange={(e) => setSupportExplanation(e.target.value)}
+                                        className="min-h-[100px] bg-white/5 border-white/10 text-white focus-visible:ring-violet-500"
+                                      />
+                                    </div>
+                                  </div>
+                                  
+                                  <Button 
+                                    onClick={handleSendToCentral}
+                                    disabled={isSubmittingSupport}
+                                    className="w-full bg-violet-600 hover:bg-violet-500 text-white font-bold py-6 rounded-2xl"
+                                  >
+                                    {isSubmittingSupport ? (
+                                      <Loader2 className="w-5 h-5 animate-spin" />
+                                    ) : (
+                                      <>Confirmar e Enviar</>
+                                    )}
+                                  </Button>
+                                </div>
+                              </motion.div>
+                            </div>
+                          )}
+                        </AnimatePresence>
                         <button 
                           onClick={() => handleRefineSearch()}
                           className="text-xs text-white/50 hover:text-white underline underline-offset-4"
