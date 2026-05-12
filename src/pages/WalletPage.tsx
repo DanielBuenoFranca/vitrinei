@@ -168,7 +168,7 @@ const WalletPage = () => {
       setTimeout(() => {
         // Find existing referral code or use current state
         const code = referralCode || user.id.slice(0, 8).toUpperCase();
-        const link = `${window.location.origin}/auth?ref=${code}`;
+        const link = `https://vitrinei.com.br/auth?ref=${code}`;
         const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
         setShareModal({ open: true, link, expires });
         toast.info("Link de indicação 24h gerado!", {
@@ -364,7 +364,7 @@ const WalletPage = () => {
   };
 
   const copyReferralLink = () => {
-    const link = `${window.location.origin}/auth?ref=${referralCode}`;
+    const link = `https://vitrinei.com.br/auth?ref=${referralCode}`;
     navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);

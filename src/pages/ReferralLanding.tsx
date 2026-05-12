@@ -24,6 +24,7 @@ const ReferralLanding = () => {
     if (!code) return;
     // Redirect direct to auth page as requested for better flow
     localStorage.setItem('ecomei_ref', code);
+    localStorage.setItem('ecomei_ref_ts', Date.now().toString());
     navigate(`/auth?ref=${code}`, { replace: true });
   }, [code, navigate]);
 
