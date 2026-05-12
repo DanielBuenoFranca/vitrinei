@@ -528,14 +528,14 @@ const Landing = () => {
 
 
   // ── DB providers with logos ──
-  const [dbProviders, setDbProviders] = useState<Map<string, { logo_url: string | null; is_top_provider?: boolean }>>(new Map());
+  const [dbProviders, setDbProviders] = useState<Map<string, { logo_url: string | null; is_top_provider?: boolean; slug?: string }>>(new Map());
   const [dbProviderNames, setDbProviderNames] = useState<Set<string>>(new Set());
   useEffect(() => {
-    supabase.from('providers').select('name, logo_url, is_top_provider').then(({ data }) => {
+    supabase.from('providers').select('name, logo_url, is_top_provider, slug').then(({ data }) => {
       if (data) {
         setDbProviderNames(new Set(data.map((p: any) => p.name)));
-        const map = new Map<string, { logo_url: string | null; is_top_provider?: boolean }>();
-        data.forEach((p: any) => map.set(p.name, { logo_url: p.logo_url, is_top_provider: p.is_top_provider }));
+        const map = new Map<string, { logo_url: string | null; is_top_provider?: boolean; slug?: string }>();
+        data.forEach((p: any) => map.set(p.name, { logo_url: p.logo_url, is_top_provider: p.is_top_provider, slug: p.slug }));
         setDbProviders(map);
       }
     });
@@ -1228,7 +1228,7 @@ const Landing = () => {
                                             onClick={(e) => {
                                               if (!dbProviderNames.has(providerName)) return;
                                               e.stopPropagation();
-                                              const slug = providerName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                                              const slug = dbProviders.get(providerName)?.slug || providerName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
                                               navigate(`/loja/${slug}`);
                                             }}
                                           >{providerName}</h3>
@@ -1250,7 +1250,7 @@ const Landing = () => {
                                         <Button variant="default" size="sm" className="text-[10px] h-7 px-2.5 gap-1 font-semibold"
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            const slug = providerName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                                            const slug = dbProviders.get(providerName)?.slug || providerName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
                                             navigate(`/loja/${slug}`);
                                           }}>
                                           <Store className="w-3.5 h-3.5" /> Loja
@@ -1603,7 +1603,7 @@ const Landing = () => {
                                   <p className="font-semibold text-xs text-foreground truncate cursor-pointer hover:text-primary transition-colors"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      const slug = providerName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                                      const slug = dbProviders.get(providerName)?.slug || providerName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
                                       navigate(`/loja/${slug}`);
                                     }}>{providerName}</p>
                                   <p className="text-[10px] text-muted-foreground">
@@ -1617,7 +1617,7 @@ const Landing = () => {
                                 <Button variant="default" size="sm" className="text-[9px] h-6 px-2 gap-0.5 font-semibold"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    const slug = providerName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                                    const slug = dbProviders.get(providerName)?.slug || providerName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
                                     navigate(`/loja/${slug}`);
                                   }}>
                                   <Store className="w-3 h-3" /> Loja

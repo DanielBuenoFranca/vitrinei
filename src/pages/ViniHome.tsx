@@ -295,12 +295,11 @@ const ViniHome = () => {
       // Detect provider storefront for header shortcut
       const { data: provs } = await supabase
         .from('providers')
-        .select('id,name')
+        .select('id, name, slug')
         .eq('user_id', user.id)
         .limit(1);
       if (provs && provs.length > 0) {
-        const slug = String(provs[0].name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        setStoreSlug(slug || String(provs[0].id));
+        setStoreSlug(provs[0].slug || String(provs[0].id));
       } else {
         setStoreSlug(null);
       }
