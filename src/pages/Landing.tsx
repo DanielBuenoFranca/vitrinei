@@ -528,7 +528,7 @@ const Landing = () => {
 
 
   // ── DB providers with logos ──
-  const [dbProviders, setDbProviders] = useState<Map<string, { logo_url: string | null; is_top_provider?: boolean }>>(new Map());
+  const [dbProviders, setDbProviders] = useState<Map<string, { logo_url: string | null; is_top_provider?: boolean; slug?: string }>>(new Map());
   const [dbProviderNames, setDbProviderNames] = useState<Set<string>>(new Set());
   useEffect(() => {
     supabase.from('providers').select('name, logo_url, is_top_provider').then(({ data }) => {
