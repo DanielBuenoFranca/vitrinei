@@ -669,7 +669,7 @@ const WalletPage = () => {
                     const { data, error } = await (supabase.rpc as any)('generate_referral_link_24h', { _referrer: user.id });
                     if (error) { toast.error(error.message); return; }
                     if (data?.error) { toast.error(data.error); return; }
-                    const link = `${window.location.origin}/convite/${data.token}`;
+                    const link = `${window.location.origin}/auth?tab=signup&ref=${data.token}`;
                     setShareModal({ open: true, link, expires: data.expires_at || null });
                     loadData();
                   }}>+ Gerar link 24h</Button>
