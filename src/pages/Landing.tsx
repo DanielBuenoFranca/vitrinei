@@ -1445,12 +1445,12 @@ const Landing = () => {
 
                   {/* ── AI SUGGESTIONS (shown after DB results OR when no results) ── */}
                   {false && hasResults && executedQuery && (() => {
-                    const ctxMatch = generateContextualSuggestions(executedQuery);
+                    const ctxMatch: any = generateContextualSuggestions(executedQuery);
                     if (!ctxMatch) return null;
                     const existingServiceNames = new Set(filteredResults.map(s => s.name.toLowerCase()));
                     const existingProductNames = new Set(searchResult.products.map(p => p.name.toLowerCase()));
-                    const newServices = (ctxMatch.suggestedServices || []).filter(s => s && !existingServiceNames.has(s.name.toLowerCase()));
-                    const newProducts = (ctxMatch.suggestedProducts || []).filter(p => p && !existingProductNames.has(p.name.toLowerCase()));
+                    const newServices = (ctxMatch.suggestedServices || []).filter((s: any) => s && !existingServiceNames.has(s.name.toLowerCase()));
+                    const newProducts = (ctxMatch.suggestedProducts || []).filter((p: any) => p && !existingProductNames.has(p.name.toLowerCase()));
                     if (newServices.length === 0 && newProducts.length === 0) return null;
                     return (
                       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-6 rounded-2xl border border-accent/30 bg-accent/5 p-5">
@@ -1468,7 +1468,7 @@ const Landing = () => {
                         <div>
                           <p className="text-xs font-semibold text-muted-foreground mb-2">Selecione para acionar a Central de Atendimento:</p>
                           <div className="flex flex-wrap gap-2">
-                            {newServices.map((svc) => {
+                            {newServices.map((svc: any) => {
                               const isSelected = selectedSuggestions.has(svc.name);
                               return (
                                 <motion.button key={svc.name} whileTap={{ scale: 0.95 }}
@@ -1481,7 +1481,7 @@ const Landing = () => {
                                 </motion.button>
                               );
                             })}
-                            {newProducts.map((prod) => {
+                            {newProducts.map((prod: any) => {
                               const isSelected = selectedSuggestions.has(prod.name);
                               return (
                                 <motion.button key={prod.name} whileTap={{ scale: 0.95 }}
