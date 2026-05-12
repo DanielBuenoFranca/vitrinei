@@ -1050,8 +1050,8 @@ const Landing = () => {
                       {/* ── Grouped by Provider ── */}
                       {(() => {
                         // Group products and services by provider
-                        const providerMap = new Map<string, { products: typeof searchResult.products; services: typeof filteredResults }>();
-                        searchResult.products.forEach(p => {
+                        const providerMap = new Map<string, { products: typeof filteredProducts; services: typeof filteredResults }>();
+                        filteredProducts.forEach(p => {
                           const key = p.provider;
                           if (!providerMap.has(key)) providerMap.set(key, { products: [], services: [] });
                           providerMap.get(key)!.products.push(p);
