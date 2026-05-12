@@ -322,7 +322,7 @@ export const naturalLanguageMap: {
     relevantServiceIds: [],
     relevantProductIds: [],
     needLabel: 'Café',
-    aiFollowUp: 'Identifiquei: **Café**. No momento não temos este item em estoque, mas nossa Central buscará para você.'
+    aiFollowUp: 'Identifiquei sua busca por **Café**. No momento não temos este item em estoque no hub, mas nossa Central de Atendimento já foi notificada para buscar o melhor fornecedor para você.'
   },
   {
     triggers: ['cerveja', 'cerveja gelada', 'comprar cerveja', 'chopp'],
