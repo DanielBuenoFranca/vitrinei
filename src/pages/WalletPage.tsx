@@ -650,7 +650,7 @@ const WalletPage = () => {
               </p>
 
               <div className="flex gap-2">
-                <Input value={`${window.location.origin}/convite/${referralCode}`} readOnly className="text-xs" />
+                <Input value={`${window.location.origin}/auth?tab=signup&ref=${referralCode}`} readOnly className="text-xs" />
                 <Button variant="outline" size="sm" className="gap-1 shrink-0" onClick={copyReferralLink}>
                   {copied ? '✓' : <Copy className="w-3 h-3" />}
                 </Button>
