@@ -25,6 +25,8 @@ interface Props {
   typeFilter?: 'all' | 'service' | 'product';
   setTypeFilter?: (v: 'all' | 'service' | 'product') => void;
   hideTopProviders?: boolean;
+  activeProviders?: string[];
+  toggleProvider?: (id: string) => void;
   children?: ReactNode;
 }
 
