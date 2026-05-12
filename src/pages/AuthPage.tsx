@@ -770,15 +770,26 @@ const AuthPage = () => {
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Gift className="w-3.5 h-3.5 text-primary" />
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Gift className="w-4 h-4 text-primary" />
                     </div>
                     <div>
-                      <p className="text-[11px] font-semibold text-foreground">Você foi indicado!</p>
-                      {referrerName && <p className="text-[10px] text-muted-foreground">Convite enviado por <span className="text-primary font-medium">{referrerName}</span></p>}
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Você foi indicado por:</p>
+                      <p className="text-sm font-bold text-primary leading-tight">{referrerName || 'Consultor Vitrinei'}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-mono">
+                          {refCode}
+                        </span>
+                        {timeLeft && (
+                          <span className="text-[9px] text-orange-600 font-medium flex items-center gap-1">
+                            <span className="w-1 h-1 rounded-full bg-orange-600 animate-pulse" />
+                            Expira em: {timeLeft}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <Badge variant="outline" className="text-[9px] font-bold text-primary border-primary/20">Bônus Ativo</Badge>
+                  <Badge variant="outline" className="text-[9px] font-bold text-primary border-primary/20 bg-white/50">Bônus Ativo</Badge>
                 </div>
                 
                 {campaignRewards && (
