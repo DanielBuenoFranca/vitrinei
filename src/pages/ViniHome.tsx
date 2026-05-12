@@ -29,6 +29,7 @@ import { ViniBottomGrid, type GridItem } from '@/components/vini/ViniBottomGrid'
 import { ViniStoryCard } from '@/components/vini/ViniStoryCard';
 import { RadarPulse } from '@/components/vini/RadarPulse';
 import { ViniConversationModal } from '@/components/vini/ViniConversationModal';
+import { ReferralRulesModal } from '@/components/ReferralRulesModal';
 import viniMini from '@/assets/vini-avatar.png';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -128,6 +129,7 @@ const ViniHome = () => {
   const [supportItem, setSupportItem] = useState('');
   const [supportDetails, setSupportDetails] = useState('');
   const [sendingSupport, setSendingSupport] = useState(false);
+  const [referralRulesOpen, setReferralRulesOpen] = useState(false);
   const [modalInitialMessage, setModalInitialMessage] = useState<string | null>(null);
   const [modalInitialModality, setModalInitialModality] = useState<'voice' | 'text'>('text');
   const [modalMode, setModalMode] = useState<'free' | 'commerce'>('free');
@@ -801,7 +803,10 @@ const ViniHome = () => {
     }
   };
 
-  const handleIndicacao = () => navigate('/convite/INDIQUE');
+  const handleIndicacao = () => {
+    if (!user) { navigate('/auth'); return; }
+    setReferralRulesOpen(true);
+  };
   const handlePerfil = () => navigate(user ? '/carteira' : '/auth');
   const handleDemos = () => navigate('/demos');
 
@@ -1461,10 +1466,21 @@ const ViniHome = () => {
       </motion.button>
 
       {/* ─── Modals ─── */}
+      <ReferralRulesModal 
+        open={referralRulesOpen}
+        onOpenChange={setReferralRulesOpen}
+        onGenerateLink={() => {
+          // Navigates to wallet and starts the process there
+          navigate('/carteira', { state: { startReferral: true } });
+        }}
+        rewardBuyer={5}
+        rewardSeller={15}
+        rewardMixed={25}
+      />
       <ViniStoryCard
         open={storyOpen}
         onClose={() => setStoryOpen(false)}
-        onReferralClick={() => { setStoryOpen(false); navigate('/convite/INDIQUE'); }}
+        onReferralClick={() => { setStoryOpen(false); setReferralRulesOpen(true); }}
       />
       <ViniConversationModal
         open={chatOpen}

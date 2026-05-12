@@ -162,9 +162,23 @@ const WalletPage = () => {
   useEffect(() => {
     if (!user) return;
     loadData();
-  }, [user]);
+    
+    // Check if coming from the indication button with intent to start
+    if (window.history.state?.usr?.startReferral) {
+      setTimeout(() => {
+        // Find existing referral code or use current state
+        const code = referralCode || user.id.slice(0, 8).toUpperCase();
+        const link = `${window.location.origin}/convite/${code}`;
+        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        setShareModal({ open: true, link, expires });
+        toast.info("Link de indicação 24h gerado!", {
+          description: "O cronômetro já começou a correr."
+        });
+      }, 800);
+    }
+  }, [user, referralCode]);
 
-  // 24h countdown timer
+  // 24h countdown timer for new users or generic goal
   useEffect(() => {
     if (!user) return;
     const interval = setInterval(() => {
