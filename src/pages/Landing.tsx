@@ -612,6 +612,8 @@ const Landing = () => {
             toggleSegment={toggleSegment}
             typeFilter={typeFilter}
             setTypeFilter={(v) => setTypeFilter(v)}
+            activeProviders={activeProvidersFilter}
+            toggleProvider={toggleProviderFilter}
           >
             {(inlineAiOpen || searchExecuted) && (
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-5 pb-6">
