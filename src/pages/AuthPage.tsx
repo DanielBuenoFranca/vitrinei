@@ -82,6 +82,7 @@ const AuthPage = () => {
   const { activePlans: plans } = useSubscriptionPlans();
   const [campaignRewards, setCampaignRewards] = useState<{ buyer: number; seller: number; mixed: number } | null>(null);
   const [isExempt, setIsExempt] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.from('referral_campaigns').select('reward_buyer,reward_seller,reward_mixed_total').eq('is_active', true).maybeSingle()
@@ -140,31 +141,18 @@ const AuthPage = () => {
       setRefCode(currentCode);
       localStorage.setItem('ecomei_ref', currentCode);
       
-      // Fetch referrer name
+      // Fetch referrer name using secure RPC (accessible to anon)
       const fetchReferrer = async () => {
         try {
-          const { data: refData } = await supabase
-            .from('referrals')
-            .select('referrer_id')
-            .eq('referral_code', currentCode)
-            .limit(1)
-            .maybeSingle();
+          const { data, error } = await (supabase.rpc as any)('get_referrer_info_by_code', { _code: currentCode });
+          
+          if (error) {
+            console.error("Error fetching referrer via RPC:", error);
+            return;
+          }
 
-          if (refData?.referrer_id) {
-            // Priority 1: Check profiles directly
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('display_name')
-              .eq('user_id', refData.referrer_id)
-              .maybeSingle();
-            
-            if (profile?.display_name) {
-              setReferrerName(profile.display_name);
-            } else {
-              // Priority 2: Try RPC as fallback
-              const { data: rName } = await (supabase.rpc as any)('get_public_display_name', { _user_id: refData.referrer_id });
-              if (rName) setReferrerName(rName as string);
-            }
+          if (data && data.length > 0) {
+            setReferrerName(data[0].referrer_name);
           }
         } catch (err) {
           console.error("Error fetching referrer:", err);
@@ -173,6 +161,44 @@ const AuthPage = () => {
       fetchReferrer();
     }
   }, [searchParams]);
+
+  // Timer for referral link expiration
+  useEffect(() => {
+    if (!refCode) {
+      setTimeLeft(null);
+      return;
+    }
+
+    const updateTimer = () => {
+      const refTimestampStr = localStorage.getItem('ecomei_ref_ts');
+      if (!refTimestampStr) {
+        setTimeLeft(null);
+        return;
+      }
+
+      const timestamp = parseInt(refTimestampStr);
+      const now = Date.now();
+      const diffMs = (timestamp + 24 * 60 * 60 * 1000) - now;
+
+      if (diffMs <= 0) {
+        setTimeLeft("Expirado");
+        localStorage.removeItem('ecomei_ref');
+        localStorage.removeItem('ecomei_ref_ts');
+        setRefCode('');
+        return;
+      }
+
+      const hours = Math.floor(diffMs / (1000 * 60 * 60));
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+      setTimeLeft(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [refCode]);
 
   // Debounced uniqueness check via RPC
   useEffect(() => {
@@ -731,15 +757,26 @@ const AuthPage = () => {
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Gift className="w-3.5 h-3.5 text-primary" />
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Gift className="w-4 h-4 text-primary" />
                     </div>
                     <div>
-                      <p className="text-[11px] font-semibold text-foreground">Você foi indicado!</p>
-                      {referrerName && <p className="text-[10px] text-muted-foreground">Convite enviado por <span className="text-primary font-medium">{referrerName}</span></p>}
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Você foi indicado por:</p>
+                      <p className="text-sm font-bold text-primary leading-tight">{referrerName || 'Consultor Vitrinei'}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-mono">
+                          {refCode}
+                        </span>
+                        {timeLeft && (
+                          <span className="text-[9px] text-orange-600 font-medium flex items-center gap-1">
+                            <span className="w-1 h-1 rounded-full bg-orange-600 animate-pulse" />
+                            Expira em: {timeLeft}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <Badge variant="outline" className="text-[9px] font-bold text-primary border-primary/20">Bônus Ativo</Badge>
+                  <Badge variant="outline" className="text-[9px] font-bold text-primary border-primary/20 bg-white/50">Bônus Ativo</Badge>
                 </div>
                 
                 {campaignRewards && (
