@@ -517,9 +517,12 @@ const Landing = () => {
   // a busca instantaneamente, mesmo sem clicar em "Buscar".
   useEffect(() => {
     if (!dataLoaded) return;
-    setExecutedQuery(searchQuery.trim());
-    setSearchExecuted(true);
-    setSearchVersion((v) => v + 1);
+    const q = searchQuery.trim();
+    if (q) {
+      setExecutedQuery(q);
+      setSearchExecuted(true);
+      setSearchVersion((v) => v + 1);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSegments, typeFilter, dataLoaded]);
 
