@@ -270,13 +270,19 @@ const Landing = () => {
 
   const executeSearch = () => {
     const q = searchQuery.trim();
-    if (!q) return;
 
-    // Desmarca filtros ao realizar nova pesquisa textual
+    // Desmarca todos os filtros
     setActiveSegments([]);
     setActiveProvidersFilter([]);
     setTypeFilter('all');
     setAiRoute(null);
+
+    if (!q) {
+      setSearchExecuted(false);
+      setExecutedQuery('');
+      setSearchVersion(v => v + 1);
+      return;
+    }
 
     setExecutedQuery(q);
     setSearchExecuted(true);
