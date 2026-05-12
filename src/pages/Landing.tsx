@@ -149,6 +149,11 @@ const Landing = () => {
     const matchingSegments = dbSegments
       .filter(seg => routeSegments.some(rs => normalizeText(seg.id).includes(rs) || normalizeText(seg.name).includes(rs) || normalizeText(seg.label).includes(rs)))
       .map(seg => seg.id);
+    
+    // Clear existing filters when starting a new search
+    setActiveSegments([]);
+    setTypeFilter('all');
+
     if (nextQuery) setSearchQuery(nextQuery);
     if (matchingSegments.length) setActiveSegments(Array.from(new Set(matchingSegments)));
     if (route.item_type === 'service') setTypeFilter('service');
