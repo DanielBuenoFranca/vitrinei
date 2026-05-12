@@ -633,20 +633,24 @@ const AuthPage = () => {
                   CPF / CNPJ
                   {!isExempt && <span className="text-destructive">*</span>}
                 </Label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="is_exempt"
-                    checked={isExempt}
-                    onChange={(e) => {
-                      setIsExempt(e.target.checked);
-                      if (e.target.checked) setCpfCnpj('');
-                    }}
-                    className="w-3.5 h-3.5 rounded border-gray-300 text-primary focus:ring-primary"
-                  />
-                  <label htmlFor="is_exempt" className="text-[10px] font-medium text-muted-foreground cursor-pointer select-none">
-                    Isento de CPF/CNPJ
-                  </label>
+                <div 
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded-full cursor-pointer transition-all border ${
+                    isExempt 
+                      ? 'bg-orange-50 border-orange-200 text-orange-700 shadow-sm' 
+                      : 'bg-muted/50 border-transparent text-muted-foreground hover:bg-muted'
+                  }`}
+                  onClick={() => {
+                    const nextVal = !isExempt;
+                    setIsExempt(nextVal);
+                    if (nextVal) setCpfCnpj('');
+                  }}
+                >
+                  <div className={`w-3 h-3 rounded-full border flex items-center justify-center transition-colors ${
+                    isExempt ? 'bg-orange-500 border-orange-500' : 'bg-white border-muted-foreground/30'
+                  }`}>
+                    {isExempt && <Check className="w-2 h-2 text-white stroke-[4]" />}
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-tight">Isento</span>
                 </div>
               </div>
               {!isExempt ? (
