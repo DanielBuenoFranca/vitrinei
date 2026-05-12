@@ -273,3 +273,7 @@
 .import-preview-scroll::-webkit-scrollbar-corner {
   background: hsl(var(--muted) / 0.4);
 }
+
+#lovable-badge {
+  display: none !important;
+}
