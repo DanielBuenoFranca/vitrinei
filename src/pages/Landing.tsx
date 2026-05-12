@@ -162,9 +162,12 @@ const Landing = () => {
     if (route.item_type === 'service') setTypeFilter('service');
     else if (route.item_type === 'product') setTypeFilter('product');
     else setTypeFilter('all');
+    
+    // Dispara a busca
     setExecutedQuery(nextQuery);
     setSearchExecuted(true);
     setSearchVersion(v => v + 1);
+    
     setInlineAiOpen(false);
     setAiRoute(route);
     updateAiSession({
@@ -175,7 +178,38 @@ const Landing = () => {
     });
   };
 
-  const refineWithVini = async (raw: string, options: { openPanel?: boolean; autoApply?: boolean } = {}) => {
+  const executeSearch = () => {
+    const q = searchQuery.trim();
+    console.log('[Landing] executeSearch called for:', q);
+
+    // Desmarca todos os filtros
+    setActiveSegments([]);
+    setActiveProvidersFilter([]);
+    setTypeFilter('all');
+    setAiRoute(null);
+
+    if (!q) {
+      setSearchExecuted(false);
+      setExecutedQuery('');
+      setSearchVersion(v => v + 1);
+      return;
+    }
+
+    setExecutedQuery(q);
+    setSupportSent(false); // Reseta o estado ao fazer nova busca
+    setSearchExecuted(true);
+    setSearchVersion(v => v + 1);
+    setSelectedSuggestions(new Set());
+    setShowSearchProducts(false);
+  };
+
+  const handleSmartSearch = () => {
+    console.log('[Landing] handleSmartSearch called');
+    executeSearch();
+    const q = searchQuery.trim();
+    if (!q) return;
+    void refineWithVini(q, { openPanel: false, autoApply: false });
+  };
     const text = raw.trim();
     if (!text) return null;
     if (options.openPanel) setInlineAiOpen(true);
