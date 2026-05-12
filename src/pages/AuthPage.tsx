@@ -108,7 +108,6 @@ const AuthPage = () => {
       setActiveTab('login');
     }
 
-    const urlRef = searchParams.get('ref') || '';
     const storedRef = localStorage.getItem('ecomei_ref') || '';
     const code = urlRef || storedRef;
     if (code) {
