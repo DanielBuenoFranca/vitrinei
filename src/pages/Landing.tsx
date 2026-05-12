@@ -523,6 +523,8 @@ const Landing = () => {
 
       // Removido fallback automático para catálogo completo. 
       // Se não houver resultados, o estado 'noResults' será verdadeiro e mostrará o card da Central.
+      // Entretanto, se houver filtro de prestador ativo, não devemos cair no fallback global aqui,
+      // pois o filtro de prestador é aplicado depois.
       if ((rawResult.products?.length || 0) === 0 && (rawResult.services?.length || 0) === 0) {
         didFallback = false;
       }
