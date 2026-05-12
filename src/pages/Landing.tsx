@@ -321,7 +321,15 @@ const Landing = () => {
   const handleRefineSearch = () => {
     setSearchExecuted(false);
     setSelectedSuggestions(new Set());
+    setActiveProvidersFilter([]);
     searchRef.current?.focus();
+  };
+
+  const toggleProviderFilter = (name: string) => {
+    setActiveProvidersFilter(prev => {
+      const next = prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name];
+      return next;
+    });
   };
 
   const navigateToCheckout = () => {
