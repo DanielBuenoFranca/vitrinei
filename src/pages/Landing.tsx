@@ -129,6 +129,7 @@ const Landing = () => {
   const [providerSegmentMap, setProviderSegmentMap] = useState<Map<string, string[]>>(new Map());
   const [dataLoaded, setDataLoaded] = useState(false);
   const [mobileRevealedSeg, setMobileRevealedSeg] = useState<string | null>(null);
+  const [activeProvidersFilter, setActiveProvidersFilter] = useState<string[]>([]);
   const [showSimulated, setShowSimulated] = useState(false);
   const {
     productCart, productQuantities, serviceCart,
