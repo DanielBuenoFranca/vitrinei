@@ -36,6 +36,7 @@ import {
 interface ProviderData {
   id: number;
   name: string;
+  slug?: string;
   segment: string[];
   type: string;
   rating: number;
