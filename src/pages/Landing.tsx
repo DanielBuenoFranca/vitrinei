@@ -1452,6 +1452,7 @@ const Landing = () => {
                     const newServices = (ctx.suggestedServices || []).filter(s => s && !existingServiceNames.has(s.name.toLowerCase()));
                     const newProducts = (ctx.suggestedProducts || []).filter(p => p && !existingProductNames.has(p.name.toLowerCase()));
                     if (newServices.length === 0 && newProducts.length === 0) return null;
+                    const validCtx = ctx;
                     return (
                       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-6 rounded-2xl border border-accent/30 bg-accent/5 p-5">
                         <div className="flex items-center gap-3 mb-4">
@@ -1498,7 +1499,7 @@ const Landing = () => {
                         </div>
                         {selectedSuggestions.size > 0 && (
                           <div className="flex gap-2 pt-3">
-                            <Button className="gap-2" onClick={() => handleSendSelectedSuggestions(ctx)}>
+                            <Button className="gap-2" onClick={() => handleSendSelectedSuggestions(validCtx)}>
                               <Headphones className="w-4 h-4" /> Enviar {selectedSuggestions.size} seleção(ões) para a Central
                             </Button>
                           </div>
