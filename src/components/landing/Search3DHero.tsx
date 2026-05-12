@@ -266,7 +266,7 @@ export function Search3DHero({
       </div>
 
       {/* ===================== PRESTADORES / FORNECEDORES — carrossel ordenado por ranking ===================== */}
-      {top.length > 0 && (
+      {top.length > 0 && !hideTopProviders && (
         <div className="mt-4 mx-auto max-w-2xl">
           <SectionTitle action={<button onClick={onSearch} className="text-[10px] text-violet-300/80 hover:text-violet-200">Ver todos</button>}>
             Prestadores / Fornecedores
