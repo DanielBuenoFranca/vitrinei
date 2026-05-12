@@ -1617,7 +1617,7 @@ const Landing = () => {
                                 <Button variant="default" size="sm" className="text-[9px] h-6 px-2 gap-0.5 font-semibold"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    const slug = providerName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                                    const slug = dbProviders.get(providerName)?.slug || providerName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
                                     navigate(`/loja/${slug}`);
                                   }}>
                                   <Store className="w-3 h-3" /> Loja
