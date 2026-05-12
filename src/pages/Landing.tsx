@@ -610,12 +610,15 @@ const Landing = () => {
     } else if (typeFilter === 'product') {
       rawResult = { ...rawResult, services: [] };
     }
+    
     if (didFallback !== fallbackToAll) {
       // Defer state update to avoid render loop warning
       queueMicrotask(() => setFallbackToAll(didFallback));
     }
     return rawResult;
   })();
+
+  const forceSupportParam = searchParams.get('force_support') === '1';
 
   const filteredResults = activeProvidersFilter.length > 0 
     ? searchResult.services.filter(s => activeProvidersFilter.includes(s.provider))
@@ -626,7 +629,6 @@ const Landing = () => {
     : searchResult.products;
 
   const hasResults = searchExecuted && (filteredResults.length > 0 || filteredProducts.length > 0);
-  const forceSupportParam = searchParams.get('force_support') === '1';
   
   // No results logic: only true if both filtered lists are empty AND we are not in fallback mode
   const noResults = (searchExecuted && (executedQuery || activeSegments.length > 0 || activeProvidersFilter.length > 0) && !fallbackToAll && filteredResults.length === 0 && filteredProducts.length === 0) || forceSupportParam;
