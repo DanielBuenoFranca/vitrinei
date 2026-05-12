@@ -1281,7 +1281,7 @@ function generateFollowUp(needLabel: string, productCount: number, serviceCount:
   if (serviceCount > 0) {
     return `Identifiquei: **${needLabel}**. Encontrei ${serviceCount} serviço(s) profissional(is) para você.`;
   }
-  return `Entendi sua necessidade! 🧠 Estou buscando as melhores opções...`;
+  return `Identifiquei sua busca por **${needLabel}**. No momento não temos este item em estoque no hub, mas nossa Central de Atendimento já foi notificada para buscar o melhor fornecedor para você.`;
 }
 
 /**
