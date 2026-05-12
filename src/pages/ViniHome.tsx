@@ -847,7 +847,7 @@ const ViniHome = () => {
           handleIndicacao();
           return;
         case 'demos':
-          handleDemos();
+          navigate('/demos');
           return;
         case 'mystore':
           if (storeSlug) navigate(`/loja/${storeSlug}`);
