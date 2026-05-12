@@ -138,6 +138,12 @@ const BROAD_CONTEXT_MAP: Record<string, {
     productKeywords: ['cerveja', 'bebida', 'gelada', 'artesanal'],
     label: 'Cerveja — Bebidas e Conveniência',
   },
+  cafe: {
+    segments: ['alimentação', 'alimentacao'],
+    serviceKeywords: ['bebida', 'café', 'cafe', 'cafeteria', 'delivery'],
+    productKeywords: ['café', 'cafe', 'bebida', 'grão', 'moído'],
+    label: 'Café — Bebidas e Conveniência',
+  },
 };
 
 // ── NL Map: now with specific service & product IDs for precision ──
