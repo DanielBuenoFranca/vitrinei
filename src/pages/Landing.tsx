@@ -561,7 +561,9 @@ const Landing = () => {
 
   const hasResults = searchExecuted && (filteredResults.length > 0 || filteredProducts.length > 0);
   const forceSupportParam = searchParams.get('force_support') === '1';
-  const noResults = (searchExecuted && executedQuery && !fallbackToAll && filteredResults.length === 0 && filteredProducts.length === 0) || forceSupportParam;
+  
+  // No results logic: only true if both filtered lists are empty AND we are not in fallback mode
+  const noResults = (searchExecuted && (executedQuery || activeSegments.length > 0 || activeProvidersFilter.length > 0) && !fallbackToAll && filteredResults.length === 0 && filteredProducts.length === 0) || forceSupportParam;
   const providerEntries = (() => {
     const providerMap = new Map<string, { products: typeof filteredProducts; services: typeof filteredResults }>();
     filteredProducts.forEach(p => {
