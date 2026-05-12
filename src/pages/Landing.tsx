@@ -13,7 +13,7 @@ import {
   Search, Zap, Sparkles, Clock, MapPin, DollarSign,
   Headphones, ShoppingCart, BarChart3, Send, Star,
   Package, TrendingDown, Navigation, Users, Shield, MessageCircle,
-  ChevronDown, ChevronRight, ChevronLeft, ShoppingBag, Wrench as WrenchIcon, Store, Plus, CheckCircle2, X, Trash2, Settings, CreditCard, AlertTriangle, Minus, Home, Layers,
+  ChevronDown, ChevronRight, ChevronLeft, ShoppingBag, Wrench as WrenchIcon, Store, Plus, CheckCircle2, X, Trash2, Settings, CreditCard, AlertTriangle, Minus, Home, Layers, Loader2,
   Scissors, Droplets, Sprout, Truck, Hammer, Stethoscope, GraduationCap, Car, Brush, Cpu, Heart, PawPrint, PartyPopper, Leaf, Monitor, Gem, Shirt, Music
 } from 'lucide-react';
 import { AiAvatar } from '@/components/AiAvatarGlobal';
@@ -384,7 +384,7 @@ const Landing = () => {
         context: 'Busca Sem Resultados',
         explanation: supportExplanation,
         context_analysis: `Análise Vini: Busca por "${executedQuery}" não retornou itens em estoque no momento.`
-      });
+      } as any);
 
       if (error) throw error;
 
