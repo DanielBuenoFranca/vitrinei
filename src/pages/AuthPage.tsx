@@ -711,12 +711,37 @@ const AuthPage = () => {
               </div>
             </div>
 
-            {campaignRewards && (
-              <div className="rounded-lg border border-primary/30 bg-primary/5 p-2 text-[11px] flex items-center justify-between">
-                <span className="flex items-center gap-1 font-semibold"><Gift className="w-3 h-3 text-primary" /> Bonificação ativa</span>
-                <span className="text-muted-foreground">
-                  Comprador R$ {campaignRewards.buyer.toFixed(2)} · Prestador R$ {campaignRewards.seller.toFixed(2)} · Misto R$ {campaignRewards.mixed.toFixed(2)}
-                </span>
+            {refCode && (
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Gift className="w-3.5 h-3.5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-semibold text-foreground">Você foi indicado!</p>
+                      {referrerName && <p className="text-[10px] text-muted-foreground">Convite enviado por <span className="text-primary font-medium">{referrerName}</span></p>}
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="text-[9px] font-bold text-primary border-primary/20">Bônus Ativo</Badge>
+                </div>
+                
+                {campaignRewards && (
+                  <div className="pt-2 border-t border-primary/10 grid grid-cols-3 gap-1">
+                    <div className="text-center">
+                      <p className="text-[9px] text-muted-foreground">Comprador</p>
+                      <p className="text-[10px] font-bold text-primary">R$ {campaignRewards.buyer.toFixed(2)}</p>
+                    </div>
+                    <div className="text-center border-x border-primary/10">
+                      <p className="text-[9px] text-muted-foreground">Prestador</p>
+                      <p className="text-[10px] font-bold text-primary">R$ {campaignRewards.seller.toFixed(2)}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[9px] text-muted-foreground">Misto</p>
+                      <p className="text-[10px] font-bold text-primary">R$ {campaignRewards.mixed.toFixed(2)}</p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
