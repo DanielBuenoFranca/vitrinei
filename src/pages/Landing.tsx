@@ -178,39 +178,8 @@ const Landing = () => {
     });
   };
 
-  const executeSearch = () => {
-    const q = searchQuery.trim();
-    console.log('[Landing] executeSearch called for:', q);
-
-    // Desmarca todos os filtros
-    setActiveSegments([]);
-    setActiveProvidersFilter([]);
-    setTypeFilter('all');
-    setAiRoute(null);
-
-    if (!q) {
-      setSearchExecuted(false);
-      setExecutedQuery('');
-      setSearchVersion(v => v + 1);
-      return;
-    }
-
-    setExecutedQuery(q);
-    setSupportSent(false); // Reseta o estado ao fazer nova busca
-    setSearchExecuted(true);
-    setSearchVersion(v => v + 1);
-    setSelectedSuggestions(new Set());
-    setShowSearchProducts(false);
-  };
-
-  const handleSmartSearch = () => {
-    console.log('[Landing] handleSmartSearch called');
-    executeSearch();
-    const q = searchQuery.trim();
-    if (!q) return;
-    void refineWithVini(q, { openPanel: false, autoApply: false });
-  };
-    const refineWithVini = async (raw: string, options: { openPanel?: boolean; autoApply?: boolean } = {}) => {
+  const refineWithVini = async (raw: string, options: { openPanel?: boolean; autoApply?: boolean } = {}) => {
+    const text = raw.trim();
     if (!text) return null;
     if (options.openPanel) setInlineAiOpen(true);
     setAiRefining(true);
