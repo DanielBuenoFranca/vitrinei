@@ -364,7 +364,7 @@ const AuthPage = () => {
         is_provider: isProvider,
         is_customer: isCustomer,
         phone: phone || null,
-        cpf_cnpj: cpfDigits,
+        cpf_cnpj: finalCpfDigits,
       }).eq('user_id', data.user.id);
 
       // Only create a NEW provider record if profile didn't auto-link to an existing one
@@ -380,7 +380,7 @@ const AuthPage = () => {
               type: 'mei',
               email: email,
               phone: phone || '',
-              cpf_cnpj: cpfDigits,
+              cpf_cnpj: finalCpfDigits,
               user_id: data.user.id,
               active: true,
               storefront_config: {},
