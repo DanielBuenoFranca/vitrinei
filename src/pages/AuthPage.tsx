@@ -102,9 +102,35 @@ const AuthPage = () => {
   useEffect(() => {
     const tabParam = searchParams.get('tab');
     const urlRef = searchParams.get('ref') || '';
+    const storedRef = localStorage.getItem('ecomei_ref') || '';
+    const code = urlRef || storedRef;
+
+    // Check link expiration (24h rule)
+    if (code) {
+      const refTimestampStr = localStorage.getItem('ecomei_ref_ts');
+      const now = Date.now();
+      
+      if (refTimestampStr) {
+        const timestamp = parseInt(refTimestampStr);
+        const diffHours = (now - timestamp) / (1000 * 60 * 60);
+        
+        if (diffHours > 24) {
+          // Link expired: clear and redirect/reset
+          localStorage.removeItem('ecomei_ref');
+          localStorage.removeItem('ecomei_ref_ts');
+          toast.error("Este link de indicação expirou (limite de 24h).");
+          setRefCode('');
+          setActiveTab('login');
+          return;
+        }
+      } else if (urlRef) {
+        // First time seeing this ref code via URL, store timestamp
+        localStorage.setItem('ecomei_ref_ts', now.toString());
+      }
+    }
     
     // Auto-detect referral to open signup tab
-    if (tabParam === 'signup' || tabParam === 'register' || urlRef || localStorage.getItem('ecomei_ref')) {
+    if (tabParam === 'signup' || tabParam === 'register' || code) {
       setActiveTab('signup');
     } else {
       setActiveTab('login');
