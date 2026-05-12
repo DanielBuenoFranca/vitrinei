@@ -1242,7 +1242,7 @@ const ImportPage = () => {
         setImportProgress({ step: `Processando: ${provName}...`, percent: progressPercent });
 
         const firstRow = provRows[0];
-        let providerId: number;
+        let providerId: number = 0;
 
         // Honor user decision (merge vs create) if any
         const decision = groupDecisions.get(groupKey);
@@ -1353,7 +1353,7 @@ const ImportPage = () => {
         const { data: existingSvcs } = await supabase
           .from('dynamic_services')
           .select('id, name, unit, labor_cost, linked_product_ids, products')
-          .eq('provider_id', providerId);
+          .eq('provider_id', providerId as number);
         const serviceCache = new Map<string, { id: number; laborCost: number; linkedIds: number[]; linkedNames: string[] }>();
         (existingSvcs || []).forEach((s: any) => {
           const k = `${norm(s.name)}|${norm(s.unit || 'hr')}`;
@@ -1369,7 +1369,7 @@ const ImportPage = () => {
         const { data: existingProdsCache } = await supabase
           .from('dynamic_products')
           .select('id, name, unit, price')
-          .eq('provider_id', providerId);
+          .eq('provider_id', providerId as number);
         const productCache = new Map<string, { id: number; price: number; name: string }>();
         (existingProdsCache || []).forEach((p: any) => {
           const k = `${norm(p.name)}|${norm(p.unit || 'un')}`;
@@ -1412,7 +1412,7 @@ const ImportPage = () => {
                 segment: seg,
                 segments: [seg],
                 provider: provName,
-                provider_id: providerId,
+                provider_id: providerId as number,
                 price: labor,
                 labor_cost: labor,
                 unit,
@@ -1450,7 +1450,7 @@ const ImportPage = () => {
                 product_id: nextProductId++,
                 name: row.productName,
                 provider: provName,
-                provider_id: providerId,
+                provider_id: providerId as number,
                 price,
                 stock_type: row.productStockType === 'drop' ? 'drop' : 'fisico',
                 tags,
@@ -1464,7 +1464,7 @@ const ImportPage = () => {
                 prodId = (ins as any).id;
                 prodName = (ins as any).name;
                 prodPrice = Number((ins as any).price || 0);
-                productCache.set(pk, { id: prodId, name: prodName, price: prodPrice });
+                productCache.set(pk, { id: prodId as number, name: prodName as string, price: prodPrice });
                 res.productsCreated++;
               }
             }

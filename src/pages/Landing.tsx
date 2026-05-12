@@ -1445,13 +1445,12 @@ const Landing = () => {
 
                   {/* ── AI SUGGESTIONS (shown after DB results OR when no results) ── */}
                   {false && hasResults && executedQuery && (() => {
-                    const ctxSuggestion = generateContextualSuggestions(executedQuery);
-                    if (!ctxSuggestion) return null;
-                    // Filter out suggestions that already exist in the DB results
+                    const ctxMatch: any = generateContextualSuggestions(executedQuery);
+                    if (!ctxMatch) return null;
                     const existingServiceNames = new Set(filteredResults.map(s => s.name.toLowerCase()));
                     const existingProductNames = new Set(searchResult.products.map(p => p.name.toLowerCase()));
-                    const newServices = ctxSuggestion.suggestedServices.filter(s => !existingServiceNames.has(s.name.toLowerCase()));
-                    const newProducts = ctxSuggestion.suggestedProducts.filter(p => !existingProductNames.has(p.name.toLowerCase()));
+                    const newServices = (ctxMatch.suggestedServices || []).filter((s: any) => s && !existingServiceNames.has(s.name.toLowerCase()));
+                    const newProducts = (ctxMatch.suggestedProducts || []).filter((p: any) => p && !existingProductNames.has(p.name.toLowerCase()));
                     if (newServices.length === 0 && newProducts.length === 0) return null;
                     return (
                       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-6 rounded-2xl border border-accent/30 bg-accent/5 p-5">
@@ -1469,7 +1468,7 @@ const Landing = () => {
                         <div>
                           <p className="text-xs font-semibold text-muted-foreground mb-2">Selecione para acionar a Central de Atendimento:</p>
                           <div className="flex flex-wrap gap-2">
-                            {newServices.map((svc) => {
+                            {newServices.map((svc: any) => {
                               const isSelected = selectedSuggestions.has(svc.name);
                               return (
                                 <motion.button key={svc.name} whileTap={{ scale: 0.95 }}
@@ -1482,7 +1481,7 @@ const Landing = () => {
                                 </motion.button>
                               );
                             })}
-                            {newProducts.map((prod) => {
+                            {newProducts.map((prod: any) => {
                               const isSelected = selectedSuggestions.has(prod.name);
                               return (
                                 <motion.button key={prod.name} whileTap={{ scale: 0.95 }}
@@ -1499,7 +1498,7 @@ const Landing = () => {
                         </div>
                         {selectedSuggestions.size > 0 && (
                           <div className="flex gap-2 pt-3">
-                            <Button className="gap-2" onClick={() => handleSendSelectedSuggestions(ctxSuggestion)}>
+                            <Button className="gap-2" onClick={() => handleSendSelectedSuggestions(ctxMatch)}>
                               <Headphones className="w-4 h-4" /> Enviar {selectedSuggestions.size} seleção(ões) para a Central
                             </Button>
                           </div>

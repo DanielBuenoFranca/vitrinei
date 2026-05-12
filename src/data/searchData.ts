@@ -1517,8 +1517,8 @@ export interface ContextualSuggestion {
   suggestedServices: { name: string; description: string }[];
   suggestedProducts: { name: string; description: string }[];
   derivedContext: string;
-  confidence?: ContextualSuggestionConfidence;
-  source?: ContextualSuggestionSource;
+  confidence?: 'high' | 'medium' | 'low';
+  source?: string;
   references?: string[];
 }
 
