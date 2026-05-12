@@ -1019,7 +1019,7 @@ const ProviderStorefront = () => {
 
                       {/* Quick add */}
                       {!editMode && (
-                        <div className={`absolute bottom-2.5 right-2.5 z-10 flex items-center gap-1 rounded-full px-2.5 py-1.5 border transition-all shadow-lg ${inCart ? 'bg-primary border-primary text-primary-foreground' : 'bg-white text-foreground border-white/80 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary'}`}>
+                        <div className={`absolute bottom-2.5 right-2.5 z-10 flex items-center gap-1 rounded-full px-2.5 py-1.5 border transition-all shadow-lg backdrop-blur-md ${inCart ? 'bg-primary border-primary text-primary-foreground shadow-primary/20' : 'bg-zinc-900/90 text-white border-white/10 hover:bg-zinc-800 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary'}`}>
                           {inCart ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
                           <span className="text-[10px] font-bold uppercase tracking-wider">{inCart ? 'No carrinho' : 'Contratar'}</span>
                         </div>
@@ -1055,9 +1055,9 @@ const ProviderStorefront = () => {
                         {svc.name}
                       </h4>
                       <div className="flex items-end justify-between pt-2 border-t border-dashed border-border/50">
-                        <div>
-                          <span className="block text-[8.5px] uppercase tracking-[0.18em] text-muted-foreground/70 leading-none">A partir de</span>
-                          <span className="text-base font-extrabold text-foreground"><MaskedPrice value={svc.price} /></span>
+                        <div className="bg-primary/5 px-3 py-1.5 rounded-2xl border border-primary/10 shadow-sm">
+                          <span className="block text-[8px] uppercase tracking-[0.18em] text-primary/70 leading-none font-bold mb-0.5">A partir de</span>
+                          <span className="text-base font-extrabold text-primary"><MaskedPrice value={svc.price} /></span>
                         </div>
                         <span className="text-[10px] font-medium text-emerald-600 flex items-center gap-0.5">
                           <CheckCircle2 className="w-2.5 h-2.5" /> Disponível
@@ -1141,13 +1141,13 @@ const ProviderStorefront = () => {
                       )}
 
                       {/* Floating price tag */}
-                      <div className="absolute left-2 bottom-2 z-10 rounded-xl bg-white/95 backdrop-blur-md px-2.5 py-1 shadow-lg border border-white/80">
-                        <span className="block text-[8px] uppercase tracking-wider text-muted-foreground leading-none">Preço</span>
-                        <span className="text-[12.5px] font-extrabold text-foreground"><MaskedPrice value={product.price} /></span>
+                      <div className="absolute left-2 bottom-2 z-10 rounded-xl bg-zinc-900/90 backdrop-blur-md px-2.5 py-1 shadow-lg border border-white/10">
+                        <span className="block text-[8px] uppercase tracking-wider text-zinc-400 leading-none font-bold">Preço</span>
+                        <span className="text-[12.5px] font-extrabold text-white"><MaskedPrice value={product.price} /></span>
                       </div>
 
                       {!editMode && (
-                        <div className={`absolute bottom-2 right-2 rounded-full backdrop-blur-md w-9 h-9 flex items-center justify-center z-10 border shadow-lg transition-all ${inCart ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white text-foreground border-white/80 group-hover:bg-emerald-500 group-hover:text-white group-hover:border-emerald-500 group-hover:scale-110'}`}>
+                        <div className={`absolute bottom-2 right-2 rounded-full backdrop-blur-md w-9 h-9 flex items-center justify-center z-10 border shadow-lg transition-all ${inCart ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-zinc-900/90 text-white border-white/10 group-hover:bg-emerald-500 group-hover:text-white group-hover:border-emerald-500 group-hover:scale-110'}`}>
                           {inCart ? <CheckCircle2 className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
                         </div>
                       )}
