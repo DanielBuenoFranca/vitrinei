@@ -679,7 +679,12 @@ const ViniHome = () => {
 
             emitEmotion('happy');
             pushBubble({ role: 'vini', text: routed.transition_message || `Entendi. Já estou abrindo a busca com o que conversamos.` });
-            setTimeout(() => { navigate(`/buscar?${params.toString()}`); finalize(); }, 900);
+            setTimeout(() => { 
+              const searchPath = `/buscar?${params.toString()}`;
+              console.log('[Vini] Navigating to:', searchPath);
+              navigate(searchPath); 
+              finalize(); 
+            }, 900);
             setRefinementCount(0); // Reseta após concluir
             return;
           }
@@ -688,7 +693,12 @@ const ViniHome = () => {
           if ((routed.segments || []).length) params.set('segments', routed.segments.join(','));
           emitEmotion('happy');
           pushBubble({ role: 'vini', text: routed.transition_message || `Entendi o que você precisa. Já estou abrindo a busca filtrada.` });
-          setTimeout(() => { navigate(`/buscar?${params.toString()}`); finalize(); }, 900);
+          setTimeout(() => { 
+            const searchPath = `/buscar?${params.toString()}`;
+            console.log('[Vini] Navigating to:', searchPath);
+            navigate(searchPath); 
+            finalize(); 
+          }, 900);
           setRefinementCount(0); // Reseta após concluir
           return;
         }
@@ -703,14 +713,24 @@ const ViniHome = () => {
             role: 'vini',
             text: `Encontrei ${total} ${total === 1 ? 'opção' : 'opções'} para "${query}". Já estou abrindo os resultados!`,
           });
-          setTimeout(() => { navigate(`/buscar?q=${encodeURIComponent(query)}`); finalize(); }, 1000);
+          setTimeout(() => { 
+            const searchPath = `/buscar?q=${encodeURIComponent(query)}`;
+            console.log('[Vini] Navigating to fallback search:', searchPath);
+            navigate(searchPath); 
+            finalize(); 
+          }, 1000);
         } else {
           emitEmotion("sad");
           pushBubble({
             role: "vini",
             text: `Infelizmente não encontrei "${query}" em nosso estoque agora. Vou te levar para a tela de busca para acionarmos nossa Central de Atendimento.`,
           });
-          setTimeout(() => { navigate(`/buscar?q=${encodeURIComponent(query)}&force_support=1`); finalize(); }, 1200);
+          setTimeout(() => { 
+            const searchPath = `/buscar?q=${encodeURIComponent(query)}&force_support=1`;
+            console.log('[Vini] Navigating to support search:', searchPath);
+            navigate(searchPath); 
+            finalize(); 
+          }, 1200);
         }
       } catch (err) {
         // Qualquer erro síncrono/inesperado: NUNCA deixar o Vini mudo.
