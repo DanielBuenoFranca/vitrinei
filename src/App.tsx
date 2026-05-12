@@ -107,7 +107,7 @@ const App = () => {
           <Route path="/demos" element={<ForceResetGuard><LazyRoute><Demos /></LazyRoute></ForceResetGuard>} />
           <Route path="/central-atendimento" element={<ForceResetGuard><LazyRoute><SupportCenterDemo /></LazyRoute></ForceResetGuard>} />
           <Route path="/admin" element={<MasterRoute><LazyRoute fallback={<CardexSkeleton />}><AdminPanel /></LazyRoute></MasterRoute>} />
-          <Route path="/loja/:slug" element={<ForceResetGuard><LazyRoute><ProviderStorefront /></LazyRoute></ForceResetGuard>} />
+          <Route path="/loja/:slug" element={<LazyRoute><ProviderStorefront /></LazyRoute>} />
           <Route path="/radar-urgencia" element={<ForceResetGuard><LazyRoute fallback={<RadarSkeleton />}><RadarUrgencyFlow /></LazyRoute></ForceResetGuard>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
