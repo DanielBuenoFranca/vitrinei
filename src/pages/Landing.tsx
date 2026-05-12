@@ -288,6 +288,7 @@ const Landing = () => {
 
   const executeSearch = () => {
     const q = searchQuery.trim();
+    console.log('[Landing] executeSearch called for:', q);
 
     // Desmarca todos os filtros
     setActiveSegments([]);
@@ -311,8 +312,9 @@ const Landing = () => {
   };
 
   const handleSmartSearch = () => {
-    const q = searchQuery.trim();
+    console.log('[Landing] handleSmartSearch called');
     executeSearch();
+    const q = searchQuery.trim();
     if (!q) return;
     void refineWithVini(q, { openPanel: false, autoApply: false });
   };
