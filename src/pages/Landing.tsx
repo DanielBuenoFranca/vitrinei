@@ -156,6 +156,7 @@ const Landing = () => {
     setTypeFilter('all');
 
     if (nextQuery) setSearchQuery(nextQuery);
+    setActiveProvidersFilter([]); // Clear provider filter on new AI route
     if (matchingSegments.length) setActiveSegments(Array.from(new Set(matchingSegments)));
     if (route.item_type === 'service') setTypeFilter('service');
     else if (route.item_type === 'product') setTypeFilter('product');
