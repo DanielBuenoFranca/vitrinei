@@ -1228,7 +1228,7 @@ const Landing = () => {
                                             onClick={(e) => {
                                               if (!dbProviderNames.has(providerName)) return;
                                               e.stopPropagation();
-                                              const slug = providerName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                                              const slug = dbProviders.get(providerName)?.slug || providerName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
                                               navigate(`/loja/${slug}`);
                                             }}
                                           >{providerName}</h3>
