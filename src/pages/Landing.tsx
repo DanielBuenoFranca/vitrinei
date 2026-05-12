@@ -523,6 +523,8 @@ const Landing = () => {
 
       // Removido fallback automático para catálogo completo. 
       // Se não houver resultados, o estado 'noResults' será verdadeiro e mostrará o card da Central.
+      // Entretanto, se houver filtro de prestador ativo, não devemos cair no fallback global aqui,
+      // pois o filtro de prestador é aplicado depois.
       if ((rawResult.products?.length || 0) === 0 && (rawResult.services?.length || 0) === 0) {
         didFallback = false;
       }
@@ -559,7 +561,9 @@ const Landing = () => {
 
   const hasResults = searchExecuted && (filteredResults.length > 0 || filteredProducts.length > 0);
   const forceSupportParam = searchParams.get('force_support') === '1';
-  const noResults = (searchExecuted && executedQuery && !fallbackToAll && filteredResults.length === 0 && filteredProducts.length === 0) || forceSupportParam;
+  
+  // No results logic: only true if both filtered lists are empty AND we are not in fallback mode
+  const noResults = (searchExecuted && (executedQuery || activeSegments.length > 0 || activeProvidersFilter.length > 0) && !fallbackToAll && filteredResults.length === 0 && filteredProducts.length === 0) || forceSupportParam;
   const providerEntries = (() => {
     const providerMap = new Map<string, { products: typeof filteredProducts; services: typeof filteredResults }>();
     filteredProducts.forEach(p => {
