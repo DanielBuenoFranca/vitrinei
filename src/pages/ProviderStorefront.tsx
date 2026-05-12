@@ -476,7 +476,7 @@ const ProviderStorefront = () => {
     navigate(`/jornada-cliente?${params.toString()}`);
   };
 
-  const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/loja/${slug}` : '';
+  const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/loja/${provider?.slug || slug}` : '';
   const copyLink = () => { navigator.clipboard.writeText(shareUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); };
   const shareWhatsApp = () => window.open(`https://wa.me/?text=${encodeURIComponent(`Confira a loja de ${provider?.name}: ${shareUrl}`)}`, '_blank');
   const shareFacebook = () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
