@@ -129,6 +129,7 @@ const Landing = () => {
   const [providerSegmentMap, setProviderSegmentMap] = useState<Map<string, string[]>>(new Map());
   const [dataLoaded, setDataLoaded] = useState(false);
   const [mobileRevealedSeg, setMobileRevealedSeg] = useState<string | null>(null);
+  const [activeProvidersFilter, setActiveProvidersFilter] = useState<string[]>([]);
   const [showSimulated, setShowSimulated] = useState(false);
   const {
     productCart, productQuantities, serviceCart,
@@ -155,6 +156,7 @@ const Landing = () => {
     setTypeFilter('all');
 
     if (nextQuery) setSearchQuery(nextQuery);
+    setActiveProvidersFilter([]); // Clear provider filter on new AI route
     if (matchingSegments.length) setActiveSegments(Array.from(new Set(matchingSegments)));
     if (route.item_type === 'service') setTypeFilter('service');
     else if (route.item_type === 'product') setTypeFilter('product');
@@ -272,6 +274,7 @@ const Landing = () => {
 
     // Desmarca filtros ao realizar nova pesquisa textual
     setActiveSegments([]);
+    setActiveProvidersFilter([]);
     setTypeFilter('all');
     setAiRoute(null);
 
@@ -318,7 +321,15 @@ const Landing = () => {
   const handleRefineSearch = () => {
     setSearchExecuted(false);
     setSelectedSuggestions(new Set());
+    setActiveProvidersFilter([]);
     searchRef.current?.focus();
+  };
+
+  const toggleProviderFilter = (name: string) => {
+    setActiveProvidersFilter(prev => {
+      const next = prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name];
+      return next;
+    });
   };
 
   const navigateToCheckout = () => {
@@ -524,13 +535,20 @@ const Landing = () => {
     return rawResult;
   })();
 
-  const filteredResults = searchResult.services;
-  const hasResults = searchExecuted && (filteredResults.length > 0 || searchResult.products.length > 0);
+  const filteredResults = activeProvidersFilter.length > 0 
+    ? searchResult.services.filter(s => activeProvidersFilter.includes(s.provider))
+    : searchResult.services;
+    
+  const filteredProducts = activeProvidersFilter.length > 0
+    ? searchResult.products.filter(p => activeProvidersFilter.includes(p.provider))
+    : searchResult.products;
+
+  const hasResults = searchExecuted && (filteredResults.length > 0 || filteredProducts.length > 0);
   const forceSupportParam = searchParams.get('force_support') === '1';
-  const noResults = (searchExecuted && executedQuery && !fallbackToAll && filteredResults.length === 0 && searchResult.products.length === 0) || forceSupportParam;
+  const noResults = (searchExecuted && executedQuery && !fallbackToAll && filteredResults.length === 0 && filteredProducts.length === 0) || forceSupportParam;
   const providerEntries = (() => {
-    const providerMap = new Map<string, { products: typeof searchResult.products; services: typeof filteredResults }>();
-    searchResult.products.forEach(p => {
+    const providerMap = new Map<string, { products: typeof filteredProducts; services: typeof filteredResults }>();
+    filteredProducts.forEach(p => {
       if (!providerMap.has(p.provider)) providerMap.set(p.provider, { products: [], services: [] });
       providerMap.get(p.provider)!.products.push(p);
     });
@@ -594,6 +612,8 @@ const Landing = () => {
             toggleSegment={toggleSegment}
             typeFilter={typeFilter}
             setTypeFilter={(v) => setTypeFilter(v)}
+            activeProviders={activeProvidersFilter}
+            toggleProvider={toggleProviderFilter}
           >
             {(inlineAiOpen || searchExecuted) && (
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-5 pb-6">
@@ -1030,8 +1050,8 @@ const Landing = () => {
                       {/* ── Grouped by Provider ── */}
                       {(() => {
                         // Group products and services by provider
-                        const providerMap = new Map<string, { products: typeof searchResult.products; services: typeof filteredResults }>();
-                        searchResult.products.forEach(p => {
+                        const providerMap = new Map<string, { products: typeof filteredProducts; services: typeof filteredResults }>();
+                        filteredProducts.forEach(p => {
                           const key = p.provider;
                           if (!providerMap.has(key)) providerMap.set(key, { products: [], services: [] });
                           providerMap.get(key)!.products.push(p);
