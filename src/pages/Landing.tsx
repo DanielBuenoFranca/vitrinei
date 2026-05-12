@@ -547,8 +547,8 @@ const Landing = () => {
   const forceSupportParam = searchParams.get('force_support') === '1';
   const noResults = (searchExecuted && executedQuery && !fallbackToAll && filteredResults.length === 0 && filteredProducts.length === 0) || forceSupportParam;
   const providerEntries = (() => {
-    const providerMap = new Map<string, { products: typeof searchResult.products; services: typeof filteredResults }>();
-    searchResult.products.forEach(p => {
+    const providerMap = new Map<string, { products: typeof filteredProducts; services: typeof filteredResults }>();
+    filteredProducts.forEach(p => {
       if (!providerMap.has(p.provider)) providerMap.set(p.provider, { products: [], services: [] });
       providerMap.get(p.provider)!.products.push(p);
     });
