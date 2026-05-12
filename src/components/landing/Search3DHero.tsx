@@ -93,7 +93,8 @@ function ScrollableRow({ children, className = '' }: { children: ReactNode; clas
 
 export function Search3DHero({
   searchQuery, setSearchQuery, onSearch, onMic, micListening, micSupported,
-  segments, activeSegments, toggleSegment, typeFilter = 'all', setTypeFilter, children,
+  segments, activeSegments, toggleSegment, typeFilter = 'all', setTypeFilter, 
+  hideTopProviders, children,
 }: Props) {
   const navigate = useNavigate();
   const [top, setTop] = useState<Top[]>([]);
