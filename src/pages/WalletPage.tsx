@@ -685,7 +685,7 @@ const WalletPage = () => {
                         key={r.id}
                         type="button"
                         disabled={consumed || expired}
-                        onClick={() => setShareModal({ open: true, link: `${window.location.origin}/convite/${r.link_token}`, expires: r.expires_at })}
+                        onClick={() => setShareModal({ open: true, link: `${window.location.origin}/auth?tab=signup&ref=${r.link_token}`, expires: r.expires_at })}
                         className="w-full flex items-center justify-between text-[10px] py-1 border-b last:border-0 hover:bg-muted/40 px-1 rounded disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         <span className="truncate font-mono">{r.link_token?.slice(0, 12)}…</span>
