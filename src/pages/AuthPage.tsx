@@ -102,7 +102,9 @@ const AuthPage = () => {
   useEffect(() => {
     const tabParam = searchParams.get('tab');
     const urlRef = searchParams.get('ref') || '';
-    if (tabParam === 'signup' || tabParam === 'register' || urlRef) {
+    
+    // Auto-detect referral to open signup tab
+    if (tabParam === 'signup' || tabParam === 'register' || urlRef || localStorage.getItem('ecomei_ref')) {
       setActiveTab('signup');
     } else {
       setActiveTab('login');
