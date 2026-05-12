@@ -631,7 +631,10 @@ const Landing = () => {
   const hasResults = searchExecuted && (filteredResults.length > 0 || filteredProducts.length > 0);
   
   // No results logic: only true if both filtered lists are empty AND we are not in fallback mode
-  const noResults = (searchExecuted && (executedQuery || activeSegments.length > 0 || activeProvidersFilter.length > 0) && !fallbackToAll && filteredResults.length === 0 && filteredProducts.length === 0) || forceSupportParam;
+  const noResults = searchExecuted && (executedQuery || activeSegments.length > 0 || activeProvidersFilter.length > 0) && !fallbackToAll && filteredResults.length === 0 && filteredProducts.length === 0;
+  
+  // Se force_support vier na URL (vinda do Vini), forçamos o estado noResults
+  const isForceSupport = forceSupportParam || noResults;
   const providerEntries = (() => {
     const providerMap = new Map<string, { products: typeof filteredProducts; services: typeof filteredResults }>();
     filteredProducts.forEach(p => {
