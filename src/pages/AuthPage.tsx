@@ -301,22 +301,30 @@ const AuthPage = () => {
     if (password.length < 6) { toast.error('Senha deve ter no mínimo 6 caracteres'); return; }
     if (!selectedProfile) { toast.error('Selecione um perfil de acesso'); return; }
     if (!selectedPlan) { toast.error('Selecione um plano de assinatura'); return; }
-    const cpfDigits = unmask(cpfCnpj);
-    if (!cpfDigits) { toast.error('CPF ou CNPJ é obrigatório'); return; }
-    if (!isValidCpfCnpj(cpfDigits)) { toast.error('CPF/CNPJ inválido — confira os dígitos'); return; }
-    if (cpfCheckState === 'taken') { toast.error('Este CPF/CNPJ já possui cadastro no sistema'); return; }
+    let finalCpfDigits = "";
+    if (!isExempt) {
+      const cpfDigits = unmask(cpfCnpj);
+      if (!cpfDigits) { toast.error('CPF ou CNPJ é obrigatório'); return; }
+      if (!isValidCpfCnpj(cpfDigits)) { toast.error('CPF/CNPJ inválido — confira os dígitos'); return; }
+      if (cpfCheckState === 'taken') { toast.error('Este CPF/CNPJ já possui cadastro no sistema'); return; }
+      finalCpfDigits = cpfDigits;
+    } else {
+      finalCpfDigits = `ISENTO-${Date.now()}`;
+    }
 
     setLoading(true);
 
     // Final server-side check (race-safe)
-    try {
-      const { data: chk } = await (supabase.rpc as any)('check_cpf_cnpj_available', { _doc: cpfDigits });
-      if (chk && !chk.available) {
-        toast.error(chk.reason === 'already_registered' ? 'Este CPF/CNPJ já está cadastrado' : 'CPF/CNPJ inválido');
-        setLoading(false);
-        return;
-      }
-    } catch { /* non-blocking */ }
+    if (!isExempt) {
+      try {
+        const { data: chk } = await (supabase.rpc as any)('check_cpf_cnpj_available', { _doc: finalCpfDigits });
+        if (chk && !chk.available) {
+          toast.error(chk.reason === 'already_registered' ? 'Este CPF/CNPJ já está cadastrado' : 'CPF/CNPJ inválido');
+          setLoading(false);
+          return;
+        }
+      } catch { /* non-blocking */ }
+    }
 
     const { data, error } = await supabase.auth.signUp({
       email, password,
