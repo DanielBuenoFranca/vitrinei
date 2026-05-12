@@ -1435,7 +1435,7 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
       : allProducts
           .filter((p) => !nlProductIds.includes(p.id))
           .map(p => ({ product: p, score: scoreProduct(p, allTokens, intentProfile) }))
-          .filter(x => x.score >= 6)
+          .filter(x => x.score >= 10) // Aumentado para garantir que só itens muito relevantes apareçam
           .sort((a, b) => b.score - a.score)
           .map(x => x.product);
     matchedProducts = [...fromNL, ...fromFuzzy]
@@ -1443,7 +1443,7 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
   } else {
     matchedProducts = getAllProducts()
       .map(p => ({ product: p, score: scoreProduct(p, allTokens, intentProfile) }))
-      .filter(x => x.score >= (intentProfile.strict ? 10 : 4))
+      .filter(x => x.score >= (intentProfile.strict ? 15 : 10)) // Aumentado para evitar "quase acertos"
       .sort((a, b) => b.score - a.score)
       .map(x => x.product);
   }
@@ -1469,7 +1469,7 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
       : allSvcs
           .filter(s => !existingIds.has(s.id))
           .map(s => ({ service: s, score: scoreService(s, allTokens, intentProfile) }))
-          .filter(x => x.score >= (intentProfile.strict ? 12 : 6))
+          .filter(x => x.score >= (intentProfile.strict ? 15 : 12)) // Aumentado para evitar sugestões irrelevantes
           .sort((a, b) => b.score - a.score)
           .map(x => x.service);
     matchedServices = [...matchedServices, ...fuzzyServices]
@@ -1477,7 +1477,7 @@ export function semanticSearch(query: string, conversationContext?: string[]): S
   } else {
     matchedServices = allSvcs
       .map(s => ({ service: s, score: scoreService(s, allTokens, intentProfile) }))
-      .filter(x => x.score >= (intentProfile.strict ? 12 : 4))
+      .filter(x => x.score >= (intentProfile.strict ? 15 : 12)) // Aumentado para rigor na busca
       .sort((a, b) => b.score - a.score)
       .map(x => x.service);
   }
