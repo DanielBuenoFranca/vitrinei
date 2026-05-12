@@ -24,6 +24,7 @@ interface Props {
   toggleSegment: (id: string) => void;
   typeFilter?: 'all' | 'service' | 'product';
   setTypeFilter?: (v: 'all' | 'service' | 'product') => void;
+  hideTopProviders?: boolean;
   children?: ReactNode;
 }
 
