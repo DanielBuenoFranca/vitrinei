@@ -132,18 +132,6 @@ const BROAD_CONTEXT_MAP: Record<string, {
     productKeywords: ['adubo', 'semente', 'vaso', 'tesoura', 'luva', 'terra', 'grama'],
     label: 'Jardinagem — Serviços e Insumos',
   },
-  cerveja: {
-    segments: ['alimentação', 'alimentacao'],
-    serviceKeywords: ['bebida', 'cerveja', 'churrasco', 'delivery'],
-    productKeywords: ['cerveja', 'bebida', 'gelada', 'artesanal'],
-    label: 'Cerveja — Bebidas e Conveniência',
-  },
-  cafe: {
-    segments: ['alimentação', 'alimentacao'],
-    serviceKeywords: ['bebida', 'café', 'cafe', 'cafeteria', 'delivery'],
-    productKeywords: ['café', 'cafe', 'bebida', 'grão', 'moído'],
-    label: 'Café — Bebidas e Conveniência',
-  },
 };
 
 // ── NL Map: now with specific service & product IDs for precision ──
@@ -315,22 +303,6 @@ export const naturalLanguageMap: {
     relevantProductIds: [301, 302, 303],
     needLabel: 'Jardinagem',
     aiFollowUp: 'Identifiquei: **Jardinagem**. Separei ferramentas, insumos e profissionais para cuidar do seu jardim.'
-  },
-  {
-    triggers: ['cafe', 'café', 'cafeteria', 'quero café', 'comprar café'],
-    segments: ['alimentacao', 'alimentação'], keywords: ['cafe', 'café', 'cafeteria', 'bebida'],
-    relevantServiceIds: [],
-    relevantProductIds: [],
-    needLabel: 'Café',
-    aiFollowUp: 'Identifiquei sua busca por **Café**. No momento não temos este item em estoque no hub, mas nossa Central de Atendimento já foi notificada para buscar o melhor fornecedor para você.'
-  },
-  {
-    triggers: ['cerveja', 'cerveja gelada', 'comprar cerveja', 'chopp'],
-    segments: ['alimentacao', 'alimentação'], keywords: ['cerveja', 'bebida', 'conveniência'],
-    relevantServiceIds: [],
-    relevantProductIds: [],
-    needLabel: 'Cerveja',
-    aiFollowUp: 'Identifiquei sua busca por **Cerveja**. No momento não temos este item em estoque no hub, mas nossa Central de Atendimento já foi notificada para buscar o melhor fornecedor para você.'
   },
   {
     triggers: ['plantar', 'horta', 'vaso', 'muda', 'semente', 'adubo', 'terra', 'fertilizante'],
@@ -1281,7 +1253,7 @@ function generateFollowUp(needLabel: string, productCount: number, serviceCount:
   if (serviceCount > 0) {
     return `Identifiquei: **${needLabel}**. Encontrei ${serviceCount} serviço(s) profissional(is) para você.`;
   }
-  return `Identifiquei sua busca por **${needLabel}**. No momento não temos este item em estoque no hub, mas nossa Central de Atendimento já foi notificada para buscar o melhor fornecedor para você.`;
+  return `Não encontramos resultados para "**${needLabel}**" no estoque atual. Mas não se preocupe! Nossa central buscará em todo o ecossistema para você.`;
 }
 
 /**
@@ -1360,7 +1332,7 @@ function handleBroadContextSearch(query: string): SearchResult | null {
         const textTokens = tokenizePhrase(textNorm);
         const keywordTokens = tokenizePhrase(keywordNorm);
         if (keywordTokens.length > 1) return textNorm.includes(keywordNorm);
-        return textTokens.some(token => token === keywordNorm || token === `${keywordNorm}s` || (keywordNorm.endsWith('a') && token === `${keywordNorm.slice(0, -1)}as`) || (keywordNorm === 'cafe' && token === 'café') || (keywordNorm === 'café' && token === 'cafe'));
+        return textTokens.some(token => token === keywordNorm || token === `${keywordNorm}s` || (keywordNorm.endsWith('a') && token === `${keywordNorm.slice(0, -1)}as`));
       };
       const foodContext = normalizedSegments.some(seg => seg === 'alimentacao');
       const petFood = (text: string) => /\b(pet|cachorro|gato|racao|ração)\b/.test(normalize(text));
