@@ -330,7 +330,7 @@ export const naturalLanguageMap: {
     relevantServiceIds: [],
     relevantProductIds: [],
     needLabel: 'Cerveja',
-    aiFollowUp: 'Identifiquei: **Cerveja**. No momento não temos este item em estoque, mas nossa Central buscará para você.'
+    aiFollowUp: 'Identifiquei sua busca por **Cerveja**. No momento não temos este item em estoque no hub, mas nossa Central de Atendimento já foi notificada para buscar o melhor fornecedor para você.'
   },
   {
     triggers: ['plantar', 'horta', 'vaso', 'muda', 'semente', 'adubo', 'terra', 'fertilizante'],
