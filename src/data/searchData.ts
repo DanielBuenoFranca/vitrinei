@@ -1344,7 +1344,7 @@ function handleBroadContextSearch(query: string): SearchResult | null {
         const textTokens = tokenizePhrase(textNorm);
         const keywordTokens = tokenizePhrase(keywordNorm);
         if (keywordTokens.length > 1) return textNorm.includes(keywordNorm);
-        return textTokens.some(token => token === keywordNorm || token === `${keywordNorm}s` || (keywordNorm.endsWith('a') && token === `${keywordNorm.slice(0, -1)}as`));
+        return textTokens.some(token => token === keywordNorm || token === `${keywordNorm}s` || (keywordNorm.endsWith('a') && token === `${keywordNorm.slice(0, -1)}as`) || (keywordNorm === 'cafe' && token === 'café') || (keywordNorm === 'café' && token === 'cafe'));
       };
       const foodContext = normalizedSegments.some(seg => seg === 'alimentacao');
       const petFood = (text: string) => /\b(pet|cachorro|gato|racao|ração)\b/.test(normalize(text));
