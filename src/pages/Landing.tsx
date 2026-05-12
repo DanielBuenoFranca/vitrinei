@@ -149,6 +149,11 @@ const Landing = () => {
     const matchingSegments = dbSegments
       .filter(seg => routeSegments.some(rs => normalizeText(seg.id).includes(rs) || normalizeText(seg.name).includes(rs) || normalizeText(seg.label).includes(rs)))
       .map(seg => seg.id);
+    
+    // Clear existing filters when starting a new search
+    setActiveSegments([]);
+    setTypeFilter('all');
+
     if (nextQuery) setSearchQuery(nextQuery);
     if (matchingSegments.length) setActiveSegments(Array.from(new Set(matchingSegments)));
     if (route.item_type === 'service') setTypeFilter('service');
@@ -264,12 +269,17 @@ const Landing = () => {
   const executeSearch = () => {
     const q = searchQuery.trim();
     if (!q) return;
+
+    // Desmarca filtros ao realizar nova pesquisa textual
+    setActiveSegments([]);
+    setTypeFilter('all');
+    setAiRoute(null);
+
     setExecutedQuery(q);
     setSearchExecuted(true);
     setSearchVersion(v => v + 1);
     setSelectedSuggestions(new Set());
     setShowSearchProducts(false);
-    // Removemos o setSearchQuery('') para manter o contexto visual da busca
   };
 
   const handleSmartSearch = () => {
@@ -486,20 +496,10 @@ const Landing = () => {
         : result.products.filter(matchProductSegment);
       rawResult = { ...result, services: filteredServices, products: filteredProducts };
 
-      // Fallback: nothing matched → show full inventory so user can keep browsing
+      // Removido fallback automático para catálogo completo. 
+      // Se não houver resultados, o estado 'noResults' será verdadeiro e mostrará o card da Central.
       if ((rawResult.products?.length || 0) === 0 && (rawResult.services?.length || 0) === 0) {
-        rawResult = {
-          products: activeSegments.length === 0
-            ? getAllProducts()
-            : getAllProducts().filter(matchProductSegment),
-          services: activeSegments.length === 0
-            ? getAllServices()
-            : getAllServices().filter((r: any) => activeNorm.includes(norm(r.segment))),
-          followUp: rawResult.followUp,
-          needLabel: rawResult.needLabel,
-          suggestedServices: rawResult.suggestedServices,
-        };
-        didFallback = true;
+        didFallback = false;
       }
     }
 
@@ -594,6 +594,7 @@ const Landing = () => {
             toggleSegment={toggleSegment}
             typeFilter={typeFilter}
             setTypeFilter={(v) => setTypeFilter(v)}
+            hideTopProviders={searchExecuted || inlineAiOpen}
           >
             {(inlineAiOpen || searchExecuted) && (
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-5 pb-6">
