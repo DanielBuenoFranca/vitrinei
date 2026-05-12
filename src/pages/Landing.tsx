@@ -802,9 +802,9 @@ const Landing = () => {
                     <div>
                       <div className="flex items-center justify-between mb-1.5 px-1">
                         <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-white/55 flex items-center gap-1.5">
-                          <ShoppingBag className="w-3 h-3 text-emerald-300/80" /> Produtos ({searchResult.products.length})
+                          <ShoppingBag className="w-3 h-3 text-emerald-300/80" /> Produtos ({filteredProducts.length})
                         </h3>
-                        {searchResult.products.length > 2 && (
+                        {filteredProducts.length > 2 && (
                           <button
                             onClick={() => setProductsCarouselOpen(v => !v)}
                             className="flex items-center gap-1 rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[10px] text-white/75 hover:bg-white/10"
