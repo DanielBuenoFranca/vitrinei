@@ -496,20 +496,10 @@ const Landing = () => {
         : result.products.filter(matchProductSegment);
       rawResult = { ...result, services: filteredServices, products: filteredProducts };
 
-      // Fallback: nothing matched → show full inventory so user can keep browsing
+      // Removido fallback automático para catálogo completo. 
+      // Se não houver resultados, o estado 'noResults' será verdadeiro e mostrará o card da Central.
       if ((rawResult.products?.length || 0) === 0 && (rawResult.services?.length || 0) === 0) {
-        rawResult = {
-          products: activeSegments.length === 0
-            ? getAllProducts()
-            : getAllProducts().filter(matchProductSegment),
-          services: activeSegments.length === 0
-            ? getAllServices()
-            : getAllServices().filter((r: any) => activeNorm.includes(norm(r.segment))),
-          followUp: rawResult.followUp,
-          needLabel: rawResult.needLabel,
-          suggestedServices: rawResult.suggestedServices,
-        };
-        didFallback = true;
+        didFallback = false;
       }
     }
 
