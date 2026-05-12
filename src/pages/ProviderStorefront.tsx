@@ -1055,9 +1055,9 @@ const ProviderStorefront = () => {
                         {svc.name}
                       </h4>
                       <div className="flex items-end justify-between pt-2 border-t border-dashed border-border/50">
-                        <div>
-                          <span className="block text-[8.5px] uppercase tracking-[0.18em] text-muted-foreground/70 leading-none">A partir de</span>
-                          <span className="text-base font-extrabold text-foreground"><MaskedPrice value={svc.price} /></span>
+                        <div className="bg-primary/5 px-3 py-1.5 rounded-2xl border border-primary/10 shadow-sm">
+                          <span className="block text-[8px] uppercase tracking-[0.18em] text-primary/70 leading-none font-bold mb-0.5">A partir de</span>
+                          <span className="text-base font-extrabold text-primary"><MaskedPrice value={svc.price} /></span>
                         </div>
                         <span className="text-[10px] font-medium text-emerald-600 flex items-center gap-0.5">
                           <CheckCircle2 className="w-2.5 h-2.5" /> Disponível
