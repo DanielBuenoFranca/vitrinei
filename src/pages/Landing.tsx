@@ -1603,7 +1603,7 @@ const Landing = () => {
                                   <p className="font-semibold text-xs text-foreground truncate cursor-pointer hover:text-primary transition-colors"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      const slug = providerName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                                      const slug = dbProviders.get(providerName)?.slug || providerName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
                                       navigate(`/loja/${slug}`);
                                     }}>{providerName}</p>
                                   <p className="text-[10px] text-muted-foreground">
