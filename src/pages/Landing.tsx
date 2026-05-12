@@ -269,6 +269,11 @@ const Landing = () => {
   const executeSearch = () => {
     const q = searchQuery.trim();
     if (!q) return;
+
+    // Desmarca filtros ao realizar nova pesquisa textual
+    setActiveSegments([]);
+    setTypeFilter('all');
+
     setExecutedQuery(q);
     setSearchExecuted(true);
     setSearchVersion(v => v + 1);
