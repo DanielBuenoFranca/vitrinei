@@ -273,13 +273,13 @@ const Landing = () => {
     // Desmarca filtros ao realizar nova pesquisa textual
     setActiveSegments([]);
     setTypeFilter('all');
+    setAiRoute(null);
 
     setExecutedQuery(q);
     setSearchExecuted(true);
     setSearchVersion(v => v + 1);
     setSelectedSuggestions(new Set());
     setShowSearchProducts(false);
-    // Removemos o setSearchQuery('') para manter o contexto visual da busca
   };
 
   const handleSmartSearch = () => {
