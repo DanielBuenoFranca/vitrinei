@@ -101,13 +101,13 @@ const AuthPage = () => {
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam === 'signup' || tabParam === 'register') {
+    const urlRef = searchParams.get('ref') || '';
+    if (tabParam === 'signup' || tabParam === 'register' || urlRef) {
       setActiveTab('signup');
     } else {
       setActiveTab('login');
     }
 
-    const urlRef = searchParams.get('ref') || '';
     const storedRef = localStorage.getItem('ecomei_ref') || '';
     const code = urlRef || storedRef;
     if (code) {
