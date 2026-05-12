@@ -286,6 +286,7 @@ const Landing = () => {
     }
 
     setExecutedQuery(q);
+    setSupportSent(false); // Reseta o estado ao fazer nova busca
     setSearchExecuted(true);
     setSearchVersion(v => v + 1);
     setSelectedSuggestions(new Set());
