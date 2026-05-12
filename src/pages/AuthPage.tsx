@@ -334,7 +334,7 @@ const AuthPage = () => {
           selected_profile: selectedProfile,
           selected_plan: selectedPlan,
           phone: phone || null,
-          cpf_cnpj: cpfDigits,
+          cpf_cnpj: finalCpfDigits,
         },
         emailRedirectTo: window.location.origin,
       },
