@@ -815,7 +815,7 @@ const Landing = () => {
                 })()}
 
                 {/* === MARKETPLACE: PRODUTOS === */}
-                {hasResults && !noResults && filteredProducts.length > 0 && (() => {
+                {hasResults && !isForceSupport && filteredProducts.length > 0 && (() => {
                   const useStack = filteredProducts.length > 2 && !productsCarouselOpen;
                   const renderCard = (product: any, idx: number) => {
                     const PIcon = getVisualIcon(product.name);
