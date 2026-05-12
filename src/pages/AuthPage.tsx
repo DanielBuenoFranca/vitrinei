@@ -81,6 +81,7 @@ const AuthPage = () => {
   const [selectedPlan, setSelectedPlan] = useState<string>('bronze');
   const { activePlans: plans } = useSubscriptionPlans();
   const [campaignRewards, setCampaignRewards] = useState<{ buyer: number; seller: number; mixed: number } | null>(null);
+  const [isExempt, setIsExempt] = useState(false);
 
   useEffect(() => {
     supabase.from('referral_campaigns').select('reward_buyer,reward_seller,reward_mixed_total').eq('is_active', true).maybeSingle()
@@ -300,22 +301,30 @@ const AuthPage = () => {
     if (password.length < 6) { toast.error('Senha deve ter no mínimo 6 caracteres'); return; }
     if (!selectedProfile) { toast.error('Selecione um perfil de acesso'); return; }
     if (!selectedPlan) { toast.error('Selecione um plano de assinatura'); return; }
-    const cpfDigits = unmask(cpfCnpj);
-    if (!cpfDigits) { toast.error('CPF ou CNPJ é obrigatório'); return; }
-    if (!isValidCpfCnpj(cpfDigits)) { toast.error('CPF/CNPJ inválido — confira os dígitos'); return; }
-    if (cpfCheckState === 'taken') { toast.error('Este CPF/CNPJ já possui cadastro no sistema'); return; }
+    let finalCpfDigits = "";
+    if (!isExempt) {
+      const cpfDigits = unmask(cpfCnpj);
+      if (!cpfDigits) { toast.error('CPF ou CNPJ é obrigatório'); return; }
+      if (!isValidCpfCnpj(cpfDigits)) { toast.error('CPF/CNPJ inválido — confira os dígitos'); return; }
+      if (cpfCheckState === 'taken') { toast.error('Este CPF/CNPJ já possui cadastro no sistema'); return; }
+      finalCpfDigits = cpfDigits;
+    } else {
+      finalCpfDigits = `ISENTO-${Date.now()}`;
+    }
 
     setLoading(true);
 
     // Final server-side check (race-safe)
-    try {
-      const { data: chk } = await (supabase.rpc as any)('check_cpf_cnpj_available', { _doc: cpfDigits });
-      if (chk && !chk.available) {
-        toast.error(chk.reason === 'already_registered' ? 'Este CPF/CNPJ já está cadastrado' : 'CPF/CNPJ inválido');
-        setLoading(false);
-        return;
-      }
-    } catch { /* non-blocking */ }
+    if (!isExempt) {
+      try {
+        const { data: chk } = await (supabase.rpc as any)('check_cpf_cnpj_available', { _doc: finalCpfDigits });
+        if (chk && !chk.available) {
+          toast.error(chk.reason === 'already_registered' ? 'Este CPF/CNPJ já está cadastrado' : 'CPF/CNPJ inválido');
+          setLoading(false);
+          return;
+        }
+      } catch { /* non-blocking */ }
+    }
 
     const { data, error } = await supabase.auth.signUp({
       email, password,
@@ -325,7 +334,7 @@ const AuthPage = () => {
           selected_profile: selectedProfile,
           selected_plan: selectedPlan,
           phone: phone || null,
-          cpf_cnpj: cpfDigits,
+          cpf_cnpj: finalCpfDigits,
         },
         emailRedirectTo: window.location.origin,
       },
@@ -355,7 +364,7 @@ const AuthPage = () => {
         is_provider: isProvider,
         is_customer: isCustomer,
         phone: phone || null,
-        cpf_cnpj: cpfDigits,
+        cpf_cnpj: finalCpfDigits,
       }).eq('user_id', data.user.id);
 
       // Only create a NEW provider record if profile didn't auto-link to an existing one
@@ -371,7 +380,7 @@ const AuthPage = () => {
               type: 'mei',
               email: email,
               phone: phone || '',
-              cpf_cnpj: cpfDigits,
+              cpf_cnpj: finalCpfDigits,
               user_id: data.user.id,
               active: true,
               storefront_config: {},
@@ -551,32 +560,55 @@ const AuthPage = () => {
               <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(11) 99999-9999" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs flex items-center gap-1.5">
-                CPF / CNPJ
-                <span className="text-destructive">*</span>
-              </Label>
-              <div className="relative">
-                <IdCard className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
-                <Input
-                  value={cpfCnpj}
-                  onChange={(e) => setCpfCnpj(maskCPFCNPJ(e.target.value))}
-                  placeholder="000.000.000-00 ou 00.000.000/0000-00"
-                  className={`pl-10 pr-10 ${
-                    cpfCheckState === 'taken' || cpfCheckState === 'invalid'
-                      ? 'border-destructive focus-visible:ring-destructive'
-                      : cpfCheckState === 'ok'
-                        ? 'border-success focus-visible:ring-success'
-                        : ''
-                  }`}
-                  inputMode="numeric"
-                  maxLength={18}
-                />
-                <div className="absolute right-3 top-3">
-                  {cpfCheckState === 'checking' && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
-                  {cpfCheckState === 'ok' && <Check className="w-4 h-4 text-success" />}
-                  {(cpfCheckState === 'taken' || cpfCheckState === 'invalid') && <X className="w-4 h-4 text-destructive" />}
+              <div className="flex items-center justify-between">
+                <Label className="text-xs flex items-center gap-1.5">
+                  CPF / CNPJ
+                  {!isExempt && <span className="text-destructive">*</span>}
+                </Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="is_exempt"
+                    checked={isExempt}
+                    onChange={(e) => {
+                      setIsExempt(e.target.checked);
+                      if (e.target.checked) setCpfCnpj('');
+                    }}
+                    className="w-3.5 h-3.5 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <label htmlFor="is_exempt" className="text-[10px] font-medium text-muted-foreground cursor-pointer select-none">
+                    Isento de CPF/CNPJ
+                  </label>
                 </div>
               </div>
+              {!isExempt ? (
+                <div className="relative">
+                  <IdCard className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
+                  <Input
+                    value={cpfCnpj}
+                    onChange={(e) => setCpfCnpj(maskCPFCNPJ(e.target.value))}
+                    placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                    className={`pl-10 pr-10 ${
+                      cpfCheckState === 'taken' || cpfCheckState === 'invalid'
+                        ? 'border-destructive focus-visible:ring-destructive'
+                        : cpfCheckState === 'ok'
+                          ? 'border-success focus-visible:ring-success'
+                          : ''
+                    }`}
+                    inputMode="numeric"
+                    maxLength={18}
+                  />
+                  <div className="absolute right-3 top-3">
+                    {cpfCheckState === 'checking' && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                    {cpfCheckState === 'ok' && <Check className="w-4 h-4 text-success" />}
+                    {(cpfCheckState === 'taken' || cpfCheckState === 'invalid') && <X className="w-4 h-4 text-destructive" />}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 bg-muted/30 border border-dashed border-border rounded-lg text-center">
+                  <p className="text-[10px] text-muted-foreground">O cadastro será realizado como usuário isento de documento.</p>
+                </div>
+              )}
               {cpfCheckState === 'invalid' && (
                 <p className="text-[10.5px] text-destructive">Documento inválido — confira os dígitos.</p>
               )}
