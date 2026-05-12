@@ -488,7 +488,7 @@ const AuthPage = () => {
           <div className="flex-1 h-px bg-border" />
         </div>
 
-        <Tabs defaultValue="login">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="w-full">
             <TabsTrigger value="login" className="flex-1">Entrar</TabsTrigger>
             <TabsTrigger value="signup" className="flex-1">Cadastrar</TabsTrigger>
