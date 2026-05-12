@@ -1242,7 +1242,7 @@ const ImportPage = () => {
         setImportProgress({ step: `Processando: ${provName}...`, percent: progressPercent });
 
         const firstRow = provRows[0];
-        let providerId: number;
+        let providerId: number = 0;
 
         // Honor user decision (merge vs create) if any
         const decision = groupDecisions.get(groupKey);

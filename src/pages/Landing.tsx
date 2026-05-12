@@ -1447,10 +1447,11 @@ const Landing = () => {
                   {false && hasResults && executedQuery && (() => {
                     const ctxSuggestion = generateContextualSuggestions(executedQuery);
                     if (!ctxSuggestion) return null;
+                    const ctx = ctxSuggestion;
                     const existingServiceNames = new Set(filteredResults.map(s => s.name.toLowerCase()));
                     const existingProductNames = new Set(searchResult.products.map(p => p.name.toLowerCase()));
-                    const newServices = (ctxSuggestion.suggestedServices || []).filter(s => s && !existingServiceNames.has(s.name.toLowerCase()));
-                    const newProducts = (ctxSuggestion.suggestedProducts || []).filter(p => p && !existingProductNames.has(p.name.toLowerCase()));
+                    const newServices = (ctx.suggestedServices || []).filter(s => s && !existingServiceNames.has(s.name.toLowerCase()));
+                    const newProducts = (ctx.suggestedProducts || []).filter(p => p && !existingProductNames.has(p.name.toLowerCase()));
                     if (newServices.length === 0 && newProducts.length === 0) return null;
                     return (
                       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-6 rounded-2xl border border-accent/30 bg-accent/5 p-5">
