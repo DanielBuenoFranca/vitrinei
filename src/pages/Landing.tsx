@@ -734,12 +734,6 @@ const Landing = () => {
                             <ChevronRight className="w-3 h-3" /> {filteredResults.length} itens
                           </span>
                         </button>
-                      ) : servicesCarouselOpen && filteredResults.length > 2 ? (
-                        <ScrollableRow>
-                          {filteredResults.map((r, i) => (
-                            <div key={r.id} className="snap-start shrink-0 w-[120px]">{renderCard(r, i)}</div>
-                          ))}
-                        </ScrollableRow>
                       ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                           {filteredResults.map((r, i) => renderCard(r, i))}
@@ -750,8 +744,8 @@ const Landing = () => {
                 })()}
 
                 {/* === MARKETPLACE: PRODUTOS === */}
-                {hasResults && !noResults && searchResult.products.length > 0 && (() => {
-                  const useStack = searchResult.products.length > 2 && !productsCarouselOpen;
+                {hasResults && !noResults && filteredProducts.length > 0 && (() => {
+                  const useStack = filteredProducts.length > 2 && !productsCarouselOpen;
                   const renderCard = (product: any, idx: number) => {
                     const PIcon = getVisualIcon(product.name);
                     const inCart = isInProductCart(product.id);
