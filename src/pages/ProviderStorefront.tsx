@@ -1019,7 +1019,7 @@ const ProviderStorefront = () => {
 
                       {/* Quick add */}
                       {!editMode && (
-                        <div className={`absolute bottom-2.5 right-2.5 z-10 flex items-center gap-1 rounded-full px-2.5 py-1.5 border transition-all shadow-lg ${inCart ? 'bg-primary border-primary text-primary-foreground' : 'bg-white text-foreground border-white/80 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary'}`}>
+                        <div className={`absolute bottom-2.5 right-2.5 z-10 flex items-center gap-1 rounded-full px-2.5 py-1.5 border transition-all shadow-lg backdrop-blur-md ${inCart ? 'bg-primary border-primary text-primary-foreground shadow-primary/20' : 'bg-zinc-900/90 text-white border-white/10 hover:bg-zinc-800 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary'}`}>
                           {inCart ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
                           <span className="text-[10px] font-bold uppercase tracking-wider">{inCart ? 'No carrinho' : 'Contratar'}</span>
                         </div>
