@@ -1445,9 +1445,8 @@ const Landing = () => {
 
                   {/* ── AI SUGGESTIONS (shown after DB results OR when no results) ── */}
                   {false && hasResults && executedQuery && (() => {
-                    const ctxSuggestion = generateContextualSuggestions(executedQuery);
-                    if (!ctxSuggestion) return null;
-                    const ctx = ctxSuggestion;
+                    const ctx = generateContextualSuggestions(executedQuery);
+                    if (!ctx) return null;
                     const existingServiceNames = new Set(filteredResults.map(s => s.name.toLowerCase()));
                     const existingProductNames = new Set(searchResult.products.map(p => p.name.toLowerCase()));
                     const newServices = (ctx.suggestedServices || []).filter(s => s && !existingServiceNames.has(s.name.toLowerCase()));
