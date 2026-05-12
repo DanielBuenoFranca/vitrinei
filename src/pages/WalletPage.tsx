@@ -657,7 +657,7 @@ const WalletPage = () => {
               </div>
 
               <Button variant="outline" size="sm" className="w-full gap-1 text-xs"
-                onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`Conheça o Vitrinei! Cadastre-se pelo meu link:\n${window.location.origin}/convite/${referralCode}`)}`, '_blank')}>
+                onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`Conheça o Vitrinei! Cadastre-se pelo meu link:\n${window.location.origin}/auth?tab=signup&ref=${referralCode}`)}`, '_blank')}>
                 <Share2 className="w-3 h-3" /> Compartilhar no WhatsApp
               </Button>
 
