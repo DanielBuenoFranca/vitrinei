@@ -317,22 +317,6 @@ export const naturalLanguageMap: {
     aiFollowUp: 'Identifiquei: **Jardinagem**. Separei ferramentas, insumos e profissionais para cuidar do seu jardim.'
   },
   {
-    triggers: ['cafe', 'café', 'cafeteria', 'quero café', 'comprar café'],
-    segments: ['alimentacao', 'alimentação'], keywords: ['cafe', 'café', 'cafeteria', 'bebida'],
-    relevantServiceIds: [],
-    relevantProductIds: [],
-    needLabel: 'Café',
-    aiFollowUp: 'Identifiquei sua busca por **Café**. No momento não temos este item em estoque no hub, mas nossa Central de Atendimento já foi notificada para buscar o melhor fornecedor para você.'
-  },
-  {
-    triggers: ['cerveja', 'cerveja gelada', 'comprar cerveja', 'chopp'],
-    segments: ['alimentacao', 'alimentação'], keywords: ['cerveja', 'bebida', 'conveniência'],
-    relevantServiceIds: [],
-    relevantProductIds: [],
-    needLabel: 'Cerveja',
-    aiFollowUp: 'Identifiquei sua busca por **Cerveja**. No momento não temos este item em estoque no hub, mas nossa Central de Atendimento já foi notificada para buscar o melhor fornecedor para você.'
-  },
-  {
     triggers: ['plantar', 'horta', 'vaso', 'muda', 'semente', 'adubo', 'terra', 'fertilizante'],
     segments: ['natureza'], keywords: ['horta', 'jardinagem', 'sementes'],
     relevantServiceIds: [26],
