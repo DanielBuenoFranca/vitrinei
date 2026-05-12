@@ -175,6 +175,44 @@ const AuthPage = () => {
     }
   }, [searchParams]);
 
+  // Timer for referral link expiration
+  useEffect(() => {
+    if (!refCode) {
+      setTimeLeft(null);
+      return;
+    }
+
+    const updateTimer = () => {
+      const refTimestampStr = localStorage.getItem('ecomei_ref_ts');
+      if (!refTimestampStr) {
+        setTimeLeft(null);
+        return;
+      }
+
+      const timestamp = parseInt(refTimestampStr);
+      const now = Date.now();
+      const diffMs = (timestamp + 24 * 60 * 60 * 1000) - now;
+
+      if (diffMs <= 0) {
+        setTimeLeft("Expirado");
+        localStorage.removeItem('ecomei_ref');
+        localStorage.removeItem('ecomei_ref_ts');
+        setRefCode('');
+        return;
+      }
+
+      const hours = Math.floor(diffMs / (1000 * 60 * 60));
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+      setTimeLeft(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [refCode]);
+
   // Debounced uniqueness check via RPC
   useEffect(() => {
     const digits = unmask(cpfCnpj);
