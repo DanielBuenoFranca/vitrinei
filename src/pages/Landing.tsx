@@ -391,6 +391,8 @@ const Landing = () => {
   const [supportExplanation, setSupportExplanation] = useState('');
   const [isSubmittingSupport, setIsSubmittingSupport] = useState(false);
   const [supportSent, setSupportSent] = useState(false);
+  const [isAiPanelExpanded, setIsAiPanelExpanded] = useState(false); // Adicionado se necessário, mas verificando se já existe logicamente
+
 
   const handleSendToCentral = async () => {
     if (isSubmittingSupport) return;
