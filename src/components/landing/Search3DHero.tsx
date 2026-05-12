@@ -276,18 +276,26 @@ export function Search3DHero({
           <ScrollableRow>
             {top.map((p) => {
               const slug = slugify(p.name);
+              const isActive = activeProviders.includes(p.name);
               return (
                 <motion.div
                   key={p.id}
                   whileHover={{ y: -2 }}
-                  className="snap-start shrink-0 w-[104px] rounded-xl overflow-hidden text-left relative"
+                  className={`snap-start shrink-0 w-[104px] rounded-xl overflow-hidden text-left relative transition-all duration-300 ${
+                    isActive ? 'ring-2 ring-violet-500 ring-offset-2 ring-offset-background' : ''
+                  }`}
                   style={{
-                    background: 'hsl(225 30% 14%)',
-                    border: '1px solid rgba(255,255,255,.06)',
-                    boxShadow: '0 8px 20px -10px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.05)',
+                    background: isActive ? 'hsl(255 45% 20%)' : 'hsl(225 30% 14%)',
+                    border: isActive ? '1px solid hsl(265 70% 60%)' : '1px solid rgba(255,255,255,.06)',
+                    boxShadow: isActive 
+                      ? '0 12px 28px -10px hsl(265 90% 55% / 0.7)' 
+                      : '0 8px 20px -10px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.05)',
                   }}
                 >
-                  <button onClick={() => navigate(`/loja/${slug}`)} className="block w-full text-left">
+                  <button 
+                    onClick={() => toggleProvider ? toggleProvider(p.name) : navigate(`/loja/${slug}`)} 
+                    className="block w-full text-left"
+                  >
                     <div className="aspect-square bg-gradient-to-br from-violet-900/40 to-slate-900 overflow-hidden relative">
                       {p.logo_url ? (
                         <img src={p.logo_url} alt={p.name} className="w-full h-full object-cover" />
