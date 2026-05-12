@@ -1141,13 +1141,13 @@ const ProviderStorefront = () => {
                       )}
 
                       {/* Floating price tag */}
-                      <div className="absolute left-2 bottom-2 z-10 rounded-xl bg-white/95 backdrop-blur-md px-2.5 py-1 shadow-lg border border-white/80">
-                        <span className="block text-[8px] uppercase tracking-wider text-muted-foreground leading-none">Preço</span>
-                        <span className="text-[12.5px] font-extrabold text-foreground"><MaskedPrice value={product.price} /></span>
+                      <div className="absolute left-2 bottom-2 z-10 rounded-xl bg-zinc-900/90 backdrop-blur-md px-2.5 py-1 shadow-lg border border-white/10">
+                        <span className="block text-[8px] uppercase tracking-wider text-zinc-400 leading-none font-bold">Preço</span>
+                        <span className="text-[12.5px] font-extrabold text-white"><MaskedPrice value={product.price} /></span>
                       </div>
 
                       {!editMode && (
-                        <div className={`absolute bottom-2 right-2 rounded-full backdrop-blur-md w-9 h-9 flex items-center justify-center z-10 border shadow-lg transition-all ${inCart ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white text-foreground border-white/80 group-hover:bg-emerald-500 group-hover:text-white group-hover:border-emerald-500 group-hover:scale-110'}`}>
+                        <div className={`absolute bottom-2 right-2 rounded-full backdrop-blur-md w-9 h-9 flex items-center justify-center z-10 border shadow-lg transition-all ${inCart ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-zinc-900/90 text-white border-white/10 group-hover:bg-emerald-500 group-hover:text-white group-hover:border-emerald-500 group-hover:scale-110'}`}>
                           {inCart ? <CheckCircle2 className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
                         </div>
                       )}
