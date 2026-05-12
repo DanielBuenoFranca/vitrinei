@@ -164,38 +164,54 @@ const ProviderStorefront = () => {
 
   useEffect(() => {
     const load = async () => {
+      if (!slug) return;
       setLoading(true);
-      await Promise.all([reloadDynamicEntries(), loadSegmentTagsCache()]);
+      
+      try {
+        await Promise.all([reloadDynamicEntries(), loadSegmentTagsCache()]);
 
-      const [{ data: segsData }, { data: providers }, { data: allProvs }] = await Promise.all([
-        supabase.from('segments').select('id, name, image_url').order('name'),
-        supabase.from('providers').select('*'),
-        supabase.from('providers').select('id, name, segment'),
-      ]);
-      setDbSegments((segsData || []) as { id: number; name: string; image_url?: string | null }[]);
-      setAllProviders((allProvs || []).map((p: any) => ({ id: p.id, name: p.name, segment: p.segment || [] })));
+        // Load specific provider by slug
+        const { data: providers, error: provError } = await supabase
+          .from('providers')
+          .select('*')
+          .eq('slug', slug)
+          .maybeSingle();
 
-      if (providers) {
-        const found = providers.find((p: any) => slugify(p.name) === slug);
-        if (found) {
-          const provData = found as ProviderData;
+        if (provError) throw provError;
+
+        if (providers) {
+          const provData = providers as ProviderData;
           setProvider(provData);
           trackStoreVisit(provData.name);
           const cfg = { ...defaultConfig, ...((provData.storefront_config as StorefrontConfig) || {}) };
           setConfig(cfg);
           setOriginalConfig(JSON.parse(JSON.stringify(cfg)));
 
-          const firstSeg = Array.isArray(found.segment) ? found.segment[0] : found.segment;
-          const { data: segs } = await supabase.from('segments').select('*').eq('name', firstSeg);
-          if (segs && segs[0]) setSegmentTags(segs[0].suggested_tags || []);
+          const firstSeg = Array.isArray(provData.segment) ? provData.segment[0] : provData.segment;
+          if (firstSeg) {
+            const { data: segs } = await supabase.from('segments').select('*').eq('name', firstSeg).maybeSingle();
+            if (segs) setSegmentTags(segs.suggested_tags || []);
+          }
+
+          // Fetch segments and all providers for other UI needs (if still needed)
+          const [{ data: segsData }, { data: allProvs }] = await Promise.all([
+            supabase.from('segments').select('id, name, image_url').order('name'),
+            supabase.from('providers').select('id, name, segment'),
+          ]);
+          setDbSegments((segsData || []) as { id: number; name: string; image_url?: string | null }[]);
+          setAllProviders((allProvs || []).map((p: any) => ({ id: p.id, name: p.name, segment: p.segment || [] })));
 
           const allServices = getAllServices();
           const allProducts = getAllProducts();
-          setProviderServices(allServices.filter((s: any) => s.provider === found.name || s.provider_id === found.id));
-          setProviderProducts(allProducts.filter((p: any) => p.provider === found.name || p.provider_id === found.id));
+          setProviderServices(allServices.filter((s: any) => s.provider === provData.name || s.provider_id === provData.id));
+          setProviderProducts(allProducts.filter((p: any) => p.provider === provData.name || p.provider_id === provData.id));
         }
+      } catch (err: any) {
+        console.error('Error loading provider storefront:', err);
+        toast.error('Erro ao carregar loja');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     load();
   }, [slug]);
