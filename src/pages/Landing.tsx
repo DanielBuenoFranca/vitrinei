@@ -286,6 +286,7 @@ const Landing = () => {
     }
 
     setExecutedQuery(q);
+    setSupportSent(false); // Reseta o estado ao fazer nova busca
     setSearchExecuted(true);
     setSearchVersion(v => v + 1);
     setSelectedSuggestions(new Set());
@@ -372,6 +373,7 @@ const Landing = () => {
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [supportExplanation, setSupportExplanation] = useState('');
   const [isSubmittingSupport, setIsSubmittingSupport] = useState(false);
+  const [supportSent, setSupportSent] = useState(false);
 
   const handleSendToCentral = async () => {
     if (isSubmittingSupport) return;
@@ -390,6 +392,7 @@ const Landing = () => {
 
       if (error) throw error;
 
+      setSupportSent(true);
       toast.success('Solicitação enviada para Central de Atendimento!');
       
       const summary = `Busca sem resultados para "${executedQuery}". Explicação: ${supportExplanation}`;
@@ -901,11 +904,22 @@ const Landing = () => {
                           Não encontramos "{executedQuery}" no estoque atual. Mas não se preocupe! Nossa central buscará em todo o ecossistema para você em até 24h.
                         </p>
                         <Button 
-                          onClick={() => setShowSupportModal(true)}
-                          className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold py-6 rounded-2xl shadow-[0_4px_15px_rgba(139,92,246,0.3)] transition-all"
+                          onClick={() => !supportSent && setShowSupportModal(true)}
+                          disabled={supportSent}
+                          className={`w-full font-bold py-6 rounded-2xl shadow-[0_4px_15px_rgba(139,92,246,0.3)] transition-all ${
+                            supportSent 
+                            ? "bg-zinc-800 text-zinc-500 cursor-not-allowed" 
+                            : "bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white"
+                          }`}
                         >
-                          <Headphones className="w-5 h-5 mr-2" />
-                          Enviar para Central
+                          {supportSent ? (
+                            <span className="text-[10px] sm:text-xs">Solicitação enviada !! - Em breve receberá um retorno, obrigado !!</span>
+                          ) : (
+                            <>
+                              <Headphones className="w-5 h-5 mr-2" />
+                              Enviar para Central
+                            </>
+                          )}
                         </Button>
 
                         <AnimatePresence>
