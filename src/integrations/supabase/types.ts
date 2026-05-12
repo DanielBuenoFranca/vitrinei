@@ -1454,6 +1454,13 @@ export type Database = {
           status: string
         }[]
       }
+      get_referrer_info_by_code: {
+        Args: { _code: string }
+        Returns: {
+          referral_code: string
+          referrer_name: string
+        }[]
+      }
       get_user_roles: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"][]
