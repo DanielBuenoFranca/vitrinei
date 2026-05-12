@@ -138,24 +138,38 @@ const AuthPage = () => {
     }
 
     if (currentCode) {
+      console.log("Found referral code:", currentCode);
       setRefCode(currentCode);
       localStorage.setItem('ecomei_ref', currentCode);
       
-      // Fetch referrer name using secure RPC (accessible to anon)
       const fetchReferrer = async () => {
         try {
-          const { data, error } = await (supabase.rpc as any)('get_referrer_info_by_code', { _code: currentCode });
+          const { data, error } = await supabase
+            .from('referrals')
+            .select('referrer_id')
+            .eq('referral_code', currentCode)
+            .maybeSingle();
           
           if (error) {
-            console.error("Error fetching referrer via RPC:", error);
+            console.error("Error fetching referral record:", error);
             return;
           }
 
-          if (data && data.length > 0) {
-            setReferrerName(data[0].referrer_name);
+          if (data?.referrer_id) {
+            const { data: profile, error: pError } = await supabase
+              .from('profiles')
+              .select('display_name')
+              .eq('user_id', data.referrer_id)
+              .maybeSingle();
+            
+            if (pError) console.error("Error fetching profile:", pError);
+            if (profile?.display_name) {
+              console.log("Referrer found:", profile.display_name);
+              setReferrerName(profile.display_name);
+            }
           }
         } catch (err) {
-          console.error("Error fetching referrer:", err);
+          console.error("Error in fetchReferrer:", err);
         }
       };
       fetchReferrer();
