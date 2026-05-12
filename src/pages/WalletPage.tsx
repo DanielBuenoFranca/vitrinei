@@ -162,6 +162,18 @@ const WalletPage = () => {
   useEffect(() => {
     if (!user) return;
     loadData();
+    
+    // Check if coming from the indication button with intent to start
+    if (window.history.state?.usr?.startReferral) {
+      setTimeout(() => {
+        const link = `${window.location.origin}/convite/${user.id.slice(0, 8).toUpperCase()}`;
+        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        setShareModal({ open: true, link, expires });
+        toast.info("Link de indicação 24h gerado!", {
+          description: "O cronômetro já começou a correr."
+        });
+      }, 500);
+    }
   }, [user]);
 
   // 24h countdown timer
