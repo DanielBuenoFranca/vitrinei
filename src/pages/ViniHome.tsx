@@ -803,7 +803,10 @@ const ViniHome = () => {
     }
   };
 
-  const handleIndicacao = () => navigate('/convite/INDIQUE');
+  const handleIndicacao = () => {
+    if (!user) { navigate('/auth'); return; }
+    setReferralRulesOpen(true);
+  };
   const handlePerfil = () => navigate(user ? '/carteira' : '/auth');
   const handleDemos = () => navigate('/demos');
 
