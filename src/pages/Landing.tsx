@@ -531,11 +531,11 @@ const Landing = () => {
   const [dbProviders, setDbProviders] = useState<Map<string, { logo_url: string | null; is_top_provider?: boolean; slug?: string }>>(new Map());
   const [dbProviderNames, setDbProviderNames] = useState<Set<string>>(new Set());
   useEffect(() => {
-    supabase.from('providers').select('name, logo_url, is_top_provider').then(({ data }) => {
+    supabase.from('providers').select('name, logo_url, is_top_provider, slug').then(({ data }) => {
       if (data) {
         setDbProviderNames(new Set(data.map((p: any) => p.name)));
-        const map = new Map<string, { logo_url: string | null; is_top_provider?: boolean }>();
-        data.forEach((p: any) => map.set(p.name, { logo_url: p.logo_url, is_top_provider: p.is_top_provider }));
+        const map = new Map<string, { logo_url: string | null; is_top_provider?: boolean; slug?: string }>();
+        data.forEach((p: any) => map.set(p.name, { logo_url: p.logo_url, is_top_provider: p.is_top_provider, slug: p.slug }));
         setDbProviders(map);
       }
     });
