@@ -1,0 +1,3 @@
+ALTER TABLE public.support_requests 
+ADD COLUMN IF NOT EXISTS query TEXT,
+ADD COLUMN IF NOT EXISTS context TEXT;
