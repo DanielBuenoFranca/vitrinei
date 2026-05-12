@@ -333,7 +333,15 @@ const Landing = () => {
 
   const toggleProviderFilter = (name: string) => {
     setActiveProvidersFilter(prev => {
-      const next = prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name];
+      const isAlreadyActive = prev.includes(name);
+      const next = isAlreadyActive ? prev.filter(n => n !== name) : [...prev, name];
+      
+      // Se estamos ativando um filtro de prestador e ainda não houve busca, "forçamos" a visualização de resultados
+      if (!isAlreadyActive && !searchExecuted) {
+        setSearchExecuted(true);
+        setExecutedQuery(''); // Mantém query vazia para mostrar tudo do prestador
+      }
+      
       return next;
     });
   };
