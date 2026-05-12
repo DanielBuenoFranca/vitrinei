@@ -918,7 +918,7 @@ const Landing = () => {
                     </div>
                   );
                 })()}
-                {noResults && (
+                {isForceSupport && (
                   <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
                     <Card className="border-2 border-violet-500/30 bg-violet-950/20 backdrop-blur-xl shadow-2xl overflow-hidden rounded-3xl">
                       <CardContent className="p-6 text-center space-y-4">
