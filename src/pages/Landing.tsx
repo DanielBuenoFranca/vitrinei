@@ -734,12 +734,6 @@ const Landing = () => {
                             <ChevronRight className="w-3 h-3" /> {filteredResults.length} itens
                           </span>
                         </button>
-                      ) : servicesCarouselOpen && filteredResults.length > 2 ? (
-                        <ScrollableRow>
-                          {filteredResults.map((r, i) => (
-                            <div key={r.id} className="snap-start shrink-0 w-[120px]">{renderCard(r, i)}</div>
-                          ))}
-                        </ScrollableRow>
                       ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                           {filteredResults.map((r, i) => renderCard(r, i))}
@@ -750,8 +744,8 @@ const Landing = () => {
                 })()}
 
                 {/* === MARKETPLACE: PRODUTOS === */}
-                {hasResults && !noResults && searchResult.products.length > 0 && (() => {
-                  const useStack = searchResult.products.length > 2 && !productsCarouselOpen;
+                {hasResults && !noResults && filteredProducts.length > 0 && (() => {
+                  const useStack = filteredProducts.length > 2 && !productsCarouselOpen;
                   const renderCard = (product: any, idx: number) => {
                     const PIcon = getVisualIcon(product.name);
                     const inCart = isInProductCart(product.id);
@@ -808,9 +802,9 @@ const Landing = () => {
                     <div>
                       <div className="flex items-center justify-between mb-1.5 px-1">
                         <h3 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-white/55 flex items-center gap-1.5">
-                          <ShoppingBag className="w-3 h-3 text-emerald-300/80" /> Produtos ({searchResult.products.length})
+                          <ShoppingBag className="w-3 h-3 text-emerald-300/80" /> Produtos ({filteredProducts.length})
                         </h3>
-                        {searchResult.products.length > 2 && (
+                        {filteredProducts.length > 2 && (
                           <button
                             onClick={() => setProductsCarouselOpen(v => !v)}
                             className="flex items-center gap-1 rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[10px] text-white/75 hover:bg-white/10"
@@ -827,7 +821,7 @@ const Landing = () => {
                           className="relative block w-full h-[130px] mx-auto"
                           aria-label="Abrir carrossel de produtos"
                         >
-                          {searchResult.products.slice(0, 3).map((p, i) => (
+                          {filteredProducts.slice(0, 3).map((p, i) => (
                             <div
                               key={p.id}
                               className="absolute left-1/2 top-0 w-[120px] rounded-2xl shadow-2xl"
@@ -842,18 +836,12 @@ const Landing = () => {
                             </div>
                           ))}
                           <span className="absolute bottom-0 right-2 z-20 flex items-center gap-1 rounded-full bg-emerald-600/90 px-2.5 py-1 text-[10px] font-bold text-white shadow-lg backdrop-blur-sm">
-                            <ChevronRight className="w-3 h-3" /> {searchResult.products.length} itens
+                            <ChevronRight className="w-3 h-3" /> {filteredProducts.length} itens
                           </span>
                         </button>
-                      ) : productsCarouselOpen && searchResult.products.length > 2 ? (
-                        <ScrollableRow>
-                          {searchResult.products.map((p, i) => (
-                            <div key={p.id} className="snap-start shrink-0 w-[120px]">{renderCard(p, i)}</div>
-                          ))}
-                        </ScrollableRow>
                       ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                          {searchResult.products.map((p, i) => renderCard(p, i))}
+                          {filteredProducts.map((p, i) => renderCard(p, i))}
                         </div>
                       )}
                     </div>
