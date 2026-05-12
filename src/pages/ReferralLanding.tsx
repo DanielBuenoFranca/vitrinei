@@ -22,38 +22,10 @@ const ReferralLanding = () => {
 
   useEffect(() => {
     if (!code) return;
-    const fetchData = async () => {
-      // Fetch referral to get referrer_id
-      const { data: refData } = await supabase
-        .from('referrals')
-        .select('referrer_id')
-        .eq('referral_code', code)
-        .limit(1)
-        .maybeSingle();
-
-      if (refData?.referrer_id) {
-        const { data: name } = await (supabase.rpc as any)('get_public_display_name', { _user_id: refData.referrer_id });
-        if (name) setReferrerName(name as string);
-      }
-
-      // Fetch active campaign
-      const { data: campData } = await supabase
-        .from('referral_campaigns')
-        .select('*')
-        .eq('is_active', true)
-        .limit(1)
-        .maybeSingle();
-      if (campData) {
-        setCampaign({
-          reward_buyer: Number(campData.reward_buyer),
-          reward_seller: Number(campData.reward_seller),
-          reward_mixed_total: Number(campData.reward_mixed_total),
-        });
-      }
-      setLoading(false);
-    };
-    fetchData();
-  }, [code]);
+    // Redirect direct to auth page as requested for better flow
+    localStorage.setItem('ecomei_ref', code);
+    navigate(`/auth?tab=signup&ref=${code}`, { replace: true });
+  }, [code, navigate]);
 
   const handleSignup = () => {
     localStorage.setItem('ecomei_ref', code || '');

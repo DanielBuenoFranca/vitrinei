@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useConversion } from '@/contexts/ConversionContext';
 import { Input } from '@/components/ui/input';
@@ -74,6 +75,8 @@ const AuthPage = () => {
   const [loading, setLoading] = useState(false);
   const [resetMode, setResetMode] = useState(false);
   const [refCode, setRefCode] = useState('');
+  const [referrerName, setReferrerName] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('login');
   const [selectedProfile, setSelectedProfile] = useState<string>('');
   const [selectedPlan, setSelectedPlan] = useState<string>('bronze');
   const { activePlans: plans } = useSubscriptionPlans();
@@ -96,12 +99,35 @@ const AuthPage = () => {
   const [activationInput, setActivationInput] = useState('');
 
   useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'signup' || tabParam === 'register') {
+      setActiveTab('signup');
+    } else {
+      setActiveTab('login');
+    }
+
     const urlRef = searchParams.get('ref') || '';
     const storedRef = localStorage.getItem('ecomei_ref') || '';
     const code = urlRef || storedRef;
     if (code) {
       setRefCode(code);
       localStorage.setItem('ecomei_ref', code);
+      
+      // Fetch referrer name
+      const fetchReferrer = async () => {
+        const { data: refData } = await supabase
+          .from('referrals')
+          .select('referrer_id')
+          .eq('referral_code', code)
+          .limit(1)
+          .maybeSingle();
+
+        if (refData?.referrer_id) {
+          const { data: rName } = await (supabase.rpc as any)('get_public_display_name', { _user_id: refData.referrer_id });
+          if (rName) setReferrerName(rName as string);
+        }
+      };
+      fetchReferrer();
     }
   }, [searchParams]);
 
@@ -463,7 +489,7 @@ const AuthPage = () => {
           <div className="flex-1 h-px bg-border" />
         </div>
 
-        <Tabs defaultValue="login">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="w-full">
             <TabsTrigger value="login" className="flex-1">Entrar</TabsTrigger>
             <TabsTrigger value="signup" className="flex-1">Cadastrar</TabsTrigger>
@@ -492,6 +518,27 @@ const AuthPage = () => {
           </TabsContent>
 
           <TabsContent value="signup" className="space-y-3 mt-3">
+            {referrerName && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }} 
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-primary/5 border border-primary/20 rounded-xl p-3 mb-2 flex items-center gap-3 relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-full -mr-8 -mt-8" />
+                <div className="bg-primary/10 p-2 rounded-full relative z-10">
+                  <Gift className="w-5 h-5 text-primary" />
+                </div>
+                <div className="relative z-10">
+                  <p className="text-[10px] text-primary/70 font-medium uppercase tracking-wider">Você foi indicado por</p>
+                  <p className="text-sm font-bold text-foreground">{referrerName}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Complete seu cadastro para ativar seus benefícios exclusivos.</p>
+                </div>
+                <Badge variant="outline" className="ml-auto bg-background text-[10px] border-primary/20 text-primary relative z-10">
+                  Bônus Ativo
+                </Badge>
+              </motion.div>
+            )}
+
             <div className="space-y-2">
               <Label className="text-xs">Nome</Label>
               <div className="relative">

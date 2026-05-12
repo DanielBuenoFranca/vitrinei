@@ -168,7 +168,7 @@ const WalletPage = () => {
       setTimeout(() => {
         // Find existing referral code or use current state
         const code = referralCode || user.id.slice(0, 8).toUpperCase();
-        const link = `${window.location.origin}/convite/${code}`;
+        const link = `${window.location.origin}/auth?tab=signup&ref=${code}`;
         const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
         setShareModal({ open: true, link, expires });
         toast.info("Link de indicação 24h gerado!", {
@@ -364,7 +364,7 @@ const WalletPage = () => {
   };
 
   const copyReferralLink = () => {
-    const link = `${window.location.origin}/convite/${referralCode}`;
+    const link = `${window.location.origin}/auth?tab=signup&ref=${referralCode}`;
     navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -650,14 +650,14 @@ const WalletPage = () => {
               </p>
 
               <div className="flex gap-2">
-                <Input value={`${window.location.origin}/convite/${referralCode}`} readOnly className="text-xs" />
+                <Input value={`${window.location.origin}/auth?tab=signup&ref=${referralCode}`} readOnly className="text-xs" />
                 <Button variant="outline" size="sm" className="gap-1 shrink-0" onClick={copyReferralLink}>
                   {copied ? '✓' : <Copy className="w-3 h-3" />}
                 </Button>
               </div>
 
               <Button variant="outline" size="sm" className="w-full gap-1 text-xs"
-                onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`Conheça o Vitrinei! Cadastre-se pelo meu link:\n${window.location.origin}/convite/${referralCode}`)}`, '_blank')}>
+                onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`Conheça o Vitrinei! Cadastre-se pelo meu link:\n${window.location.origin}/auth?tab=signup&ref=${referralCode}`)}`, '_blank')}>
                 <Share2 className="w-3 h-3" /> Compartilhar no WhatsApp
               </Button>
 
@@ -669,7 +669,7 @@ const WalletPage = () => {
                     const { data, error } = await (supabase.rpc as any)('generate_referral_link_24h', { _referrer: user.id });
                     if (error) { toast.error(error.message); return; }
                     if (data?.error) { toast.error(data.error); return; }
-                    const link = `${window.location.origin}/convite/${data.token}`;
+                    const link = `${window.location.origin}/auth?tab=signup&ref=${data.token}`;
                     setShareModal({ open: true, link, expires: data.expires_at || null });
                     loadData();
                   }}>+ Gerar link 24h</Button>
@@ -685,7 +685,7 @@ const WalletPage = () => {
                         key={r.id}
                         type="button"
                         disabled={consumed || expired}
-                        onClick={() => setShareModal({ open: true, link: `${window.location.origin}/convite/${r.link_token}`, expires: r.expires_at })}
+                        onClick={() => setShareModal({ open: true, link: `${window.location.origin}/auth?tab=signup&ref=${r.link_token}`, expires: r.expires_at })}
                         className="w-full flex items-center justify-between text-[10px] py-1 border-b last:border-0 hover:bg-muted/40 px-1 rounded disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         <span className="truncate font-mono">{r.link_token?.slice(0, 12)}…</span>
