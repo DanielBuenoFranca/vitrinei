@@ -210,7 +210,7 @@ const Landing = () => {
     if (!q) return;
     void refineWithVini(q, { openPanel: false, autoApply: false });
   };
-    const text = raw.trim();
+    const refineWithVini = async (raw: string, options: { openPanel?: boolean; autoApply?: boolean } = {}) => {
     if (!text) return null;
     if (options.openPanel) setInlineAiOpen(true);
     setAiRefining(true);
