@@ -518,6 +518,25 @@ const AuthPage = () => {
           </TabsContent>
 
           <TabsContent value="signup" className="space-y-3 mt-3">
+            {referrerName && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }} 
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-primary/5 border border-primary/20 rounded-xl p-3 mb-2 flex items-center gap-3"
+              >
+                <div className="bg-primary/10 p-2 rounded-full">
+                  <Gift className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-primary/70 font-medium uppercase tracking-wider">Você foi indicado por</p>
+                  <p className="text-sm font-bold text-foreground">{referrerName}</p>
+                </div>
+                <Badge variant="outline" className="ml-auto bg-background text-[10px] border-primary/20 text-primary">
+                  Bônus Ativo
+                </Badge>
+              </motion.div>
+            )}
+
             <div className="space-y-2">
               <Label className="text-xs">Nome</Label>
               <div className="relative">
