@@ -142,16 +142,32 @@ const AuthPage = () => {
       
       // Fetch referrer name
       const fetchReferrer = async () => {
-        const { data: refData } = await supabase
-          .from('referrals')
-          .select('referrer_id')
-          .eq('referral_code', currentCode)
-          .limit(1)
-          .maybeSingle();
+        try {
+          const { data: refData } = await supabase
+            .from('referrals')
+            .select('referrer_id')
+            .eq('referral_code', currentCode)
+            .limit(1)
+            .maybeSingle();
 
-        if (refData?.referrer_id) {
-          const { data: rName } = await (supabase.rpc as any)('get_public_display_name', { _user_id: refData.referrer_id });
-          if (rName) setReferrerName(rName as string);
+          if (refData?.referrer_id) {
+            // Priority 1: Check profiles directly
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('display_name')
+              .eq('user_id', refData.referrer_id)
+              .maybeSingle();
+            
+            if (profile?.display_name) {
+              setReferrerName(profile.display_name);
+            } else {
+              // Priority 2: Try RPC as fallback
+              const { data: rName } = await (supabase.rpc as any)('get_public_display_name', { _user_id: refData.referrer_id });
+              if (rName) setReferrerName(rName as string);
+            }
+          }
+        } catch (err) {
+          console.error("Error fetching referrer:", err);
         }
       };
       fetchReferrer();
