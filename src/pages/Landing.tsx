@@ -110,7 +110,7 @@ const Landing = () => {
   const [typeFilter, setTypeFilter] = useState<'all' | 'service' | 'product'>('all');
   const [showAiPanel, setShowAiPanel] = useState(false);
   const [aiMessage, setAiMessage] = useState('');
-  const [aiChat, setAiChat] = useState<{ role: 'user' | 'ai'; text: string; searchResult?: SearchResult; contextualSuggestion?: ContextualSuggestion }[]>([]);
+  const [aiChat, setAiChat] = useState<{ role: 'user' | 'ai'; text: string; searchResult?: SearchResult; contextualSuggestion?: ContextualSuggestion; options?: { label: string; query: string }[] }[]>([]);
   const [inlineAiOpen, setInlineAiOpen] = useState(false);
   const [aiRefining, setAiRefining] = useState(false);
   const [aiRoute, setAiRoute] = useState<AiRoute | null>(null);
