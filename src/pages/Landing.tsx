@@ -386,7 +386,7 @@ const Landing = () => {
         explanation: supportExplanation,
         details: supportExplanation,
         context_analysis: `Análise Vini: Busca por "${executedQuery}" não retornou itens em estoque no momento.`
-      } as any);
+      });
 
       if (error) throw error;
 
@@ -399,7 +399,8 @@ const Landing = () => {
         summary, 
         type: 'both' 
       });
-      navigate(`/central-atendimento?${params.toString()}`);
+      // Removido o redirecionamento para a demo de simulação
+      // navigate(`/central-atendimento?${params.toString()}`);
     } catch (error: any) {
       console.error('Error sending support request:', error);
       toast.error('Erro ao enviar solicitação. Tente novamente.');
