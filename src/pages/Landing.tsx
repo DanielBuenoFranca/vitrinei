@@ -379,10 +379,12 @@ const Landing = () => {
     
     try {
       const { error } = await supabase.from('support_requests').insert({
-        user_id: user?.id,
+        user_id: user?.id || null,
+        requested_item: executedQuery,
         query: executedQuery,
         context: 'Busca Sem Resultados',
         explanation: supportExplanation,
+        details: supportExplanation,
         context_analysis: `Análise Vini: Busca por "${executedQuery}" não retornou itens em estoque no momento.`
       } as any);
 
