@@ -599,6 +599,7 @@ export type Database = {
           ranking_score: number
           rating: number
           segment: string[]
+          slug: string | null
           storefront_config: Json
           top_provider_since: string | null
           total_sales_rated: number
@@ -625,6 +626,7 @@ export type Database = {
           ranking_score?: number
           rating?: number
           segment: string[]
+          slug?: string | null
           storefront_config?: Json
           top_provider_since?: string | null
           total_sales_rated?: number
@@ -651,6 +653,7 @@ export type Database = {
           ranking_score?: number
           rating?: number
           segment?: string[]
+          slug?: string | null
           storefront_config?: Json
           top_provider_since?: string | null
           total_sales_rated?: number
@@ -1501,7 +1504,9 @@ export type Database = {
         Args: { _buyer_id: string; _kit_id: number; _quantity?: number }
         Returns: Json
       }
+      slugify: { Args: { "": string }; Returns: string }
       start_ai_savings_period: { Args: { _user_id?: string }; Returns: string }
+      unaccent: { Args: { "": string }; Returns: string }
       unaccent_safe: { Args: { _text: string }; Returns: string }
       vini_brain_register_hit: {
         Args: { p_pattern_id: string; p_success?: boolean }
