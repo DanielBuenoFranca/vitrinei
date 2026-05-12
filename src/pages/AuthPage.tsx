@@ -74,6 +74,8 @@ const AuthPage = () => {
   const [loading, setLoading] = useState(false);
   const [resetMode, setResetMode] = useState(false);
   const [refCode, setRefCode] = useState('');
+  const [referrerName, setReferrerName] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('login');
   const [selectedProfile, setSelectedProfile] = useState<string>('');
   const [selectedPlan, setSelectedPlan] = useState<string>('bronze');
   const { activePlans: plans } = useSubscriptionPlans();
@@ -96,12 +98,35 @@ const AuthPage = () => {
   const [activationInput, setActivationInput] = useState('');
 
   useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'signup' || tabParam === 'register') {
+      setActiveTab('signup');
+    } else {
+      setActiveTab('login');
+    }
+
     const urlRef = searchParams.get('ref') || '';
     const storedRef = localStorage.getItem('ecomei_ref') || '';
     const code = urlRef || storedRef;
     if (code) {
       setRefCode(code);
       localStorage.setItem('ecomei_ref', code);
+      
+      // Fetch referrer name
+      const fetchReferrer = async () => {
+        const { data: refData } = await supabase
+          .from('referrals')
+          .select('referrer_id')
+          .eq('referral_code', code)
+          .limit(1)
+          .maybeSingle();
+
+        if (refData?.referrer_id) {
+          const { data: rName } = await (supabase.rpc as any)('get_public_display_name', { _user_id: refData.referrer_id });
+          if (rName) setReferrerName(rName as string);
+        }
+      };
+      fetchReferrer();
     }
   }, [searchParams]);
 
