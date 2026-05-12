@@ -1530,7 +1530,7 @@ const ViniHome = () => {
                   setSupportDetails('');
                   pushBubble({
                     role: 'vini',
-                    text: `Prontinho! Já registrei sua necessidade de "${supportItem}" na nossa Central de Atendimento. Eles vão correr atrás disso para você e te avisamos em até 24h assim que tivermos novidades! 🚀`
+                    text: `Prontinho! Já registrei sua necessidade de "${supportItem}" na nossa Central de Atendimento. Eles vão buscar isso para você e te avisamos em até 24h assim que tivermos novidades! 🚀`
                   });
                 } catch (err) {
                   console.error('Error sending support request:', err);
