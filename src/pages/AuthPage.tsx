@@ -81,6 +81,7 @@ const AuthPage = () => {
   const [selectedPlan, setSelectedPlan] = useState<string>('bronze');
   const { activePlans: plans } = useSubscriptionPlans();
   const [campaignRewards, setCampaignRewards] = useState<{ buyer: number; seller: number; mixed: number } | null>(null);
+  const [isExempt, setIsExempt] = useState(false);
 
   useEffect(() => {
     supabase.from('referral_campaigns').select('reward_buyer,reward_seller,reward_mixed_total').eq('is_active', true).maybeSingle()
