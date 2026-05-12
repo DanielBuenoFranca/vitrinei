@@ -162,9 +162,12 @@ const Landing = () => {
     if (route.item_type === 'service') setTypeFilter('service');
     else if (route.item_type === 'product') setTypeFilter('product');
     else setTypeFilter('all');
+    
+    // Dispara a busca
     setExecutedQuery(nextQuery);
     setSearchExecuted(true);
     setSearchVersion(v => v + 1);
+    
     setInlineAiOpen(false);
     setAiRoute(route);
     updateAiSession({
@@ -285,6 +288,7 @@ const Landing = () => {
 
   const executeSearch = () => {
     const q = searchQuery.trim();
+    console.log('[Landing] executeSearch called for:', q);
 
     // Desmarca todos os filtros
     setActiveSegments([]);
@@ -308,8 +312,9 @@ const Landing = () => {
   };
 
   const handleSmartSearch = () => {
-    const q = searchQuery.trim();
+    console.log('[Landing] handleSmartSearch called');
     executeSearch();
+    const q = searchQuery.trim();
     if (!q) return;
     void refineWithVini(q, { openPanel: false, autoApply: false });
   };
@@ -388,6 +393,8 @@ const Landing = () => {
   const [supportExplanation, setSupportExplanation] = useState('');
   const [isSubmittingSupport, setIsSubmittingSupport] = useState(false);
   const [supportSent, setSupportSent] = useState(false);
+  const [isAiPanelExpanded, setIsAiPanelExpanded] = useState(false); // Adicionado se necessário, mas verificando se já existe logicamente
+
 
   const handleSendToCentral = async () => {
     if (isSubmittingSupport) return;
