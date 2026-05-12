@@ -322,7 +322,7 @@ export const naturalLanguageMap: {
     relevantServiceIds: [],
     relevantProductIds: [],
     needLabel: 'Café',
-    aiFollowUp: 'Identifiquei: **Café**. No momento não temos este item em estoque, mas nossa Central buscará para você.'
+    aiFollowUp: 'Identifiquei sua busca por **Café**. No momento não temos este item em estoque no hub, mas nossa Central de Atendimento já foi notificada para buscar o melhor fornecedor para você.'
   },
   {
     triggers: ['cerveja', 'cerveja gelada', 'comprar cerveja', 'chopp'],
@@ -330,7 +330,7 @@ export const naturalLanguageMap: {
     relevantServiceIds: [],
     relevantProductIds: [],
     needLabel: 'Cerveja',
-    aiFollowUp: 'Identifiquei: **Cerveja**. No momento não temos este item em estoque, mas nossa Central buscará para você.'
+    aiFollowUp: 'Identifiquei sua busca por **Cerveja**. No momento não temos este item em estoque no hub, mas nossa Central de Atendimento já foi notificada para buscar o melhor fornecedor para você.'
   },
   {
     triggers: ['plantar', 'horta', 'vaso', 'muda', 'semente', 'adubo', 'terra', 'fertilizante'],
@@ -1281,7 +1281,7 @@ function generateFollowUp(needLabel: string, productCount: number, serviceCount:
   if (serviceCount > 0) {
     return `Identifiquei: **${needLabel}**. Encontrei ${serviceCount} serviço(s) profissional(is) para você.`;
   }
-  return `Entendi sua necessidade! 🧠 Estou buscando as melhores opções...`;
+  return `Identifiquei sua busca por **${needLabel}**. No momento não temos este item em estoque no hub, mas nossa Central de Atendimento já foi notificada para buscar o melhor fornecedor para você.`;
 }
 
 /**
