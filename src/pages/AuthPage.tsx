@@ -548,10 +548,28 @@ const AuthPage = () => {
         </div>
 
         {refCode && activeTab === 'login' && (
-          <div className="flex items-center justify-center gap-2 p-2 rounded-lg bg-primary/10 border border-primary/20">
-            <Gift className="w-4 h-4 text-primary" />
-            <span className="text-xs text-foreground">Código de indicação: <strong>{refCode}</strong></span>
-            <Badge variant="secondary" className="text-[10px]">Bônus ativo</Badge>
+          <div className="flex flex-col gap-1 p-3 rounded-xl bg-primary/5 border border-primary/20 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex items-center gap-2">
+              <div className="bg-primary/10 p-1.5 rounded-full">
+                <Gift className="w-3.5 h-3.5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[10px] text-primary/70 font-medium uppercase tracking-wider leading-none">Indicação Ativa</p>
+                <p className="text-sm font-bold text-foreground mt-0.5">
+                  {referrerName || 'Consultor Vitrinei'}
+                </p>
+              </div>
+              <Badge variant="secondary" className="text-[9px] bg-primary/10 text-primary border-none">Bônus</Badge>
+            </div>
+            <div className="flex items-center justify-between mt-1 pt-1.5 border-t border-primary/10">
+              <span className="text-[10px] text-muted-foreground">Código: <strong className="text-foreground">{refCode}</strong></span>
+              {timeLeft && (
+                <span className="text-[10px] text-orange-600 font-medium flex items-center gap-1">
+                  <span className="w-1 h-1 rounded-full bg-orange-600 animate-pulse" />
+                  {timeLeft}
+                </span>
+              )}
+            </div>
           </div>
         )}
 
