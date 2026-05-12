@@ -481,7 +481,7 @@ const AuthPage = () => {
           <p className="text-sm text-muted-foreground mt-1">Acesse sua conta ou cadastre-se</p>
         </div>
 
-        {refCode && (
+        {refCode && activeTab === 'login' && (
           <div className="flex items-center justify-center gap-2 p-2 rounded-lg bg-primary/10 border border-primary/20">
             <Gift className="w-4 h-4 text-primary" />
             <span className="text-xs text-foreground">Código de indicação: <strong>{refCode}</strong></span>
