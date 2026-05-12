@@ -364,7 +364,7 @@ const WalletPage = () => {
   };
 
   const copyReferralLink = () => {
-    const link = `${window.location.origin}/convite/${referralCode}`;
+    const link = `${window.location.origin}/auth?tab=signup&ref=${referralCode}`;
     navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
