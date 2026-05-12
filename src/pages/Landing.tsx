@@ -517,9 +517,12 @@ const Landing = () => {
   // a busca instantaneamente, mesmo sem clicar em "Buscar".
   useEffect(() => {
     if (!dataLoaded) return;
-    setExecutedQuery(searchQuery.trim());
-    setSearchExecuted(true);
-    setSearchVersion((v) => v + 1);
+    const q = searchQuery.trim();
+    if (q) {
+      setExecutedQuery(q);
+      setSearchExecuted(true);
+      setSearchVersion((v) => v + 1);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSegments, typeFilter, dataLoaded]);
 
@@ -631,7 +634,10 @@ const Landing = () => {
   const hasResults = searchExecuted && (filteredResults.length > 0 || filteredProducts.length > 0);
   
   // No results logic: only true if both filtered lists are empty AND we are not in fallback mode
-  const noResults = (searchExecuted && (executedQuery || activeSegments.length > 0 || activeProvidersFilter.length > 0) && !fallbackToAll && filteredResults.length === 0 && filteredProducts.length === 0) || forceSupportParam;
+  const noResults = searchExecuted && (executedQuery || activeSegments.length > 0 || activeProvidersFilter.length > 0) && !fallbackToAll && filteredResults.length === 0 && filteredProducts.length === 0;
+  
+  // Se force_support vier na URL (vinda do Vini), forçamos o estado noResults
+  const isForceSupport = forceSupportParam || noResults;
   const providerEntries = (() => {
     const providerMap = new Map<string, { products: typeof filteredProducts; services: typeof filteredResults }>();
     filteredProducts.forEach(p => {
@@ -709,7 +715,7 @@ const Landing = () => {
                 {/* Bloco "Prestadores próximos" removido — substituído pela seção "Prestadores / Fornecedores" no hero. */}
 
                 {/* === MARKETPLACE: SERVIÇOS === */}
-                {hasResults && !noResults && filteredResults.length > 0 && (() => {
+                {hasResults && !isForceSupport && filteredResults.length > 0 && (() => {
                   const useStack = filteredResults.length > 2 && !servicesCarouselOpen;
                   const renderCard = (result: any, idx: number, extraClass = '') => {
                     const seg = getSegmentVisual(result.segment);
@@ -812,7 +818,7 @@ const Landing = () => {
                 })()}
 
                 {/* === MARKETPLACE: PRODUTOS === */}
-                {hasResults && !noResults && filteredProducts.length > 0 && (() => {
+                {hasResults && !isForceSupport && filteredProducts.length > 0 && (() => {
                   const useStack = filteredProducts.length > 2 && !productsCarouselOpen;
                   const renderCard = (product: any, idx: number) => {
                     const PIcon = getVisualIcon(product.name);
@@ -915,7 +921,7 @@ const Landing = () => {
                     </div>
                   );
                 })()}
-                {noResults && (
+                {isForceSupport && (
                   <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
                     <Card className="border-2 border-violet-500/30 bg-violet-950/20 backdrop-blur-xl shadow-2xl overflow-hidden rounded-3xl">
                       <CardContent className="p-6 text-center space-y-4">
