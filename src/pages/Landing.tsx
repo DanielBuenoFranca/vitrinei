@@ -610,6 +610,11 @@ const Landing = () => {
     } else if (typeFilter === 'product') {
       rawResult = { ...rawResult, services: [] };
     }
+    
+    // Regra da Central de Atendimento: se a busca retornou vazio ou o parâmetro force_support está presente
+    const isEmpty = (rawResult.products?.length || 0) === 0 && (rawResult.services?.length || 0) === 0;
+    const isNoResults = (searchExecuted && (executedQuery || activeSegments.length > 0 || activeProvidersFilter.length > 0) && !fallbackToAll && isEmpty) || forceSupportParam;
+
     if (didFallback !== fallbackToAll) {
       // Defer state update to avoid render loop warning
       queueMicrotask(() => setFallbackToAll(didFallback));
