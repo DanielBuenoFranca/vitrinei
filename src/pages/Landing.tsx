@@ -821,7 +821,7 @@ const Landing = () => {
                           className="relative block w-full h-[130px] mx-auto"
                           aria-label="Abrir carrossel de produtos"
                         >
-                          {searchResult.products.slice(0, 3).map((p, i) => (
+                          {filteredProducts.slice(0, 3).map((p, i) => (
                             <div
                               key={p.id}
                               className="absolute left-1/2 top-0 w-[120px] rounded-2xl shadow-2xl"
@@ -836,18 +836,12 @@ const Landing = () => {
                             </div>
                           ))}
                           <span className="absolute bottom-0 right-2 z-20 flex items-center gap-1 rounded-full bg-emerald-600/90 px-2.5 py-1 text-[10px] font-bold text-white shadow-lg backdrop-blur-sm">
-                            <ChevronRight className="w-3 h-3" /> {searchResult.products.length} itens
+                            <ChevronRight className="w-3 h-3" /> {filteredProducts.length} itens
                           </span>
                         </button>
-                      ) : productsCarouselOpen && searchResult.products.length > 2 ? (
-                        <ScrollableRow>
-                          {searchResult.products.map((p, i) => (
-                            <div key={p.id} className="snap-start shrink-0 w-[120px]">{renderCard(p, i)}</div>
-                          ))}
-                        </ScrollableRow>
                       ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                          {searchResult.products.map((p, i) => renderCard(p, i))}
+                          {filteredProducts.map((p, i) => renderCard(p, i))}
                         </div>
                       )}
                     </div>
