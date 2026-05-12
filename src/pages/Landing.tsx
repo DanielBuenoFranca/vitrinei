@@ -1855,7 +1855,7 @@ const Landing = () => {
             { label: 'Urgência', icon: Zap, onClick: () => navigate('/radar-urgencia') },
             { label: 'Favoritos', icon: Heart, onClick: () => setFavoritesOpen(true) },
             { label: 'Perfil', icon: Users, onClick: () => navigate(user ? '/carteira' : '/auth') },
-            { label: 'Indicação', icon: Sparkles, onClick: () => navigate('/convite/INDIQUE') },
+            { label: 'Indicação', icon: Sparkles, onClick: () => navigate('/auth?tab=signup&ref=INDIQUE') },
           ].map((btn) => (
             <button
               key={btn.label}
