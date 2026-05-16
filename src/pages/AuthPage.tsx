@@ -144,6 +144,7 @@ const AuthPage = () => {
       localStorage.setItem('ecomei_ref', currentCode);
       
       const fetchReferrer = async () => {
+        setLoadingReferrer(true);
         try {
           const { data, error } = await supabase
             .from('referrals')
@@ -153,6 +154,7 @@ const AuthPage = () => {
           
           if (error) {
             console.error("Error fetching referral record:", error);
+            setLoadingReferrer(false);
             return;
           }
 
@@ -171,6 +173,8 @@ const AuthPage = () => {
           }
         } catch (err) {
           console.error("Error in fetchReferrer:", err);
+        } finally {
+          setLoadingReferrer(false);
         }
       };
       fetchReferrer();
