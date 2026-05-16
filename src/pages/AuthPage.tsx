@@ -561,27 +561,35 @@ const AuthPage = () => {
           <p className="text-sm text-muted-foreground mt-1">Acesse sua conta ou cadastre-se</p>
         </div>
 
-        {refCode && activeTab === 'login' && (
-          <div className="flex flex-col gap-1 p-3 rounded-xl bg-primary/5 border border-primary/20 animate-in fade-in slide-in-from-top-2 duration-300">
-            <div className="flex items-center gap-2">
-              <div className="bg-primary/10 p-1.5 rounded-full">
-                <Gift className="w-3.5 h-3.5 text-primary" />
+        {refCode && (
+          <div className="flex flex-col gap-1.5 p-3.5 rounded-xl bg-primary/5 border border-primary/20 animate-in fade-in slide-in-from-top-2 duration-300 shadow-sm relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-12 -mt-12" />
+            
+            <div className="flex items-center gap-3 relative z-10">
+              <div className="bg-primary/10 p-2 rounded-full ring-4 ring-primary/5">
+                <Gift className="w-4 h-4 text-primary" />
               </div>
               <div className="flex-1">
-                <p className="text-[10px] text-primary/70 font-medium uppercase tracking-wider leading-none">Indicação Ativa</p>
-                <p className="text-sm font-bold text-foreground mt-0.5">
-                  {referrerName || 'Consultor Vitrinei'}
+                <p className="text-[10px] text-primary/70 font-semibold uppercase tracking-wider leading-none mb-1">Indicado por</p>
+                <p className="text-base font-bold text-foreground tracking-tight">
+                  {referrerName || (loading ? 'Carregando...' : 'Consultor Vitrinei')}
                 </p>
               </div>
-              <Badge variant="secondary" className="text-[9px] bg-primary/10 text-primary border-none">Bônus</Badge>
+              <Badge variant="secondary" className="text-[9px] bg-primary/20 text-primary border-none font-bold">BÔNUS ATIVO</Badge>
             </div>
-            <div className="flex items-center justify-between mt-1 pt-1.5 border-t border-primary/10">
-              <span className="text-[10px] text-muted-foreground">Código: <strong className="text-foreground">{refCode}</strong></span>
+            
+            <div className="flex items-center justify-between mt-1 pt-2 border-t border-primary/10 relative z-10">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-muted-foreground font-medium">Código:</span>
+                <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-mono font-bold">{refCode}</span>
+              </div>
               {timeLeft && (
-                <span className="text-[10px] text-orange-600 font-medium flex items-center gap-1">
-                  <span className="w-1 h-1 rounded-full bg-orange-600 animate-pulse" />
-                  {timeLeft}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${timeLeft === 'Expirado' ? 'bg-destructive' : 'bg-orange-500'}`} />
+                  <span className={`text-[10px] font-bold ${timeLeft === 'Expirado' ? 'text-destructive' : 'text-orange-600'}`}>
+                    {timeLeft === 'Expirado' ? 'LINK EXPIRADO' : `EXPIRA EM: ${timeLeft}`}
+                  </span>
+                </div>
               )}
             </div>
           </div>
