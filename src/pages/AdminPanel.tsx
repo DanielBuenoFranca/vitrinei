@@ -512,7 +512,7 @@ const AdminPanel = () => {
           toast.error('Erro: ' + errorMsg);
         }
       } else {
-        toast.success(`Senha redefinida com sucesso para ${resetPwdDialog.userName}.`);
+        toast.success(`Senha redefinida! O usuário deve usar o código "${resetPwdValue}" para logar.`);
         setResetPwdDialog({ open: false, userId: '', userName: '' });
         setResetPwdValue('');
       }
