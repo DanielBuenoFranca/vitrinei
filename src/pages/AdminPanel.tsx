@@ -1364,7 +1364,11 @@ const AdminPanel = () => {
                                     <Pencil className="h-4 w-4" />
                                   </Button>
                                   <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-600 hover:text-amber-700" title="Redefinir senha"
-                                    onClick={() => { setResetPwdDialog({ open: true, userId: profile.user_id, userName: profile.display_name || 'Usuário' }); setResetPwdValue(''); }}>
+                                    onClick={() => { 
+                                      const randomCode = Math.random().toString(36).slice(-8).toUpperCase();
+                                      setResetPwdDialog({ open: true, userId: profile.user_id, userName: profile.display_name || 'Usuário' }); 
+                                      setResetPwdValue(randomCode); 
+                                    }}>
                                     <KeyRound className="h-4 w-4" />
                                   </Button>
                                   <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteUserProfile(profile.user_id)}>
