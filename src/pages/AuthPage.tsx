@@ -577,7 +577,7 @@ const AuthPage = () => {
               <div className="flex-1">
                 <p className="text-[10px] text-primary/70 font-semibold uppercase tracking-wider leading-none mb-1">Indicado por</p>
                 <p className="text-base font-bold text-foreground tracking-tight">
-                  {referrerName || (loading ? 'Carregando...' : 'Consultor Vitrinei')}
+                  {referrerName || (loadingReferrer ? 'Carregando...' : 'Consultor Vitrinei')}
                 </p>
               </div>
               <Badge variant="secondary" className="text-[9px] bg-primary/20 text-primary border-none font-bold">BÔNUS ATIVO</Badge>
