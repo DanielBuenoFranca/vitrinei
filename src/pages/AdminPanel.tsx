@@ -1857,7 +1857,7 @@ const AdminPanel = () => {
                   }}
                   title="Copiar código"
                 >
-                  <FileSpreadsheet className="h-4 w-4" />
+                  <Copy className="h-4 w-4" />
                 </Button>
               </div>
               <p className="text-[10px] text-muted-foreground text-center">
