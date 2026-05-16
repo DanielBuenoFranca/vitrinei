@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle, Megaphone, Mail, Gift, CheckCircle, KeyRound, BarChart3, ImageOff, TrendingUp as TrendingUpIcon, LifeBuoy } from 'lucide-react';
+import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle, Megaphone, Mail, Gift, CheckCircle, KeyRound, BarChart3, ImageOff, TrendingUp as TrendingUpIcon, LifeBuoy, Copy } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { UserForm } from '@/components/admin/UserForm';
@@ -512,7 +512,7 @@ const AdminPanel = () => {
           toast.error('Erro: ' + errorMsg);
         }
       } else {
-        toast.success(`Senha redefinida com sucesso para ${resetPwdDialog.userName}.`);
+        toast.success(`Senha redefinida! O usuário deve usar o código "${resetPwdValue}" para logar.`);
         setResetPwdDialog({ open: false, userId: '', userName: '' });
         setResetPwdValue('');
       }
@@ -1364,7 +1364,11 @@ const AdminPanel = () => {
                                     <Pencil className="h-4 w-4" />
                                   </Button>
                                   <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-600 hover:text-amber-700" title="Redefinir senha"
-                                    onClick={() => { setResetPwdDialog({ open: true, userId: profile.user_id, userName: profile.display_name || 'Usuário' }); setResetPwdValue(''); }}>
+                                    onClick={() => { 
+                                      const randomCode = Math.random().toString(36).slice(-8).toUpperCase();
+                                      setResetPwdDialog({ open: true, userId: profile.user_id, userName: profile.display_name || 'Usuário' }); 
+                                      setResetPwdValue(randomCode); 
+                                    }}>
                                     <KeyRound className="h-4 w-4" />
                                   </Button>
                                   <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteUserProfile(profile.user_id)}>
@@ -1831,13 +1835,34 @@ const AdminPanel = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5" /> Redefinir Senha</DialogTitle>
             <DialogDescription>
-              Defina uma senha temporária para <strong>{resetPwdDialog.userName}</strong>. Ao fazer login, o usuário será obrigado a criar uma nova senha.
+              Um código temporário foi gerado para <strong>{resetPwdDialog.userName}</strong>. Ao fazer login com este código, o usuário será redirecionado para criar uma nova senha definitiva.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 py-2">
-            <div className="space-y-1.5">
-              <Label>Senha Temporária</Label>
-              <Input type="text" placeholder="Mínimo 6 caracteres" value={resetPwdValue} onChange={e => setResetPwdValue(e.target.value)} />
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Código / Senha Temporária</Label>
+              <div className="flex gap-2">
+                <Input 
+                  type="text" 
+                  value={resetPwdValue} 
+                  onChange={e => setResetPwdValue(e.target.value)}
+                  className="font-mono text-lg font-bold text-center tracking-wider"
+                />
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={() => {
+                    navigator.clipboard.writeText(resetPwdValue);
+                    toast.success('Código copiado!');
+                  }}
+                  title="Copiar código"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground text-center">
+                Compartilhe este código com o usuário para o primeiro acesso.
+              </p>
             </div>
           </div>
           <DialogFooter>
