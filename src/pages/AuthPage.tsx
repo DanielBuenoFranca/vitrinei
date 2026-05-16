@@ -649,30 +649,37 @@ const AuthPage = () => {
               <Label className="text-xs">Telefone</Label>
               <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(11) 99999-9999" />
             </div>
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs flex items-center gap-1.5">
-                  CPF / CNPJ
-                  {!isExempt && <span className="text-destructive">*</span>}
-                </Label>
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between bg-muted/30 p-2 rounded-lg border border-border/50">
+                <div className="space-y-0.5">
+                  <Label className="text-xs font-bold flex items-center gap-1.5">
+                    Documento (CPF/CNPJ)
+                    {!isExempt && <span className="text-destructive">*</span>}
+                  </Label>
+                  <p className="text-[10px] text-muted-foreground">Obrigatório para prestadores</p>
+                </div>
+                
                 <div 
-                  className={`flex items-center gap-1.5 px-2 py-1 rounded-full cursor-pointer transition-all border ${
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full cursor-pointer transition-all border shadow-sm ${
                     isExempt 
-                      ? 'bg-orange-50 border-orange-200 text-orange-700 shadow-sm' 
-                      : 'bg-muted/50 border-transparent text-muted-foreground hover:bg-muted'
+                      ? 'bg-orange-500 border-orange-600 text-white ring-2 ring-orange-200' 
+                      : 'bg-white border-border text-muted-foreground hover:bg-muted/50'
                   }`}
                   onClick={() => {
                     const nextVal = !isExempt;
                     setIsExempt(nextVal);
-                    if (nextVal) setCpfCnpj('');
+                    if (nextVal) {
+                      setCpfCnpj('');
+                      setCpfCheckState('idle');
+                    }
                   }}
                 >
-                  <div className={`w-3 h-3 rounded-full border flex items-center justify-center transition-colors ${
-                    isExempt ? 'bg-orange-500 border-orange-500' : 'bg-white border-muted-foreground/30'
+                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
+                    isExempt ? 'bg-white border-white' : 'bg-muted/20 border-muted-foreground/30'
                   }`}>
-                    {isExempt && <Check className="w-2 h-2 text-white stroke-[4]" />}
+                    {isExempt && <Check className="w-2.5 h-2.5 text-orange-600 stroke-[4]" />}
                   </div>
-                  <span className="text-[10px] font-bold uppercase tracking-tight">Isento</span>
+                  <span className="text-[11px] font-black uppercase tracking-wider">Isento</span>
                 </div>
               </div>
               {!isExempt ? (
