@@ -1835,13 +1835,34 @@ const AdminPanel = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5" /> Redefinir Senha</DialogTitle>
             <DialogDescription>
-              Defina uma senha temporária para <strong>{resetPwdDialog.userName}</strong>. Ao fazer login, o usuário será obrigado a criar uma nova senha.
+              Um código temporário foi gerado para <strong>{resetPwdDialog.userName}</strong>. Ao fazer login com este código, o usuário será redirecionado para criar uma nova senha definitiva.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 py-2">
-            <div className="space-y-1.5">
-              <Label>Senha Temporária</Label>
-              <Input type="text" placeholder="Mínimo 6 caracteres" value={resetPwdValue} onChange={e => setResetPwdValue(e.target.value)} />
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Código / Senha Temporária</Label>
+              <div className="flex gap-2">
+                <Input 
+                  type="text" 
+                  value={resetPwdValue} 
+                  onChange={e => setResetPwdValue(e.target.value)}
+                  className="font-mono text-lg font-bold text-center tracking-wider"
+                />
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={() => {
+                    navigator.clipboard.writeText(resetPwdValue);
+                    toast.success('Código copiado!');
+                  }}
+                  title="Copiar código"
+                >
+                  <FileSpreadsheet className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground text-center">
+                Compartilhe este código com o usuário para o primeiro acesso.
+              </p>
             </div>
           </div>
           <DialogFooter>
