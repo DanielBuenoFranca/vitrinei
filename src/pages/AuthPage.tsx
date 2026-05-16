@@ -76,6 +76,7 @@ const AuthPage = () => {
   const [resetMode, setResetMode] = useState(false);
   const [refCode, setRefCode] = useState('');
   const [referrerName, setReferrerName] = useState<string | null>(null);
+  const [loadingReferrer, setLoadingReferrer] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
   const [selectedProfile, setSelectedProfile] = useState<string>('');
   const [selectedPlan, setSelectedPlan] = useState<string>('bronze');
