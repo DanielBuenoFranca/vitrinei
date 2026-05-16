@@ -779,50 +779,8 @@ const AuthPage = () => {
               </div>
             </div>
 
-            {refCode && (
-              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Gift className="w-4 h-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Você foi indicado por:</p>
-                      <p className="text-sm font-bold text-primary leading-tight">{referrerName || 'Consultor Vitrinei'}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-mono">
-                          {refCode}
-                        </span>
-                        {timeLeft && (
-                          <span className="text-[9px] text-orange-600 font-medium flex items-center gap-1">
-                            <span className="w-1 h-1 rounded-full bg-orange-600 animate-pulse" />
-                            Expira em: {timeLeft}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="text-[9px] font-bold text-primary border-primary/20 bg-white/50">Bônus Ativo</Badge>
-                </div>
-                
-                {campaignRewards && (
-                  <div className="pt-2 border-t border-primary/10 grid grid-cols-3 gap-1">
-                    <div className="text-center">
-                      <p className="text-[9px] text-muted-foreground">Comprador</p>
-                      <p className="text-[10px] font-bold text-primary">R$ {campaignRewards.buyer.toFixed(2)}</p>
-                    </div>
-                    <div className="text-center border-x border-primary/10">
-                      <p className="text-[9px] text-muted-foreground">Prestador</p>
-                      <p className="text-[10px] font-bold text-primary">R$ {campaignRewards.seller.toFixed(2)}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[9px] text-muted-foreground">Misto</p>
-                      <p className="text-[10px] font-bold text-primary">R$ {campaignRewards.mixed.toFixed(2)}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Redundant info removed */}
+
 
             <Button className="w-full" onClick={handleSignup} disabled={loading}>
               {loading ? 'Cadastrando...' : 'Criar Conta'}
