@@ -635,26 +635,8 @@ const AuthPage = () => {
           </TabsContent>
 
           <TabsContent value="signup" className="space-y-3 mt-3">
-            {referrerName && (
-              <motion.div 
-                initial={{ opacity: 0, y: -10 }} 
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-primary/5 border border-primary/20 rounded-xl p-3 mb-2 flex items-center gap-3 relative overflow-hidden"
-              >
-                <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-full -mr-8 -mt-8" />
-                <div className="bg-primary/10 p-2 rounded-full relative z-10">
-                  <Gift className="w-5 h-5 text-primary" />
-                </div>
-                <div className="relative z-10">
-                  <p className="text-[10px] text-primary/70 font-medium uppercase tracking-wider">Você foi indicado por</p>
-                  <p className="text-sm font-bold text-foreground">{referrerName}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">Complete seu cadastro para ativar seus benefícios exclusivos.</p>
-                </div>
-                <Badge variant="outline" className="ml-auto bg-background text-[10px] border-primary/20 text-primary relative z-10">
-                  Bônus Ativo
-                </Badge>
-              </motion.div>
-            )}
+            {/* Redundant indicator removed as it is now above the tabs */}
+
 
             <div className="space-y-2">
               <Label className="text-xs">Nome</Label>
