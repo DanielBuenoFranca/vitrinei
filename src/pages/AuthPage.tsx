@@ -76,6 +76,7 @@ const AuthPage = () => {
   const [resetMode, setResetMode] = useState(false);
   const [refCode, setRefCode] = useState('');
   const [referrerName, setReferrerName] = useState<string | null>(null);
+  const [loadingReferrer, setLoadingReferrer] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
   const [selectedProfile, setSelectedProfile] = useState<string>('');
   const [selectedPlan, setSelectedPlan] = useState<string>('bronze');
@@ -143,6 +144,7 @@ const AuthPage = () => {
       localStorage.setItem('ecomei_ref', currentCode);
       
       const fetchReferrer = async () => {
+        setLoadingReferrer(true);
         try {
           const { data, error } = await supabase
             .from('referrals')
@@ -152,6 +154,7 @@ const AuthPage = () => {
           
           if (error) {
             console.error("Error fetching referral record:", error);
+            setLoadingReferrer(false);
             return;
           }
 
@@ -170,6 +173,8 @@ const AuthPage = () => {
           }
         } catch (err) {
           console.error("Error in fetchReferrer:", err);
+        } finally {
+          setLoadingReferrer(false);
         }
       };
       fetchReferrer();
@@ -561,27 +566,35 @@ const AuthPage = () => {
           <p className="text-sm text-muted-foreground mt-1">Acesse sua conta ou cadastre-se</p>
         </div>
 
-        {refCode && activeTab === 'login' && (
-          <div className="flex flex-col gap-1 p-3 rounded-xl bg-primary/5 border border-primary/20 animate-in fade-in slide-in-from-top-2 duration-300">
-            <div className="flex items-center gap-2">
-              <div className="bg-primary/10 p-1.5 rounded-full">
-                <Gift className="w-3.5 h-3.5 text-primary" />
+        {refCode && (
+          <div className="flex flex-col gap-1.5 p-3.5 rounded-xl bg-primary/5 border border-primary/20 animate-in fade-in slide-in-from-top-2 duration-300 shadow-sm relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-12 -mt-12" />
+            
+            <div className="flex items-center gap-3 relative z-10">
+              <div className="bg-primary/10 p-2 rounded-full ring-4 ring-primary/5">
+                <Gift className="w-4 h-4 text-primary" />
               </div>
               <div className="flex-1">
-                <p className="text-[10px] text-primary/70 font-medium uppercase tracking-wider leading-none">Indicação Ativa</p>
-                <p className="text-sm font-bold text-foreground mt-0.5">
-                  {referrerName || 'Consultor Vitrinei'}
+                <p className="text-[10px] text-primary/70 font-semibold uppercase tracking-wider leading-none mb-1">Indicado por</p>
+                <p className="text-base font-bold text-foreground tracking-tight">
+                  {referrerName || (loadingReferrer ? 'Carregando...' : 'Consultor Vitrinei')}
                 </p>
               </div>
-              <Badge variant="secondary" className="text-[9px] bg-primary/10 text-primary border-none">Bônus</Badge>
+              <Badge variant="secondary" className="text-[9px] bg-primary/20 text-primary border-none font-bold">BÔNUS ATIVO</Badge>
             </div>
-            <div className="flex items-center justify-between mt-1 pt-1.5 border-t border-primary/10">
-              <span className="text-[10px] text-muted-foreground">Código: <strong className="text-foreground">{refCode}</strong></span>
+            
+            <div className="flex items-center justify-between mt-1 pt-2 border-t border-primary/10 relative z-10">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-muted-foreground font-medium">Código:</span>
+                <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-mono font-bold">{refCode}</span>
+              </div>
               {timeLeft && (
-                <span className="text-[10px] text-orange-600 font-medium flex items-center gap-1">
-                  <span className="w-1 h-1 rounded-full bg-orange-600 animate-pulse" />
-                  {timeLeft}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${timeLeft === 'Expirado' ? 'bg-destructive' : 'bg-orange-500'}`} />
+                  <span className={`text-[10px] font-bold ${timeLeft === 'Expirado' ? 'text-destructive' : 'text-orange-600'}`}>
+                    {timeLeft === 'Expirado' ? 'LINK EXPIRADO' : `EXPIRA EM: ${timeLeft}`}
+                  </span>
+                </div>
               )}
             </div>
           </div>
@@ -627,26 +640,8 @@ const AuthPage = () => {
           </TabsContent>
 
           <TabsContent value="signup" className="space-y-3 mt-3">
-            {referrerName && (
-              <motion.div 
-                initial={{ opacity: 0, y: -10 }} 
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-primary/5 border border-primary/20 rounded-xl p-3 mb-2 flex items-center gap-3 relative overflow-hidden"
-              >
-                <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-full -mr-8 -mt-8" />
-                <div className="bg-primary/10 p-2 rounded-full relative z-10">
-                  <Gift className="w-5 h-5 text-primary" />
-                </div>
-                <div className="relative z-10">
-                  <p className="text-[10px] text-primary/70 font-medium uppercase tracking-wider">Você foi indicado por</p>
-                  <p className="text-sm font-bold text-foreground">{referrerName}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">Complete seu cadastro para ativar seus benefícios exclusivos.</p>
-                </div>
-                <Badge variant="outline" className="ml-auto bg-background text-[10px] border-primary/20 text-primary relative z-10">
-                  Bônus Ativo
-                </Badge>
-              </motion.div>
-            )}
+            {/* Redundant indicator removed as it is now above the tabs */}
+
 
             <div className="space-y-2">
               <Label className="text-xs">Nome</Label>
@@ -659,30 +654,37 @@ const AuthPage = () => {
               <Label className="text-xs">Telefone</Label>
               <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(11) 99999-9999" />
             </div>
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs flex items-center gap-1.5">
-                  CPF / CNPJ
-                  {!isExempt && <span className="text-destructive">*</span>}
-                </Label>
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between bg-muted/30 p-2 rounded-lg border border-border/50">
+                <div className="space-y-0.5">
+                  <Label className="text-xs font-bold flex items-center gap-1.5">
+                    Documento (CPF/CNPJ)
+                    {!isExempt && <span className="text-destructive">*</span>}
+                  </Label>
+                  <p className="text-[10px] text-muted-foreground">Obrigatório para prestadores</p>
+                </div>
+                
                 <div 
-                  className={`flex items-center gap-1.5 px-2 py-1 rounded-full cursor-pointer transition-all border ${
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full cursor-pointer transition-all border shadow-sm ${
                     isExempt 
-                      ? 'bg-orange-50 border-orange-200 text-orange-700 shadow-sm' 
-                      : 'bg-muted/50 border-transparent text-muted-foreground hover:bg-muted'
+                      ? 'bg-orange-500 border-orange-600 text-white ring-2 ring-orange-200' 
+                      : 'bg-white border-border text-muted-foreground hover:bg-muted/50'
                   }`}
                   onClick={() => {
                     const nextVal = !isExempt;
                     setIsExempt(nextVal);
-                    if (nextVal) setCpfCnpj('');
+                    if (nextVal) {
+                      setCpfCnpj('');
+                      setCpfCheckState('idle');
+                    }
                   }}
                 >
-                  <div className={`w-3 h-3 rounded-full border flex items-center justify-center transition-colors ${
-                    isExempt ? 'bg-orange-500 border-orange-500' : 'bg-white border-muted-foreground/30'
+                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
+                    isExempt ? 'bg-white border-white' : 'bg-muted/20 border-muted-foreground/30'
                   }`}>
-                    {isExempt && <Check className="w-2 h-2 text-white stroke-[4]" />}
+                    {isExempt && <Check className="w-2.5 h-2.5 text-orange-600 stroke-[4]" />}
                   </div>
-                  <span className="text-[10px] font-bold uppercase tracking-tight">Isento</span>
+                  <span className="text-[11px] font-black uppercase tracking-wider">Isento</span>
                 </div>
               </div>
               {!isExempt ? (
@@ -789,50 +791,8 @@ const AuthPage = () => {
               </div>
             </div>
 
-            {refCode && (
-              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Gift className="w-4 h-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Você foi indicado por:</p>
-                      <p className="text-sm font-bold text-primary leading-tight">{referrerName || 'Consultor Vitrinei'}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-mono">
-                          {refCode}
-                        </span>
-                        {timeLeft && (
-                          <span className="text-[9px] text-orange-600 font-medium flex items-center gap-1">
-                            <span className="w-1 h-1 rounded-full bg-orange-600 animate-pulse" />
-                            Expira em: {timeLeft}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="text-[9px] font-bold text-primary border-primary/20 bg-white/50">Bônus Ativo</Badge>
-                </div>
-                
-                {campaignRewards && (
-                  <div className="pt-2 border-t border-primary/10 grid grid-cols-3 gap-1">
-                    <div className="text-center">
-                      <p className="text-[9px] text-muted-foreground">Comprador</p>
-                      <p className="text-[10px] font-bold text-primary">R$ {campaignRewards.buyer.toFixed(2)}</p>
-                    </div>
-                    <div className="text-center border-x border-primary/10">
-                      <p className="text-[9px] text-muted-foreground">Prestador</p>
-                      <p className="text-[10px] font-bold text-primary">R$ {campaignRewards.seller.toFixed(2)}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[9px] text-muted-foreground">Misto</p>
-                      <p className="text-[10px] font-bold text-primary">R$ {campaignRewards.mixed.toFixed(2)}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Redundant info removed */}
+
 
             <Button className="w-full" onClick={handleSignup} disabled={loading}>
               {loading ? 'Cadastrando...' : 'Criar Conta'}
