@@ -1498,7 +1498,10 @@ const AdminPanel = () => {
                   {/* Debtors list */}
                   {(() => {
                     const debtors = userWallets
-                      .filter(w => w.balance < 0)
+                      .filter(w => {
+                        const isMaster = userRoles.some(r => r.user_id === w.user_id && r.role === 'master');
+                        return w.balance < 0 && !isMaster;
+                      })
                       .map(w => {
                         const profile = userProfiles.find((p: any) => p.user_id === w.user_id);
                         const sub = userSubscriptions.find((s: any) => s.user_id === w.user_id);
@@ -1564,15 +1567,18 @@ const AdminPanel = () => {
                 </CardHeader>
                 <CardContent>
                   {(() => {
-                    const totalFloat = userWallets.filter(w => w.balance > 0).reduce((s, w) => s + w.balance, 0);
-                    const totalDebt = userWallets.filter(w => w.balance < 0).reduce((s, w) => s + Math.abs(w.balance), 0);
-                    const totalLocked = userWallets.reduce((s, w) => s + (w.locked_cashback || 0), 0);
-                    const totalPending = userWallets.reduce((s, w) => s + (w.pending_balance || 0), 0);
-                    const totalCreditUsed = userWallets.reduce((s, w) => s + (w.credit_used || 0), 0);
-                    const debtorsCount = userWallets.filter(w => w.balance < 0).length;
-                    const healthyCount = userWallets.filter(w => w.balance >= 0).length;
-                    const totalProviders = userProfiles.filter((p: any) => p.is_provider).length;
-                    const totalCustomers = userProfiles.filter((p: any) => p.is_customer).length;
+                    const regularWallets = userWallets.filter(w => !userRoles.some(r => r.user_id === w.user_id && r.role === 'master'));
+                    const regularProfiles = userProfiles.filter(p => !userRoles.some(r => r.user_id === (p.user_id || p.id) && r.role === 'master'));
+
+                    const totalFloat = regularWallets.filter(w => w.balance > 0).reduce((s, w) => s + w.balance, 0);
+                    const totalDebt = regularWallets.filter(w => w.balance < 0).reduce((s, w) => s + Math.abs(w.balance), 0);
+                    const totalLocked = regularWallets.reduce((s, w) => s + (w.locked_cashback || 0), 0);
+                    const totalPending = regularWallets.reduce((s, w) => s + (w.pending_balance || 0), 0);
+                    const totalCreditUsed = regularWallets.reduce((s, w) => s + (w.credit_used || 0), 0);
+                    const debtorsCount = regularWallets.filter(w => w.balance < 0).length;
+                    const healthyCount = regularWallets.filter(w => w.balance >= 0).length;
+                    const totalProviders = regularProfiles.filter((p: any) => p.is_provider).length;
+                    const totalCustomers = regularProfiles.filter((p: any) => p.is_customer).length;
 
                     const metrics = [
                       { label: 'Float Total', value: `R$ ${totalFloat.toFixed(2)}`, color: 'text-green-600' },
@@ -1584,7 +1590,7 @@ const AdminPanel = () => {
                       { label: 'Inadimplentes', value: debtorsCount.toString(), color: 'text-destructive' },
                       { label: 'Prestadores', value: totalProviders.toString(), color: 'text-primary' },
                       { label: 'Compradores', value: totalCustomers.toString(), color: 'text-primary' },
-                      { label: 'Total Usuários', value: userProfiles.length.toString(), color: 'text-foreground' },
+                      { label: 'Total Usuários', value: regularProfiles.length.toString(), color: 'text-foreground' },
                     ];
 
                     return (
