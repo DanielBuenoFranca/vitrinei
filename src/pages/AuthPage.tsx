@@ -514,6 +514,8 @@ const AuthPage = () => {
         is_customer: isCustomer,
         phone: phone || null,
         cpf_cnpj: finalCpfDigits,
+        status: 'lead',
+        is_activated: false,
       }).eq('user_id', data.user.id);
 
       // Only create a NEW provider record if profile didn't auto-link to an existing one
@@ -1033,11 +1035,11 @@ const AuthPage = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="text-xs">Código de Ativação (6 dígitos)</Label>
+              <Label className="text-xs">Código de Ativação (6 caracteres)</Label>
               <Input 
                 value={activationInput} 
-                onChange={e => setActivationInput(e.target.value.replace(/\D/g, '').slice(0, 6))} 
-                placeholder="000000"
+                onChange={e => setActivationInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))} 
+                placeholder="ABC123"
                 className="text-center text-2xl tracking-[0.3em] font-mono"
                 maxLength={6}
               />

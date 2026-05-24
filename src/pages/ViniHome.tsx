@@ -151,6 +151,14 @@ const ViniHome = () => {
   const [activationCodeInput, setActivationCodeInput] = useState('');
   const [isActivating, setIsActivating] = useState(false);
 
+  // Auto-open activation for leads on first visit
+  useEffect(() => {
+    if (accessLevel === 'lead' && isActivated === false && !sessionStorage.getItem('vini:activation-prompted')) {
+      setActivationDialogOpen(true);
+      sessionStorage.setItem('vini:activation-prompted', 'true');
+    }
+  }, [accessLevel, isActivated]);
+
 
   // Load preferences from profile
   useEffect(() => {
@@ -971,7 +979,7 @@ const ViniHome = () => {
                 )}
                 {city && <span className="opacity-40">·</span>}
                 <span className="text-[hsl(var(--text-accent))] truncate">
-                  {user ? profileLabel : 'Visitante'}
+                  {user ? (accessLevel === 'lead' ? `Lead (${profileLabel})` : profileLabel) : 'Visitante'}
                 </span>
                 {planLabel && (
                   <>
@@ -1475,7 +1483,7 @@ const ViniHome = () => {
       </motion.button>
 
       {/* ─── Activation Banner (Lead) ─── */}
-      {isActivated === false && user && (
+      {accessLevel === 'lead' && user && (
         <motion.div 
           initial={{ y: 100 }}
           animate={{ y: 0 }}
@@ -1483,16 +1491,22 @@ const ViniHome = () => {
         >
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-            <span className="text-xs font-bold uppercase tracking-wider">Conta em modo Lead (Não Ativada)</span>
+            <span className="text-xs font-bold uppercase tracking-wider">
+              {isActivated === false ? 'Conta em modo Lead (Não Ativada)' : 'Conta Pendente (Ajuste sua Assinatura)'}
+            </span>
           </div>
-          <p className="text-[10px] hidden sm:block opacity-90">Verifique seu e-mail e insira o código para liberar todas as funções.</p>
+          <p className="text-[10px] hidden sm:block opacity-90">
+            {isActivated === false 
+              ? 'Verifique seu e-mail e insira o código para liberar todas as funções.' 
+              : 'Sua assinatura precisa ser regularizada para acesso total.'}
+          </p>
           <Button 
             size="sm" 
             variant="secondary" 
             className="h-7 text-[10px] font-bold bg-white text-orange-600 hover:bg-orange-50"
-            onClick={() => setActivationDialogOpen(true)}
+            onClick={() => isActivated === false ? setActivationDialogOpen(true) : navigate('/carteira')}
           >
-            Ativar Agora
+            {isActivated === false ? 'Ativar Agora' : 'Regularizar'}
           </Button>
         </motion.div>
       )}
@@ -1632,7 +1646,7 @@ const ViniHome = () => {
               <Label className="text-[10px] uppercase font-bold text-muted-foreground">Código de Ativação</Label>
               <Input 
                 value={activationCodeInput}
-                onChange={(e) => setActivationCodeInput(e.target.value.toUpperCase().slice(0, 6))}
+                onChange={(e) => setActivationCodeInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
                 placeholder="ABC123"
                 className="text-center text-2xl font-mono tracking-[0.3em]"
               />
