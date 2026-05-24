@@ -67,7 +67,7 @@ const ConversionContext = createContext<ConversionState>({
 export const useConversion = () => useContext(ConversionContext);
 
 export const ConversionProvider = ({ children }: { children: ReactNode }) => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isMaster } = useAuth();
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [subscriptionPlan, setSubscriptionPlan] = useState<string | null>(null);
   const [subscriptionPrice, setSubscriptionPrice] = useState<number | null>(null);
@@ -137,6 +137,7 @@ export const ConversionProvider = ({ children }: { children: ReactNode }) => {
   const accessLevel = (() => {
     if (authLoading || (!walletLoaded && user)) return 'loading' as const;
     if (!user) return 'visitor' as const;
+    if (isMaster) return 'active' as const; // Master is always active and bypassing billing restrictions
     // Lead = negative balance (subscription debt) — restrictions apply
     if (walletBalance !== null && walletBalance < 0) return 'lead' as const;
     // Active = balance >= 0 (payment confirmed and processed)
