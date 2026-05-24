@@ -137,8 +137,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.clear();
       sessionStorage.clear();
       
-      toast.success('Sessão encerrada!');
-      
       // Force a hard reload to the auth page to clear all memory states
       window.location.replace('/auth');
     } catch (error) {
