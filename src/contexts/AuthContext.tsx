@@ -139,7 +139,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       // 4. Redirecionamento forçado imediato
       console.log('AuthContext: Redirecting to /auth');
-      window.location.assign('/auth');
+      window.location.replace('/auth');
       
       // Fallback de segurança caso window.location não funcione imediatamente
       setTimeout(() => {
