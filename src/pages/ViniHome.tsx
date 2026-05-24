@@ -1006,11 +1006,29 @@ const ViniHome = () => {
             )}
             <ThemeSwitcher />
             {user ? (
-              <Button variant="outline" size="sm" className="h-7 text-[10.5px] px-2 gap-1 glass" onClick={signOut}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-7 text-[10.5px] px-2 gap-1 glass cursor-pointer z-[50]" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  signOut();
+                }}
+              >
                 Sair
               </Button>
             ) : (
-              <Button variant="outline" size="sm" className="h-7 text-[10.5px] px-2 gap-1 glass" onClick={() => navigate('/auth')}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-7 text-[10.5px] px-2 gap-1 glass cursor-pointer z-[50]" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  navigate('/auth');
+                }}
+              >
                 <LogIn className="w-3 h-3" /> Entrar
               </Button>
             )}
