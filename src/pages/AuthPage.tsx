@@ -48,6 +48,12 @@ import { Badge } from '@/components/ui/badge';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const profileOptions = [
   { id: 'client', label: 'Comprador / Consumidor', icon: ShoppingCart, desc: 'Compre produtos e contrate serviços' },
