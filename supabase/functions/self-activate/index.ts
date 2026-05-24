@@ -40,11 +40,12 @@ Deno.serve(async (req) => {
   }
 
   // Validate code against user_activations table first
+  // Using ilike for case-insensitive comparison
   const { data: activationData } = await supabase
     .from('user_activations')
     .select('id, expires_at')
     .eq('email', email)
-    .eq('code', code)
+    .ilike('code', code)
     .eq('is_used', false)
     .maybeSingle()
 
@@ -56,7 +57,7 @@ Deno.serve(async (req) => {
       .from('profiles')
       .select('user_id, activation_code')
       .eq('user_id', user.id)
-      .eq('activation_code', code)
+      .ilike('activation_code', code)
       .maybeSingle()
     validated = !!profileData
   }
