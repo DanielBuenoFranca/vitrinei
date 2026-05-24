@@ -504,8 +504,33 @@ const AuthPage = () => {
 
       await processReferral(data.user.id, name, email, phone);
 
+      // Save activation code to user_activations table
+      await supabase.from('user_activations').insert({
+        user_id: data.user.id,
+        email: email,
+        code: activationCode,
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      });
+
+      // Update profile with activation code
+      await supabase.from('profiles').update({
+        activation_code: activationCode,
+        status: 'lead',
+        is_activated: false,
+      }).eq('user_id', data.user.id);
+
+      // Trigger activation email
+      try {
+        await supabase.functions.invoke('send-activation-email', {
+          body: { email, code: activationCode, name: name || email.split('@')[0] }
+        });
+      } catch (err) {
+        console.error('Error sending activation email:', err);
+      }
+
       // Show activation code modal
-      setActivationModal({ open: true, code: 'SOLICITE AO MASTER', email });
+      setActivationModal({ open: true, code: activationCode, email });
+
     }
 
     setLoading(false);
@@ -889,16 +914,28 @@ const AuthPage = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="bg-muted rounded-lg p-4 text-center">
+            <div className="bg-muted rounded-lg p-4 text-center relative group">
               <p className="text-xs text-muted-foreground mb-2">Seu código de ativação</p>
               <p className="text-3xl font-mono font-bold tracking-[0.3em] text-primary">{activationModal.code}</p>
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity h-7 text-[10px]"
+                onClick={() => {
+                  navigator.clipboard.writeText(activationModal.code);
+                  toast.success('Copiado!');
+                }}
+              >
+                Copiar
+              </Button>
             </div>
             <div className="text-xs text-muted-foreground space-y-1">
               <p>📧 Enviado para: <strong>{activationModal.email}</strong></p>
               <p>⏳ Você tem 24 horas para ativar sua conta</p>
-              <p>💡 Guarde este código — ele será solicitado no login</p>
+              <p>💡 Guarde este código — você pode ativá-lo no Dashboard</p>
             </div>
           </div>
+
           <DialogFooter>
             <Button className="w-full" onClick={() => {
               setActivationModal({ open: false, code: '', email: '' });
