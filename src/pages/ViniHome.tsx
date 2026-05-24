@@ -78,7 +78,7 @@ const CHAT_STORAGE_KEY = 'vini:chat-history';
 
 const ViniHome = () => {
   const navigate = useNavigate();
-  const { user, signOut, displayName } = useAuth();
+  const { user, loading: authLoading, signOut, displayName } = useAuth();
   const { profileLabel } = usePermissions();
   const { session, update: updateAiSession, setIsThinking: setGlobalThinking } = useAiSession();
   const { totalCartItems, totalCartValue, productCart, serviceCart, clearCart } = useCart();
@@ -997,7 +997,7 @@ const ViniHome = () => {
               </Button>
             )}
             <ThemeSwitcher />
-            {user ? (
+            {!authLoading && (user ? (
               <Button variant="outline" size="sm" className="h-7 text-[10.5px] px-2 gap-1 glass" onClick={signOut}>
                 Sair
               </Button>
@@ -1005,7 +1005,7 @@ const ViniHome = () => {
               <Button variant="outline" size="sm" className="h-7 text-[10.5px] px-2 gap-1 glass" onClick={() => navigate('/auth')}>
                 <LogIn className="w-3 h-3" /> Entrar
               </Button>
-            )}
+            ))}
           </div>
         </div>
       </header>
