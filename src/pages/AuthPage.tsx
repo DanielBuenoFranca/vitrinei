@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import { toast } from 'sonner';
-import { Zap, Mail, Lock, User, ArrowLeft, Gift, ShoppingCart, Wrench, Shuffle, Crown, Check, KeyRound, CheckCircle, IdCard, Loader2, X, Info, AlertCircle } from 'lucide-react';
+import { Zap, Mail, Lock, User, ArrowLeft, Gift, ShoppingCart, Wrench, Shuffle, Crown, Check, KeyRound, CheckCircle, IdCard, Loader2, X, Info, AlertCircle, ClipboardPaste } from 'lucide-react';
 import { maskCPFCNPJ, unmask } from '@/lib/masks';
 import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlans';
 
@@ -1067,7 +1067,7 @@ const AuthPage = () => {
                     }
                   }}
                 >
-                  <ShoppingCart className="h-4 w-4" />
+                  <ClipboardPaste className="h-4 w-4" />
                 </Button>
               </div>
             </div>
