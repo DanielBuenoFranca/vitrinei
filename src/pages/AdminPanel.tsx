@@ -1419,6 +1419,15 @@ const AdminPanel = () => {
                                       </Button>
                                     );
                                   })()}
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className={`h-8 w-8 ${profile.status === 'active' ? 'text-destructive' : 'text-green-600'}`}
+                                    title={profile.status === 'active' ? 'Desativar usuário' : 'Ativar usuário'}
+                                    onClick={() => toggleUserStatus(profile.user_id, profile.status)}
+                                  >
+                                    {profile.status === 'active' ? <Lock className="h-4 w-4" /> : <ShieldCheck className="h-4 w-4" />}
+                                  </Button>
                                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
                                     if (profile.__isLead) {
                                       // Lead importado: força Perfil = Misto + Papel = Comum (sem roles em user_roles)
