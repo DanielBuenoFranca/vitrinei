@@ -151,6 +151,14 @@ const ViniHome = () => {
   const [activationCodeInput, setActivationCodeInput] = useState('');
   const [isActivating, setIsActivating] = useState(false);
 
+  // Auto-open activation for leads on first visit
+  useEffect(() => {
+    if (accessLevel === 'lead' && isActivated === false && !sessionStorage.getItem('vini:activation-prompted')) {
+      setActivationDialogOpen(true);
+      sessionStorage.setItem('vini:activation-prompted', 'true');
+    }
+  }, [accessLevel, isActivated]);
+
 
   // Load preferences from profile
   useEffect(() => {
@@ -971,7 +979,7 @@ const ViniHome = () => {
                 )}
                 {city && <span className="opacity-40">·</span>}
                 <span className="text-[hsl(var(--text-accent))] truncate">
-                  {user ? profileLabel : 'Visitante'}
+                  {user ? (accessLevel === 'lead' ? `Lead (${profileLabel})` : profileLabel) : 'Visitante'}
                 </span>
                 {planLabel && (
                   <>
