@@ -517,7 +517,8 @@ const AdminPanel = () => {
           });
           
           // Se for um lead ou pendente, sincroniza PIN
-          if (profile.status === 'lead' || !profile.is_activated) {
+          const profile = userProfiles.find(p => p.user_id === resetPwdDialog.userId);
+          if (profile && (profile.status === 'lead' || !profile.is_activated)) {
             await supabase.from('profiles').update({ 
               activation_code: resetPwdValue
             }).eq('user_id', resetPwdDialog.userId);
