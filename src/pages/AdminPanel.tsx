@@ -1293,12 +1293,21 @@ const AdminPanel = () => {
                                    );
                                  })()}
                                </TableCell>
-                               <TableCell className="text-xs text-muted-foreground">{profile.phone || '—'}</TableCell>
-                              <TableCell className="text-xs text-muted-foreground">
-                                {new Date(profile.created_at).toLocaleDateString('pt-BR')}
-                              </TableCell>
+                                <TableCell className="text-xs text-muted-foreground">{profile.phone || '—'}</TableCell>
                                <TableCell>
-                                <div className="flex gap-1 flex-wrap">
+                                 <Badge variant="outline" className={`text-[10px] ${
+                                   profile.status === 'active' ? 'bg-green-50 text-green-700 border-green-200' :
+                                   profile.status === 'banned' ? 'bg-red-50 text-red-700 border-red-200' :
+                                   'bg-amber-50 text-amber-700 border-amber-200'
+                                 }`}>
+                                   {profile.status || 'lead'}
+                                 </Badge>
+                               </TableCell>
+                               <TableCell className="text-xs text-muted-foreground">
+                                 {new Date(profile.created_at).toLocaleDateString('pt-BR')}
+                               </TableCell>
+                                <TableCell>
+                                 <div className="flex gap-1 flex-wrap">
                                   {(() => {
                                     const isActive = !!userSub && userSub.status === 'active';
                                     const isTriggered = !isActive && !!userSubPending;
