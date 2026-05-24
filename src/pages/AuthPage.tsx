@@ -609,14 +609,30 @@ const AuthPage = () => {
   };
 
   const handleResetPassword = async () => {
-    if (!email) { toast.error('Digite seu email'); return; }
+    if (!email) {
+      toast.error('Digite seu e-mail cadastrado');
+      return;
+    }
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    if (error) toast.error(error.message);
-    else toast.success('Email de recuperação enviado!');
-    setLoading(false);
+    
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) {
+        // Generic error message for security (even if user doesn't exist)
+        toast.error('Ocorreu um erro ao processar sua solicitação. Se o e-mail estiver cadastrado, você receberá um link em breve.');
+        console.error('Reset password error:', error.message);
+      } else {
+        toast.success('Link de recuperação enviado para o seu e-mail!');
+        setResetMode(false);
+      }
+    } catch (err) {
+      toast.error('Erro ao solicitar recuperação de senha.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (resetMode) {
