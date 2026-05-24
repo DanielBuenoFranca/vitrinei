@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import { toast } from 'sonner';
-import { Zap, Mail, Lock, User, ArrowLeft, Gift, ShoppingCart, Wrench, Shuffle, Crown, Check, KeyRound, CheckCircle, IdCard, Loader2, X } from 'lucide-react';
+import { Zap, Mail, Lock, User, ArrowLeft, Gift, ShoppingCart, Wrench, Shuffle, Crown, Check, KeyRound, CheckCircle, IdCard, Loader2, X, Info } from 'lucide-react';
 import { maskCPFCNPJ, unmask } from '@/lib/masks';
 import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlans';
 
@@ -48,6 +48,12 @@ import { Badge } from '@/components/ui/badge';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const profileOptions = [
   { id: 'client', label: 'Comprador / Consumidor', icon: ShoppingCart, desc: 'Compre produtos e contrate serviços' },
@@ -664,28 +670,37 @@ const AuthPage = () => {
                   <p className="text-[10px] text-muted-foreground">Obrigatório para prestadores</p>
                 </div>
                 
-                <div 
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full cursor-pointer transition-all border shadow-sm ${
-                    isExempt 
-                      ? 'bg-orange-500 border-orange-600 text-white ring-2 ring-orange-200' 
-                      : 'bg-white border-border text-muted-foreground hover:bg-muted/50'
-                  }`}
-                  onClick={() => {
-                    const nextVal = !isExempt;
-                    setIsExempt(nextVal);
-                    if (nextVal) {
-                      setCpfCnpj('');
-                      setCpfCheckState('idle');
-                    }
-                  }}
-                >
-                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
-                    isExempt ? 'bg-white border-white' : 'bg-muted/20 border-muted-foreground/30'
-                  }`}>
-                    {isExempt && <Check className="w-2.5 h-2.5 text-orange-600 stroke-[4]" />}
-                  </div>
-                  <span className="text-[11px] font-black uppercase tracking-wider">Isento</span>
-                </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div 
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full cursor-pointer transition-all border shadow-sm ${
+                          isExempt 
+                            ? 'bg-orange-500 border-orange-600 text-white ring-2 ring-orange-200' 
+                            : 'bg-white border-border text-muted-foreground hover:bg-muted/50'
+                        }`}
+                        onClick={() => {
+                          const nextVal = !isExempt;
+                          setIsExempt(nextVal);
+                          if (nextVal) {
+                            setCpfCnpj('');
+                            setCpfCheckState('idle');
+                          }
+                        }}
+                      >
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
+                          isExempt ? 'bg-white border-white' : 'bg-muted/20 border-muted-foreground/30'
+                        }`}>
+                          {isExempt && <Check className="w-2.5 h-2.5 text-orange-600 stroke-[4]" />}
+                        </div>
+                        <span className="text-[11px] font-black uppercase tracking-wider">Isento</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="text-[10px] max-w-[200px]">
+                      Ative esta opção se você não possui um documento no momento ou deseja cadastrar-se como isento.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
               {!isExempt ? (
                 <div className="relative">
@@ -742,53 +757,104 @@ const AuthPage = () => {
               </div>
             </div>
 
-            {/* Profile Selection */}
             <div className="space-y-2">
-              <Label className="text-xs font-semibold">Perfil de Acesso *</Label>
-              <div className="grid grid-cols-3 gap-2">
-                {profileOptions.map(opt => (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => setSelectedProfile(opt.id)}
-                    className={`p-2 rounded-lg border text-center transition-all ${
-                      selectedProfile === opt.id
-                        ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
-                        : 'border-border hover:border-primary/40'
-                    }`}
-                  >
-                    <opt.icon className={`w-5 h-5 mx-auto mb-1 ${selectedProfile === opt.id ? 'text-primary' : 'text-muted-foreground'}`} />
-                    <p className="text-[10px] font-medium leading-tight">{opt.label}</p>
-                  </button>
-                ))}
-              </div>
+              <Label className="text-xs font-semibold flex items-center gap-1.5">
+                Perfil de Acesso *
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="text-[10px] max-w-[200px]">
+                      Escolha o perfil que melhor define seu objetivo na plataforma.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </Label>
+              <TooltipProvider>
+                <div className="grid grid-cols-3 gap-2">
+                  {profileOptions.map(opt => (
+                    <Tooltip key={opt.id} delayDuration={300}>
+                      <TooltipTrigger asChild>
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => setSelectedProfile(opt.id)}
+                          className={`p-2 rounded-lg border text-center transition-all ${
+                            selectedProfile === opt.id
+                              ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
+                              : 'border-border hover:border-primary/40'
+                          }`}
+                        >
+                          <opt.icon className={`w-5 h-5 mx-auto mb-1 ${selectedProfile === opt.id ? 'text-primary' : 'text-muted-foreground'}`} />
+                          <p className="text-[10px] font-medium leading-tight">{opt.label}</p>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="text-[10.5px] max-w-[220px] p-2">
+                        <p className="font-bold mb-1 text-primary">{opt.label}</p>
+                        <p className="text-muted-foreground">{opt.desc}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  ))}
+                </div>
+              </TooltipProvider>
             </div>
 
             {/* Plan Selection */}
             <div className="space-y-2">
-              <Label className="text-xs font-semibold">Plano de Assinatura *</Label>
-              <div className="grid grid-cols-3 gap-2">
-                {plans.map(plan => (
-                  <button
-                    key={plan.id}
-                    type="button"
-                    onClick={() => setSelectedPlan(plan.id)}
-                    className={`p-2 rounded-lg border text-center transition-all relative ${
-                      selectedPlan === plan.id
-                        ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
-                        : 'border-border hover:border-primary/40'
-                    }`}
-                  >
-                    {plan.popular && (
-                      <span className="absolute -top-1.5 right-1 text-[8px] bg-primary text-primary-foreground px-1 rounded">Popular</span>
-                    )}
-                    <span className="text-lg">{plan.badge}</span>
-                    <p className="text-[10px] font-medium">{plan.name}</p>
-                    <p className="text-xs font-bold text-primary">R$ {plan.price}</p>
-                    <p className="text-[9px] text-muted-foreground">{plan.discount}% desc.</p>
-                  </button>
-                ))}
-              </div>
+              <Label className="text-xs font-semibold flex items-center gap-1.5">
+                Plano de Assinatura *
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="text-[10px] max-w-[200px]">
+                      Selecione um plano para começar a aproveitar os benefícios e bonificações.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </Label>
+              <TooltipProvider>
+                <div className="grid grid-cols-3 gap-2">
+                  {plans.map(plan => (
+                    <Tooltip key={plan.id} delayDuration={300}>
+                      <TooltipTrigger asChild>
+                        <button
+                          key={plan.id}
+                          type="button"
+                          onClick={() => setSelectedPlan(plan.id)}
+                          className={`p-2 rounded-lg border text-center transition-all relative ${
+                            selectedPlan === plan.id
+                              ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
+                              : 'border-border hover:border-primary/40'
+                          }`}
+                        >
+                          {plan.popular && (
+                            <span className="absolute -top-1.5 right-1 text-[8px] bg-primary text-primary-foreground px-1 rounded">Popular</span>
+                          )}
+                          <span className="text-lg">{plan.badge}</span>
+                          <p className="text-[10px] font-medium">{plan.name}</p>
+                          <p className="text-xs font-bold text-primary">R$ {plan.price}</p>
+                          <p className="text-[9px] text-muted-foreground">{plan.discount}% desc.</p>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="text-[10.5px] max-w-[220px] p-2">
+                        <p className="font-bold mb-1 text-primary">Plano {plan.name}</p>
+                        <ul className="space-y-1">
+                          {plan.features.slice(0, 4).map((f, i) => (
+                            <li key={i} className="flex items-start gap-1.5">
+                              <Check className="w-3 h-3 text-success shrink-0 mt-0.5" />
+                              <span>{f}</span>
+                            </li>
+                          ))}
+                          {plan.features.length > 4 && <li className="text-[9px] text-muted-foreground italic pl-4.5">+ e muito mais!</li>}
+                        </ul>
+                      </TooltipContent>
+                    </Tooltip>
+                  ))}
+                </div>
+              </TooltipProvider>
             </div>
 
             {/* Redundant info removed */}
