@@ -129,9 +129,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setMustResetPassword(false);
       setUserStatus(null);
       toast.success('Sessão encerrada com sucesso!');
+      // Force redirect to login page
+      window.location.href = '/auth';
     } catch (error) {
       console.error('Error signing out:', error);
       toast.error('Erro ao encerrar sessão.');
+      // Fallback redirect
+      window.location.href = '/auth';
     }
   };
 
