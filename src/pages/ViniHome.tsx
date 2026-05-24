@@ -1644,8 +1644,9 @@ const ViniHome = () => {
                 setIsActivating(true);
                 try {
                   const { data, error } = await supabase.functions.invoke('self-activate', {
-                    body: { email: user?.email, code: activationCodeInput }
+                    body: { email: user?.email || '', code: activationCodeInput }
                   });
+
 
                   if (error || (data && data.error)) {
                     toast.error(error?.message || data?.error || 'Código inválido');
