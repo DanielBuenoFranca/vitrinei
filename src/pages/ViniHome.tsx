@@ -1010,10 +1010,11 @@ const ViniHome = () => {
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="h-7 text-[10.5px] px-2 gap-1 glass cursor-pointer z-[50]" 
+                className="h-7 text-[10.5px] px-2 gap-1 glass cursor-pointer z-[100] relative" 
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  console.log('Logout initiated');
                   signOut();
                 }}
               >
@@ -1023,10 +1024,11 @@ const ViniHome = () => {
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="h-7 text-[10.5px] px-2 gap-1 glass cursor-pointer z-[50]" 
+                className="h-7 text-[10.5px] px-2 gap-1 glass cursor-pointer z-[100] relative" 
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  console.log('Navigation to /auth initiated');
                   navigate('/auth');
                 }}
               >
