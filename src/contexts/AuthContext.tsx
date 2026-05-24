@@ -120,12 +120,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
-    setRoles([]);
-    setDisplayName(null);
-    setMustResetPassword(false);
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setSession(null);
+      setRoles([]);
+      setDisplayName(null);
+      setMustResetPassword(false);
+      setUserStatus(null);
+      toast.success('Sessão encerrada com sucesso!');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast.error('Erro ao encerrar sessão.');
+    }
   };
 
   const clearMustResetPassword = async () => {
