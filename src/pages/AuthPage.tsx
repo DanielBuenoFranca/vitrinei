@@ -397,6 +397,8 @@ const AuthPage = () => {
     if (password.length < 6) { toast.error('Senha deve ter no mínimo 6 caracteres'); return; }
     if (!selectedProfile) { toast.error('Selecione um perfil de acesso'); return; }
     if (!selectedPlan) { toast.error('Selecione um plano de assinatura'); return; }
+    const currentPlan = plans.find(p => p.id === selectedPlan);
+    if (!currentPlan) { toast.error('Plano selecionado não encontrado'); return; }
     const generateActivationCode = () => {
       const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
       let code = '';
