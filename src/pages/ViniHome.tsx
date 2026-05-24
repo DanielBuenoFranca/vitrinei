@@ -78,7 +78,7 @@ const CHAT_STORAGE_KEY = 'vini:chat-history';
 
 const ViniHome = () => {
   const navigate = useNavigate();
-  const { user, signOut, displayName } = useAuth();
+  const { user, loading: authLoading, signOut, displayName } = useAuth();
   const { profileLabel } = usePermissions();
   const { session, update: updateAiSession, setIsThinking: setGlobalThinking } = useAiSession();
   const { totalCartItems, totalCartValue, productCart, serviceCart, clearCart } = useCart();
