@@ -420,17 +420,32 @@ const AuthPage = () => {
 
     setLoading(true);
 
-    // Final server-side check (race-safe)
-    if (!isExempt) {
-      try {
-        const { data: chk } = await (supabase.rpc as any)('check_cpf_cnpj_available', { _doc: finalCpfDigits });
-        if (chk && !chk.available) {
-          toast.error(chk.reason === 'already_registered' ? 'Este CPF/CNPJ já está cadastrado' : 'CPF/CNPJ inválido');
-          setLoading(false);
-          return;
+    // New Universal and Conditional Duplicate Validation via Edge Function
+    try {
+      const { data: valData, error: valError } = await supabase.functions.invoke('validate-registration', {
+        body: { 
+          cpf_cnpj: !isExempt ? unmask(cpfCnpj) : null,
+          email,
+          phone: phone || null,
+          is_exempt: isExempt
+        },
+      });
+
+      if (valError || (valData && !valData.ok)) {
+        if (valData?.conflicts) {
+          setConflicts(valData.conflicts);
+          setShowConflictModal(true);
+        } else {
+          toast.error(valData?.error || 'Erro ao validar cadastro');
         }
-      } catch { /* non-blocking */ }
+        setLoading(false);
+        return;
+      }
+    } catch (err: any) {
+      console.error('Validation error:', err);
+      // Non-blocking for now if function fails, but ideally we should handle it
     }
+
 
     const { data, error } = await supabase.auth.signUp({
       email, password,
