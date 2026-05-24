@@ -1481,6 +1481,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_master: { Args: { _user_id: string }; Returns: boolean }
       process_checkout_acid: {
         Args: {
           _buyer_id: string
