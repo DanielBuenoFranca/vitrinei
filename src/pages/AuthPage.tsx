@@ -1038,10 +1038,12 @@ const AuthPage = () => {
               <Label className="text-xs">Código de Ativação (6 caracteres)</Label>
               <Input 
                 value={activationInput} 
-                onChange={e => setActivationInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))} 
+                onChange={e => {
+                  const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+                  setActivationInput(val);
+                }} 
                 placeholder="ABC123"
                 className="text-center text-2xl tracking-[0.3em] font-mono"
-                maxLength={6}
               />
             </div>
             <Button className="w-full" onClick={handleActivateAndLogin} disabled={activationInput.length !== 6 || loading}>
