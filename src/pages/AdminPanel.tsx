@@ -516,12 +516,12 @@ const AdminPanel = () => {
             duration: 8000,
           });
           
-          // Sincroniza com o campo de ativação no perfil para permitir login de ativação
-          await supabase.from('profiles').update({ 
-            activation_code: resetPwdValue,
-            status: 'lead',
-            is_activated: false 
-          }).eq('user_id', resetPwdDialog.userId);
+          // Se for um lead ou pendente, sincroniza PIN
+          if (profile.status === 'lead' || !profile.is_activated) {
+            await supabase.from('profiles').update({ 
+              activation_code: resetPwdValue
+            }).eq('user_id', resetPwdDialog.userId);
+          }
 
           toast.success(`Senha alterada! ${resetPwdDialog.userName} usará esta para o próximo acesso.`);
           setResetPwdDialog({ open: false, userId: '', userName: '' });
