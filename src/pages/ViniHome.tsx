@@ -41,6 +41,7 @@ import { semanticSearch } from '@/data/searchData';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAiSession } from '@/contexts/AiSessionContext';
+import { useConversion } from '@/contexts/ConversionContext';
 import { SystemStatusIndicator } from '@/components/SystemStatusIndicator';
 
 /**
@@ -81,6 +82,7 @@ const ViniHome = () => {
   const { profileLabel } = usePermissions();
   const { session, update: updateAiSession, setIsThinking: setGlobalThinking } = useAiSession();
   const { totalCartItems, totalCartValue, productCart, serviceCart, clearCart } = useCart();
+  const { isActivated, accessLevel, refreshWallet: refreshConversion } = useConversion();
   const { supported, listening, transcript, start, stop } = useSpeechRecognition();
   
   const [favoritesOpen, setFavoritesOpen] = useState(false);
@@ -145,7 +147,6 @@ const ViniHome = () => {
   const [hudScale, setHudScale] = useState(1.1);
    const saveTimeoutRef = useRef<number | null>(null);
   const [isThinking, setIsThinking] = useState(false);
-  const [isActivated, setIsActivated] = useState(true);
   const [activationDialogOpen, setActivationDialogOpen] = useState(false);
   const [activationCodeInput, setActivationCodeInput] = useState('');
   const [isActivating, setIsActivating] = useState(false);
@@ -285,11 +286,10 @@ const ViniHome = () => {
     (async () => {
       const { data: prof } = await supabase
         .from('profiles')
-        .select('city, is_activated, status')
+        .select('city')
         .eq('user_id', user.id)
         .maybeSingle();
       if (prof?.city) setCity(prof.city);
-      if (prof?.is_activated !== undefined && prof?.is_activated !== null) setIsActivated(prof.is_activated);
 
 
       const { data: sub } = await supabase
@@ -1475,7 +1475,7 @@ const ViniHome = () => {
       </motion.button>
 
       {/* ─── Activation Banner (Lead) ─── */}
-      {!isActivated && user && (
+      {isActivated === false && user && (
         <motion.div 
           initial={{ y: 100 }}
           animate={{ y: 0 }}
@@ -1652,7 +1652,7 @@ const ViniHome = () => {
                     toast.error(error?.message || data?.error || 'Código inválido');
                   } else {
                     toast.success('Conta ativada com sucesso!');
-                    setIsActivated(true);
+                    await refreshConversion();
                     setActivationDialogOpen(false);
                     // Update profile status locally
                     if (user?.id) {

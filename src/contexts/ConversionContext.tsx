@@ -25,6 +25,8 @@ interface ConversionState {
   refreshWallet: () => Promise<void>;
   /** Access level: visitor, lead (logged+debt), active (logged+paid) */
   accessLevel: 'loading' | 'visitor' | 'lead' | 'active';
+  /** Whether the account is activated via code */
+  isActivated: boolean | null;
 }
 
 interface CampaignMessages {
@@ -62,6 +64,7 @@ const ConversionContext = createContext<ConversionState>({
   trackStoreVisit: () => {},
   refreshWallet: async () => {},
   accessLevel: 'loading',
+  isActivated: null,
 });
 
 export const useConversion = () => useContext(ConversionContext);
@@ -71,10 +74,12 @@ export const ConversionProvider = ({ children }: { children: ReactNode }) => {
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [subscriptionPlan, setSubscriptionPlan] = useState<string | null>(null);
   const [subscriptionPrice, setSubscriptionPrice] = useState<number | null>(null);
+  const [isActivated, setIsActivated] = useState<boolean | null>(null);
+  const [profileStatus, setProfileStatus] = useState<string | null>(null);
   const [storeVisitCount, setStoreVisitCount] = useState(0);
   const [visitedStores, setVisitedStores] = useState<Set<string>>(new Set());
   const [campaignMessages, setCampaignMessages] = useState<CampaignMessages>(DEFAULT_MESSAGES);
-  const [walletLoaded, setWalletLoaded] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   // Load wallet & subscription for logged users
   const refreshWallet = useCallback(async () => {
@@ -82,17 +87,22 @@ export const ConversionProvider = ({ children }: { children: ReactNode }) => {
       setWalletBalance(null);
       setSubscriptionPlan(null);
       setSubscriptionPrice(null);
-      setWalletLoaded(true);
+      setIsActivated(null);
+      setProfileStatus(null);
+      setDataLoaded(true);
       return;
     }
-    const [walletRes, subRes] = await Promise.all([
+    const [walletRes, subRes, profRes] = await Promise.all([
       supabase.from('wallets').select('balance').eq('user_id', user.id).maybeSingle(),
       supabase.from('subscriptions').select('plan, price').eq('user_id', user.id).eq('status', 'active').maybeSingle(),
+      supabase.from('profiles').select('is_activated, status').eq('user_id', user.id).maybeSingle(),
     ]);
     setWalletBalance(walletRes.data?.balance ?? 0);
     setSubscriptionPlan(subRes.data?.plan ?? null);
     setSubscriptionPrice(subRes.data?.price ? Number(subRes.data.price) : null);
-    setWalletLoaded(true);
+    setIsActivated(profRes.data?.is_activated ?? false);
+    setProfileStatus(profRes.data?.status ?? null);
+    setDataLoaded(true);
   }, [user]);
 
   useEffect(() => {
@@ -135,11 +145,19 @@ export const ConversionProvider = ({ children }: { children: ReactNode }) => {
 
   // Determine access level — restrictions only lift after confirmed payment (balance >= 0)
   const accessLevel = (() => {
-    if (authLoading || (!walletLoaded && user)) return 'loading' as const;
+    if (authLoading || (!dataLoaded && user)) return 'loading' as const;
     if (!user) return 'visitor' as const;
-    if (isMaster) return 'active' as const; // Master is always active and bypassing billing restrictions
+    if (isMaster) return 'active' as const; 
+    
+    // If account is not activated via code, it's a lead
+    if (isActivated === false) return 'lead' as const;
+    
+    // If status is explicitly 'lead', it's a lead
+    if (profileStatus === 'lead') return 'lead' as const;
+
     // Lead = negative balance (subscription debt) — restrictions apply
     if (walletBalance !== null && walletBalance < 0) return 'lead' as const;
+    
     // Active = balance >= 0 (payment confirmed and processed)
     return 'active' as const;
   })();
@@ -196,6 +214,7 @@ export const ConversionProvider = ({ children }: { children: ReactNode }) => {
       trackStoreVisit,
       refreshWallet,
       accessLevel,
+      isActivated,
     }}>
       {children}
     </ConversionContext.Provider>
