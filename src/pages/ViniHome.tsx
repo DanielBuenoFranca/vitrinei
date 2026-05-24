@@ -1655,7 +1655,10 @@ const ViniHome = () => {
                     setIsActivated(true);
                     setActivationDialogOpen(false);
                     // Update profile status locally
-                    await supabase.from('profiles').update({ status: 'active', is_activated: true }).eq('user_id', user?.id);
+                    if (user?.id) {
+                      await supabase.from('profiles').update({ status: 'active', is_activated: true }).eq('user_id', user.id);
+                    }
+
                   }
                 } catch (err) {
                   console.error('Activation error:', err);
