@@ -957,85 +957,6 @@ const ViniHome = () => {
       <div className="absolute inset-x-0 top-0 h-24 pointer-events-none z-10 bg-gradient-to-b from-background/40 to-transparent" />
       <div className="absolute inset-x-0 bottom-0 h-32 pointer-events-none z-10 bg-gradient-to-t from-background/40 to-transparent" />
 
-      {/* ─── Header ─── */}
-      <header ref={headerRef} className="absolute top-0 inset-x-0 z-[60] px-3 sm:px-5 pt-3 pointer-events-auto">
-        <div className="glass rounded-2xl flex items-center justify-between gap-2 px-2.5 py-1.5">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <div className="relative shrink-0">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center vini-ring">
-                <span className="text-[11px] font-bold text-primary-foreground">
-                  {(displayName || 'V')[0].toUpperCase()}
-                </span>
-              </div>
-              <span className="absolute bottom-0 right-0 w-2 h-2 bg-success rounded-full ring-2 ring-background" />
-            </div>
-            <div className="min-w-0 leading-tight flex-1">
-              <p className="text-[12.5px] font-semibold truncate">{displayName || 'Vitrinei'}</p>
-              <div className="flex items-center gap-1.5 text-[9.5px] text-muted-foreground/90 truncate">
-                {city && (
-                  <span className="inline-flex items-center gap-0.5 truncate">
-                    <MapPin className="w-2.5 h-2.5 text-[hsl(var(--text-accent))]" strokeWidth={2} />
-                    <span className="truncate max-w-[80px]">{city}</span>
-                  </span>
-                )}
-                {city && <span className="opacity-40">·</span>}
-                <span className="text-[hsl(var(--text-accent))] truncate">
-                  {user ? (accessLevel === 'lead' ? `Lead (${profileLabel})` : profileLabel) : 'Visitante'}
-                </span>
-                {planLabel && (
-                  <>
-                    <span className="opacity-40">·</span>
-                    <span className="truncate font-medium">{planLabel}</span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1 shrink-0">
-            {storeSlug && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 w-7 p-0 glass"
-                onClick={() => navigate(`/loja/${storeSlug}`)}
-                aria-label="Minha loja"
-                title="Abrir minha loja"
-              >
-                <Store className="w-3.5 h-3.5" />
-              </Button>
-            )}
-            <ThemeSwitcher />
-            {user ? (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-7 text-[10.5px] px-2 gap-1 glass cursor-pointer z-[50]" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  signOut();
-                }}
-              >
-                Sair
-              </Button>
-            ) : (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-7 text-[10.5px] px-2 gap-1 glass cursor-pointer z-[50]" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  navigate('/auth');
-                }}
-              >
-                <LogIn className="w-3 h-3" /> Entrar
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
 
       {/* ─── Floating cart icon (only visible when there are items) ─── */}
       <AnimatePresence>
@@ -1709,6 +1630,89 @@ const ViniHome = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* ─── Header ─── */}
+      <header ref={headerRef} className="fixed top-0 inset-x-0 z-[100] px-3 sm:px-5 pt-3 pointer-events-auto">
+        <div className="glass rounded-2xl flex items-center justify-between gap-2 px-2.5 py-1.5">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="relative shrink-0">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center vini-ring">
+                <span className="text-[11px] font-bold text-primary-foreground">
+                  {(displayName || 'V')[0].toUpperCase()}
+                </span>
+              </div>
+              <span className="absolute bottom-0 right-0 w-2 h-2 bg-success rounded-full ring-2 ring-background" />
+            </div>
+            <div className="min-w-0 leading-tight flex-1">
+              <p className="text-[12.5px] font-semibold truncate">{displayName || 'Vitrinei'}</p>
+              <div className="flex items-center gap-1.5 text-[9.5px] text-muted-foreground/90 truncate">
+                {city && (
+                  <span className="inline-flex items-center gap-0.5 truncate">
+                    <MapPin className="w-2.5 h-2.5 text-[hsl(var(--text-accent))]" strokeWidth={2} />
+                    <span className="truncate max-w-[80px]">{city}</span>
+                  </span>
+                )}
+                {city && <span className="opacity-40">·</span>}
+                <span className="text-[hsl(var(--text-accent))] truncate">
+                  {user ? (accessLevel === 'lead' ? `Lead (${profileLabel})` : profileLabel) : 'Visitante'}
+                </span>
+                {planLabel && (
+                  <>
+                    <span className="opacity-40">·</span>
+                    <span className="truncate font-medium">{planLabel}</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 shrink-0">
+            {storeSlug && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 w-7 p-0 glass"
+                onClick={() => navigate(`/loja/${storeSlug}`)}
+                aria-label="Minha loja"
+                title="Abrir minha loja"
+              >
+                <Store className="w-3.5 h-3.5" />
+              </Button>
+            )}
+            <ThemeSwitcher />
+            {user ? (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-7 text-[10.5px] px-2 gap-1 glass cursor-pointer z-[110] relative" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Logout initiated from header');
+                  toast.loading('Saindo...');
+                  signOut();
+                }}
+              >
+                Sair
+              </Button>
+            ) : (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-7 text-[10.5px] px-2 gap-1 glass cursor-pointer z-[110] relative" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Navigation to /auth initiated from header');
+                  navigate('/auth');
+                }}
+              >
+                <LogIn className="w-3 h-3" /> Entrar
+              </Button>
+            )}
+          </div>
+        </div>
+      </header>
     </div>
   );
 };
