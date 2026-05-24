@@ -382,6 +382,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          activation_code: string | null
           address: string | null
           auth_split_5x: boolean | null
           avatar_url: string | null
@@ -398,6 +399,7 @@ export type Database = {
           elite_since: string | null
           fidelity_score: number
           id: string
+          is_activated: boolean | null
           is_customer: boolean
           is_provider: boolean
           latitude: number | null
@@ -413,6 +415,7 @@ export type Database = {
           provider_type: string | null
           rating: number | null
           state: string | null
+          status: string | null
           storefront_config: Json | null
           subscription_paid: boolean
           subscription_paid_at: string | null
@@ -421,6 +424,7 @@ export type Database = {
           vini_preferences: Json | null
         }
         Insert: {
+          activation_code?: string | null
           address?: string | null
           auth_split_5x?: boolean | null
           avatar_url?: string | null
@@ -437,6 +441,7 @@ export type Database = {
           elite_since?: string | null
           fidelity_score?: number
           id?: string
+          is_activated?: boolean | null
           is_customer?: boolean
           is_provider?: boolean
           latitude?: number | null
@@ -452,6 +457,7 @@ export type Database = {
           provider_type?: string | null
           rating?: number | null
           state?: string | null
+          status?: string | null
           storefront_config?: Json | null
           subscription_paid?: boolean
           subscription_paid_at?: string | null
@@ -460,6 +466,7 @@ export type Database = {
           vini_preferences?: Json | null
         }
         Update: {
+          activation_code?: string | null
           address?: string | null
           auth_split_5x?: boolean | null
           avatar_url?: string | null
@@ -476,6 +483,7 @@ export type Database = {
           elite_since?: string | null
           fidelity_score?: number
           id?: string
+          is_activated?: boolean | null
           is_customer?: boolean
           is_provider?: boolean
           latitude?: number | null
@@ -491,6 +499,7 @@ export type Database = {
           provider_type?: string | null
           rating?: number | null
           state?: string | null
+          status?: string | null
           storefront_config?: Json | null
           subscription_paid?: boolean
           subscription_paid_at?: string | null
