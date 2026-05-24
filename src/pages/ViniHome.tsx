@@ -1475,7 +1475,7 @@ const ViniHome = () => {
       </motion.button>
 
       {/* ─── Activation Banner (Lead) ─── */}
-      {!isActivated && user && (
+      {isActivated === false && user && (
         <motion.div 
           initial={{ y: 100 }}
           animate={{ y: 0 }}
