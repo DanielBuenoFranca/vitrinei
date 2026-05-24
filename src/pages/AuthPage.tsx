@@ -1036,15 +1036,40 @@ const AuthPage = () => {
           <div className="space-y-4">
             <div>
               <Label className="text-xs">Código de Ativação (6 caracteres)</Label>
-              <Input 
-                value={activationInput} 
-                onChange={e => {
-                  const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
-                  setActivationInput(val);
-                }} 
-                placeholder="ABC123"
-                className="text-center text-2xl tracking-[0.3em] font-mono"
-              />
+              <div className="relative">
+                <Input 
+                  value={activationInput} 
+                  onChange={e => {
+                    const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+                    setActivationInput(val);
+                  }}
+                  onPaste={e => {
+                    e.preventDefault();
+                    const pastedData = e.clipboardData.getData('text');
+                    const cleaned = pastedData.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+                    setActivationInput(cleaned);
+                  }}
+                  placeholder="ABC123"
+                  className="text-center text-2xl tracking-[0.3em] font-mono pr-10"
+                />
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground hover:text-primary"
+                  onClick={async () => {
+                    try {
+                      const text = await navigator.clipboard.readText();
+                      const cleaned = text.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+                      setActivationInput(cleaned);
+                      toast.success('Código colado!');
+                    } catch {
+                      toast.error('Erro ao acessar área de transferência');
+                    }
+                  }}
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             <Button className="w-full" onClick={handleActivateAndLogin} disabled={activationInput.length !== 6 || loading}>
               {loading ? 'Ativando...' : 'Ativar Conta'}
