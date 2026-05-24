@@ -119,6 +119,7 @@ const ViniHome = () => {
   });
   const [text, setText] = useState('');
   const lastInteractionRef = useRef<number>(Date.now());
+  const headerRef = useRef<HTMLElement>(null);
   const idleTimerRef = useRef<number | null>(null);
   const lastGreetedUserRef = useRef<string | null>(null);
   const [showPlusMenu, setShowPlusMenu] = useState(false);
@@ -957,7 +958,7 @@ const ViniHome = () => {
       <div className="absolute inset-x-0 bottom-0 h-32 pointer-events-none z-10 bg-gradient-to-t from-background/40 to-transparent" />
 
       {/* ─── Header ─── */}
-      <header className="absolute top-0 inset-x-0 z-30 px-3 sm:px-5 pt-3">
+      <header ref={headerRef} className="absolute top-0 inset-x-0 z-[60] px-3 sm:px-5 pt-3 pointer-events-auto">
         <div className="glass rounded-2xl flex items-center justify-between gap-2 px-2.5 py-1.5">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <div className="relative shrink-0">
@@ -1006,11 +1007,29 @@ const ViniHome = () => {
             )}
             <ThemeSwitcher />
             {user ? (
-              <Button variant="outline" size="sm" className="h-7 text-[10.5px] px-2 gap-1 glass" onClick={signOut}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-7 text-[10.5px] px-2 gap-1 glass cursor-pointer z-[50]" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  signOut();
+                }}
+              >
                 Sair
               </Button>
             ) : (
-              <Button variant="outline" size="sm" className="h-7 text-[10.5px] px-2 gap-1 glass" onClick={() => navigate('/auth')}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-7 text-[10.5px] px-2 gap-1 glass cursor-pointer z-[50]" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  navigate('/auth');
+                }}
+              >
                 <LogIn className="w-3 h-3" /> Entrar
               </Button>
             )}
