@@ -88,21 +88,21 @@ Deno.serve(async (req) => {
 
       // Second: Phone (only if email not already found as duplicate)
       if (conflicts.length === 0 && phone) {
-        // Try exact match first
-        let { data: profileByPhone } = await supabase
-          .from('registration_check_view')
-          .select('*')
-          .eq('phone', phone)
-          .maybeSingle()
+        const normalizedInputPhone = phone.replace(/\D/g, '')
         
-        // If not found, try normalized digits (requires custom RPC or more logic, but let's stick to exact for now as requested)
-        if (profileByPhone) {
+        // We can query the profiles table using the normalize_phone function if we want to be thorough
+        // but for now, let's just query profiles where normalized phone matches
+        const { data: profileByPhone } = await supabase
+          .rpc('get_profile_by_normalized_phone', { _phone: normalizedInputPhone })
+
+        if (profileByPhone && profileByPhone.length > 0) {
+          const p = profileByPhone[0]
           conflicts.push({
             type: 'Telefone',
-            name: maskName(profileByPhone.display_name || 'Usuário'),
-            email: profileByPhone.email ? maskEmail(profileByPhone.email) : 'N/A',
-            phone: maskPhone(profileByPhone.phone || phone),
-            status: profileByPhone.status || 'Ativo'
+            name: maskName(p.display_name || 'Usuário'),
+            email: p.email ? maskEmail(p.email) : 'N/A',
+            phone: maskPhone(p.phone || phone),
+            status: p.status || 'Ativo'
           })
         }
       }
