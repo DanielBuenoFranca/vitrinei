@@ -1177,8 +1177,9 @@ const AdminPanel = () => {
                         <TableHead>Plano</TableHead>
                         <TableHead>Status E-mail</TableHead>
                         <TableHead title="PIN de ativação para Lead">PIN</TableHead>
-                        <TableHead>Telefone</TableHead>
-                        <TableHead>Criado em</TableHead>
+                         <TableHead>Telefone</TableHead>
+                         <TableHead>Status</TableHead>
+                         <TableHead>Criado em</TableHead>
                         <TableHead>Ações</TableHead>
                       </TableRow>
                     </TableHeader>
