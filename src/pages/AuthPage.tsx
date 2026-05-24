@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import { toast } from 'sonner';
-import { Zap, Mail, Lock, User, ArrowLeft, Gift, ShoppingCart, Wrench, Shuffle, Crown, Check, KeyRound, CheckCircle, IdCard, Loader2, X, Info } from 'lucide-react';
+import { Zap, Mail, Lock, User, ArrowLeft, Gift, ShoppingCart, Wrench, Shuffle, Crown, Check, KeyRound, CheckCircle, IdCard, Loader2, X, Info, AlertCircle } from 'lucide-react';
 import { maskCPFCNPJ, unmask } from '@/lib/masks';
 import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlans';
 
@@ -106,6 +106,9 @@ const AuthPage = () => {
   const [activationModal, setActivationModal] = useState<{ open: boolean; code: string; email: string }>({ open: false, code: '', email: '' });
   const [loginActivationModal, setLoginActivationModal] = useState<{ open: boolean; expectedCode: string; userId: string }>({ open: false, expectedCode: '', userId: '' });
   const [activationInput, setActivationInput] = useState('');
+  const [conflicts, setConflicts] = useState<any[]>([]);
+  const [showConflictModal, setShowConflictModal] = useState(false);
+
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
@@ -417,17 +420,32 @@ const AuthPage = () => {
 
     setLoading(true);
 
-    // Final server-side check (race-safe)
-    if (!isExempt) {
-      try {
-        const { data: chk } = await (supabase.rpc as any)('check_cpf_cnpj_available', { _doc: finalCpfDigits });
-        if (chk && !chk.available) {
-          toast.error(chk.reason === 'already_registered' ? 'Este CPF/CNPJ já está cadastrado' : 'CPF/CNPJ inválido');
-          setLoading(false);
-          return;
+    // New Universal and Conditional Duplicate Validation via Edge Function
+    try {
+      const { data: valData, error: valError } = await supabase.functions.invoke('validate-registration', {
+        body: { 
+          cpf_cnpj: !isExempt ? unmask(cpfCnpj) : null,
+          email,
+          phone: phone || null,
+          is_exempt: isExempt
+        },
+      });
+
+      if (valError || (valData && !valData.ok)) {
+        if (valData?.conflicts) {
+          setConflicts(valData.conflicts);
+          setShowConflictModal(true);
+        } else {
+          toast.error(valData?.error || 'Erro ao validar cadastro');
         }
-      } catch { /* non-blocking */ }
+        setLoading(false);
+        return;
+      }
+    } catch (err: any) {
+      console.error('Validation error:', err);
+      // Non-blocking for now if function fails, but ideally we should handle it
     }
+
 
     const { data, error } = await supabase.auth.signUp({
       email, password,
@@ -996,8 +1014,86 @@ const AuthPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Duplicate Registration / Reactivation Modal */}
+      <Dialog open={showConflictModal} onOpenChange={setShowConflictModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-600">
+              <AlertCircle className="h-5 w-5" />
+              Registros Encontrados
+            </DialogTitle>
+            <DialogDescription>
+              Identificamos que já existe(m) conta(s) vinculada(s) aos dados informados. O novo cadastro não pode ser concluído para evitar duplicidade.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 my-2">
+            {conflicts.map((conflict, idx) => (
+              <div key={idx} className="p-3 border rounded-lg bg-muted/30 space-y-1 text-sm">
+                <div className="flex justify-between items-start">
+                  <span className="font-semibold text-primary">{conflict.name}</span>
+                  <Badge variant="outline" className="text-[10px] uppercase">
+                    {conflict.status}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-1 gap-1 text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-3 w-3" />
+                    <span>{conflict.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <IdCard className="h-3 w-3" />
+                    <span>{conflict.phone}</span>
+                  </div>
+                </div>
+                <div className="pt-1 italic text-[10px]">
+                  Detectado via: {conflict.type}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-3 pt-2">
+            <p className="text-xs text-center text-muted-foreground">
+              O que você deseja fazer agora?
+            </p>
+            <div className="grid grid-cols-1 gap-2">
+              <Button 
+                variant="default" 
+                className="w-full gap-2"
+                onClick={() => {
+                  setShowConflictModal(false);
+                  setResetMode(true);
+                  setActiveTab('login');
+                  if (conflicts[0]?.email && !conflicts[0].email.includes('*')) {
+                    setEmail(conflicts[0].email);
+                  }
+                }}
+              >
+                <KeyRound className="h-4 w-4" />
+                Recuperar Acesso
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full gap-2"
+                onClick={() => window.open('https://wa.me/5511999999999?text=Olá, preciso de ajuda com minha conta duplicada.', '_blank')}
+              >
+                <User className="h-4 w-4" />
+                Falar com Suporte
+              </Button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" className="w-full text-xs" onClick={() => setShowConflictModal(false)}>
+              Voltar ao Cadastro
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
 export default AuthPage;
+

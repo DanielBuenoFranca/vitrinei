@@ -1380,6 +1380,17 @@ export type Database = {
         }
         Relationships: []
       }
+      registration_check_view: {
+        Row: {
+          cpf_cnpj_normalized: string | null
+          display_name: string | null
+          email: string | null
+          phone: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       v_lead_funnel: {
         Row: {
           activated_at: string | null
@@ -1452,6 +1463,16 @@ export type Database = {
       current_ai_savings: { Args: never; Returns: Json }
       generate_random_pin: { Args: never; Returns: string }
       generate_referral_link_24h: { Args: { _referrer: string }; Returns: Json }
+      get_profile_by_normalized_phone: {
+        Args: { _phone: string }
+        Returns: {
+          display_name: string
+          email: string
+          phone: string
+          status: string
+          user_id: string
+        }[]
+      }
       get_public_display_name: { Args: { _user_id: string }; Returns: string }
       get_referral_by_token: {
         Args: { _token: string }
@@ -1482,6 +1503,7 @@ export type Database = {
         Returns: boolean
       }
       is_master: { Args: { _user_id: string }; Returns: boolean }
+      normalize_phone: { Args: { p_phone: string }; Returns: string }
       process_checkout_acid: {
         Args: {
           _buyer_id: string
