@@ -89,26 +89,61 @@ const ResetPasswordPage = () => {
           )}
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Nova Senha</Label>
-            <div className="relative">
-              <Lock className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
-              <Input type="password" value={password} onChange={e => setPassword(e.target.value)}
-                placeholder="Mínimo 6 caracteres" className="pl-10" />
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Nova Senha</Label>
+              <div className="relative">
+                <Lock className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
+                <Input type="password" value={password} onChange={e => setPassword(e.target.value)}
+                  placeholder="Mínimo 8 caracteres" className="pl-10" />
+              </div>
+              
+              {/* Password Strength Indicators */}
+              <div className="p-3 bg-muted/50 rounded-lg space-y-2 border">
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-1">
+                  <ShieldCheck className="w-3 h-3 text-primary" /> Diretrizes de Segurança
+                </p>
+                <div className="grid grid-cols-1 gap-1.5">
+                  <div className={`flex items-center gap-2 text-[10px] ${passwordStrength.length ? 'text-green-600 font-medium' : 'text-muted-foreground'}`}>
+                    {passwordStrength.length ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />} Mínimo de 8 caracteres
+                  </div>
+                  <div className={`flex items-center gap-2 text-[10px] ${passwordStrength.hasUpper ? 'text-green-600 font-medium' : 'text-muted-foreground'}`}>
+                    {passwordStrength.hasUpper ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />} Pelo menos uma letra maiúscula
+                  </div>
+                  <div className={`flex items-center gap-2 text-[10px] ${passwordStrength.hasLower ? 'text-green-600 font-medium' : 'text-muted-foreground'}`}>
+                    {passwordStrength.hasLower ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />} Pelo menos uma letra minúscula
+                  </div>
+                  <div className={`flex items-center gap-2 text-[10px] ${passwordStrength.hasNumber ? 'text-green-600 font-medium' : 'text-muted-foreground'}`}>
+                    {passwordStrength.hasNumber ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />} Pelo menos um número
+                  </div>
+                  <div className={`flex items-center gap-2 text-[10px] ${passwordStrength.hasSpecial ? 'text-green-600 font-medium' : 'text-muted-foreground'}`}>
+                    {passwordStrength.hasSpecial ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />} Pelo menos um caractere especial
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Confirmar Senha</Label>
-            <div className="relative">
-              <Lock className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
-              <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
-                placeholder="Repita a senha" className="pl-10"
-                onKeyDown={e => e.key === 'Enter' && handleReset()} />
+            
+            <div className="space-y-2">
+              <Label>Confirmar Nova Senha</Label>
+              <div className="relative">
+                <Lock className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
+                <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                  placeholder="Repita a senha" className="pl-10"
+                  onKeyDown={e => e.key === 'Enter' && handleReset()} />
+              </div>
             </div>
+            
+            <Button 
+              className="w-full" 
+              onClick={handleReset} 
+              disabled={loading || !isPasswordStrong || password !== confirmPassword || !password}
+            >
+              {loading ? 'Atualizando...' : 'Atualizar Senha'}
+            </Button>
+            <Button variant="ghost" className="w-full text-xs" onClick={() => navigate('/auth')}>
+              Cancelar e voltar
+            </Button>
           </div>
-          <Button className="w-full" onClick={handleReset} disabled={loading}>
-            {loading ? 'Atualizando...' : 'Atualizar Senha'}
-          </Button>
         </CardContent>
       </Card>
     </div>
