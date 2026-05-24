@@ -79,7 +79,14 @@ Deno.serve(async (req) => {
     })
   }
 
+  // Update profile status and activation
+  await supabase
+    .from('profiles')
+    .update({ is_activated: true, status: 'active' })
+    .eq('user_id', user.id)
+
   // --- LEDGER: Ensure wallet, subscription, role and initial debit exist ---
+
   const meta = user.user_metadata || {}
   const selectedPlan = meta.selected_plan || 'bronze'
   const selectedProfile = meta.selected_profile || 'client'
