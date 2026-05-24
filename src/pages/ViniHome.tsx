@@ -82,7 +82,7 @@ const ViniHome = () => {
   const { profileLabel } = usePermissions();
   const { session, update: updateAiSession, setIsThinking: setGlobalThinking } = useAiSession();
   const { totalCartItems, totalCartValue, productCart, serviceCart, clearCart } = useCart();
-  const { isActivated, accessLevel } = useConversion();
+  const { isActivated, accessLevel, refreshWallet: refreshConversion } = useConversion();
   const { supported, listening, transcript, start, stop } = useSpeechRecognition();
   
   const [favoritesOpen, setFavoritesOpen] = useState(false);
@@ -1652,7 +1652,7 @@ const ViniHome = () => {
                     toast.error(error?.message || data?.error || 'Código inválido');
                   } else {
                     toast.success('Conta ativada com sucesso!');
-                    setIsActivated(true);
+                    await refreshConversion();
                     setActivationDialogOpen(false);
                     // Update profile status locally
                     if (user?.id) {
