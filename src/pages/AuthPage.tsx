@@ -670,28 +670,37 @@ const AuthPage = () => {
                   <p className="text-[10px] text-muted-foreground">Obrigatório para prestadores</p>
                 </div>
                 
-                <div 
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full cursor-pointer transition-all border shadow-sm ${
-                    isExempt 
-                      ? 'bg-orange-500 border-orange-600 text-white ring-2 ring-orange-200' 
-                      : 'bg-white border-border text-muted-foreground hover:bg-muted/50'
-                  }`}
-                  onClick={() => {
-                    const nextVal = !isExempt;
-                    setIsExempt(nextVal);
-                    if (nextVal) {
-                      setCpfCnpj('');
-                      setCpfCheckState('idle');
-                    }
-                  }}
-                >
-                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
-                    isExempt ? 'bg-white border-white' : 'bg-muted/20 border-muted-foreground/30'
-                  }`}>
-                    {isExempt && <Check className="w-2.5 h-2.5 text-orange-600 stroke-[4]" />}
-                  </div>
-                  <span className="text-[11px] font-black uppercase tracking-wider">Isento</span>
-                </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div 
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full cursor-pointer transition-all border shadow-sm ${
+                          isExempt 
+                            ? 'bg-orange-500 border-orange-600 text-white ring-2 ring-orange-200' 
+                            : 'bg-white border-border text-muted-foreground hover:bg-muted/50'
+                        }`}
+                        onClick={() => {
+                          const nextVal = !isExempt;
+                          setIsExempt(nextVal);
+                          if (nextVal) {
+                            setCpfCnpj('');
+                            setCpfCheckState('idle');
+                          }
+                        }}
+                      >
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
+                          isExempt ? 'bg-white border-white' : 'bg-muted/20 border-muted-foreground/30'
+                        }`}>
+                          {isExempt && <Check className="w-2.5 h-2.5 text-orange-600 stroke-[4]" />}
+                        </div>
+                        <span className="text-[11px] font-black uppercase tracking-wider">Isento</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="text-[10px] max-w-[200px]">
+                      Ative esta opção se você não possui um documento no momento ou deseja cadastrar-se como isento.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
               {!isExempt ? (
                 <div className="relative">
