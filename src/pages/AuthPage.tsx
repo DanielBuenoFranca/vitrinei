@@ -479,12 +479,14 @@ const AuthPage = () => {
       await supabase.from('user_roles').insert({ user_id: data.user.id, role: selectedProfile as any });
 
       // Create subscription with dynamic plan price
-      const plan = plans.find(p => p.id === selectedPlan)!;
-      await supabase.from('subscriptions').insert({
-        user_id: data.user.id,
-        plan: plan.id,
-        price: plan.price,
-      });
+      const plan = plans.find(p => p.id === selectedPlan);
+      if (plan) {
+        await supabase.from('subscriptions').insert({
+          user_id: data.user.id,
+          plan: plan.id,
+          price: plan.price,
+        });
+      }
 
       // Update profile — saving CPF/CNPJ triggers auto-link of orphan provider
       const isProvider = selectedProfile === 'provider' || selectedProfile === 'mixed';
