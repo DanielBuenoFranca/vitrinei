@@ -39,8 +39,8 @@ Deno.serve(async (req) => {
     })
   }
 
-  // Validate code against database
-  const { data: activationData, error: tokenErr } = await supabase
+  // Validate code against user_activations table first
+  const { data: activationData } = await supabase
     .from('user_activations')
     .select('id')
     .eq('email', email)
@@ -48,18 +48,34 @@ Deno.serve(async (req) => {
     .eq('is_used', false)
     .gt('expires_at', new Date().toISOString())
     .maybeSingle()
-  
-  if (tokenErr || !activationData) {
+
+  let validated = !!activationData
+
+  // Fallback: check profiles.activation_code (for users registered before the new flow)
+  if (!validated) {
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('user_id, activation_code')
+      .eq('user_id', user.id)
+      .eq('activation_code', code)
+      .maybeSingle()
+    validated = !!profileData
+  }
+
+  if (!validated) {
     return new Response(JSON.stringify({ error: 'Código de ativação inválido ou expirado' }), {
       status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }
 
-  // Mark token as used
-  await supabase
-    .from('user_activations')
-    .update({ is_used: true, used_at: new Date().toISOString() })
-    .eq('id', activationData.id)
+  // Mark token as used (if it came from user_activations)
+  if (activationData) {
+    await supabase
+      .from('user_activations')
+      .update({ is_used: true, used_at: new Date().toISOString() })
+      .eq('id', activationData.id)
+  }
+
 
   // Already confirmed
   if (user.email_confirmed_at) {
