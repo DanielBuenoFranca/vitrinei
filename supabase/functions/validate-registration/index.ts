@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
     if (conflicts.length > 0) {
       return new Response(
         JSON.stringify({ ok: false, conflicts }),
-        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 

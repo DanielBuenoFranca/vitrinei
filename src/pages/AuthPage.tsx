@@ -397,6 +397,8 @@ const AuthPage = () => {
     if (password.length < 6) { toast.error('Senha deve ter no mínimo 6 caracteres'); return; }
     if (!selectedProfile) { toast.error('Selecione um perfil de acesso'); return; }
     if (!selectedPlan) { toast.error('Selecione um plano de assinatura'); return; }
+    const currentPlan = plans.find(p => p.id === selectedPlan);
+    if (!currentPlan) { toast.error('Plano selecionado não encontrado'); return; }
     const generateActivationCode = () => {
       const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
       let code = '';
@@ -431,19 +433,25 @@ const AuthPage = () => {
         },
       });
 
-      if (valError || (valData && !valData.ok)) {
-        if (valData?.conflicts) {
-          setConflicts(valData.conflicts);
+      // Handle conflict or error from validation function
+      const validationResult = valData || (valError as any)?.context;
+      
+      if (valError || (validationResult && !validationResult.ok)) {
+        console.log('Validation conflict detected:', validationResult);
+        
+        if (validationResult?.conflicts && Array.isArray(validationResult.conflicts)) {
+          setConflicts(validationResult.conflicts);
           setShowConflictModal(true);
         } else {
-          toast.error(valData?.error || 'Erro ao validar cadastro');
+          toast.error(validationResult?.error || 'Erro ao validar cadastro. Verifique os dados e tente novamente.');
         }
         setLoading(false);
         return;
       }
     } catch (err: any) {
-      console.error('Validation error:', err);
-      // Non-blocking for now if function fails, but ideally we should handle it
+      console.error('Validation unexpected error:', err);
+      // We don't want to block the signup if the validation function itself crashes,
+      // but we should log it.
     }
 
 
@@ -473,7 +481,7 @@ const AuthPage = () => {
       await supabase.from('user_roles').insert({ user_id: data.user.id, role: selectedProfile as any });
 
       // Create subscription with dynamic plan price
-      const plan = plans.find(p => p.id === selectedPlan)!;
+      const plan = plans.find(p => p.id === selectedPlan)!; // We already verified it exists at the top
       await supabase.from('subscriptions').insert({
         user_id: data.user.id,
         plan: plan.id,
