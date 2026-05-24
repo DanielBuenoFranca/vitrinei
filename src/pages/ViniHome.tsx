@@ -4,8 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, Wallet, User as UserIcon, Sparkles, Mic, Plus,
   Bot, LogIn, Settings, X, Send, Radar, Gift, MapPin, ShoppingBag, Store, RotateCcw, Heart,
-  Search, LifeBuoy, Loader2, Sliders, ZapOff, Sun, Contrast, MessageCircle
+  Search, LifeBuoy, Loader2, Sliders, ZapOff, Sun, Contrast, MessageCircle, KeyRound
 } from 'lucide-react';
+
 import { FavoritesModal } from '@/components/FavoritesModal';
 import { useFavorites } from '@/hooks/useFavorites';
 import { toast } from 'sonner';
@@ -144,6 +145,11 @@ const ViniHome = () => {
   const [hudScale, setHudScale] = useState(1.1);
    const saveTimeoutRef = useRef<number | null>(null);
   const [isThinking, setIsThinking] = useState(false);
+  const [isActivated, setIsActivated] = useState(true);
+  const [activationDialogOpen, setActivationDialogOpen] = useState(false);
+  const [activationCodeInput, setActivationCodeInput] = useState('');
+  const [isActivating, setIsActivating] = useState(false);
+
 
   // Load preferences from profile
   useEffect(() => {
@@ -279,10 +285,13 @@ const ViniHome = () => {
     (async () => {
       const { data: prof } = await supabase
         .from('profiles')
-        .select('city')
+        .select('city, is_activated, status')
         .eq('user_id', user.id)
         .maybeSingle();
       if (prof?.city) setCity(prof.city);
+      if (prof?.is_activated !== undefined && prof?.is_activated !== null) setIsActivated(prof.is_activated);
+
+
       const { data: sub } = await supabase
         .from('subscriptions')
         .select('plan,status')
@@ -1465,7 +1474,31 @@ const ViniHome = () => {
         <Mic className={cn('w-5 h-5 relative', listening && 'animate-pulse')} strokeWidth={1.5} />
       </motion.button>
 
+      {/* ─── Activation Banner (Lead) ─── */}
+      {!isActivated && user && (
+        <motion.div 
+          initial={{ y: 100 }}
+          animate={{ y: 0 }}
+          className="fixed bottom-0 left-0 right-0 z-[60] bg-orange-500 text-white p-2 text-center flex items-center justify-center gap-4 shadow-lg border-t border-orange-600"
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+            <span className="text-xs font-bold uppercase tracking-wider">Conta em modo Lead (Não Ativada)</span>
+          </div>
+          <p className="text-[10px] hidden sm:block opacity-90">Verifique seu e-mail e insira o código para liberar todas as funções.</p>
+          <Button 
+            size="sm" 
+            variant="secondary" 
+            className="h-7 text-[10px] font-bold bg-white text-orange-600 hover:bg-orange-50"
+            onClick={() => setActivationDialogOpen(true)}
+          >
+            Ativar Agora
+          </Button>
+        </motion.div>
+      )}
+
       {/* ─── Modals ─── */}
+
       <ReferralRulesModal 
         open={referralRulesOpen}
         onOpenChange={setReferralRulesOpen}
@@ -1583,8 +1616,69 @@ const ViniHome = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <Dialog open={activationDialogOpen} onOpenChange={setActivationDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="h-5 w-5 text-orange-500" />
+              Ativar Conta
+            </DialogTitle>
+            <DialogDescription>
+              Insira o código de 6 dígitos enviado para seu e-mail no momento do cadastro.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Código de Ativação</Label>
+              <Input 
+                value={activationCodeInput}
+                onChange={(e) => setActivationCodeInput(e.target.value.toUpperCase().slice(0, 6))}
+                placeholder="ABC123"
+                className="text-center text-2xl font-mono tracking-[0.3em]"
+              />
+            </div>
+            <Button 
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold"
+              disabled={activationCodeInput.length !== 6 || isActivating}
+              onClick={async () => {
+                setIsActivating(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke('self-activate', {
+                    body: { email: user?.email || '', code: activationCodeInput }
+                  });
+
+
+                  if (error || (data && data.error)) {
+                    toast.error(error?.message || data?.error || 'Código inválido');
+                  } else {
+                    toast.success('Conta ativada com sucesso!');
+                    setIsActivated(true);
+                    setActivationDialogOpen(false);
+                    // Update profile status locally
+                    if (user?.id) {
+                      await supabase.from('profiles').update({ status: 'active', is_activated: true }).eq('user_id', user.id);
+                    }
+
+                  }
+                } catch (err) {
+                  console.error('Activation error:', err);
+                  toast.error('Erro ao processar ativação');
+                } finally {
+                  setIsActivating(false);
+                }
+              }}
+            >
+              {isActivating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : 'Ativar Acesso'}
+            </Button>
+            <p className="text-[10px] text-center text-muted-foreground">
+              Não recebeu o código? Verifique sua caixa de spam ou entre em contato com o suporte.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
+
 
 export default ViniHome;
