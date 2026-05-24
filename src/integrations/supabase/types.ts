@@ -1482,6 +1482,7 @@ export type Database = {
         Returns: boolean
       }
       is_master: { Args: { _user_id: string }; Returns: boolean }
+      normalize_phone: { Args: { p_phone: string }; Returns: string }
       process_checkout_acid: {
         Args: {
           _buyer_id: string
