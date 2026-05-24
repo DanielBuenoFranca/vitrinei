@@ -1689,6 +1689,7 @@ const ViniHome = () => {
                   e.preventDefault();
                   e.stopPropagation();
                   console.log('Logout initiated from header');
+                  toast.loading('Saindo...');
                   signOut();
                 }}
               >
