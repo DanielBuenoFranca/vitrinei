@@ -120,6 +120,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    console.log('AuthContext: signOut initiated');
     try {
       await supabase.auth.signOut();
       setUser(null);
