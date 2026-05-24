@@ -22,6 +22,7 @@ function maskName(name: string) {
 }
 
 function maskPhone(phone: string) {
+  if (!phone) return 'N/A';
   const digits = phone.replace(/\D/g, '');
   if (digits.length < 4) return phone;
   const last4 = digits.slice(-4);
@@ -48,18 +49,17 @@ Deno.serve(async (req) => {
     if (cpf_cnpj && !is_exempt) {
       const normalizedCpf = cpf_cnpj.replace(/\D/g, '')
       const { data: profileByCpf } = await supabase
-        .from('profiles')
-        .select('user_id, display_name, phone, status')
+        .from('registration_check_view')
+        .select('*')
         .eq('cpf_cnpj_normalized', normalizedCpf)
         .maybeSingle()
 
       if (profileByCpf) {
-        const { data: userData } = await supabase.auth.admin.getUserById(profileByCpf.user_id)
         conflicts.push({
           type: 'CPF',
           name: maskName(profileByCpf.display_name || 'Usuário'),
-          email: userData.user?.email ? maskEmail(userData.user.email) : 'N/A',
-          phone: profileByCpf.phone ? maskPhone(profileByCpf.phone) : 'N/A',
+          email: profileByCpf.email ? maskEmail(profileByCpf.email) : 'N/A',
+          phone: maskPhone(profileByCpf.phone),
           status: profileByCpf.status || 'Ativo'
         })
       }
@@ -69,41 +69,38 @@ Deno.serve(async (req) => {
     if (is_exempt) {
       // First: Email
       if (email) {
-        const { data: usersByEmail } = await supabase.auth.admin.listUsers()
-        const userByEmail = usersByEmail.users.find(u => u.email === email)
+        const { data: profileByEmail } = await supabase
+          .from('registration_check_view')
+          .select('*')
+          .eq('email', email)
+          .maybeSingle()
         
-        if (userByEmail) {
-          const { data: profileByEmail } = await supabase
-            .from('profiles')
-            .select('display_name, phone, status')
-            .eq('user_id', userByEmail.id)
-            .maybeSingle()
-
+        if (profileByEmail) {
           conflicts.push({
             type: 'Email',
-            name: maskName(profileByEmail?.display_name || userByEmail.email?.split('@')[0] || 'Usuário'),
-            email: maskEmail(userByEmail.email || ''),
-            phone: profileByEmail?.phone ? maskPhone(profileByEmail.phone) : 'N/A',
-            status: profileByEmail?.status || 'Ativo'
+            name: maskName(profileByEmail.display_name || email.split('@')[0] || 'Usuário'),
+            email: maskEmail(email),
+            phone: maskPhone(profileByEmail.phone),
+            status: profileByEmail.status || 'Ativo'
           })
         }
       }
 
       // Second: Phone (only if email not already found as duplicate)
       if (conflicts.length === 0 && phone) {
-        const normalizedPhone = phone.replace(/\D/g, '')
-        const { data: profileByPhone } = await supabase
-          .from('profiles')
-          .select('user_id, display_name, phone, status')
-          .eq('phone', phone) 
+        // Try exact match first
+        let { data: profileByPhone } = await supabase
+          .from('registration_check_view')
+          .select('*')
+          .eq('phone', phone)
           .maybeSingle()
         
+        // If not found, try normalized digits (requires custom RPC or more logic, but let's stick to exact for now as requested)
         if (profileByPhone) {
-          const { data: userData } = await supabase.auth.admin.getUserById(profileByPhone.user_id)
           conflicts.push({
             type: 'Telefone',
             name: maskName(profileByPhone.display_name || 'Usuário'),
-            email: userData.user?.email ? maskEmail(userData.user.email) : 'N/A',
+            email: profileByPhone.email ? maskEmail(profileByPhone.email) : 'N/A',
             phone: maskPhone(profileByPhone.phone || phone),
             status: profileByPhone.status || 'Ativo'
           })
