@@ -1127,7 +1127,17 @@ const AdminPanel = () => {
                   <CardTitle className="text-base flex items-center gap-2"><UserCog className="w-4 h-4" /> Gestão de Usuários</CardTitle>
                   <CardDescription>Usuários cadastrados no sistema — dados completos e edição de perfil</CardDescription>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 mr-4">
+                    <Label htmlFor="show-master" className="text-xs text-muted-foreground cursor-pointer">Mostrar Infra (Master)</Label>
+                    <input
+                      type="checkbox"
+                      id="show-master"
+                      checked={showMasterUsers}
+                      onChange={(e) => setShowMasterUsers(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                  </div>
                   <Button size="sm" onClick={() => setUserForm({ open: true, profile: null, role: null, email: null })}>
                     <Plus className="h-4 w-4 mr-1" /> Novo Usuário
                   </Button>
