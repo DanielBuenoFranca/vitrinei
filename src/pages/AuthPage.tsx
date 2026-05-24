@@ -1014,8 +1014,86 @@ const AuthPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Duplicate Registration / Reactivation Modal */}
+      <Dialog open={showConflictModal} onOpenChange={setShowConflictModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-600">
+              <AlertCircle className="h-5 w-5" />
+              Registros Encontrados
+            </DialogTitle>
+            <DialogDescription>
+              Identificamos que já existe(m) conta(s) vinculada(s) aos dados informados. O novo cadastro não pode ser concluído para evitar duplicidade.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 my-2">
+            {conflicts.map((conflict, idx) => (
+              <div key={idx} className="p-3 border rounded-lg bg-muted/30 space-y-1 text-sm">
+                <div className="flex justify-between items-start">
+                  <span className="font-semibold text-primary">{conflict.name}</span>
+                  <Badge variant="outline" className="text-[10px] uppercase">
+                    {conflict.status}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-1 gap-1 text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-3 w-3" />
+                    <span>{conflict.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <IdCard className="h-3 w-3" />
+                    <span>{conflict.phone}</span>
+                  </div>
+                </div>
+                <div className="pt-1 italic text-[10px]">
+                  Detectado via: {conflict.type}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-3 pt-2">
+            <p className="text-xs text-center text-muted-foreground">
+              O que você deseja fazer agora?
+            </p>
+            <div className="grid grid-cols-1 gap-2">
+              <Button 
+                variant="default" 
+                className="w-full gap-2"
+                onClick={() => {
+                  setShowConflictModal(false);
+                  setResetMode(true);
+                  setActiveTab('login');
+                  if (conflicts[0]?.email && !conflicts[0].email.includes('*')) {
+                    setEmail(conflicts[0].email);
+                  }
+                }}
+              >
+                <KeyRound className="h-4 w-4" />
+                Recuperar Acesso
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full gap-2"
+                onClick={() => window.open('https://wa.me/5511999999999?text=Olá, preciso de ajuda com minha conta duplicada.', '_blank')}
+              >
+                <User className="h-4 w-4" />
+                Falar com Suporte
+              </Button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" className="w-full text-xs" onClick={() => setShowConflictModal(false)}>
+              Voltar ao Cadastro
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
 export default AuthPage;
+
