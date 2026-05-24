@@ -106,6 +106,9 @@ const AuthPage = () => {
   const [activationModal, setActivationModal] = useState<{ open: boolean; code: string; email: string }>({ open: false, code: '', email: '' });
   const [loginActivationModal, setLoginActivationModal] = useState<{ open: boolean; expectedCode: string; userId: string }>({ open: false, expectedCode: '', userId: '' });
   const [activationInput, setActivationInput] = useState('');
+  const [conflicts, setConflicts] = useState<any[]>([]);
+  const [showConflictModal, setShowConflictModal] = useState(false);
+
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
