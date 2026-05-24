@@ -1689,9 +1689,12 @@ const ViniHome = () => {
                   e.preventDefault();
                   e.stopPropagation();
                   console.log('Logout button clicked');
-                  // We don't dismiss the loading toast because the page will reload
-                  toast.loading('Saindo...', { duration: 3000 });
-                  await signOut();
+                  const t = toast.loading('Saindo...');
+                  try {
+                    await signOut();
+                  } finally {
+                    toast.dismiss(t);
+                  }
                 }}
               >
                 Sair
