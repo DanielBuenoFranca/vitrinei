@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle, Megaphone, Mail, Gift, CheckCircle, KeyRound, BarChart3, ImageOff, TrendingUp as TrendingUpIcon, LifeBuoy, Copy } from 'lucide-react';
+import { ArrowLeft, Trash2, RefreshCw, Database, Package, Users, Plus, Pencil, Store, Tag, AlertTriangle, FileSpreadsheet, UserCog, Shield, Ruler, Sparkles, Loader2, Crown, ShoppingCart, Wrench, Shuffle, Megaphone, Mail, Gift, CheckCircle, KeyRound, BarChart3, ImageOff, TrendingUp as TrendingUpIcon, LifeBuoy, Copy, Lock, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { UserForm } from '@/components/admin/UserForm';
@@ -383,6 +383,24 @@ const AdminPanel = () => {
     setSavingUser(false);
   };
 
+  const toggleUserStatus = async (userId: string, currentStatus: string) => {
+    const isMasterRow = userRoles.some(r => r.user_id === userId && r.role === 'master');
+    if (isMasterRow && (currentStatus === 'active')) {
+      toast.error('Não é possível desativar um usuário Master');
+      return;
+    }
+
+    const nextStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    const { error } = await supabase.from('profiles').update({ status: nextStatus }).eq('user_id', userId);
+    
+    if (error) {
+      toast.error('Erro ao atualizar status: ' + error.message);
+    } else {
+      toast.success(`Usuário ${nextStatus === 'active' ? 'ativado' : 'desativado'} com sucesso`);
+      fetchUsers();
+    }
+  };
+
   const activateUser = async (userId: string, enableSelling = false, userName?: string) => {
     // Lead importado (sem auth) — tenta criar a conta automaticamente com defaults
     // (sem abrir UserForm). Se faltar e-mail, então abre o form para coletar o mínimo.
@@ -498,12 +516,13 @@ const AdminPanel = () => {
             duration: 8000,
           });
           
-          // Sincroniza com o campo de ativação no perfil para permitir login de ativação
-          await supabase.from('profiles').update({ 
-            activation_code: resetPwdValue,
-            status: 'lead',
-            is_activated: false 
-          }).eq('user_id', resetPwdDialog.userId);
+          // Se for um lead ou pendente, sincroniza PIN
+          const profile = userProfiles.find(p => p.user_id === resetPwdDialog.userId);
+          if (profile && (profile.status === 'lead' || !profile.is_activated)) {
+            await supabase.from('profiles').update({ 
+              activation_code: resetPwdValue
+            }).eq('user_id', resetPwdDialog.userId);
+          }
 
           toast.success(`Senha alterada! ${resetPwdDialog.userName} usará esta para o próximo acesso.`);
           setResetPwdDialog({ open: false, userId: '', userName: '' });
@@ -1159,8 +1178,9 @@ const AdminPanel = () => {
                         <TableHead>Plano</TableHead>
                         <TableHead>Status E-mail</TableHead>
                         <TableHead title="PIN de ativação para Lead">PIN</TableHead>
-                        <TableHead>Telefone</TableHead>
-                        <TableHead>Criado em</TableHead>
+                         <TableHead>Telefone</TableHead>
+                         <TableHead>Status</TableHead>
+                         <TableHead>Criado em</TableHead>
                         <TableHead>Ações</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -1274,12 +1294,21 @@ const AdminPanel = () => {
                                    );
                                  })()}
                                </TableCell>
-                               <TableCell className="text-xs text-muted-foreground">{profile.phone || '—'}</TableCell>
-                              <TableCell className="text-xs text-muted-foreground">
-                                {new Date(profile.created_at).toLocaleDateString('pt-BR')}
-                              </TableCell>
+                                <TableCell className="text-xs text-muted-foreground">{profile.phone || '—'}</TableCell>
                                <TableCell>
-                                <div className="flex gap-1 flex-wrap">
+                                 <Badge variant="outline" className={`text-[10px] ${
+                                   profile.status === 'active' ? 'bg-green-50 text-green-700 border-green-200' :
+                                   profile.status === 'banned' ? 'bg-red-50 text-red-700 border-red-200' :
+                                   'bg-amber-50 text-amber-700 border-amber-200'
+                                 }`}>
+                                   {profile.status || 'lead'}
+                                 </Badge>
+                               </TableCell>
+                               <TableCell className="text-xs text-muted-foreground">
+                                 {new Date(profile.created_at).toLocaleDateString('pt-BR')}
+                               </TableCell>
+                                <TableCell>
+                                 <div className="flex gap-1 flex-wrap">
                                   {(() => {
                                     const isActive = !!userSub && userSub.status === 'active';
                                     const isTriggered = !isActive && !!userSubPending;
@@ -1390,6 +1419,15 @@ const AdminPanel = () => {
                                       </Button>
                                     );
                                   })()}
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className={`h-8 w-8 ${profile.status === 'active' ? 'text-destructive' : 'text-green-600'}`}
+                                    title={profile.status === 'active' ? 'Desativar usuário' : 'Ativar usuário'}
+                                    onClick={() => toggleUserStatus(profile.user_id, profile.status)}
+                                  >
+                                    {profile.status === 'active' ? <Lock className="h-4 w-4" /> : <ShieldCheck className="h-4 w-4" />}
+                                  </Button>
                                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
                                     if (profile.__isLead) {
                                       // Lead importado: força Perfil = Misto + Papel = Comum (sem roles em user_roles)

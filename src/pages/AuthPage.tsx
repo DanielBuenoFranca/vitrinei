@@ -258,26 +258,44 @@ const AuthPage = () => {
   }
 
   const handleLogin = async () => {
-    if (!email || !password) { toast.error('Preencha email e senha'); return; }
+    if (!email || !password) {
+      toast.error('Preencha email e senha');
+      return;
+    }
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     
-    if (error) {
-      // Check if the error is due to unconfirmed email
-      if (error.message?.includes('Email not confirmed') || error.message?.includes('email_not_confirmed')) {
-        setLoginActivationModal({ open: true, expectedCode: 'SERVER_SIDE', userId: '' });
-        setActivationInput('');
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      
+      if (error) {
+        // Rate limiting check
+        if (error.status === 429) {
+          toast.error('Muitas tentativas de login. Tente novamente mais tarde.');
+          setLoading(false);
+          return;
+        }
+
+        // Check if the error is due to unconfirmed email
+        if (error.message?.includes('Email not confirmed') || error.message?.includes('email_not_confirmed')) {
+          setLoginActivationModal({ open: true, expectedCode: 'SERVER_SIDE', userId: '' });
+          setActivationInput('');
+          setLoading(false);
+          return;
+        }
+
+        // Generic error message for security
+        toast.error('E-mail ou senha incorretos. Por favor, tente novamente.');
         setLoading(false);
         return;
       }
-      toast.error(error.message);
+      
+      toast.success('Login realizado com sucesso!');
+      navigate('/');
+    } catch (err) {
+      toast.error('Ocorreu um erro ao processar o login. Tente novamente.');
+    } finally {
       setLoading(false);
-      return;
     }
-    
-    toast.success('Login realizado!');
-    navigate('/');
-    setLoading(false);
   };
 
   const handleActivateAndLogin = async () => {
@@ -591,14 +609,30 @@ const AuthPage = () => {
   };
 
   const handleResetPassword = async () => {
-    if (!email) { toast.error('Digite seu email'); return; }
+    if (!email) {
+      toast.error('Digite seu e-mail cadastrado');
+      return;
+    }
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    if (error) toast.error(error.message);
-    else toast.success('Email de recuperação enviado!');
-    setLoading(false);
+    
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) {
+        // Generic error message for security (even if user doesn't exist)
+        toast.error('Ocorreu um erro ao processar sua solicitação. Se o e-mail estiver cadastrado, você receberá um link em breve.');
+        console.error('Reset password error:', error.message);
+      } else {
+        toast.success('Link de recuperação enviado para o seu e-mail!');
+        setResetMode(false);
+      }
+    } catch (err) {
+      toast.error('Erro ao solicitar recuperação de senha.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (resetMode) {
