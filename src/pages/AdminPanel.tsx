@@ -496,6 +496,14 @@ const AdminPanel = () => {
           toast.warning('Aviso de Segurança: A senha é fraca ou fácil de adivinhar. O fluxo prosseguiu por ser Master, mas recomende uma senha forte.', {
             duration: 8000,
           });
+          
+          // Sincroniza com o campo de ativação no perfil para permitir login de ativação
+          await supabase.from('profiles').update({ 
+            activation_code: resetPwdValue,
+            status: 'lead',
+            is_activated: false 
+          }).eq('user_id', resetPwdDialog.userId);
+
           toast.success(`Senha alterada! ${resetPwdDialog.userName} usará esta para o próximo acesso.`);
           setResetPwdDialog({ open: false, userId: '', userName: '' });
           setResetPwdValue('');
@@ -505,6 +513,14 @@ const AdminPanel = () => {
             ? 'A senha é fraca e fácil de adivinhar, escolha uma diferente' 
             : errorMsg;
           toast.warning(`Aviso técnico: ${ptErrorMsg}. Tentamos prosseguir com a finalização.`);
+          
+          // Sincroniza com o campo de ativação no perfil para permitir login de ativação
+          await supabase.from('profiles').update({ 
+            activation_code: resetPwdValue,
+            status: 'lead',
+            is_activated: false 
+          }).eq('user_id', resetPwdDialog.userId);
+
           toast.success(`Rotina finalizada para ${resetPwdDialog.userName}.`);
           setResetPwdDialog({ open: false, userId: '', userName: '' });
           setResetPwdValue('');
@@ -512,6 +528,13 @@ const AdminPanel = () => {
           toast.error('Erro: ' + errorMsg);
         }
       } else {
+        // Sincroniza com o campo de ativação no perfil para permitir login de ativação
+        await supabase.from('profiles').update({ 
+          activation_code: resetPwdValue,
+          status: 'lead',
+          is_activated: false 
+        }).eq('user_id', resetPwdDialog.userId);
+
         toast.success(`Senha redefinida! O usuário deve usar o código "${resetPwdValue}" para logar.`);
         setResetPwdDialog({ open: false, userId: '', userName: '' });
         setResetPwdValue('');
