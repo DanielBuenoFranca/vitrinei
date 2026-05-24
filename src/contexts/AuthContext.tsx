@@ -122,7 +122,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     console.log('AuthContext: signOut initiated');
     try {
-      // Clear all local data first to ensure UI reacts even if network is slow
+      // 1. Limpeza imediata de estado local para resposta instantânea da UI
       setUser(null);
       setSession(null);
       setRoles([]);
@@ -130,18 +130,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setMustResetPassword(false);
       setUserStatus(null);
       
-      // Attempt to notify Supabase (best effort)
-      await supabase.auth.signOut().catch(err => console.warn('Supabase signOut error (ignoring):', err));
-      
-      // Clear storage
+      // 2. Limpeza de storage
       localStorage.clear();
       sessionStorage.clear();
       
-      // Force a hard reload to the auth page to clear all memory states
-      window.location.replace('/auth');
+      // 3. Chamada de signOut do Supabase (não aguardamos para não travar o redirecionamento)
+      supabase.auth.signOut().catch(err => console.warn('Supabase signOut error (ignoring):', err));
+      
+      // 4. Redirecionamento forçado imediato
+      console.log('AuthContext: Redirecting to /auth');
+      window.location.assign('/auth');
+      
+      // Fallback de segurança caso window.location não funcione imediatamente
+      setTimeout(() => {
+        window.location.href = '/auth';
+      }, 500);
     } catch (error) {
       console.error('Error during signOut process:', error);
-      window.location.replace('/auth');
+      window.location.href = '/auth';
     }
   };
 
