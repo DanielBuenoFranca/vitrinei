@@ -1380,6 +1380,17 @@ export type Database = {
         }
         Relationships: []
       }
+      registration_check_view: {
+        Row: {
+          cpf_cnpj_normalized: string | null
+          display_name: string | null
+          email: string | null
+          phone: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       v_lead_funnel: {
         Row: {
           activated_at: string | null
