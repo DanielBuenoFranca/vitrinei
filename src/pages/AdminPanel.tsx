@@ -383,6 +383,24 @@ const AdminPanel = () => {
     setSavingUser(false);
   };
 
+  const toggleUserStatus = async (userId: string, currentStatus: string) => {
+    const isMasterRow = userRoles.some(r => r.user_id === userId && r.role === 'master');
+    if (isMasterRow && (currentStatus === 'active')) {
+      toast.error('Não é possível desativar um usuário Master');
+      return;
+    }
+
+    const nextStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    const { error } = await supabase.from('profiles').update({ status: nextStatus }).eq('user_id', userId);
+    
+    if (error) {
+      toast.error('Erro ao atualizar status: ' + error.message);
+    } else {
+      toast.success(`Usuário ${nextStatus === 'active' ? 'ativado' : 'desativado'} com sucesso`);
+      fetchUsers();
+    }
+  };
+
   const activateUser = async (userId: string, enableSelling = false, userName?: string) => {
     // Lead importado (sem auth) — tenta criar a conta automaticamente com defaults
     // (sem abrir UserForm). Se faltar e-mail, então abre o form para coletar o mínimo.
