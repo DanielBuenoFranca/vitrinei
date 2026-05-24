@@ -90,6 +90,7 @@ const AdminPanel = () => {
   const [authUsers, setAuthUsers] = useState<any[]>([]);
   const [userProfiles, setUserProfiles] = useState<any[]>([]);
   const [userRoles, setUserRoles] = useState<any[]>([]);
+  const [showMasterUsers, setShowMasterUsers] = useState(false);
   const [userSubscriptions, setUserSubscriptions] = useState<any[]>([]);
   const [userActivations, setUserActivations] = useState<any[]>([]);
 
@@ -1154,7 +1155,12 @@ const AdminPanel = () => {
                       </TableRow>
                     </TableHeader>
                       <TableBody>
-                        {userProfiles.map((profile: any) => {
+                        {userProfiles
+                          .filter((profile: any) => {
+                            const isMaster = userRoles.some(r => r.user_id === profile.user_id && r.role === 'master');
+                            return showMasterUsers ? true : !isMaster;
+                          })
+                          .map((profile: any) => {
                           const roles = userRoles.filter((r: any) => r.user_id === profile.user_id);
                           const userSub = userSubscriptions.find((s: any) => s.user_id === profile.user_id && s.status === 'active');
                           const userSubPending = userSubscriptions.find((s: any) => s.user_id === profile.user_id && s.status === 'pending');
