@@ -42,11 +42,10 @@ Deno.serve(async (req) => {
   // Validate code against user_activations table first
   const { data: activationData } = await supabase
     .from('user_activations')
-    .select('id')
+    .select('id, expires_at')
     .eq('email', email)
     .eq('code', code)
     .eq('is_used', false)
-    .gt('expires_at', new Date().toISOString())
     .maybeSingle()
 
   let validated = !!activationData
@@ -63,7 +62,13 @@ Deno.serve(async (req) => {
   }
 
   if (!validated) {
-    return new Response(JSON.stringify({ error: 'Código de ativação inválido ou expirado' }), {
+    // Se o código existe em user_activations mas expirou
+    if (activationData && new Date(activationData.expires_at) < new Date()) {
+      return new Response(JSON.stringify({ error: 'Código de ativação expirado' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+    return new Response(JSON.stringify({ error: 'Código de ativação inválido' }), {
       status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }
