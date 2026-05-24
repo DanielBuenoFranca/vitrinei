@@ -1463,6 +1463,16 @@ export type Database = {
       current_ai_savings: { Args: never; Returns: Json }
       generate_random_pin: { Args: never; Returns: string }
       generate_referral_link_24h: { Args: { _referrer: string }; Returns: Json }
+      get_profile_by_normalized_phone: {
+        Args: { _phone: string }
+        Returns: {
+          display_name: string
+          email: string
+          phone: string
+          status: string
+          user_id: string
+        }[]
+      }
       get_public_display_name: { Args: { _user_id: string }; Returns: string }
       get_referral_by_token: {
         Args: { _token: string }
