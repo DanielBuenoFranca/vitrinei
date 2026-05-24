@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { Lock, AlertTriangle } from 'lucide-react';
+import { Lock, AlertTriangle, Check, X, ShieldCheck } from 'lucide-react';
 
 const ResetPasswordPage = () => {
   const navigate = useNavigate();
@@ -22,24 +22,54 @@ const ResetPasswordPage = () => {
 
   useEffect(() => {
     if (!isRecoveryLink && !isForcedReset) {
-      toast.error('Link de recuperação inválido');
+      toast.error('Link de recuperação inválido ou expirado');
       navigate('/auth');
     }
   }, [navigate, isRecoveryLink, isForcedReset]);
 
+  const passwordStrength = {
+    length: password.length >= 8,
+    hasUpper: /[A-Z]/.test(password),
+    hasLower: /[a-z]/.test(password),
+    hasNumber: /[0-9]/.test(password),
+    hasSpecial: /[^A-Za-z0-9]/.test(password),
+  };
+
+  const isPasswordStrong = Object.values(passwordStrength).every(Boolean);
+
   const handleReset = async () => {
-    if (password.length < 6) { toast.error('Senha deve ter no mínimo 6 caracteres'); return; }
-    if (password !== confirmPassword) { toast.error('As senhas não coincidem'); return; }
-    setLoading(true);
-    const { error } = await supabase.auth.updateUser({ password, data: { must_reset_password: false } });
-    if (error) {
-      toast.error(error.message);
-    } else {
-      clearMustResetPassword();
-      toast.success('Senha atualizada com sucesso!');
-      navigate('/');
+    if (password.length < 8) {
+      toast.error('A senha deve ter no mínimo 8 caracteres');
+      return;
     }
-    setLoading(false);
+    if (!isPasswordStrong) {
+      toast.warning('A senha não atende a todos os requisitos de segurança');
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.error('As senhas não coincidem');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ 
+        password, 
+        data: { must_reset_password: false } 
+      });
+      
+      if (error) {
+        toast.error(error.message);
+      } else {
+        clearMustResetPassword();
+        toast.success('Senha atualizada com sucesso!');
+        navigate('/');
+      }
+    } catch (err) {
+      toast.error('Erro ao atualizar senha');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isRecoveryLink && !isForcedReset) return null;
