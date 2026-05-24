@@ -144,6 +144,11 @@ const ViniHome = () => {
   const [hudScale, setHudScale] = useState(1.1);
    const saveTimeoutRef = useRef<number | null>(null);
   const [isThinking, setIsThinking] = useState(false);
+  const [isActivated, setIsActivated] = useState(true);
+  const [activationDialogOpen, setActivationDialogOpen] = useState(false);
+  const [activationCodeInput, setActivationCodeInput] = useState('');
+  const [isActivating, setIsActivating] = useState(false);
+
 
   // Load preferences from profile
   useEffect(() => {
@@ -279,10 +284,12 @@ const ViniHome = () => {
     (async () => {
       const { data: prof } = await supabase
         .from('profiles')
-        .select('city')
+        .select('city, is_activated, status')
         .eq('user_id', user.id)
         .maybeSingle();
       if (prof?.city) setCity(prof.city);
+      if (prof?.is_activated !== undefined) setIsActivated(prof.is_activated);
+
       const { data: sub } = await supabase
         .from('subscriptions')
         .select('plan,status')
@@ -1465,7 +1472,31 @@ const ViniHome = () => {
         <Mic className={cn('w-5 h-5 relative', listening && 'animate-pulse')} strokeWidth={1.5} />
       </motion.button>
 
+      {/* ─── Activation Banner (Lead) ─── */}
+      {!isActivated && user && (
+        <motion.div 
+          initial={{ y: 100 }}
+          animate={{ y: 0 }}
+          className="fixed bottom-0 left-0 right-0 z-[60] bg-orange-500 text-white p-2 text-center flex items-center justify-center gap-4 shadow-lg border-t border-orange-600"
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+            <span className="text-xs font-bold uppercase tracking-wider">Conta em modo Lead (Não Ativada)</span>
+          </div>
+          <p className="text-[10px] hidden sm:block opacity-90">Verifique seu e-mail e insira o código para liberar todas as funções.</p>
+          <Button 
+            size="sm" 
+            variant="secondary" 
+            className="h-7 text-[10px] font-bold bg-white text-orange-600 hover:bg-orange-50"
+            onClick={() => setActivationDialogOpen(true)}
+          >
+            Ativar Agora
+          </Button>
+        </motion.div>
+      )}
+
       {/* ─── Modals ─── */}
+
       <ReferralRulesModal 
         open={referralRulesOpen}
         onOpenChange={setReferralRulesOpen}
