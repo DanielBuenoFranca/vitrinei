@@ -431,19 +431,25 @@ const AuthPage = () => {
         },
       });
 
-      if (valError || (valData && !valData.ok)) {
-        if (valData?.conflicts) {
-          setConflicts(valData.conflicts);
+      // Handle conflict or error from validation function
+      const validationResult = valData || (valError as any)?.context;
+      
+      if (valError || (validationResult && !validationResult.ok)) {
+        console.log('Validation conflict detected:', validationResult);
+        
+        if (validationResult?.conflicts && Array.isArray(validationResult.conflicts)) {
+          setConflicts(validationResult.conflicts);
           setShowConflictModal(true);
         } else {
-          toast.error(valData?.error || 'Erro ao validar cadastro');
+          toast.error(validationResult?.error || 'Erro ao validar cadastro. Verifique os dados e tente novamente.');
         }
         setLoading(false);
         return;
       }
     } catch (err: any) {
-      console.error('Validation error:', err);
-      // Non-blocking for now if function fails, but ideally we should handle it
+      console.error('Validation unexpected error:', err);
+      // We don't want to block the signup if the validation function itself crashes,
+      // but we should log it.
     }
 
 
