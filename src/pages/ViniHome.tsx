@@ -1685,12 +1685,16 @@ const ViniHome = () => {
                 variant="outline" 
                 size="sm" 
                 className="h-7 text-[10.5px] px-2 gap-1 glass cursor-pointer z-[110] relative" 
-                onClick={(e) => {
+                onClick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log('Logout initiated from header');
-                  toast.loading('Saindo...');
-                  signOut();
+                  console.log('Logout button clicked');
+                  const t = toast.loading('Saindo...');
+                  try {
+                    await signOut();
+                  } finally {
+                    toast.dismiss(t);
+                  }
                 }}
               >
                 Sair

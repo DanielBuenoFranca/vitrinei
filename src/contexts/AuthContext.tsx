@@ -122,21 +122,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     console.log('AuthContext: signOut initiated');
     try {
-      await supabase.auth.signOut();
+      // Clear all local data first to ensure UI reacts even if network is slow
       setUser(null);
       setSession(null);
       setRoles([]);
       setDisplayName(null);
       setMustResetPassword(false);
       setUserStatus(null);
-      toast.success('Sessão encerrada com sucesso!');
-      // Force redirect to login page
-      window.location.href = '/auth';
+      
+      // Attempt to notify Supabase (best effort)
+      await supabase.auth.signOut().catch(err => console.warn('Supabase signOut error (ignoring):', err));
+      
+      // Clear storage
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      toast.success('Sessão encerrada!');
+      
+      // Force a hard reload to the auth page to clear all memory states
+      window.location.replace('/auth');
     } catch (error) {
-      console.error('Error signing out:', error);
-      toast.error('Erro ao encerrar sessão.');
-      // Fallback redirect
-      window.location.href = '/auth';
+      console.error('Error during signOut process:', error);
+      window.location.replace('/auth');
     }
   };
 
