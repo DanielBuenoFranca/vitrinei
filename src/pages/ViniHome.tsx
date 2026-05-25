@@ -33,6 +33,8 @@ import { ViniConversationModal } from '@/components/vini/ViniConversationModal';
 import { ReferralRulesModal } from '@/components/ReferralRulesModal';
 import viniMini from '@/assets/vini-avatar.png';
 import { useAuth } from '@/contexts/AuthContext';
+import { AddressCollectionModal } from '@/components/vini/AddressCollectionModal';
+
 import { usePermissions } from '@/hooks/usePermissions';
 import { useCart } from '@/contexts/CartContext';
 import { getGreeting } from '@/lib/viniBrain';
@@ -78,7 +80,7 @@ const CHAT_STORAGE_KEY = 'vini:chat-history';
 
 const ViniHome = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading, signOut, displayName, isAdmin } = useAuth();
+  const { user, loading: authLoading, signOut, displayName, isAdmin, profile } = useAuth();
   const { profileLabel } = usePermissions();
   const { session, update: updateAiSession, setIsThinking: setGlobalThinking } = useAiSession();
   const { totalCartItems, totalCartValue, productCart, serviceCart, clearCart } = useCart();
@@ -151,6 +153,9 @@ const ViniHome = () => {
   const [activationDialogOpen, setActivationDialogOpen] = useState(false);
   const [activationCodeInput, setActivationCodeInput] = useState('');
   const [isActivating, setIsActivating] = useState(false);
+  const [addressModalOpen, setAddressModalOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
 
   // Auto-open activation for leads on first visit
   useEffect(() => {
@@ -270,9 +275,10 @@ const ViniHome = () => {
   // Load city + plan (discreet header info)
   useEffect(() => {
     if (!user) {
-      setCity(null);
       setPlanLabel(null);
+      // Only keep city if it was previously set by geolocation or remains null
       // try geolocation reverse for visitors (best-effort, silent)
+
       if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
           async (pos) => {
@@ -295,10 +301,11 @@ const ViniHome = () => {
     (async () => {
       const { data: prof } = await supabase
         .from('profiles')
-        .select('city')
+        .select('city, cep, address')
         .eq('user_id', user.id)
         .maybeSingle();
       if (prof?.city) setCity(prof.city);
+
 
 
       const { data: sub } = await supabase
@@ -463,15 +470,20 @@ const ViniHome = () => {
   };
 
   const openConversationWith = (message?: string, modality: 'voice' | 'text' = 'text') => {
+    // Check for address before "commerce" mode or initial messages
+    if (user && !profile?.city && message?.trim()) {
+      setPendingAction(() => () => openConversationWith(message, modality));
+      setAddressModalOpen(true);
+      return;
+    }
     wakeUp();
     setSearchBarVisible(false);
     setModalInitialModality(modality);
     setModalInitialMessage(message?.trim() || null);
-    // Voz/Texto pela barra de busca → personalidade comercial completa.
-    // Botão "Conversar" (sem mensagem inicial) → papo livre puro.
     setModalMode(message?.trim() ? 'commerce' : 'free');
     setChatOpen(true);
   };
+
 
   const clearChat = () => {
     setBubbles([]);
@@ -797,7 +809,13 @@ const ViniHome = () => {
   };
 
   const handleRadar = () => {
+    if (user && !profile?.city) {
+      setPendingAction(() => () => handleRadar());
+      setAddressModalOpen(true);
+      return;
+    }
     wakeUp();
+
     // Toggle desligar
     if (radarActive) {
       setRadarActive(false);
@@ -1483,6 +1501,20 @@ const ViniHome = () => {
         mode={modalMode}
       />
       <FavoritesModal open={favoritesOpen} onOpenChange={setFavoritesOpen} />
+      {user && (
+        <AddressCollectionModal 
+          open={addressModalOpen} 
+          onOpenChange={setAddressModalOpen} 
+          userId={user.id} 
+          onSuccess={() => {
+            if (pendingAction) {
+              pendingAction();
+              setPendingAction(null);
+            }
+          }} 
+        />
+      )}
+
 
       <Dialog open={supportDialogOpen} onOpenChange={setSupportDialogOpen}>
         <DialogContent className="sm:max-w-md bg-white border-2 border-[hsl(var(--vini-glow)/0.3)] shadow-[0_0_25px_hsl(var(--vini-glow)/0.2)]">
@@ -1642,13 +1674,13 @@ const ViniHome = () => {
             <div className="relative shrink-0">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center vini-ring">
                 <span className="text-[11px] font-bold text-primary-foreground">
-                  {(displayName || 'V')[0].toUpperCase()}
+                  {(displayName || user?.email || 'A')[0].toUpperCase()}
                 </span>
               </div>
               <span className="absolute bottom-0 right-0 w-2 h-2 bg-success rounded-full ring-2 ring-background" />
             </div>
             <div className="min-w-0 leading-tight flex-1">
-              <p className="text-[12.5px] font-semibold truncate">{displayName || 'Vitrinei'}</p>
+              <p className="text-[12.5px] font-semibold truncate">{displayName || (user ? user.email?.split('@')[0] : 'Anônimo')}</p>
               <div className="flex items-center gap-1.5 text-[9.5px] text-muted-foreground/90 truncate">
                 {city && (
                   <span className="inline-flex items-center gap-0.5 truncate">
@@ -1659,6 +1691,7 @@ const ViniHome = () => {
                 {city && <span className="opacity-40">·</span>}
                 <span className="text-[hsl(var(--text-accent))] truncate">
                   {user ? (accessLevel === 'lead' ? `Lead (${profileLabel})` : profileLabel) : 'Visitante'}
+
                 </span>
                 {planLabel && (
                   <>

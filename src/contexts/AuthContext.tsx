@@ -13,6 +13,7 @@ interface AuthContextType {
   isMaster: boolean;
   roles: AppRole[];
   displayName: string | null;
+  profile: any | null;
   mustResetPassword: boolean;
   signOut: () => Promise<void>;
   requireAuth: (action?: string) => boolean;
@@ -20,7 +21,7 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType>({
-  user: null, session: null, loading: true, isAdmin: false, isMaster: false, roles: [], displayName: null, mustResetPassword: false,
+  user: null, session: null, loading: true, isAdmin: false, isMaster: false, roles: [], displayName: null, profile: null, mustResetPassword: false,
   signOut: async () => {}, requireAuth: () => false, clearMustResetPassword: () => {},
 });
 
@@ -32,6 +33,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [displayName, setDisplayName] = useState<string | null>(null);
+  const [profile, setProfile] = useState<any | null>(null);
   const [mustResetPassword, setMustResetPassword] = useState(false);
   const [userStatus, setUserStatus] = useState<string | null>(null);
 
@@ -48,19 +50,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setMustResetPassword(mustReset);
         
         // Fetch profile data including status
-        const { data: profile } = await supabase
+        const { data: profileData } = await supabase
           .from('profiles')
-          .select('display_name, status')
+          .select('*')
           .eq('user_id', session.user.id)
           .maybeSingle();
 
-        if (profile) {
-          setDisplayName(profile.display_name);
-          setUserStatus(profile.status);
+
+        if (profileData) {
+          setDisplayName(profileData.display_name);
+          setUserStatus(profileData.status);
+          setProfile(profileData);
+
           
           // Check if user is deactivated
-          if (profile.status === 'inactive' || profile.status === 'banned') {
-            const msg = profile.status === 'inactive' 
+          if (profileData.status === 'inactive' || profileData.status === 'banned') {
+            const msg = profileData.status === 'inactive' 
+
               ? 'Sua conta está desativada. Entre em contato com o suporte.' 
               : 'Sua conta foi banida do sistema.';
             toast.error(msg);
@@ -73,7 +79,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setRoles([]);
         setDisplayName(null);
+        setProfile(null);
         setUserStatus(null);
+
         setMustResetPassword(false);
       }
       setLoading(false);
@@ -87,17 +95,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const mustReset = session.user.user_metadata?.must_reset_password === true;
         setMustResetPassword(mustReset);
         
-        const { data: profile } = await supabase
+        const { data: profileData } = await supabase
           .from('profiles')
-          .select('display_name, status')
+          .select('*')
           .eq('user_id', session.user.id)
           .maybeSingle();
 
-        if (profile) {
-          setDisplayName(profile.display_name);
-          setUserStatus(profile.status);
+
+        if (profileData) {
+          setDisplayName(profileData.display_name);
+          setUserStatus(profileData.status);
+          setProfile(profileData);
           
-          if (profile.status === 'inactive' || profile.status === 'banned') {
+          if (profileData.status === 'inactive' || profileData.status === 'banned') {
+
             await supabase.auth.signOut();
             setLoading(false);
             return;
@@ -127,6 +138,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(null);
       setRoles([]);
       setDisplayName(null);
+      setProfile(null);
+
       setMustResetPassword(false);
       setUserStatus(null);
       
@@ -165,7 +178,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isAdmin, isMaster, roles, displayName, mustResetPassword, signOut, requireAuth, clearMustResetPassword }}>
+    <AuthContext.Provider value={{ user, session, loading, isAdmin, isMaster, roles, displayName, profile, mustResetPassword, signOut, requireAuth, clearMustResetPassword }}>
       {children}
     </AuthContext.Provider>
   );
