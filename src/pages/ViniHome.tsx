@@ -78,7 +78,7 @@ const CHAT_STORAGE_KEY = 'vini:chat-history';
 
 const ViniHome = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading, signOut, displayName } = useAuth();
+  const { user, loading: authLoading, signOut, displayName, isAdmin } = useAuth();
   const { profileLabel } = usePermissions();
   const { session, update: updateAiSession, setIsThinking: setGlobalThinking } = useAiSession();
   const { totalCartItems, totalCartValue, productCart, serviceCart, clearCart } = useCart();
@@ -1047,13 +1047,17 @@ const ViniHome = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
-              <div className="border-t border-border my-1" />
-              <button
-                onClick={() => { setShowPlusMenu(false); navigate('/admin'); }}
-                className="w-full text-left px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/10 rounded-md transition-colors flex items-center gap-2"
-              >
-                <Settings className="w-3.5 h-3.5" /> Administrador
-              </button>
+              {isAdmin && (
+                <>
+                  <div className="border-t border-border my-1" />
+                  <button
+                    onClick={() => { setShowPlusMenu(false); navigate('/admin'); }}
+                    className="w-full text-left px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/10 rounded-md transition-colors flex items-center gap-2"
+                  >
+                    <Settings className="w-3.5 h-3.5" /> Administrador
+                  </button>
+                </>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

@@ -49,11 +49,11 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false } },
 });
 
-const MasterRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading, isMaster } = useAuth();
+const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading, isAdmin } = useAuth();
   if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Carregando...</div>;
   if (!user) return <Navigate to="/auth" replace />;
-  if (!isMaster) return <Navigate to="/" replace />;
+  if (!isAdmin) return <Navigate to="/" replace />;
   return <>{children}</>;
 };
 
@@ -106,7 +106,7 @@ const App = () => {
           <Route path="/dropshipping" element={<ForceResetGuard><LazyRoute><DropshippingDemo /></LazyRoute></ForceResetGuard>} />
           <Route path="/demos" element={<ForceResetGuard><LazyRoute><Demos /></LazyRoute></ForceResetGuard>} />
           <Route path="/central-atendimento" element={<ForceResetGuard><LazyRoute><SupportCenterDemo /></LazyRoute></ForceResetGuard>} />
-          <Route path="/admin" element={<MasterRoute><LazyRoute fallback={<CardexSkeleton />}><AdminPanel /></LazyRoute></MasterRoute>} />
+          <Route path="/admin" element={<AdminRoute><LazyRoute fallback={<CardexSkeleton />}><AdminPanel /></LazyRoute></AdminRoute>} />
           <Route path="/loja/:slug" element={<LazyRoute><ProviderStorefront /></LazyRoute>} />
           <Route path="/radar-urgencia" element={<ForceResetGuard><LazyRoute fallback={<RadarSkeleton />}><RadarUrgencyFlow /></LazyRoute></ForceResetGuard>} />
           <Route path="*" element={<NotFound />} />
