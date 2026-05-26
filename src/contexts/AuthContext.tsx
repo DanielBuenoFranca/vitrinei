@@ -41,93 +41,102 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const isMaster = roles.includes('master');
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    let mounted = true;
+
+    const initializeAuth = async (currentSession: Session | null) => {
+      if (!mounted) return;
       
-      if (session?.user) {
-        const mustReset = session.user.user_metadata?.must_reset_password === true;
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+      
+      if (currentSession?.user) {
+        const mustReset = currentSession.user.user_metadata?.must_reset_password === true;
         setMustResetPassword(mustReset);
         
-        // Fetch profile data including status
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .maybeSingle();
+        // Fetch profile and roles in parallel for efficiency
+        const [profileRes, rolesRes] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', currentSession.user.id)
+            .maybeSingle(),
+          supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', currentSession.user.id)
+        ]);
 
+        if (mounted) {
+          if (profileRes.data) {
+            setDisplayName(profileRes.data.display_name);
+            setUserStatus(profileRes.data.status);
+            setProfile(profileRes.data);
 
-        if (profileData) {
-          setDisplayName(profileData.display_name);
-          setUserStatus(profileData.status);
-          setProfile(profileData);
-
+            if (profileRes.data.status === 'inactive' || profileRes.data.status === 'banned') {
+              const msg = profileRes.data.status === 'inactive' 
+                ? 'Sua conta está desativada. Entre em contato com o suporte.' 
+                : 'Sua conta foi banida do sistema.';
+              toast.error(msg);
+              await supabase.auth.signOut();
+              setLoading(false);
+              return;
+            }
+          }
           
-          // Check if user is deactivated
-          if (profileData.status === 'inactive' || profileData.status === 'banned') {
-            const msg = profileData.status === 'inactive' 
-
-              ? 'Sua conta está desativada. Entre em contato com o suporte.' 
-              : 'Sua conta foi banida do sistema.';
-            toast.error(msg);
-            await supabase.auth.signOut();
-            return;
+          if (rolesRes.data) {
+            setRoles(rolesRes.data.map(r => r.role as AppRole));
           }
         }
-        
-        fetchRoles(session.user.id);
       } else {
+        if (mounted) {
+          setRoles([]);
+          setDisplayName(null);
+          setProfile(null);
+          setUserStatus(null);
+          setMustResetPassword(false);
+        }
+      }
+      
+      if (mounted) {
+        setLoading(false);
+      }
+    };
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('AuthContext: onAuthStateChange', event);
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        setLoading(true);
+        await initializeAuth(session);
+      } else if (event === 'SIGNED_OUT') {
+        setSession(null);
+        setUser(null);
         setRoles([]);
         setDisplayName(null);
         setProfile(null);
-        setUserStatus(null);
-
         setMustResetPassword(false);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        const mustReset = session.user.user_metadata?.must_reset_password === true;
-        setMustResetPassword(mustReset);
-        
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .maybeSingle();
-
-
-        if (profileData) {
-          setDisplayName(profileData.display_name);
-          setUserStatus(profileData.status);
-          setProfile(profileData);
-          
-          if (profileData.status === 'inactive' || profileData.status === 'banned') {
-
-            await supabase.auth.signOut();
-            setLoading(false);
-            return;
-          }
-        }
-        
-        fetchRoles(session.user.id);
-      }
-      setLoading(false);
+    // Initial session check
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      initializeAuth(session);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchRoles = async (userId: string) => {
     const { data } = await supabase.from('user_roles').select('role').eq('user_id', userId);
     if (data) {
       setRoles(data.map(r => r.role as AppRole));
+      return data.map(r => r.role as AppRole);
     }
+    return [];
   };
 
   const signOut = async () => {
