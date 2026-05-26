@@ -1463,9 +1463,9 @@ const ViniHome = () => {
               : 'Sua assinatura precisa ser regularizada para acesso total.'}
           </p>
           <Button 
-            size=\"lg\" 
-            variant=\"secondary\" 
-            className=\"h-11 text-xs font-bold bg-white text-orange-600 hover:bg-orange-50\"
+            size="lg" 
+            variant="secondary" 
+            className="h-11 text-xs font-bold bg-white text-orange-600 hover:bg-orange-50"
             onClick={() => isActivated === false ? setActivationDialogOpen(true) : navigate('/carteira')}
           >
             {isActivated === false ? 'Ativar Agora' : 'Regularizar'}
@@ -1628,7 +1628,7 @@ const ViniHome = () => {
               />
             </div>
             <Button 
-              className=\"w-full h-11 bg-orange-500 hover:bg-orange-600 text-white font-bold\"
+              className="w-full h-11 bg-orange-500 hover:bg-orange-600 text-white font-bold"
               disabled={activationCodeInput.length !== 6 || isActivating}
               onClick={async () => {
                 setIsActivating(true);
