@@ -1707,21 +1707,21 @@ const ViniHome = () => {
             {storeSlug && (
               <Button
                 variant="outline"
-                size="sm"
-                className="h-7 w-7 p-0 glass"
+                size="icon"
+                className="h-11 w-11 glass"
                 onClick={() => navigate(`/loja/${storeSlug}`)}
                 aria-label="Minha loja"
                 title="Abrir minha loja"
               >
-                <Store className="w-3.5 h-3.5" />
+                <Store className="w-4 h-4" />
               </Button>
             )}
             <ThemeSwitcher />
             {user ? (
               <Button 
                 variant="outline" 
-                size="sm" 
-                className="h-7 text-[10.5px] px-2 gap-1 glass cursor-pointer z-[110] relative" 
+                size="lg" 
+                className="h-11 text-[11px] px-3 gap-1 glass cursor-pointer z-[110] relative"
                 onClick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -1742,8 +1742,8 @@ const ViniHome = () => {
             ) : (
               <Button 
                 variant="outline" 
-                size="sm" 
-                className="h-7 text-[10.5px] px-2 gap-1 glass cursor-pointer z-[110] relative" 
+                size="lg" 
+                className="h-11 text-[11px] px-3 gap-1 glass cursor-pointer z-[110] relative"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
