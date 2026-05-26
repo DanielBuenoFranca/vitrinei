@@ -12,7 +12,7 @@ export const ThemeSwitcher = () => {
       variant="ghost"
       size="icon"
       onClick={() => setTheme(isEspacial ? 'comercial' : 'espacial')}
-      className="relative h-9 w-9 rounded-full overflow-hidden"
+      className="relative h-11 w-11 rounded-full overflow-hidden"
       title={isEspacial ? 'Mudar para tema Comercial' : 'Mudar para tema Espacial'}
     >
       <AnimatePresence mode="wait" initial={false}>

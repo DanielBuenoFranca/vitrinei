@@ -44,7 +44,7 @@ export function ViniBottomGrid({ items }: ViniBottomGridProps) {
             aria-label={it.label}
             className={cn(
               'relative flex flex-col items-center justify-center gap-0.5',
-              'w-[58px] h-[58px] rounded-xl',
+              'w-[60px] h-[60px] sm:w-[58px] sm:h-[58px] rounded-xl',
               // ultra-transparente + blur
               'bg-white/[0.08] backdrop-blur-xl',
               'border-[0.5px] border-[hsl(var(--vini-glow)/0.45)]',

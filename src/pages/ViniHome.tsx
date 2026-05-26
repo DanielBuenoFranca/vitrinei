@@ -1333,7 +1333,7 @@ const ViniHome = () => {
               whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
               onClick={() => setShowHudSettings(!showHudSettings)}
               className={cn(
-                "w-full h-10 flex items-center justify-center transition-colors border-b border-white/5",
+                "w-full h-11 flex items-center justify-center transition-colors border-b border-white/5",
                 showHudSettings ? "bg-primary/20 text-primary" : "text-foreground/50",
                 "first:rounded-t-2xl last:border-b-0"
               )}
@@ -1345,7 +1345,7 @@ const ViniHome = () => {
             <motion.button
               whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
               onClick={handleSideSearch}
-              className="w-full h-10 flex items-center justify-center transition-colors border-b border-white/5 text-foreground/50"
+              className="w-full h-11 flex items-center justify-center transition-colors border-b border-white/5 text-foreground/50"
               title="Pesquisar no ecossistema"
             >
               <Search className="w-4 h-4" strokeWidth={1.5} />
@@ -1354,7 +1354,7 @@ const ViniHome = () => {
             <motion.button
               whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
               onClick={handleSideConverse}
-              className="w-full h-10 flex items-center justify-center transition-colors border-b border-white/5 text-foreground/50"
+              className="w-full h-11 flex items-center justify-center transition-colors border-b border-white/5 text-foreground/50"
               title="Conversar com o Vini"
             >
               <MessageCircle className="w-4 h-4" strokeWidth={1.5} />
@@ -1363,7 +1363,7 @@ const ViniHome = () => {
             <motion.button
               whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
               onClick={handleSideStory}
-              className="w-full h-10 flex items-center justify-center transition-colors rounded-b-2xl overflow-hidden"
+              className="w-full h-11 flex items-center justify-center transition-colors rounded-b-2xl overflow-hidden"
               title="Sobre o Vini"
             >
               <div className="w-8 h-8 rounded-full overflow-hidden border border-white/5 opacity-50 hover:opacity-100 transition-opacity">
@@ -1392,7 +1392,7 @@ const ViniHome = () => {
             // Encaixa entre cards (à esquerda ~130px) e mic (à direita ~60px)
             className="absolute left-[140px] right-[68px] sm:left-[150px] sm:right-[72px] bottom-3 sm:bottom-4 z-30 pointer-events-auto"
           >
-            <div className="flex items-center gap-1 p-[3px] rounded-full bg-white/[0.07] backdrop-blur-2xl border-[0.5px] border-[hsl(var(--vini-glow)/0.45)] shadow-[0_4px_24px_hsl(var(--vini-glow)/0.18),inset_0_0_12px_hsl(var(--primary)/0.05)] h-10">
+            <div className="flex items-center gap-1 p-[3px] rounded-full bg-white/[0.07] backdrop-blur-2xl border-[0.5px] border-[hsl(var(--vini-glow)/0.45)] shadow-[0_4px_24px_hsl(var(--vini-glow)/0.18),inset_0_0_12px_hsl(var(--primary)/0.05)] h-11">
               <Input
                 ref={inputRef}
                 value={text}
@@ -1404,12 +1404,12 @@ const ViniHome = () => {
                 }}
                 autoFocus
                 placeholder="Diga ou escreva…"
-                className="border-0 bg-transparent focus-visible:ring-0 text-[13px] flex-1 px-3 placeholder:text-foreground/45 h-8"
+                className="border-0 bg-transparent focus-visible:ring-0 text-[13px] flex-1 px-3 placeholder:text-foreground/45 h-9"
               />
               <Button
                 type="submit"
                 size="icon"
-                className="h-8 w-8 rounded-full shrink-0 bg-white/[0.1] hover:bg-white/[0.2] border-[0.5px] border-[hsl(var(--vini-glow)/0.5)] text-foreground"
+                className="h-9 w-9 rounded-full shrink-0 bg-white/[0.1] hover:bg-white/[0.2] border-[0.5px] border-[hsl(var(--vini-glow)/0.5)] text-foreground"
                 disabled={!text.trim()}
                 aria-label="Enviar"
               >
@@ -1428,7 +1428,7 @@ const ViniHome = () => {
         onClick={handleVoiceTap}
         className={cn(
           'absolute right-3 sm:right-4 bottom-3 sm:bottom-4 z-50',
-          'w-11 h-11 rounded-full flex items-center justify-center shrink-0',
+          'w-12 h-12 rounded-full flex items-center justify-center shrink-0',
           'bg-gradient-to-br from-primary via-accent to-primary text-primary-foreground',
           'shadow-[0_4px_22px_hsl(var(--primary)/0.55)]',
           listening && 'ring-2 ring-primary/60',
@@ -1463,9 +1463,9 @@ const ViniHome = () => {
               : 'Sua assinatura precisa ser regularizada para acesso total.'}
           </p>
           <Button 
-            size="sm" 
+            size="lg" 
             variant="secondary" 
-            className="h-7 text-[10px] font-bold bg-white text-orange-600 hover:bg-orange-50"
+            className="h-11 text-xs font-bold bg-white text-orange-600 hover:bg-orange-50"
             onClick={() => isActivated === false ? setActivationDialogOpen(true) : navigate('/carteira')}
           >
             {isActivated === false ? 'Ativar Agora' : 'Regularizar'}
@@ -1628,7 +1628,7 @@ const ViniHome = () => {
               />
             </div>
             <Button 
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold"
+              className="w-full h-11 bg-orange-500 hover:bg-orange-600 text-white font-bold"
               disabled={activationCodeInput.length !== 6 || isActivating}
               onClick={async () => {
                 setIsActivating(true);
@@ -1707,21 +1707,21 @@ const ViniHome = () => {
             {storeSlug && (
               <Button
                 variant="outline"
-                size="sm"
-                className="h-7 w-7 p-0 glass"
+                size="icon"
+                className="h-11 w-11 glass"
                 onClick={() => navigate(`/loja/${storeSlug}`)}
                 aria-label="Minha loja"
                 title="Abrir minha loja"
               >
-                <Store className="w-3.5 h-3.5" />
+                <Store className="w-4 h-4" />
               </Button>
             )}
             <ThemeSwitcher />
             {user ? (
               <Button 
                 variant="outline" 
-                size="sm" 
-                className="h-7 text-[10.5px] px-2 gap-1 glass cursor-pointer z-[110] relative" 
+                size="lg" 
+                className="h-11 text-[11px] px-3 gap-1 glass cursor-pointer z-[110] relative"
                 onClick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -1742,8 +1742,8 @@ const ViniHome = () => {
             ) : (
               <Button 
                 variant="outline" 
-                size="sm" 
-                className="h-7 text-[10.5px] px-2 gap-1 glass cursor-pointer z-[110] relative" 
+                size="lg" 
+                className="h-11 text-[11px] px-3 gap-1 glass cursor-pointer z-[110] relative"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();

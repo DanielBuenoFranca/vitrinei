@@ -432,10 +432,10 @@ export function ViniConversationModal({
               </div>
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full bg-background/40 hover:bg-background/60 flex items-center justify-center text-foreground/70 hover:text-foreground transition-colors"
+                className="w-11 h-11 rounded-full bg-background/40 hover:bg-background/60 flex items-center justify-center text-foreground/70 hover:text-foreground transition-colors shrink-0"
                 aria-label="Fechar"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 

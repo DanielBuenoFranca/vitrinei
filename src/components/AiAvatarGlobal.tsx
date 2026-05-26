@@ -20,9 +20,9 @@ interface AiAvatarProps {
 
 export const AiAvatar = ({ size = 64, speaking = false, thinking = false, onClick, className = '' }: AiAvatarProps) => {
   return (
-    <motion.div
+    <motion.button
       onClick={onClick}
-      className={`relative cursor-pointer select-none ${className}`}
+      className={`relative cursor-pointer select-none border-0 p-0 bg-transparent outline-none ${className}`}
       style={{ width: size, height: size }}
       whileHover={{ scale: 1.08 }}
       whileTap={{ scale: 0.95 }}
@@ -81,7 +81,7 @@ export const AiAvatar = ({ size = 64, speaking = false, thinking = false, onClic
         animate={{ scale: [1, 1.2, 1] }}
         transition={{ duration: 2, repeat: Infinity }}
         style={{ width: size * 0.18, height: size * 0.18 }} />
-    </motion.div>
+    </motion.button>
   );
 };
 
@@ -340,7 +340,7 @@ export const FloatingAiAvatar = () => {
                   </div>
                 </div>
               </div>
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setOpen(false)}>✕</Button>
+              <Button variant="ghost" size="icon" className="h-11 w-11 rounded-full p-0" onClick={() => setOpen(false)}>✕</Button>
             </div>
 
             {/* Messages */}

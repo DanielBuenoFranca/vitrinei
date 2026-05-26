@@ -54,7 +54,7 @@ export function SystemStatusIndicator() {
         whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
         onClick={() => isPrivileged && setExpanded(true)}
         className={cn(
-          "w-10 h-10 flex items-center justify-center transition-colors border-b border-white/5",
+          "w-11 h-11 flex items-center justify-center transition-colors border-b border-white/5",
           isOn 
             ? "bg-emerald-500/5 text-emerald-500/60 dark:text-emerald-500/40 border-emerald-500/10" 
             : "bg-amber-500/5 text-amber-500/60 dark:text-amber-500/50 border-amber-500/20",
@@ -82,8 +82,8 @@ export function SystemStatusIndicator() {
                 {isOn ? <Sparkles className="w-3.5 h-3.5 text-emerald-500" /> : <Power className="w-3.5 h-3.5 text-amber-500" />}
                 {isOn ? "IA em modo Full" : "IA em modo economia"}
               </div>
-              <button onClick={() => setExpanded(false)} className="text-muted-foreground hover:text-foreground" aria-label="Fechar">
-                <X className="w-3.5 h-3.5" />
+              <button onClick={() => setExpanded(false)} className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/20" aria-label="Fechar">
+                <X className="w-4 h-4" />
               </button>
             </div>
             <div className="space-y-2 text-[11px]">
