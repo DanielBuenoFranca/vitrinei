@@ -89,39 +89,39 @@ const BankingSection = ({ userId }: { userId: string }) => {
         <div className="grid grid-cols-2 gap-2">
           <div>
             <Label className="text-xs">Banco</Label>
-            <Input className="h-8 text-xs" placeholder="Nome do banco" value={bankData.bank_name} onChange={e => setBankData(p => ({ ...p, bank_name: e.target.value }))} />
+            <Input className=\"h-11 text-xs\" placeholder=\"Nome do banco\" value={bankData.bank_name} onChange={e => setBankData(p => ({ ...p, bank_name: e.target.value }))} />
           </div>
           <div>
             <Label className="text-xs">Agência</Label>
-            <Input className="h-8 text-xs" placeholder="0001" value={bankData.bank_agency} onChange={e => setBankData(p => ({ ...p, bank_agency: e.target.value }))} />
+            <Input className=\"h-11 text-xs\" placeholder=\"0001\" value={bankData.bank_agency} onChange={e => setBankData(p => ({ ...p, bank_agency: e.target.value }))} />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
             <Label className="text-xs">Conta</Label>
-            <Input className="h-8 text-xs" placeholder="12345-6" value={bankData.bank_account} onChange={e => setBankData(p => ({ ...p, bank_account: e.target.value }))} />
+            <Input className=\"h-11 text-xs\" placeholder=\"12345-6\" value={bankData.bank_account} onChange={e => setBankData(p => ({ ...p, bank_account: e.target.value }))} />
           </div>
           <div>
             <Label className="text-xs">Chave Pix</Label>
-            <Input className="h-8 text-xs" placeholder="CPF, e-mail ou chave" value={bankData.pix_key} onChange={e => setBankData(p => ({ ...p, pix_key: e.target.value }))} />
+            <Input className=\"h-11 text-xs\" placeholder=\"CPF, e-mail ou chave\" value={bankData.pix_key} onChange={e => setBankData(p => ({ ...p, pix_key: e.target.value }))} />
           </div>
         </div>
         <div className="flex items-end gap-2">
           <div className="flex-1 grid grid-cols-2 gap-2">
             <div>
               <Label className="text-xs">Latitude</Label>
-              <Input className="h-8 text-xs" placeholder="-23.550520" value={bankData.latitude} onChange={e => setBankData(p => ({ ...p, latitude: e.target.value }))} />
+              <Input className=\"h-11 text-xs\" placeholder=\"-23.550520\" value={bankData.latitude} onChange={e => setBankData(p => ({ ...p, latitude: e.target.value }))} />
             </div>
             <div>
-              <Label className="text-xs">Longitude</Label>
-              <Input className="h-8 text-xs" placeholder="-46.633308" value={bankData.longitude} onChange={e => setBankData(p => ({ ...p, longitude: e.target.value }))} />
+              <Label className=\"text-xs\">Longitude</Label>
+              <Input className=\"h-11 text-xs\" placeholder=\"-46.633308\" value={bankData.longitude} onChange={e => setBankData(p => ({ ...p, longitude: e.target.value }))} />
             </div>
           </div>
-          <Button variant="outline" size="sm" className="h-8 gap-1 shrink-0" onClick={getLocation}>
+          <Button variant=\"outline\" size=\"lg\" className=\"h-11 gap-1 shrink-0\" onClick={getLocation}>
             <MapPin className="w-3 h-3" /> GPS
           </Button>
         </div>
-        <Button size="sm" className="w-full" onClick={handleSave} disabled={saving}>
+        <Button size=\"lg\" className=\"w-full h-11\" onClick={handleSave} disabled={saving}>
           {saving ? 'Salvando...' : 'Salvar Dados'}
         </Button>
       </CardContent>
