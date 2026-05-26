@@ -13,13 +13,10 @@ interface ViniAvatarProps {
 
 export function ViniAvatar({ onClick, size = 320 }: ViniAvatarProps) {
   return (
-    <motion.div
+    <motion.button
       onClick={onClick}
-      role="button"
       aria-label="Falar com o Vini"
-      tabIndex={0}
-      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onClick?.()}
-      className="relative cursor-pointer select-none outline-none"
+      className="relative cursor-pointer select-none outline-none bg-transparent border-0 p-0"
       style={{ width: size, height: size }}
       whileTap={{ scale: 0.97 }}
       whileHover={{ scale: 1.02 }}
