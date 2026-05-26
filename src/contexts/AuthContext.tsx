@@ -143,9 +143,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setMustResetPassword(false);
       setUserStatus(null);
       
-      // 2. Limpeza de storage
+      // 2. Limpeza profunda de storage e cache
       localStorage.clear();
       sessionStorage.clear();
+      
+      // Limpeza de cookies (opcional, mas ajuda com Google Login persistente)
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      });
       
       // 3. Chamada de signOut do Supabase (não aguardamos para não travar o redirecionamento)
       supabase.auth.signOut().catch(err => console.warn('Supabase signOut error (ignoring):', err));

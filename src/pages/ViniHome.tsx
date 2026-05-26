@@ -1727,10 +1727,13 @@ const ViniHome = () => {
                   e.stopPropagation();
                   console.log('Logout button clicked');
                   const t = toast.loading('Saindo...');
+                  // Dismiss immediately to avoid lingering on screen during redirect
+                  setTimeout(() => toast.dismiss(t), 1000);
                   try {
                     await signOut();
-                  } finally {
+                  } catch (error) {
                     toast.dismiss(t);
+                    toast.error('Erro ao sair');
                   }
                 }}
               >
