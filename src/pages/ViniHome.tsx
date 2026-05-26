@@ -1428,7 +1428,7 @@ const ViniHome = () => {
         onClick={handleVoiceTap}
         className={cn(
           'absolute right-3 sm:right-4 bottom-3 sm:bottom-4 z-50',
-          'w-11 h-11 rounded-full flex items-center justify-center shrink-0',
+          'w-12 h-12 rounded-full flex items-center justify-center shrink-0',
           'bg-gradient-to-br from-primary via-accent to-primary text-primary-foreground',
           'shadow-[0_4px_22px_hsl(var(--primary)/0.55)]',
           listening && 'ring-2 ring-primary/60',

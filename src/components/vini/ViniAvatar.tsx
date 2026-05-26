@@ -34,6 +34,6 @@ export function ViniAvatar({ onClick, size = 320 }: ViniAvatarProps) {
           filter: 'blur(14px)',
         }}
       />
-    </motion.div>
+    </motion.button>
   );
 }
