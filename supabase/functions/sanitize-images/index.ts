@@ -72,7 +72,10 @@ async function enrichContext(supabase: any, kind: string, id: number, base: any)
         ctx.unit = ctx.unit || data.unit;
         ctx.price = ctx.price ?? Number(data.price);
         ctx.providerName = ctx.providerName || data.provider;
-        // segmento: pega do prestador
+        ctx.itemType = ctx.itemType || data.stock_type;
+        if (!ctx.segment && Array.isArray(data.segments) && data.segments.length) {
+          ctx.segment = data.segments[0];
+        }
         if (data.provider_id) {
           const { data: prov } = await supabase.from("providers")
             .select("name, type, segment").eq("id", data.provider_id).maybeSingle();
