@@ -108,14 +108,43 @@ export function InconsistencyPanel({
         entityId: p.id, 
         entityName: p.name, 
         message: 'Sem segmento vinculado. É obrigatório selecionar ao menos um segmento.', 
-        action: 'edit', 
+        action: 'auto_fix', 
         tab: 'providers', 
         fieldName: 'segments',
+        autoFixAction: async () => {
+          const defaultSeg = segments.find(s => s.name === 'Negócio')?.name || segments[0]?.name || 'Geral';
+          const { error } = await supabase
+            .from('providers')
+            .update({ segment: [defaultSeg] })
+            .eq('id', p.id);
+          if (error) throw error;
+          if (onRefresh) onRefresh();
+        }
       });
     } else {
       p.segment.forEach(seg => {
         if (!segmentNames.has(seg)) {
-          issues.push({ type: 'warning', entity: 'Prestador', entityId: p.id, entityName: p.name, message: `Segmento "${seg}" não existe no cadastro`, action: 'edit', tab: 'providers', fieldName: 'segments' });
+          const parts = seg.split(/\s+/).filter(part => segmentNames.has(part));
+          const hasFix = parts.length > 0;
+          issues.push({ 
+            type: 'warning', 
+            entity: 'Prestador', 
+            entityId: p.id, 
+            entityName: p.name, 
+            message: `Segmento "${seg}" não existe no cadastro`, 
+            action: hasFix ? 'auto_fix' : 'edit', 
+            tab: 'providers', 
+            fieldName: 'segments',
+            autoFixAction: hasFix ? async () => {
+              const newSegments = Array.from(new Set([
+                ...p.segment.filter(s => s !== seg),
+                ...parts
+              ]));
+              const { error } = await supabase.from('providers').update({ segment: newSegments }).eq('id', p.id);
+              if (error) throw error;
+              if (onRefresh) onRefresh();
+            } : undefined
+          });
         }
       });
     }
@@ -152,7 +181,29 @@ export function InconsistencyPanel({
       }
     }
     if (!s.segment) {
-      issues.push({ type: 'error', entity: 'Serviço', entityId: s.id, entityName: s.name, message: 'Sem segmento definido. É obrigatório vincular a um segmento.', action: 'edit', tab: 'services', fieldName: 'segment' });
+      issues.push({ 
+        type: 'error', 
+        entity: 'Serviço', 
+        entityId: s.id, 
+        entityName: s.name, 
+        message: 'Sem segmento definido. É obrigatório vincular a um segmento.', 
+        action: 'auto_fix', 
+        tab: 'services', 
+        fieldName: 'segment',
+        autoFixAction: async () => {
+          const prov = providers.find(p => p.id === s.provider_id);
+          const defaultSeg = (prov?.segment && prov.segment.length > 0) 
+            ? prov.segment[0] 
+            : (segments.find(seg => seg.name === 'Negócio')?.name || segments[0]?.name || 'Geral');
+          
+          const { error } = await supabase
+            .from('dynamic_services')
+            .update({ segment: defaultSeg })
+            .eq('id', s.id);
+          if (error) throw error;
+          if (onRefresh) onRefresh();
+        }
+      });
     } else if (!segmentNames.has(s.segment)) {
       issues.push({ type: 'warning', entity: 'Serviço', entityId: s.id, entityName: s.name, message: `Segmento "${s.segment}" não existe no cadastro`, action: 'edit', tab: 'services', fieldName: 'segment' });
     }
@@ -169,7 +220,26 @@ export function InconsistencyPanel({
       }
     }
     if (!p.tags || p.tags.length === 0) {
-      issues.push({ type: 'warning', entity: 'Produto', entityId: p.id, entityName: p.name, message: 'Sem tags (dificulta busca)', action: 'edit', tab: 'products', fieldName: 'tags' });
+      issues.push({ 
+        type: 'warning', 
+        entity: 'Produto', 
+        entityId: p.id, 
+        entityName: p.name, 
+        message: 'Sem tags (dificulta busca)', 
+        action: 'auto_fix', 
+        tab: 'products', 
+        fieldName: 'tags',
+        autoFixAction: async () => {
+          const prov = providers.find(prov => prov.id === p.provider_id);
+          const defaultTags = prov?.segment && prov.segment.length > 0 ? prov.segment : ['Geral'];
+          const { error } = await supabase
+            .from('dynamic_products')
+            .update({ tags: defaultTags })
+            .eq('id', p.id);
+          if (error) throw error;
+          if (onRefresh) onRefresh();
+        }
+      });
     }
     if (p.price <= 0) {
       issues.push({ type: 'warning', entity: 'Produto', entityId: p.id, entityName: p.name, message: 'Preço zerado ou negativo', action: 'edit', tab: 'products', fieldName: 'price' });
