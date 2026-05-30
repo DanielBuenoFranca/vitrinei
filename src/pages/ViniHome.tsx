@@ -81,7 +81,7 @@ const CHAT_STORAGE_KEY = 'vini:chat-history';
 
 const ViniHome = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading, signOut, displayName, isAdmin, profile } = useAuth();
+  const { user, loading: authLoading, signOut, displayName, isAdmin, isMaster, profile } = useAuth();
   const { profileLabel } = usePermissions();
   const { session, update: updateAiSession, setIsThinking: setGlobalThinking } = useAiSession();
   const { totalCartItems, totalCartValue, productCart, serviceCart, clearCart } = useCart();
@@ -322,7 +322,7 @@ const ViniHome = () => {
       }
       // Detect provider storefront for header shortcut
       // Master and Admin users don't have personal stores linked
-      const isPrivileged = profileLabel?.toLowerCase().includes('administrador');
+      const isPrivileged = isAdmin || isMaster;
       
       if (isPrivileged) {
         setStoreSlug(null);
@@ -1077,7 +1077,7 @@ const ViniHome = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
-              {isAdmin && (
+              {(isAdmin || isMaster) && (
                 <>
                   <div className="border-t border-border my-1" />
                   <button
