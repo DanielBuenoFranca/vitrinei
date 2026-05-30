@@ -100,7 +100,8 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
   }, [open]);
 
   useEffect(() => {
-    if (product) {
+    if (product && open) {
+      console.log('[ProductForm] Loading product data into form:', product.name);
       setForm({
         name: product.name, price: product.price, provider: product.provider,
         provider_id: product.provider_id, stock_type: product.stock_type,
@@ -110,9 +111,11 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
         quantity: (product as any).quantity ?? 0,
       });
       setSelectedTags(product.tags || []);
-      if (!imageBusy && !imageUrl) {
+      
+      // Update image URL if not busy
+      if (!imageBusy) {
         setImageUrl((product as any).image_url || null);
-        console.log('[ProductForm] Initial image URL from product:', (product as any).image_url);
+        lastSetImageUrl.current = (product as any).image_url || null;
       }
       // Fonte da verdade: product.segments. Fallback: segmentos do prestador (legado).
       const productSegs: string[] = Array.isArray((product as any).segments) ? (product as any).segments : [];
