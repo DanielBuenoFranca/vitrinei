@@ -1769,6 +1769,7 @@ const AdminPanel = () => {
         highlightField={userForm.highlightField}
       />
       <ProductForm 
+        key={productForm.item?.id || 'new'}
         open={productForm.open} 
         onClose={() => setProductForm(prev => ({ ...prev, open: false }))} 
         onSaved={async () => { 
@@ -1782,6 +1783,7 @@ const AdminPanel = () => {
         highlightField={productForm.highlightField}
       />
       <ServiceForm 
+        key={serviceForm.item?.id || 'new'}
         open={serviceForm.open} 
         onClose={() => setServiceForm(prev => ({ ...prev, open: false }))} 
         onSaved={async () => { 

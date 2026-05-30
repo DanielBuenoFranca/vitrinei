@@ -84,16 +84,23 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
   const [localIsEdit, setLocalIsEdit] = useState(false);
   const lastSetImageUrl = useRef<string | null>(null);
   const hasLoadedRef = useRef<number | null>(null);
+  const isClosingRef = useRef(false);
 
   useEffect(() => {
     if (open) {
       setLocalIsEdit(!!product && !!product.id);
+      isClosingRef.current = false;
+    } else {
+      isClosingRef.current = true;
+      // Reset synchronization ref when closing to allow fresh load next time
+      hasLoadedRef.current = null;
     }
   }, [open, product]);
   
   const handleImageUrlChange = useCallback((url: string | null) => {
     console.log('[ProductForm] handleImageUrlChange called with:', url);
     setImageUrl(url);
+    // Explicitly update ref to prevent the sync useEffect from reverting this change
     lastSetImageUrl.current = url;
   }, []);
   const { suggestions, loading: sugLoading, suggest, clear: clearSuggestions } = useNameSuggestion();
@@ -108,55 +115,57 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
   }, [open]);
 
   useEffect(() => {
-    if (product && open) {
-      console.log('[ProductForm] Loading product data into form:', product.name);
-      setForm({
-        name: product.name, price: product.price, provider: product.provider,
-        provider_id: product.provider_id, stock_type: product.stock_type,
-        rating: product.rating, distance: product.distance,
-        product_id: product.product_id,
-        unit: (product as any).unit || 'un',
-        quantity: (product as any).quantity ?? 0,
-      });
-      setSelectedTags(product.tags || []);
+    if (product && open && !isClosingRef.current) {
+      const isNewItem = hasLoadedRef.current !== product.id;
       
-      // Update image URL if not busy
-      if (!imageBusy) {
-        const currentUrl = (product as any).image_url || null;
-        const isNewItem = hasLoadedRef.current !== product.id;
+      // Update basic form fields
+      if (isNewItem) {
+        console.log('[ProductForm] Initial load for product:', product.id, product.name);
+        setForm({
+          name: product.name, price: product.price, provider: product.provider,
+          provider_id: product.provider_id, stock_type: product.stock_type,
+          rating: product.rating, distance: product.distance,
+          product_id: product.product_id,
+          unit: (product as any).unit || 'un',
+          quantity: (product as any).quantity ?? 0,
+        });
+        setSelectedTags(product.tags || []);
         
-        if (isNewItem) {
-          console.log('[ProductForm] Initial load for product:', product.id, 'Image URL:', currentUrl);
-          setImageUrl(currentUrl);
-          lastSetImageUrl.current = currentUrl;
-          hasLoadedRef.current = product.id;
-        } else if (imageUrl === null && currentUrl !== null && lastSetImageUrl.current === null) {
-          // It was explicitly cleared by the user in this session
-          console.log('[ProductForm] Image was cleared by user, not restoring from DB');
-        } else if (currentUrl !== lastSetImageUrl.current) {
-          // External change (e.g. from another tab or after save)
-          console.log('[ProductForm] External image change detected, updating state');
-          setImageUrl(currentUrl);
-          lastSetImageUrl.current = currentUrl;
+        // Initial image load
+        const currentUrl = (product as any).image_url || null;
+        setImageUrl(currentUrl);
+        lastSetImageUrl.current = currentUrl;
+        hasLoadedRef.current = product.id;
+        
+        // Segment loading
+        const productSegs: string[] = Array.isArray((product as any).segments) ? (product as any).segments : [];
+        let initialSegs = productSegs;
+        if (initialSegs.length === 0 && product.provider_id) {
+          const prov = providers.find(p => p.id === product.provider_id);
+          if (prov) initialSegs = Array.isArray(prov.segment) ? prov.segment : [prov.segment];
+        }
+        setSelectedSegments(initialSegs);
+        loadSegmentTags(initialSegs);
+      } else {
+        // We are already editing this item. Only sync image if it changed externally 
+        // AND we are not currently busy generating one.
+        const externalUrl = (product as any).image_url || null;
+        if (!imageBusy && externalUrl !== lastSetImageUrl.current && externalUrl !== imageUrl) {
+          console.log('[ProductForm] External image change detected (prop sync), updating state');
+          setImageUrl(externalUrl);
+          lastSetImageUrl.current = externalUrl;
         }
       }
-      // Fonte da verdade: product.segments. Fallback: segmentos do prestador (legado).
-      const productSegs: string[] = Array.isArray((product as any).segments) ? (product as any).segments : [];
-      let initialSegs = productSegs;
-      if (initialSegs.length === 0 && product.provider_id) {
-        const prov = providers.find(p => p.id === product.provider_id);
-        if (prov) initialSegs = Array.isArray(prov.segment) ? prov.segment : [prov.segment];
-      }
-      setSelectedSegments(initialSegs);
-      loadSegmentTags(initialSegs);
-    } else {
+    } else if (!open) {
+      // Reset form when closed
       setForm({ name: '', price: 0, provider: '', provider_id: null, stock_type: 'fisico', rating: 4.5, distance: '2 km', product_id: Math.floor(Math.random() * 9000) + 1000, unit: 'un', quantity: 0 });
       setSelectedTags([]);
       setSelectedSegments([]);
       setSegmentTags([]);
       setImageUrl(null);
+      lastSetImageUrl.current = null;
     }
-  }, [product, open, providers]); // Restored providers to ensure we have the list when editing
+  }, [product, open, providers, imageBusy, imageUrl]); // Added imageBusy and imageUrl to handle sync correctly
 
   const loadSegmentTags = useCallback(async (segNames: string[]) => {
     if (segNames.length === 0) { setSegmentTags([]); return; }
