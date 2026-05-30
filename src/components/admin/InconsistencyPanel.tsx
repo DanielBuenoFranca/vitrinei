@@ -102,7 +102,24 @@ export function InconsistencyPanel({
     }
 
     if (!p.segment || p.segment.length === 0) {
-      issues.push({ type: 'error', entity: 'Prestador', entityId: p.id, entityName: p.name, message: 'Sem segmento vinculado', action: 'edit', tab: 'providers', fieldName: 'segments' });
+      issues.push({ 
+        type: 'error', 
+        entity: 'Prestador', 
+        entityId: p.id, 
+        entityName: p.name, 
+        message: 'Sem segmento vinculado. É obrigatório selecionar ao menos um segmento.', 
+        action: segments.length === 1 ? 'auto_fix' : 'edit', 
+        tab: 'providers', 
+        fieldName: 'segments',
+        autoFixAction: segments.length === 1 ? async () => {
+          const { error } = await supabase
+            .from('providers')
+            .update({ segment: [segments[0].name] })
+            .eq('id', p.id);
+          if (error) throw error;
+          if (onRefresh) onRefresh();
+        } : undefined
+      });
     } else {
       p.segment.forEach(seg => {
         if (!segmentNames.has(seg)) {
