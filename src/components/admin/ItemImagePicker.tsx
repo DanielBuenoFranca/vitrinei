@@ -66,18 +66,28 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
   };
 
   const generate = async () => {
-    if (!name.trim()) { toast.error('Informe o nome do item antes de gerar a imagem'); return; }
-    
-    if (imageUrl) {
-      const proceed = window.confirm('Este item já possui uma imagem. Deseja realmente trocá-la por uma nova imagem buscada via IA/Banco de Imagens?');
-      if (!proceed) return;
+    if (!name.trim()) {
+      toast.error('Informe o nome do item antes de gerar a imagem');
+      return;
     }
-
+    
+    // Simplificando: removemos o confirm que pode travar o preview
+    // Se o usuário clicou em "Trocar Imagem", ele quer trocar.
+    
     setBusy(true);
     setStep('enriching');
+    
+    // Fallback timer: se a função demorar mais de 45s, destravamos a tela
+    const timeoutId = setTimeout(() => {
+      if (busy) {
+        setBusy(false);
+        setStep('idle');
+        toast.error('A geração da imagem demorou demais. Tente novamente.');
+      }
+    }, 45000);
+
     try {
-      // Pequeno delay visual para o usuário perceber as etapas
-      await new Promise(r => setTimeout(r, 600));
+      console.log('[ItemImagePicker] Starting generation for:', name);
       setStep('generating');
       
       const { data, error } = await supabase.functions.invoke('sanitize-images', {
@@ -97,20 +107,28 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
         },
       });
       
+      if (error) throw error;
+
       setStep('saving');
       const url = (data as any)?.imageUrl;
-      if (error || !url) {
+      
+      if (!url) {
+        console.warn('[ItemImagePicker] No URL returned from function');
         toast.warning('Não foi possível obter imagem agora');
       } else {
+        console.log('[ItemImagePicker] New image URL:', url);
+        // Garante que o estado seja atualizado e o componente pai notificado
         onChange(url);
-        toast.success((data as any)?.source === 'ai' ? 'Imagem gerada pela IA com base no contexto do item' : 'Imagem aplicada (sem custo de créditos)');
+        toast.success((data as any)?.source === 'ai' ? 'Imagem gerada pela IA' : 'Imagem aplicada com sucesso');
       }
     } catch (err) {
-      console.error('Error generating image:', err);
-      toast.warning('Falha ao gerar imagem');
+      console.error('[ItemImagePicker] Error generating image:', err);
+      toast.error('Falha ao gerar imagem. Tente novamente.');
     } finally {
+      clearTimeout(timeoutId);
       setBusy(false);
       setStep('idle');
+      console.log('[ItemImagePicker] Generation finished');
     }
   };
 
@@ -129,17 +147,26 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
       <Label className="flex items-center gap-2"><ImageIcon className="w-3.5 h-3.5 text-primary" /> Imagem do item</Label>
       <div className="flex items-start gap-3">
         <div className="relative w-28 h-28 shrink-0 rounded-lg border bg-muted/30 overflow-hidden flex items-center justify-center">
+          {busy ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/50 backdrop-blur-sm z-10">
+              <Loader2 className="w-6 h-6 animate-spin text-primary mb-1" />
+              <span className="text-[9px] font-bold uppercase text-primary animate-pulse">{step === 'generating' ? 'IA...' : '...'}</span>
+            </div>
+          ) : null}
+          
           {imageUrl ? (
             <>
               <img src={imageUrl} alt={name || kind} className="w-full h-full object-cover" />
-              <button
-                type="button"
-                onClick={() => onChange(null)}
-                title="Remover"
-                className="absolute top-1 right-1 bg-background/80 hover:bg-background rounded-full p-0.5 border"
-              >
-                <X className="w-3 h-3" />
-              </button>
+              {!busy && (
+                <button
+                  type="button"
+                  onClick={() => onChange(null)}
+                  title="Remover"
+                  className="absolute top-1 right-1 bg-background/80 hover:bg-background rounded-full p-0.5 border z-20"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
             </>
           ) : (
             <ImageIcon className="w-8 h-8 text-muted-foreground/40" />
