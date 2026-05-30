@@ -157,13 +157,17 @@ export function ImageSanitizationPanel() {
           </CardDescription>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button size="sm" variant="outline" onClick={scan} disabled={loading || running}>
+          <Button size="sm" variant="outline" onClick={() => scan(false)} disabled={loading || running}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RefreshCw className="h-4 w-4 mr-1" />}
-            Re-escanear
+            Escanear sem imagem
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => scan(true)} disabled={loading || running}>
+            <ImageOff className="h-4 w-4 mr-1" />
+            Escanear tudo (re-sanear)
           </Button>
           <Button size="sm" onClick={runAll} disabled={running || items.length === 0}>
             {running ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Sparkles className="h-4 w-4 mr-1" />}
-            Sanear todos ({items.length})
+            Sanear selecionados ({items.length})
           </Button>
           <Button
             size="sm"
