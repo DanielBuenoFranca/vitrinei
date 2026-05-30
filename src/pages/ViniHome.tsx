@@ -321,6 +321,14 @@ const ViniHome = () => {
         setPlanLabel(label);
       }
       // Detect provider storefront for header shortcut
+      // Master and Admin users don't have personal stores linked
+      const isPrivileged = profileLabel?.toLowerCase().includes('administrador');
+      
+      if (isPrivileged) {
+        setStoreSlug(null);
+        return;
+      }
+
       const { data: provs } = await supabase
         .from('providers')
         .select('id, name, slug')
