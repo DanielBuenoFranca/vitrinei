@@ -497,24 +497,29 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
             <Label className="text-sm font-semibold mb-2 block">Perfil *</Label>
             <p className="text-[11px] text-muted-foreground mb-2">Define o que o usuário faz no ecossistema.</p>
             <div className="grid grid-cols-3 gap-2">
-              {PROFILE_OPTIONS.map(opt => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => setProfileType(opt.id)}
-                  className={`p-3 rounded-lg border text-left transition-all ${
-                    profileType === opt.id
-                      ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
-                      : 'border-border hover:border-primary/40'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <opt.icon className={`w-4 h-4 ${profileType === opt.id ? 'text-primary' : 'text-muted-foreground'}`} />
-                    <span className="text-xs font-bold">{opt.label}</span>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground leading-tight">{opt.desc}</p>
-                </button>
-              ))}
+              {PROFILE_OPTIONS.map(opt => {
+                const disabled = adminLevel !== 'none' && (opt.id === 'provider' || opt.id === 'mixed');
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => setProfileType(opt.id)}
+                    className={`p-3 rounded-lg border text-left transition-all ${
+                      profileType === opt.id
+                        ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
+                        : 'border-border hover:border-primary/40'
+                    } ${disabled ? 'opacity-40 cursor-not-allowed bg-muted' : ''}`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <opt.icon className={`w-4 h-4 ${profileType === opt.id ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <span className="text-xs font-bold">{opt.label}</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground leading-tight">{opt.desc}</p>
+                    {disabled && <p className="text-[8px] text-destructive font-bold mt-1">Bloqueado para Admin/Master</p>}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
