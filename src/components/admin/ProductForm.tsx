@@ -167,71 +167,75 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
   };
 
   const handleSave = async () => {
-    console.log('[ProductForm] handleSave triggered, saving:', saving);
+    console.log('[ProductForm] handleSave initiated. States:', { name: form.name, imageBusy, saving });
+    
     if (!form.name.trim()) { toast.error('Nome é obrigatório'); return; }
     if (!form.provider.trim()) { toast.error('Fornecedor é obrigatório'); return; }
     if (selectedSegments.length === 0) { toast.error('Selecione pelo menos um segmento'); return; }
     
-    // Check if image is still generating
     if (imageBusy) {
       toast.warning('Aguarde a conclusão da imagem antes de salvar');
       return;
     }
 
     setSaving(true);
-    // Anti-duplicidade no estoque do prestador
-    if (form.provider_id) {
-      try {
+    try {
+      // Anti-duplicidade no estoque do prestador
+      if (form.provider_id) {
         const { data: dup } = await (supabase as any).rpc('check_item_duplicate', {
           _provider_id: form.provider_id, _kind: 'product',
           _name: form.name, _unit: form.unit, _exclude_id: isEdit ? product!.id : null,
         });
         if (dup?.duplicate) {
           toast.error(`Produto duplicado neste prestador: já existe "${dup.name}". Renomeie ou ajuste a unidade.`);
-          setSaving(false); return;
+          setSaving(false);
+          return;
         }
-      } catch {}
-    }
-    const data: any = {
-      name: form.name, price: form.price, provider: form.provider,
-      provider_id: form.provider_id, stock_type: form.stock_type,
-      rating: form.rating, distance: form.distance, tags: selectedTags,
-      product_id: form.product_id, related_service_ids: [] as number[],
-      unit: form.unit,
-      quantity: form.quantity,
-      image_url: imageUrl,
-      segments: selectedSegments,
-    };
-    if (isEdit) {
-      const { error } = await supabase.from('dynamic_products').update(data).eq('id', product!.id);
-      console.log('[ProductForm] Update result:', { error });
-      if (error) { toast.error('Erro ao atualizar'); setSaving(false); return; }
-      toast.success('Produto atualizado');
-    } else {
-      const { error } = await supabase.from('dynamic_products').insert(data);
-      console.log('[ProductForm] Insert result:', { error });
-      if (error) { toast.error('Erro ao criar'); setSaving(false); return; }
-      toast.success('Produto criado');
-    }
-    // Garante que o prestador esteja vinculado a TODOS os segmentos do produto
-    if (form.provider_id && selectedSegments.length > 0) {
-      try {
+      }
+
+      const data: any = {
+        name: form.name, price: form.price, provider: form.provider,
+        provider_id: form.provider_id, stock_type: form.stock_type,
+        rating: form.rating, distance: form.distance, tags: selectedTags,
+        product_id: form.product_id, related_service_ids: [] as number[],
+        unit: form.unit,
+        quantity: form.quantity,
+        image_url: imageUrl,
+        segments: selectedSegments,
+      };
+
+      if (isEdit) {
+        const { error } = await supabase.from('dynamic_products').update(data).eq('id', product!.id);
+        if (error) throw error;
+        toast.success('Produto atualizado');
+      } else {
+        const { error } = await supabase.from('dynamic_products').insert(data);
+        if (error) throw error;
+        toast.success('Produto criado');
+      }
+
+      // Sincronização de segmentos do prestador
+      if (form.provider_id && selectedSegments.length > 0) {
         const prov = providers.find(p => p.id === form.provider_id);
         const current = Array.isArray(prov?.segment) ? (prov!.segment as string[]) : [];
         const merged = Array.from(new Set([...current, ...selectedSegments]));
         if (merged.length !== current.length) {
           await supabase.from('providers').update({ segment: merged }).eq('id', form.provider_id);
-          // Sincroniza também no profile do dono (se tiver user_id vinculado)
           const { data: provRow } = await supabase.from('providers').select('user_id').eq('id', form.provider_id).maybeSingle();
           if (provRow?.user_id) {
             await supabase.from('profiles').update({ provider_segments: merged, is_provider: true }).eq('user_id', provRow.user_id);
           }
         }
-      } catch {}
+      }
+
+      onSaved();
+      onClose();
+    } catch (error: any) {
+      console.error('[ProductForm] Error saving product:', error);
+      toast.error('Erro ao salvar produto: ' + (error.message || 'Erro desconhecido'));
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    onSaved();
-    onClose();
   };
 
   useEffect(() => {
