@@ -1769,6 +1769,7 @@ const AdminPanel = () => {
         highlightField={userForm.highlightField}
       />
       <ProductForm 
+        key={productForm.item?.id || 'new'}
         open={productForm.open} 
         onClose={() => setProductForm(prev => ({ ...prev, open: false }))} 
         onSaved={async () => { 
