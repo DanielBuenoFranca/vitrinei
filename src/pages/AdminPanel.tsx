@@ -975,7 +975,8 @@ const AdminPanel = () => {
                                   await reloadDynamicEntries(); fetchData();
                                 }}
                                 className="h-7 w-16 text-xs"
-                              />
+                
+              />
                             </TableCell>
                             <TableCell>⭐ {svc.rating}</TableCell>
                             <TableCell>{svc.time}</TableCell>
@@ -1198,6 +1199,7 @@ const AdminPanel = () => {
               onEditProduct={(p, field) => setProductForm({ open: true, item: p, highlightField: field })}
               onDeleteService={deleteService}
               onDeleteProduct={deleteProduct}
+              onRefresh={() => { fetchData(); fetchUsers(); }}
             />
           </TabsContent>
 

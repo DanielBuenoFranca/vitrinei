@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, CheckCircle2, Pencil, Trash2, ArrowRight } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Pencil, Trash2, ArrowRight, Loader2, Sparkles, ShieldOff } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface Provider {
   id: number; name: string; type: string; segment: string[];
@@ -37,13 +39,14 @@ interface UserRole {
 
 interface Issue {
   type: 'error' | 'warning';
-  entity: string;
+  entity: 'Prestador' | 'Serviço' | 'Produto';
   entityId: number;
   entityName: string;
   message: string;
-  action: 'edit' | 'delete';
+  action: 'edit' | 'delete' | 'auto_fix';
   tab: string;
   fieldName?: string;
+  autoFixAction?: () => Promise<void>;
 }
 
 interface InconsistencyPanelProps {
@@ -57,12 +60,13 @@ interface InconsistencyPanelProps {
   onEditProduct: (p: DynamicProduct, field?: string) => void;
   onDeleteService: (id: number) => void;
   onDeleteProduct: (id: number) => void;
+  onRefresh?: () => void;
 }
 
 export function InconsistencyPanel({
   providers, services, products, segments, userRoles = [],
   onEditProvider, onEditService, onEditProduct,
-  onDeleteService, onDeleteProduct,
+  onDeleteService, onDeleteProduct, onRefresh
 }: InconsistencyPanelProps) {
   const segmentNames = new Set(segments.map(s => s.name));
   const providerIds = new Set(providers.map(p => p.id));
@@ -82,9 +86,17 @@ export function InconsistencyPanel({
           entityId: p.id, 
           entityName: p.name, 
           message: 'Usuário Admin/Master não pode ter loja pessoal. Remova o vínculo de prestador.', 
-          action: 'edit', 
+          action: 'auto_fix', 
           tab: 'providers',
-          fieldName: 'adminLevel'
+          fieldName: 'adminLevel',
+          autoFixAction: async () => {
+            const { error } = await supabase
+              .from('providers')
+              .update({ user_id: null })
+              .eq('id', p.id);
+            if (error) throw error;
+            if (onRefresh) onRefresh();
+          }
         });
       }
     }
@@ -157,7 +169,23 @@ export function InconsistencyPanel({
   const errors = issues.filter(i => i.type === 'error');
   const warnings = issues.filter(i => i.type === 'warning');
 
-  const handleAction = (issue: Issue) => {
+  const [fixingId, setFixingId] = useState<string | null>(null);
+
+  const handleAction = async (issue: Issue) => {
+    if (issue.action === 'auto_fix' && issue.autoFixAction) {
+      const id = `${issue.entity}-${issue.entityId}`;
+      setFixingId(id);
+      try {
+        await issue.autoFixAction();
+        toast.success(`Correção automática aplicada para: ${issue.entityName}`);
+      } catch (error: any) {
+        toast.error(`Falha na correção automática: ${error.message}`);
+      } finally {
+        setFixingId(null);
+      }
+      return;
+    }
+
     if (issue.entity === 'Prestador') {
       const p = providers.find(x => x.id === issue.entityId);
       if (p) onEditProvider(p, issue.fieldName);
@@ -226,13 +254,18 @@ export function InconsistencyPanel({
               <p className="text-xs text-muted-foreground mt-0.5">{issue.message}</p>
             </div>
             <Button
-              variant={issue.action === 'delete' ? 'destructive' : 'outline'}
+              variant={issue.action === 'delete' ? 'destructive' : issue.action === 'auto_fix' ? 'default' : 'outline'}
               size="sm"
               className="flex-shrink-0 gap-1 text-xs h-7"
               onClick={() => handleAction(issue)}
+              disabled={fixingId === `${issue.entity}-${issue.entityId}`}
             >
-              {issue.action === 'delete' ? (
+              {fixingId === `${issue.entity}-${issue.entityId}` ? (
+                <><Loader2 className="w-3 h-3 animate-spin" /> Processando</>
+              ) : issue.action === 'delete' ? (
                 <><Trash2 className="w-3 h-3" /> Excluir</>
+              ) : issue.action === 'auto_fix' ? (
+                <><Sparkles className="w-3 h-3" /> Auto-Corrigir</>
               ) : (
                 <><Pencil className="w-3 h-3" /> Corrigir</>
               )}
