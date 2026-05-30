@@ -131,6 +131,13 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
     if (!form.name.trim()) { toast.error('Nome é obrigatório'); return; }
     if (!form.provider.trim()) { toast.error('Prestador é obrigatório'); return; }
     if (!form.segment) { toast.error('Segmento é obrigatório'); return; }
+    // Check if image is still generating
+    const isImageBusy = document.querySelector('[data-busy="true"]');
+    if (isImageBusy) {
+      toast.warning('Aguarde a conclusão da imagem antes de salvar');
+      return;
+    }
+
     setSaving(true);
     if (form.provider_id) {
       try {
