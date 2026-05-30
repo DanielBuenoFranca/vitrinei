@@ -274,14 +274,16 @@ Deno.serve(async (req) => {
     // Isso economiza créditos e traz fotos reais (mais aderentes) quando disponíveis.
     if (["product", "kit", "service"].includes(kind)) {
       try {
-        const searchRes = await callFreeFallback(supabase, freePayload);
+        const searchRes = await callFreeFallback(supabase, { ...freePayload, seed: Math.floor(Math.random() * 1000000) });
         if (searchRes.ok) {
           const searchData = await searchRes.json();
-          // Critério de aderência: fonte confiável (unsplash/pixabay) e score positivo (match de termos)
-          if (["unsplash", "pixabay", "openverse"].includes(searchData.source) && (searchData.score >= 5)) {
+          // Critério de aderência: fonte confiável (unsplash/pixabay) e score robusto (match de múltiplos termos)
+          // Aumentamos o threshold para garantir que a imagem seja realmente boa.
+          if (["unsplash", "pixabay", "openverse"].includes(searchData.source) && (searchData.score >= 10)) {
             console.log(`[sanitize-images] Found high-adherence web image for "${name}" (score: ${searchData.score}, source: ${searchData.source})`);
             return new Response(JSON.stringify(searchData), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
           }
+          console.log(`[sanitize-images] Web search found image but score was too low (${searchData.score}) or source untrusted. Falling back to AI generation.`);
         }
       } catch (e) {
         console.warn("[sanitize-images] search-first failed, falling back to generation:", e);
