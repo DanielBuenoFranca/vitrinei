@@ -251,6 +251,7 @@ Deno.serve(async (req) => {
       description: ctx.description, linkedNames: ctx.linkedNames,
       understanding,
       currentImageUrl,
+      seed: Math.floor(Math.random() * 1000000), // Injeção de aleatoriedade
     };
 
     // 1) lê toggle

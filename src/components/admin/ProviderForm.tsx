@@ -149,7 +149,7 @@ export function ProviderForm({ open, onClose, onSaved, provider, segments }: Pro
       toast.info('🎨 Gerando arte (com economia de créditos)...');
       // sanitize-images respeita o toggle ai_credits_mode: usa Unsplash/Pixabay grátis quando IA está OFF.
       const { data, error } = await supabase.functions.invoke('sanitize-images', {
-        body: { kind: 'provider', id: provider?.id || 0, name, segment },
+        body: { kind: 'provider', id: provider?.id || 0, name, segment, currentImageUrl: logoUrl },
       });
       const url = (data as any)?.imageUrl || (data as any)?.logoUrl;
       if (error || !url) {

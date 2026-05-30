@@ -15,8 +15,9 @@ async function tryUnsplash(query: string, u: SubjectUnderstanding): Promise<Cand
   const key = Deno.env.get("UNSPLASH_ACCESS_KEY");
   if (!key) return [];
   try {
+    const page = ((seed || 0) % 5) + 1; // Usa o seed do frontend se disponível
     const r = await fetch(
-      `https://api.unsplash.com/search/photos?per_page=8&orientation=squarish&query=${encodeURIComponent(query)}`,
+      `https://api.unsplash.com/search/photos?per_page=12&page=${page}&orientation=squarish&query=${encodeURIComponent(query)}`,
       { headers: { Authorization: `Client-ID ${key}` } },
     );
     if (!r.ok) return [];
@@ -38,8 +39,9 @@ async function tryPixabay(query: string, u: SubjectUnderstanding): Promise<Cand[
   const key = Deno.env.get("PIXABAY_API_KEY");
   if (!key) return [];
   try {
+    const page = ((seed || 0) % 3) + 1;
     const r = await fetch(
-      `https://pixabay.com/api/?key=${key}&q=${encodeURIComponent(query)}&image_type=photo&per_page=10&safesearch=true`,
+      `https://pixabay.com/api/?key=${key}&q=${encodeURIComponent(query)}&image_type=photo&per_page=15&page=${page}&safesearch=true`,
     );
     if (!r.ok) return [];
     const j = await r.json();
@@ -57,8 +59,9 @@ async function tryPixabay(query: string, u: SubjectUnderstanding): Promise<Cand[
 
 async function tryOpenverse(query: string, u: SubjectUnderstanding): Promise<Cand[]> {
   try {
+    const page = ((seed || 0) % 4) + 1;
     const r = await fetch(
-      `https://api.openverse.org/v1/images/?q=${encodeURIComponent(query)}&page_size=8&license_type=commercial`,
+      `https://api.openverse.org/v1/images/?q=${encodeURIComponent(query)}&page=${page}&page_size=12&license_type=commercial`,
     );
     if (!r.ok) return [];
     const j = await r.json();
@@ -99,7 +102,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const body = await req.json();
-    const { kind, id, name, segment, tags, description, linkedNames, currentImageUrl } = body;
+    const { kind, id, name, segment, tags, description, linkedNames, currentImageUrl, seed } = body;
     if (!kind || !id || !name) {
       return new Response(JSON.stringify({ error: "kind, id and name required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
