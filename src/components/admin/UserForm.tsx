@@ -205,7 +205,18 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
     }
   }, [open, profile, currentRole, currentRoles, currentEmail, segments, defaultPlanId]);
 
-  const isProviderRole = profileType === 'provider' || profileType === 'mixed';
+  // Force business profile to 'client' for privileged accounts (Master/Admin)
+  useEffect(() => {
+    if (adminLevel !== 'none' && (profileType === 'provider' || profileType === 'mixed')) {
+      setProfileType('client');
+      // Only toast if it was a manual change or initial load of a provider promoted to admin
+      if (open) {
+        toast.info('Admins/Master não possuem loja pessoal; perfil ajustado para Consumidor.');
+      }
+    }
+  }, [adminLevel, profileType, open]);
+
+  const isProviderRole = (profileType === 'provider' || profileType === 'mixed') && adminLevel === 'none';
   const docValidation = validateDoc(cpfCnpj);
   const rawDoc = cpfCnpj.replace(/\D/g, '');
 
@@ -419,6 +430,11 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
         profileData.is_provider = true;
         profileData.margin_pct = Math.max(0, Math.min(500, Number(marginPct) || 0));
         profileData.profit_pct = Math.max(0, Math.min(500, Number(profitPct) || 0));
+      } else {
+        // Master/Admin users never have provider status or segments linked
+        profileData.is_provider = false;
+        profileData.provider_segments = null;
+        profileData.provider_active = false;
       }
 
       const { data: updRows, error: profErr } = await supabase
@@ -497,24 +513,29 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
             <Label className="text-sm font-semibold mb-2 block">Perfil *</Label>
             <p className="text-[11px] text-muted-foreground mb-2">Define o que o usuário faz no ecossistema.</p>
             <div className="grid grid-cols-3 gap-2">
-              {PROFILE_OPTIONS.map(opt => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => setProfileType(opt.id)}
-                  className={`p-3 rounded-lg border text-left transition-all ${
-                    profileType === opt.id
-                      ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
-                      : 'border-border hover:border-primary/40'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <opt.icon className={`w-4 h-4 ${profileType === opt.id ? 'text-primary' : 'text-muted-foreground'}`} />
-                    <span className="text-xs font-bold">{opt.label}</span>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground leading-tight">{opt.desc}</p>
-                </button>
-              ))}
+              {PROFILE_OPTIONS.map(opt => {
+                const disabled = adminLevel !== 'none' && (opt.id === 'provider' || opt.id === 'mixed');
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => setProfileType(opt.id)}
+                    className={`p-3 rounded-lg border text-left transition-all ${
+                      profileType === opt.id
+                        ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
+                        : 'border-border hover:border-primary/40'
+                    } ${disabled ? 'opacity-40 cursor-not-allowed bg-muted' : ''}`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <opt.icon className={`w-4 h-4 ${profileType === opt.id ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <span className="text-xs font-bold">{opt.label}</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground leading-tight">{opt.desc}</p>
+                    {disabled && <p className="text-[8px] text-destructive font-bold mt-1">Bloqueado para Admin/Master</p>}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

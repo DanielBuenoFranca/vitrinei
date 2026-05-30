@@ -34,11 +34,11 @@ const PERMISSIONS: Record<string, ProfileType[]> = {
   'admin.clear_data': ['master'],
   'admin.crud': ['master', 'admin'],
 
-  // Provider features
-  'provider.storefront': ['master', 'admin', 'provider', 'mixed'],
-  'provider.services': ['master', 'admin', 'provider', 'mixed'],
-  'provider.products': ['master', 'admin', 'provider', 'mixed'],
-  'provider.mei': ['master', 'admin', 'provider', 'mixed'],
+  // Provider features (Only available for those with a linked store/provider profile)
+  'provider.storefront': ['provider', 'mixed'],
+  'provider.services': ['provider', 'mixed'],
+  'provider.products': ['provider', 'mixed'],
+  'provider.mei': ['provider', 'mixed'],
 
   // Client features
   'client.purchase': ['master', 'admin', 'client', 'mixed'],
