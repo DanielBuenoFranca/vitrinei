@@ -243,6 +243,7 @@ Deno.serve(async (req) => {
     const understanding = await understandSubject({
       name: ctx.name, segment: ctx.segment, tags: ctx.tags,
       description: ctx.description, linkedNames: ctx.linkedNames, kind,
+      providerType: ctx.providerType || ctx.itemType,
     });
     const freePayload = {
       kind, id, name,
