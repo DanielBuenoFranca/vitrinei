@@ -74,7 +74,7 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
   const [allServiceNames, setAllServiceNames] = useState<string[]>([]);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const lastSetImageUrl = useRef<string | null>(null);
-  const [imageBusy, setImageBusy] = useState(false);
+  const hasLoadedRef = useRef<number | null>(null);
   
   const handleImageUrlChange = (url: string | null) => {
     setImageUrl(url);
@@ -110,9 +110,15 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
       setLinkedProductIds(service.linked_product_ids || []);
       if (!imageBusy) {
         const currentUrl = (service as any).image_url || null;
-        if (imageUrl === null && currentUrl !== null && lastSetImageUrl.current === null) {
+        const isNewItem = hasLoadedRef.current !== service.id;
+        
+        if (isNewItem) {
+          setImageUrl(currentUrl);
+          lastSetImageUrl.current = currentUrl;
+          hasLoadedRef.current = service.id;
+        } else if (imageUrl === null && currentUrl !== null && lastSetImageUrl.current === null) {
           // Explicitly cleared by user
-        } else {
+        } else if (currentUrl !== lastSetImageUrl.current) {
           setImageUrl(currentUrl);
           lastSetImageUrl.current = currentUrl;
         }
