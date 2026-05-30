@@ -54,7 +54,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(currentUser);
     
     if (currentUser) {
-      const mustReset = currentSession.user.user_metadata?.must_reset_password === true;
+      const mustReset = currentUser.user_metadata?.must_reset_password === true;
       setMustResetPassword(mustReset);
       
       // Fetch profile and roles in parallel for efficiency
@@ -62,12 +62,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         supabase
           .from('profiles')
           .select('*')
-          .eq('user_id', currentSession.user.id)
+          .eq('user_id', currentUser.id)
           .maybeSingle(),
         supabase
           .from('user_roles')
           .select('role')
-          .eq('user_id', currentSession.user.id)
+          .eq('user_id', currentUser.id)
       ]);
 
       if (mounted) {
@@ -89,11 +89,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         if (rolesRes.data) {
           const userRoles = rolesRes.data.map(r => r.role as AppRole);
-          console.log('AuthContext: Roles fetched for', currentSession.user.id, userRoles);
+          console.log('AuthContext: Roles fetched for', currentUser.id, userRoles);
           setRoles(userRoles);
           
           // Debug toast for special user to help troubleshoot preview
-          if (currentSession.user.email?.includes('danielbuenofranca2')) {
+          if (currentUser.email?.includes('danielbuenofranca2')) {
             toast.success(`Sessão Master identificada: ${userRoles.join(', ')}`, {
               id: 'auth-debug-success',
               duration: 3000
@@ -104,15 +104,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setRoles([]);
           toast.error('Erro ao carregar permissões: ' + rolesRes.error.message);
         } else {
-          console.log('AuthContext: No roles found for', currentSession.user.id);
+          console.log('AuthContext: No roles found for', currentUser.id);
           setRoles([]);
           
           // Auto-retry once after 2 seconds if roles are empty but user is signed in
           setTimeout(async () => {
-            const retryRes = await supabase.from('user_roles').select('role').eq('user_id', currentSession.user.id);
+            const retryRes = await supabase.from('user_roles').select('role').eq('user_id', currentUser.id);
             if (retryRes.data && retryRes.data.length > 0) {
               const retryRoles = retryRes.data.map(r => r.role as AppRole);
               setRoles(retryRoles);
+              console.log('AuthContext: Roles recovered on retry:', retryRoles);
+            }
+          }, 2000);
+        }
+      }
+    } else {
               console.log('AuthContext: Roles recovered on retry:', retryRoles);
             }
           }, 2000);
