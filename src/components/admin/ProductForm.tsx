@@ -196,10 +196,12 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
     };
     if (isEdit) {
       const { error } = await supabase.from('dynamic_products').update(data).eq('id', product!.id);
+      console.log('[ProductForm] Update result:', { error });
       if (error) { toast.error('Erro ao atualizar'); setSaving(false); return; }
       toast.success('Produto atualizado');
     } else {
       const { error } = await supabase.from('dynamic_products').insert(data);
+      console.log('[ProductForm] Insert result:', { error });
       if (error) { toast.error('Erro ao criar'); setSaving(false); return; }
       toast.success('Produto criado');
     }
