@@ -59,7 +59,11 @@ const ResetPasswordPage = () => {
       });
       
       if (error) {
-        toast.error(error.message);
+        if (error.message.includes('known to be weak') || error.message.includes('HIBP')) {
+          toast.error('Esta senha foi identificada como fraca ou vazada em outros sites. Por segurança, escolha uma senha mais complexa ou diferente.');
+        } else {
+          toast.error(error.message);
+        }
       } else {
         clearMustResetPassword();
         toast.success('Senha atualizada com sucesso!');
