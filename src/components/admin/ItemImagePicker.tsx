@@ -72,6 +72,7 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
           kind,
           id: id || 0,
           name: name.trim(),
+          currentImageUrl: imageUrl,
           segment,
           tags: (tags || []).filter(Boolean),
           description,
