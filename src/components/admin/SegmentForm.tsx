@@ -34,6 +34,7 @@ export function SegmentForm({ open, onClose, onSaved, segment }: SegmentFormProp
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [editValue, setEditValue] = useState('');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageBusy, setImageBusy] = useState(false);
   const lastSetImageUrl = useRef<string | null>(null);
   const hasLoadedRef = useRef<number | null>(null);
 
@@ -146,6 +147,12 @@ export function SegmentForm({ open, onClose, onSaved, segment }: SegmentFormProp
   const handleSave = async () => {
     const trimmed = name.trim().toLowerCase();
     if (!trimmed) { toast.error('Nome é obrigatório'); return; }
+    
+    if (imageBusy) {
+      toast.warning('Aguarde a conclusão da imagem antes de salvar');
+      return;
+    }
+
     setSaving(true);
     const payload: any = { name: trimmed, suggested_tags: selectedTags, image_url: imageUrl };
     if (isEdit) {
@@ -158,8 +165,8 @@ export function SegmentForm({ open, onClose, onSaved, segment }: SegmentFormProp
       toast.success('Segmento criado');
     }
     setSaving(false);
-    onSaved();
     onClose();
+    onSaved();
   };
 
   return (
@@ -205,6 +212,7 @@ export function SegmentForm({ open, onClose, onSaved, segment }: SegmentFormProp
               setImageUrl(url);
               lastSetImageUrl.current = url;
             }}
+            onBusy={setImageBusy}
           />
 
           {/* Tags selecionadas */}
