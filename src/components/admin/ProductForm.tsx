@@ -151,6 +151,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
         // AND we are not currently busy generating one.
         const externalUrl = (product as any).image_url || null;
         if (!imageBusy && externalUrl !== lastSetImageUrl.current) {
+          console.log('[ProductForm] External sync (imageBusy:', imageBusy, ') external:', externalUrl, 'last:', lastSetImageUrl.current);
           console.log('[ProductForm] External image change detected, updating state:', externalUrl);
           setImageUrl(externalUrl);
           lastSetImageUrl.current = externalUrl;

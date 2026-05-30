@@ -128,7 +128,8 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
       } else if (!imageBusy) {
         // Sync external changes
         const currentUrl = (service as any).image_url || null;
-        if (currentUrl !== lastSetImageUrl.current) {
+        if (!imageBusy && currentUrl !== lastSetImageUrl.current) {
+          console.log('[ServiceForm] External sync (imageBusy:', imageBusy, ') external:', currentUrl, 'last:', lastSetImageUrl.current);
           console.log('[ServiceForm] External image change detected:', currentUrl);
           setImageUrl(currentUrl);
           lastSetImageUrl.current = currentUrl;
