@@ -45,8 +45,14 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
   const [uploading, setUploading] = useState(false);
 
   const setBusy = (val: boolean) => {
+    // Only update if state actually changes to avoid unnecessary re-renders
+    if (busyRef.current === val) return;
+    
+    console.log(`[ItemImagePicker] Setting busy to ${val}`);
     busyRef.current = val;
     _setBusy(val);
+    // Use a small delay to ensure state has propagated before parent re-renders
+    // though this is mostly to avoid "Update while rendering" warnings if called too early
     if (onBusy) onBusy(val);
   };
 
