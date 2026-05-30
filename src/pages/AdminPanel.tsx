@@ -1221,7 +1221,7 @@ const AdminPanel = () => {
                 </div>
               </CardHeader>
               <CardContent className="flex-1 p-0 overflow-hidden">
-                {userProfiles.length === 0 ? (
+                {filteredProfiles.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">Nenhum usuário cadastrado ainda.</p>
                 ) : (
                   <Table wrapperClassName="admin-scroll-area max-h-[70vh] border-t">
@@ -1243,7 +1243,7 @@ const AdminPanel = () => {
                       </TableRow>
                     </TableHeader>
                       <TableBody>
-                        {userProfiles
+                        {filteredProfiles
                           .filter((profile: any) => {
                             const isMaster = userRoles.some(r => r.user_id === profile.user_id && r.role === 'master');
                             return showMasterUsers ? true : !isMaster;
