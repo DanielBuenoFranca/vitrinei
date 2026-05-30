@@ -1116,9 +1116,11 @@ const ViniHome = () => {
                       setShowPlusMenu(false); 
                       navigate('/admin'); 
                     }}
-                    className="w-full text-left px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/10 rounded-md transition-colors flex items-center gap-2"
+                    className="w-full text-left px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/10 rounded-md transition-colors flex items-center gap-2 active:scale-95"
                   >
-                    <Settings className="w-3.5 h-3.5" /> Administrador
+                    <span className="flex items-center gap-2 w-full">
+                      <Settings className="w-3.5 h-3.5" /> Administrador
+                    </span>
                   </button>
                 </>
               )}
