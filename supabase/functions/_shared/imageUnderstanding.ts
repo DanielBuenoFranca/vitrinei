@@ -93,10 +93,11 @@ const RULES: Rule[] = [
   // ---- Beleza / Ferramentas ----
   { match: ["shampoo"], query: "shampoo bottle hair care", must: ["shampoo"], category: "beauty" },
   { match: ["esmalte"], query: "nail polish bottle", must: ["nail polish"], category: "beauty" },
-  { match: ["maleta", "kit"], query: "professional storage case organizer toolbox", must: ["case", "storage"], category: "tools" },
-  { match: ["corte cabelo", "barba", "barbearia"], query: "professional barber haircut tools scissors clippers", must: ["barber", "haircut"], category: "beauty-services" },
+  { match: ["maleta", "kit"], query: "professional storage case organizer toolbox bag", must: ["case", "storage"], block: ["suitcase", "luggage", "travel", "airport"], category: "tools" },
+  { match: ["maleta profissional", "maleta de ferramentas"], query: "professional tool case organizer toolbox", must: ["tool", "case"], block: ["suitcase", "luggage", "travel", "airport"], category: "tools" },
+  { match: ["corte cabelo", "barba", "barbearia"], query: "professional barber haircut tools scissors clippers", must: ["barber", "haircut"], block: ["woman salon", "long hair", "makeup"], category: "beauty-services" },
   { match: ["tesoura"], query: "professional haircut scissors", must: ["scissors"], category: "beauty-tools" },
-  { match: ["maquina de corte", "maquina cortar"], query: "hair clippers professional trimmer", must: ["clippers", "trimmer"], category: "beauty-tools" },
+  { match: ["maquina de corte", "maquina cortar", "trimmer"], query: "hair clippers professional trimmer", must: ["clippers", "trimmer"], category: "beauty-tools" },
 
   // ---- Limpeza ----
   { match: ["sabao", "sabão", "detergente"], query: "cleaning detergent soap bottle",

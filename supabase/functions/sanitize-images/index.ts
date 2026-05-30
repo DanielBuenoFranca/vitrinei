@@ -46,6 +46,7 @@ type EnrichedContext = {
   linkedNames: string[];
   unit?: string;
   price?: number;
+  quantity?: number;
 };
 
 async function enrichContext(supabase: any, kind: string, id: number, base: any): Promise<EnrichedContext> {
@@ -60,6 +61,7 @@ async function enrichContext(supabase: any, kind: string, id: number, base: any)
     linkedNames: [],
     unit: base.unit,
     price: base.price,
+    quantity: base.quantity,
   };
 
   try {
@@ -178,8 +180,9 @@ function buildPrompt(kind: string, ctx: EnrichedContext): string {
   const descStr = ctx.description ? ` Description: ${ctx.description}.` : "";
   const provStr = ctx.providerName ? ` Provider: ${ctx.providerName}.` : "";
   const typeStr = ctx.itemType ? ` Type: ${ctx.itemType}.` : (ctx.providerType ? ` Type: ${ctx.providerType}.` : "");
+  const detailsStr = (ctx.unit || ctx.price || ctx.quantity) ? ` Commercial Details: ${[ctx.unit && `Unit: ${ctx.unit}`, ctx.price && `Price: R$ ${ctx.price}`, ctx.quantity && `Stock quantity: ${ctx.quantity}`].filter(Boolean).join(", ")}.` : "";
 
-  const base = `Subject: "${ctx.name}".${segStr}${typeStr}${tagsStr}${linkedStr}${descStr}${provStr}`;
+  const base = `Subject: "${ctx.name}".${segStr}${typeStr}${tagsStr}${linkedStr}${descStr}${provStr}${detailsStr}`;
 
   if (kind === "provider") {
     return `Create a modern, minimalist BRAND LOGO ICON for the small business "${ctx.name}".${segStr}${typeStr}${tagsStr}${descStr} ` +
