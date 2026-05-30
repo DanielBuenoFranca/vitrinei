@@ -81,8 +81,15 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
   const [saving, setSaving] = useState(false);
   const [allProductNames, setAllProductNames] = useState<string[]>([]);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [localIsEdit, setLocalIsEdit] = useState(false);
   const lastSetImageUrl = useRef<string | null>(null);
   const hasLoadedRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setLocalIsEdit(!!product && !!product.id);
+    }
+  }, [open, product]);
   
   const handleImageUrlChange = useCallback((url: string | null) => {
     console.log('[ProductForm] handleImageUrlChange called with:', url);
@@ -294,7 +301,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
       <DialogContent className="max-w-lg p-0 flex flex-col max-h-[90vh] overflow-hidden">
         <div className="p-6 pb-2 shrink-0">
           <DialogHeader>
-            <DialogTitle>{isEdit ? 'Editar Produto' : 'Novo Produto'}</DialogTitle>
+            <DialogTitle>{localIsEdit ? 'Editar Produto' : 'Novo Produto'}</DialogTitle>
           </DialogHeader>
         </div>
         <ScrollArea className="flex-1 px-6 admin-scroll-area">
@@ -449,7 +456,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
         </ScrollArea>
         <DialogFooter className="p-6 pt-2 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : isEdit ? 'Salvar' : 'Criar'}</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : localIsEdit ? 'Salvar' : 'Criar'}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

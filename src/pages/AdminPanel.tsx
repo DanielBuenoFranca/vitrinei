@@ -1774,8 +1774,12 @@ const AdminPanel = () => {
       />
       <ServiceForm 
         open={serviceForm.open} 
-        onClose={() => setServiceForm({ open: false, item: null })} 
-        onSaved={() => { reloadDynamicEntries(); fetchData(); }} 
+        onClose={() => setServiceForm(prev => ({ ...prev, open: false }))} 
+        onSaved={async () => { 
+          await reloadDynamicEntries(); 
+          await fetchData(); 
+          setServiceForm({ open: false, item: null });
+        }} 
         service={serviceForm.item} 
         providers={providerList} 
         segments={segmentList} 
