@@ -81,6 +81,7 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
   };
 
   const generate = async () => {
+    console.log('[ItemImagePicker] generate() called. Current busyRef:', busyRef.current);
     if (busyRef.current) return;
     
     if (!name.trim()) {
@@ -88,6 +89,7 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
       return;
     }
     
+    console.log('[ItemImagePicker] Setting busy true and starting...');
     setBusy(true);
     setStep('enriching');
     

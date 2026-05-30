@@ -269,8 +269,8 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
         }
       }
 
-      onSaved();
       onClose();
+      onSaved();
     } catch (error: any) {
       console.error('[ProductForm] Error saving product:', error);
       toast.error('Erro ao salvar produto: ' + (error.message || 'Erro desconhecido'));

@@ -217,8 +217,8 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
       } catch {}
     }
     setSaving(false);
-    onSaved();
     onClose();
+    onSaved();
   };
 
   useEffect(() => {
