@@ -9,6 +9,7 @@ interface Provider {
   phone: string | null; email: string | null; address: string | null; city: string | null;
   distance: string; rating: number; active: boolean; cpf_cnpj: string | null;
   created_at: string;
+  user_id?: string | null;
 }
 
 interface DynamicService {
@@ -29,6 +30,11 @@ interface Segment {
   id: number; name: string;
 }
 
+interface UserRole {
+  user_id: string;
+  role: string;
+}
+
 interface Issue {
   type: 'error' | 'warning';
   entity: string;
@@ -37,6 +43,7 @@ interface Issue {
   message: string;
   action: 'edit' | 'delete';
   tab: string;
+  fieldName?: string;
 }
 
 interface InconsistencyPanelProps {
@@ -44,15 +51,16 @@ interface InconsistencyPanelProps {
   services: DynamicService[];
   products: DynamicProduct[];
   segments: Segment[];
-  onEditProvider: (p: Provider) => void;
-  onEditService: (s: DynamicService) => void;
-  onEditProduct: (p: DynamicProduct) => void;
+  userRoles?: UserRole[];
+  onEditProvider: (p: Provider, field?: string) => void;
+  onEditService: (s: DynamicService, field?: string) => void;
+  onEditProduct: (p: DynamicProduct, field?: string) => void;
   onDeleteService: (id: number) => void;
   onDeleteProduct: (id: number) => void;
 }
 
 export function InconsistencyPanel({
-  providers, services, products, segments,
+  providers, services, products, segments, userRoles = [],
   onEditProvider, onEditService, onEditProduct,
   onDeleteService, onDeleteProduct,
 }: InconsistencyPanelProps) {
@@ -64,23 +72,39 @@ export function InconsistencyPanel({
 
   // Providers without segments
   providers.forEach(p => {
+    // New rule: Admins/Masters shouldn't have a personal store (provider record)
+    if (p.user_id) {
+      const isPrivileged = userRoles.some(r => r.user_id === p.user_id && ['admin', 'master'].includes(r.role));
+      if (isPrivileged) {
+        issues.push({ 
+          type: 'error', 
+          entity: 'Prestador', 
+          entityId: p.id, 
+          entityName: p.name, 
+          message: 'Usuário Admin/Master não pode ter loja pessoal. Remova o vínculo de prestador.', 
+          action: 'edit', 
+          tab: 'providers',
+          fieldName: 'adminLevel'
+        });
+      }
+    }
+
     if (!p.segment || p.segment.length === 0) {
-      issues.push({ type: 'error', entity: 'Prestador', entityId: p.id, entityName: p.name, message: 'Sem segmento vinculado', action: 'edit', tab: 'providers' });
+      issues.push({ type: 'error', entity: 'Prestador', entityId: p.id, entityName: p.name, message: 'Sem segmento vinculado', action: 'edit', tab: 'providers', fieldName: 'segments' });
     } else {
       p.segment.forEach(seg => {
         if (!segmentNames.has(seg)) {
-          issues.push({ type: 'warning', entity: 'Prestador', entityId: p.id, entityName: p.name, message: `Segmento "${seg}" não existe no cadastro`, action: 'edit', tab: 'providers' });
+          issues.push({ type: 'warning', entity: 'Prestador', entityId: p.id, entityName: p.name, message: `Segmento "${seg}" não existe no cadastro`, action: 'edit', tab: 'providers', fieldName: 'segments' });
         }
       });
     }
     if (!p.cpf_cnpj || p.cpf_cnpj === 'ISENTO') {
       if (!p.cpf_cnpj) {
-        issues.push({ type: 'warning', entity: 'Prestador', entityId: p.id, entityName: p.name, message: 'Sem CPF/CNPJ cadastrado', action: 'edit', tab: 'providers' });
+        issues.push({ type: 'warning', entity: 'Prestador', entityId: p.id, entityName: p.name, message: 'Sem CPF/CNPJ cadastrado', action: 'edit', tab: 'providers', fieldName: 'cpfCnpj' });
       }
-      // 'ISENTO' = imported without doc, not flagged as inconsistency
     }
     if (!p.phone && !p.email) {
-      issues.push({ type: 'warning', entity: 'Prestador', entityId: p.id, entityName: p.name, message: 'Sem telefone e sem email', action: 'edit', tab: 'providers' });
+      issues.push({ type: 'warning', entity: 'Prestador', entityId: p.id, entityName: p.name, message: 'Sem telefone e sem email', action: 'edit', tab: 'providers', fieldName: 'phone' });
     }
   });
 
@@ -88,16 +112,16 @@ export function InconsistencyPanel({
   services.forEach(s => {
     if (!s.provider_id || !providerIds.has(s.provider_id)) {
       if (!providerNames.has(s.provider)) {
-        issues.push({ type: 'error', entity: 'Serviço', entityId: s.id, entityName: s.name, message: `Prestador "${s.provider}" não encontrado na base`, action: 'edit', tab: 'services' });
+        issues.push({ type: 'error', entity: 'Serviço', entityId: s.id, entityName: s.name, message: `Prestador "${s.provider}" não encontrado na base`, action: 'edit', tab: 'services', fieldName: 'provider' });
       }
     }
     if (!s.segment) {
-      issues.push({ type: 'error', entity: 'Serviço', entityId: s.id, entityName: s.name, message: 'Sem segmento definido', action: 'edit', tab: 'services' });
+      issues.push({ type: 'error', entity: 'Serviço', entityId: s.id, entityName: s.name, message: 'Sem segmento definido', action: 'edit', tab: 'services', fieldName: 'segment' });
     } else if (!segmentNames.has(s.segment)) {
-      issues.push({ type: 'warning', entity: 'Serviço', entityId: s.id, entityName: s.name, message: `Segmento "${s.segment}" não existe no cadastro`, action: 'edit', tab: 'services' });
+      issues.push({ type: 'warning', entity: 'Serviço', entityId: s.id, entityName: s.name, message: `Segmento "${s.segment}" não existe no cadastro`, action: 'edit', tab: 'services', fieldName: 'segment' });
     }
     if (s.price <= 0) {
-      issues.push({ type: 'warning', entity: 'Serviço', entityId: s.id, entityName: s.name, message: 'Preço zerado ou negativo', action: 'edit', tab: 'services' });
+      issues.push({ type: 'warning', entity: 'Serviço', entityId: s.id, entityName: s.name, message: 'Preço zerado ou negativo', action: 'edit', tab: 'services', fieldName: 'labor_cost' });
     }
   });
 
@@ -105,14 +129,14 @@ export function InconsistencyPanel({
   products.forEach(p => {
     if (!p.provider_id || !providerIds.has(p.provider_id)) {
       if (!providerNames.has(p.provider)) {
-        issues.push({ type: 'error', entity: 'Produto', entityId: p.id, entityName: p.name, message: `Prestador "${p.provider}" não encontrado na base`, action: 'edit', tab: 'products' });
+        issues.push({ type: 'error', entity: 'Produto', entityId: p.id, entityName: p.name, message: `Prestador "${p.provider}" não encontrado na base`, action: 'edit', tab: 'products', fieldName: 'provider' });
       }
     }
     if (!p.tags || p.tags.length === 0) {
-      issues.push({ type: 'warning', entity: 'Produto', entityId: p.id, entityName: p.name, message: 'Sem tags (dificulta busca)', action: 'edit', tab: 'products' });
+      issues.push({ type: 'warning', entity: 'Produto', entityId: p.id, entityName: p.name, message: 'Sem tags (dificulta busca)', action: 'edit', tab: 'products', fieldName: 'tags' });
     }
     if (p.price <= 0) {
-      issues.push({ type: 'warning', entity: 'Produto', entityId: p.id, entityName: p.name, message: 'Preço zerado ou negativo', action: 'edit', tab: 'products' });
+      issues.push({ type: 'warning', entity: 'Produto', entityId: p.id, entityName: p.name, message: 'Preço zerado ou negativo', action: 'edit', tab: 'products', fieldName: 'price' });
     }
   });
 
@@ -136,20 +160,20 @@ export function InconsistencyPanel({
   const handleAction = (issue: Issue) => {
     if (issue.entity === 'Prestador') {
       const p = providers.find(x => x.id === issue.entityId);
-      if (p) onEditProvider(p);
+      if (p) onEditProvider(p, issue.fieldName);
     } else if (issue.entity === 'Serviço') {
       if (issue.action === 'delete') {
         onDeleteService(issue.entityId);
       } else {
         const s = services.find(x => x.id === issue.entityId);
-        if (s) onEditService(s);
+        if (s) onEditService(s, issue.fieldName);
       }
     } else if (issue.entity === 'Produto') {
       if (issue.action === 'delete') {
         onDeleteProduct(issue.entityId);
       } else {
         const p = products.find(x => x.id === issue.entityId);
-        if (p) onEditProduct(p);
+        if (p) onEditProduct(p, issue.fieldName);
       }
     }
   };
