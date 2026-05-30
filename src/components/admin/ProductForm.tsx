@@ -82,6 +82,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
   const [allProductNames, setAllProductNames] = useState<string[]>([]);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const lastSetImageUrl = useRef<string | null>(null);
+  const hasLoadedRef = useRef<number | null>(null);
   
   const handleImageUrlChange = useCallback((url: string | null) => {
     console.log('[ProductForm] handleImageUrlChange called with:', url);
@@ -113,13 +114,21 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
       setSelectedTags(product.tags || []);
       
       // Update image URL if not busy
-      // Update image URL if not busy and not recently manually cleared
       if (!imageBusy) {
         const currentUrl = (product as any).image_url || null;
-        if (imageUrl === null && currentUrl !== null && lastSetImageUrl.current === null) {
-          // It was explicitly cleared by the user (imageUrl is null, lastSetImageUrl is null, but DB has a value)
+        const isNewItem = hasLoadedRef.current !== product.id;
+        
+        if (isNewItem) {
+          console.log('[ProductForm] Initial load for product:', product.id, 'Image URL:', currentUrl);
+          setImageUrl(currentUrl);
+          lastSetImageUrl.current = currentUrl;
+          hasLoadedRef.current = product.id;
+        } else if (imageUrl === null && currentUrl !== null && lastSetImageUrl.current === null) {
+          // It was explicitly cleared by the user in this session
           console.log('[ProductForm] Image was cleared by user, not restoring from DB');
-        } else {
+        } else if (currentUrl !== lastSetImageUrl.current) {
+          // External change (e.g. from another tab or after save)
+          console.log('[ProductForm] External image change detected, updating state');
           setImageUrl(currentUrl);
           lastSetImageUrl.current = currentUrl;
         }

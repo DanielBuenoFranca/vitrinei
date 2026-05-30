@@ -135,8 +135,11 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
       }
     } finally {
       clearTimeout(timeoutId);
-      setBusy(false);
+      // Garante que o estado 'busy' seja resetado antes de qualquer outra coisa
+      // para evitar que o formulário pai fique bloqueado
       busyRef.current = false;
+      _setBusy(false);
+      if (onBusy) onBusy(false);
       setStep('idle');
       console.log('[ItemImagePicker] Generation finished and UI unlocked');
     }
