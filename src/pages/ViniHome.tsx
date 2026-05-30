@@ -1779,7 +1779,7 @@ const ViniHome = () => {
               <Button 
                 variant="outline" 
                 size="lg" 
-                className="h-11 text-[11px] px-3 gap-1 glass cursor-pointer z-[110] relative"
+                className="h-11 text-[11px] px-3 gap-1 glass cursor-pointer z-[110] relative hover:opacity-80 active:scale-95"
                 onClick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -1795,13 +1795,15 @@ const ViniHome = () => {
                   }
                 }}
               >
-                Sair
+                <span className="flex items-center justify-center w-full h-full gap-1">
+                  Sair
+                </span>
               </Button>
             ) : (
               <Button 
                 variant="outline" 
                 size="lg" 
-                className="h-11 text-[11px] px-3 gap-1 glass cursor-pointer z-[110] relative"
+                className="h-11 text-[11px] px-3 gap-1 glass cursor-pointer z-[110] relative hover:opacity-80 active:scale-95"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -1809,7 +1811,9 @@ const ViniHome = () => {
                   navigate('/auth');
                 }}
               >
-                <LogIn className="w-3 h-3" /> Entrar
+                <span className="flex items-center justify-center w-full h-full gap-1">
+                  <LogIn className="w-3 h-3" /> Entrar
+                </span>
               </Button>
             )}
           </div>
