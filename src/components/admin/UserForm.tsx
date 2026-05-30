@@ -91,7 +91,7 @@ const ADMIN_OPTIONS: { id: AdminLevel; label: string; icon: any; desc: string }[
   { id: 'master', label: 'Master', icon: Crown,        desc: 'Controle total do ecossistema' },
 ];
 
-export function UserForm({ open, onClose, onSaved, profile, currentRoles, currentRole, currentEmail, segments }: UserFormProps) {
+export function UserForm({ open, onClose, onSaved, profile, currentRoles, currentRole, currentEmail, segments, highlightField }: UserFormProps) {
   const isEdit = !!profile;
 
   // ── Estado: campos básicos ────────────────────────────────────
