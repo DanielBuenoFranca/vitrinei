@@ -267,13 +267,32 @@ Deno.serve(async (req) => {
       return new Response(await r.text(), { status: r.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // 3) tenta IA paga
+    // 3) [Novo] Tenta encontrar na web primeiro se for produto, kit ou serviço
+    // Isso economiza créditos e traz fotos reais (mais aderentes) quando disponíveis.
+    if (["product", "kit", "service"].includes(kind)) {
+      try {
+        const searchRes = await callFreeFallback(supabase, freePayload);
+        if (searchRes.ok) {
+          const searchData = await searchRes.json();
+          // Critério de aderência: fonte confiável (unsplash/pixabay) e score positivo (match de termos)
+          if (["unsplash", "pixabay", "openverse"].includes(searchData.source) && (searchData.score >= 5)) {
+            console.log(`[sanitize-images] Found high-adherence web image for "${name}" (score: ${searchData.score}, source: ${searchData.source})`);
+            return new Response(JSON.stringify(searchData), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+          }
+        }
+      } catch (e) {
+        console.warn("[sanitize-images] search-first failed, falling back to generation:", e);
+      }
+    }
+
+    // 4) tenta IA paga
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       await autoOffOnFailure(supabase, "missing_lovable_key");
       const r = await callFreeFallback(supabase, freePayload);
       return new Response(await r.text(), { status: r.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+
 
     // Reforça o prompt da IA com o entendimento (must/block) — evita derrapagens.
     let prompt = buildPrompt(kind, ctx);

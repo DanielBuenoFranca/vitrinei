@@ -201,9 +201,10 @@ Deno.serve(async (req) => {
       context: { kind, id, query: usedQuery, understanding },
     });
 
-    return new Response(JSON.stringify({ imageUrl: url, source: usedSource, understanding }), {
+    return new Response(JSON.stringify({ imageUrl: url, source: usedSource, score: usedScore, understanding }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (e) {
     console.error("fetch-free-image error", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "unknown" }), {
