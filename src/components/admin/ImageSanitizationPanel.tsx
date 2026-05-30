@@ -14,6 +14,9 @@ type Item = {
   name: string;
   segment?: string;
   current?: string | null;
+  description?: string;
+  type?: string;
+  tags?: string[];
 };
 
 const isMissing = (url: string | null | undefined) =>
