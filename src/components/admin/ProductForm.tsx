@@ -323,6 +323,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
             imageUrl={imageUrl}
             onChange={handleImageUrlChange}
             onBusy={setImageBusy}
+            quantity={form.quantity}
           />
           <div className="grid grid-cols-3 gap-3">
             <div className="grid gap-2">

@@ -30,13 +30,15 @@ interface Props {
   price?: number;
   /** Callback para o componente pai monitorar se está processando */
   onBusy?: (isBusy: boolean) => void;
+  /** Quantidade/Estoque do item */
+  quantity?: number;
 }
 
 /**
  * Bloco reutilizável: mostra a imagem do item em tamanho normal,
  * permite upload manual e geração via sanitize-images (respeita modo economia).
  */
-export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, bucket, tags, description, providerName, providerType, linkedNames, unit, price, onBusy }: Props) {
+export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, bucket, tags, description, providerName, providerType, linkedNames, unit, price, onBusy, quantity }: Props) {
   const [busy, _setBusy] = useState(false);
   const busyRef = useRef(false);
   const [step, setStep] = useState<'idle' | 'enriching' | 'searching' | 'generating' | 'saving'>('idle');
@@ -107,6 +109,7 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
           linkedNames: (linkedNames || []).filter(Boolean),
           unit,
           price,
+          quantity,
         },
       });
       
