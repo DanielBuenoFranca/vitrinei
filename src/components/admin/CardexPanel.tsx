@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { ClipboardList, RefreshCw, Search, Plus, Loader2, Trash2, PackagePlus } from "lucide-react";
+import { ClipboardList, RefreshCw, Search, Plus, Loader2, Trash2, PackagePlus, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 
 type Movement = {
@@ -41,6 +41,7 @@ export function CardexPanel() {
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState("");
   const [providerFilter, setProviderFilter] = useState<string>("all");
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Movement | ""; direction: "asc" | "desc" }>({ key: "created_at", direction: "desc" });
 
   const [open, setOpen] = useState(false);
   const [providers, setProviders] = useState<{ id: number; name: string }[]>([]);
@@ -76,7 +77,32 @@ export function CardexPanel() {
     if (!filter) return true;
     const q = filter.toLowerCase();
     return [r.item_name, r.reference_label, r.movement_type, providerNameById(r.provider_id)].some((v) => (v || "").toString().toLowerCase().includes(q));
+  }).sort((a, b) => {
+    if (!sortConfig.key) return 0;
+    const aVal = a[sortConfig.key];
+    const bVal = b[sortConfig.key];
+    if (aVal === bVal) return 0;
+    if (aVal === null || aVal === undefined) return 1;
+    if (bVal === null || bVal === undefined) return -1;
+    
+    const modifier = sortConfig.direction === "asc" ? 1 : -1;
+    if (typeof aVal === "string" && typeof bVal === "string") {
+      return aVal.localeCompare(bVal) * modifier;
+    }
+    return (aVal < bVal ? -1 : 1) * modifier;
   });
+
+  const handleSort = (key: keyof Movement) => {
+    setSortConfig((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
+    }));
+  };
+
+  const SortIcon = ({ column }: { column: keyof Movement }) => {
+    if (sortConfig.key !== column) return <ArrowUpDown className="ml-1 h-3 w-3 opacity-30" />;
+    return sortConfig.direction === "asc" ? <ArrowUp className="ml-1 h-3 w-3" /> : <ArrowDown className="ml-1 h-3 w-3" />;
+  };
 
   const addItemRow = () => setItems((it) => [...it, { raw_name: "", matched_product_id: null, create_new: true, quantity: 1, unit_cost: 0, applied_price: 0, apply_choice: "custom", kind: "product" }]);
   const removeItemRow = (idx: number) => setItems((it) => it.filter((_, i) => i !== idx));
@@ -219,14 +245,30 @@ export function CardexPanel() {
         <Table wrapperClassName="admin-scroll-area max-h-[60vh] border-t">
           <TableHeader className="sticky top-0 z-10 bg-background shadow-sm">
             <TableRow>
-              <TableHead>Data</TableHead>
-              <TableHead>Loja</TableHead>
-              <TableHead>Item</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead className="text-right">Δ Qtd</TableHead>
-              <TableHead className="text-right">Saldo</TableHead>
-              <TableHead className="text-right">Custo Un.</TableHead>
-              <TableHead>Referência</TableHead>
+              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("created_at")}>
+                <div className="flex items-center">Data <SortIcon column="created_at" /></div>
+              </TableHead>
+              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("provider_id")}>
+                <div className="flex items-center">Loja <SortIcon column="provider_id" /></div>
+              </TableHead>
+              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("item_name")}>
+                <div className="flex items-center">Item <SortIcon column="item_name" /></div>
+              </TableHead>
+              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("movement_type")}>
+                <div className="flex items-center">Tipo <SortIcon column="movement_type" /></div>
+              </TableHead>
+              <TableHead className="text-right cursor-pointer hover:bg-muted/50" onClick={() => handleSort("quantity_delta")}>
+                <div className="flex items-center justify-end">Δ Qtd <SortIcon column="quantity_delta" /></div>
+              </TableHead>
+              <TableHead className="text-right cursor-pointer hover:bg-muted/50" onClick={() => handleSort("balance_after")}>
+                <div className="flex items-center justify-end">Saldo <SortIcon column="balance_after" /></div>
+              </TableHead>
+              <TableHead className="text-right cursor-pointer hover:bg-muted/50" onClick={() => handleSort("unit_cost")}>
+                <div className="flex items-center justify-end">Custo Un. <SortIcon column="unit_cost" /></div>
+              </TableHead>
+              <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("reference_label")}>
+                <div className="flex items-center">Referência <SortIcon column="reference_label" /></div>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

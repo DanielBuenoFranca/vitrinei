@@ -1,21 +1,17 @@
-I will implement the requested changes to user information display and address information validation.
+A solicitação consiste em permitir a ordenação de grids ao clicar no cabeçalho das colunas.
 
-### 1. Unified User Identity in Header
-- Update `ViniHome.tsx` to handle "Anonimo" (Anonymous) users explicitly when not logged in.
-- The header will display "Anônimo" as the name and "Visitante" as the status when no user is authenticated.
-- Ensure the avatar placeholder reflects this "Anonymous" state.
+Para implementar isso de forma consistente em todo o sistema:
 
-### 2. Base Location on User Profile
-- Modify the `useEffect` in `ViniHome.tsx` that loads city and plan.
-- It will prioritize the `city` from the user's `profiles` table.
-- If no user is logged in, it will continue to use the best-effort geolocation.
+1. Identificar os componentes de tabela (`src/components/ui/table.tsx` e as tabelas existentes em `src/components/admin/`).
+2. Criar um utilitário de ordenação ou adaptar as tabelas para suportarem ordenação local (estado `sortConfig` contendo `key` e `direction`).
+3. Adicionar lógica de `sort` aos componentes `CardexPanel`, `CrmPanel`, e outros que exibam dados em grid.
 
-### 3. Missing Address Validation & Collection
-- Implement a check before "essential processes" (like activating the Radar/Urgência or starting a Conversation with commercial intent) to verify if the user has address info (`cep`, `city`, `neighborhood`, `address`, `state`) in their profile.
-- If info is missing for a logged-in user, a professional dialog will appear requesting the zip code (CEP), which will then auto-fill the address details using a public API (ViaCEP).
-- Upon submission, the profile will be updated in Supabase, and the original process will continue.
+Como os componentes de tabela atuais usam `@/components/ui/table`, eles são componentes renderizados puramente. A lógica de ordenação precisa ser implementada nos componentes de tela (pai) ou em um componente de tabela "Smart" que encapsule a lógica de ordenação.
 
-### Technical details:
-- **Files to modify**: `src/pages/ViniHome.tsx`, `src/contexts/AuthContext.tsx` (to expose more profile data if needed), and potentially creating a new component `src/components/vini/AddressCollectionModal.tsx`.
-- **Database**: Uses existing columns in the `profiles` table (`cep`, `city`, `neighborhood`, `address`, `state`).
-- **External API**: `https://viacep.com.br/ws/${cep}/json/` for address lookup.
+Plano:
+1. Criar um componente `SortableTable` ou atualizar `CardexPanel` e `CrmPanel` para gerenciar estado de ordenação local.
+2. Atualizar o `TableHeader` nessas telas para incluir um cursor `pointer` e um ícone de indicação de ordenação.
+3. Implementar a função `handleSort(key)` que altera o estado `sortConfig` e ordena o array de dados `filtered`.
+4. Verificar se a ordenação precisa ser refletida no banco de dados ou se a ordenação local é suficiente (para o Cardex, ordenação local parece suficiente e rápida).
+
+Vou começar atualizando o `CardexPanel` como prova de conceito.
