@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -84,10 +84,11 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
   }, [open, service]);
   const [imageBusy, setImageBusy] = useState(false);
   
-  const handleImageUrlChange = (url: string | null) => {
+  const handleImageUrlChange = useCallback((url: string | null) => {
+    console.log('[ServiceForm] handleImageUrlChange updating state to:', url);
     setImageUrl(url);
     lastSetImageUrl.current = url;
-  };
+  }, []);
   const { suggestions, loading: sugLoading, suggest, clear: clearSuggestions } = useNameSuggestion();
 
   useEffect(() => {
@@ -128,7 +129,8 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
       } else if (!imageBusy) {
         // Sync external changes
         const currentUrl = (service as any).image_url || null;
-        if (currentUrl !== lastSetImageUrl.current) {
+        if (!imageBusy && currentUrl !== lastSetImageUrl.current) {
+          console.log('[ServiceForm] External sync (imageBusy:', imageBusy, ') external:', currentUrl, 'last:', lastSetImageUrl.current);
           console.log('[ServiceForm] External image change detected:', currentUrl);
           setImageUrl(currentUrl);
           lastSetImageUrl.current = currentUrl;

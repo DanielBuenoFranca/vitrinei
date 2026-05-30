@@ -39,6 +39,7 @@ interface Props {
  * permite upload manual e geração via sanitize-images (respeita modo economia).
  */
 export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, bucket, tags, description, providerName, providerType, linkedNames, unit, price, onBusy, quantity }: Props) {
+  console.log('[ItemImagePicker] Rendered with imageUrl:', imageUrl);
   const [busy, _setBusy] = useState(false);
   const busyRef = useRef(false);
   const isMounted = useRef(true);
