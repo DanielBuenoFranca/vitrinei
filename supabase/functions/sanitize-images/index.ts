@@ -250,6 +250,7 @@ Deno.serve(async (req) => {
       segment: ctx.segment, tags: ctx.tags,
       description: ctx.description, linkedNames: ctx.linkedNames,
       understanding,
+      currentImageUrl,
     };
 
     // 1) lê toggle
