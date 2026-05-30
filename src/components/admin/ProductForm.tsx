@@ -82,6 +82,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
   const [allProductNames, setAllProductNames] = useState<string[]>([]);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const { suggestions, loading: sugLoading, suggest, clear: clearSuggestions } = useNameSuggestion();
+  const [imageBusy, setImageBusy] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -172,8 +173,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
     if (selectedSegments.length === 0) { toast.error('Selecione pelo menos um segmento'); return; }
     
     // Check if image is still generating
-    const isImageBusy = document.querySelector('[data-busy="true"]');
-    if (isImageBusy) {
+    if (imageBusy) {
       toast.warning('Aguarde a conclusão da imagem antes de salvar');
       return;
     }
@@ -281,6 +281,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
             price={form.price}
             imageUrl={imageUrl}
             onChange={setImageUrl}
+            onBusy={setImageBusy}
           />
           <div className="grid grid-cols-3 gap-3">
             <div className="grid gap-2">
