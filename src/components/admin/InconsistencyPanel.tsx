@@ -38,6 +38,7 @@ interface UserRole {
 }
 
 interface Issue {
+  id: string;
   type: 'error' | 'warning';
   entity: 'Prestador' | 'Serviço' | 'Produto';
   entityId: number;
@@ -328,7 +329,7 @@ export function InconsistencyPanel({
         {/* Errors first, then warnings */}
         {[...errors, ...warnings].map((issue, idx) => (
           <div
-            key={`${issue.entity}-${issue.entityId}-${issue.fieldName || idx}`}
+            key={issue.id}
             className={`flex items-center gap-3 p-3 rounded-lg border ${
               issue.type === 'error'
                 ? 'border-destructive/30 bg-destructive/5'
