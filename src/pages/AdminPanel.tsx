@@ -42,8 +42,6 @@ interface Provider {
   cpf_cnpj: string | null;
   logo_url?: string | null;
 }
-  cpf_cnpj: string | null;
-}
 
 interface DynamicService {
   id: number; service_id: number; name: string; segment: string;
