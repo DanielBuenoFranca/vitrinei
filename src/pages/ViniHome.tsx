@@ -1705,10 +1705,14 @@ const ViniHome = () => {
             <div className="min-w-0 leading-tight flex-1">
               <div className="flex items-center gap-1.5">
                 <p className="text-[12.5px] font-semibold truncate">{displayName || (user ? user.email?.split('@')[0] : 'Anônimo')}</p>
-                {isAdmin && (
-                  <Badge variant="outline" className="h-4 px-1 text-[8px] bg-primary/10 text-primary border-primary/20 flex items-center gap-0.5">
+                {(isAdmin || isMaster) && (
+                  <Badge 
+                    variant="outline" 
+                    className="h-4 px-1 text-[8px] bg-primary/10 text-primary border-primary/20 flex items-center gap-0.5 cursor-pointer hover:bg-primary/20 transition-colors"
+                    onClick={handleAdmin}
+                  >
                     <ShieldCheck className="w-2 h-2" />
-                    MASTER
+                    {isMaster ? 'MASTER' : 'ADMIN'}
                   </Badge>
                 )}
               </div>
