@@ -948,8 +948,11 @@ const ViniHome = () => {
   const gridItems: GridItem[] = [
     { key: 'buscar', icon: Search, label: 'Buscar', onClick: handleHome },
     { key: 'urgencia', icon: Radar, label: 'Urgência', onClick: handleRadar, active: radarActive, badge: totalCartItems > 0 ? totalCartItems : undefined },
-    { key: 'reiniciar', icon: RotateCcw, label: 'Reiniciar', onClick: handleReiniciar },
-    ...(isAdmin ? [{ key: 'gestao', icon: ShieldCheck, label: 'Gestão', onClick: handleAdmin }] : [{ key: 'perfil', icon: UserIcon, label: 'Perfil', onClick: handlePerfil }]),
+    { key: 'loja', icon: Store, label: 'Loja', onClick: () => {
+      if (storeSlug) navigate(`/loja/${storeSlug}`);
+      else navigate(user ? '/mei' : '/auth');
+    } },
+    ...(isAdmin || isMaster ? [{ key: 'gestao', icon: ShieldCheck, label: 'Gestão', onClick: handleAdmin }] : [{ key: 'perfil', icon: UserIcon, label: 'Perfil', onClick: handlePerfil }]),
     { key: 'favoritos', icon: Heart, label: 'Favoritos', onClick: () => setFavoritesOpen(true), iconClassName: favoritesCount > 0 ? 'text-rose-400 fill-rose-400 drop-shadow-[0_0_6px_rgba(244,63,94,0.75)]' : undefined },
     { key: 'indica', icon: Gift, label: 'Indicação', onClick: handleIndicacao, highlight: 'R$ 5,00' },
   ];
