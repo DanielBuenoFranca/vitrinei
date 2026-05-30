@@ -41,7 +41,8 @@ type EnrichedContext = {
   tags: string[];
   description?: string;
   providerName?: string;
-  providerType?: string;
+  providerType?: string; // "mei", "user", "empresa", etc.
+  itemType?: string;     // "fisico", "digital", etc.
   linkedNames: string[];
   unit?: string;
   price?: number;
