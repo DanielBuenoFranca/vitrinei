@@ -975,7 +975,7 @@ const AdminPanel = () => {
                                   await reloadDynamicEntries(); fetchData();
                                 }}
                                 className="h-7 w-16 text-xs"
-                onRefresh={() => { fetchData(); fetchUsers(); }}
+                
               />
                             </TableCell>
                             <TableCell>⭐ {svc.rating}</TableCell>
