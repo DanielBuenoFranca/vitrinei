@@ -226,7 +226,7 @@ Deno.serve(async (req) => {
 
   try {
     const payload = await req.json();
-    const { kind, id, name } = payload || {};
+    const { kind, id, name, currentImageUrl } = payload || {};
     if (!kind || !id || !name) {
       return new Response(JSON.stringify({ error: "kind, id and name are required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
