@@ -131,16 +131,31 @@ Deno.serve(async (req) => {
     all.sort((a, b) => b.score - a.score || order.indexOf(a.source) - order.indexOf(b.source));
 
     // Reject any candidate that contains a block term (negative score) OR matches current image
-    let safe = all.filter((c) => c.score > -10 && c.url !== currentImageUrl);
+    // Improve currentImageUrl matching by stripping common query params if possible, 
+    // but at least check for exact match and common prefixes.
+    const cleanUrl = (u: string) => u.split('?')[0].split('#')[0];
+    const currentClean = currentImageUrl ? cleanUrl(currentImageUrl) : null;
+
+    let safe = all.filter((c) => {
+      if (c.score < -5) return false;
+      if (currentImageUrl && c.url === currentImageUrl) return false;
+      if (currentClean && cleanUrl(c.url) === currentClean) return false;
+      return true;
+    });
     
-    // If we have multiple high-score candidates, pick one semi-randomly from the top 3
+    // If we have multiple high-score candidates, pick one semi-randomly from the top 5
     // to allow the user to "cycle" through images by clicking again.
     if (safe.length > 1) {
+      // Sort primarily by score
+      safe.sort((a, b) => b.score - a.score);
       const topScore = safe[0].score;
-      const topCandidates = safe.filter(c => c.score >= topScore - 5).slice(0, 3);
+      // Consider anything within 10 points of the top score as "good enough"
+      const topCandidates = safe.filter(c => c.score >= topScore - 10).slice(0, 5);
+      
       if (topCandidates.length > 1) {
-        // Shuffle the top few to avoid picking the same one every time
-        topCandidates.sort(() => Math.random() - 0.5);
+        // Use the seed or Math.random to shuffle
+        const shuffleSeed = seed || Math.random();
+        topCandidates.sort(() => (Math.random() > 0.5 ? 1 : -1));
         safe = [...topCandidates, ...safe.filter(c => !topCandidates.includes(c))];
       }
     }
