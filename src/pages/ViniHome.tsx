@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, Wallet, User as UserIcon, Sparkles, Mic, Plus,
   Bot, LogIn, Settings, X, Send, Radar, Gift, MapPin, ShoppingBag, Store, RotateCcw, Heart,
-  Search, LifeBuoy, Loader2, Sliders, ZapOff, Sun, Contrast, MessageCircle, KeyRound, ShieldCheck, AlertTriangle
+  Search, LifeBuoy, Loader2, Sliders, ZapOff, Sun, Contrast, MessageCircle, KeyRound, ShieldCheck
 } from 'lucide-react';
 
 import { FavoritesModal } from '@/components/FavoritesModal';
