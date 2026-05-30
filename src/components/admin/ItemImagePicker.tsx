@@ -76,13 +76,12 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
   };
 
   const generate = async () => {
+    if (busyRef.current) return;
+    
     if (!name.trim()) {
       toast.error('Informe o nome do item antes de gerar a imagem');
       return;
     }
-    
-    // Simplificando: removemos o confirm que pode travar o preview
-    // Se o usuário clicou em "Trocar Imagem", ele quer trocar.
     
     setBusy(true);
     setStep('enriching');
