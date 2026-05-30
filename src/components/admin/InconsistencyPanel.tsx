@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, CheckCircle2, Pencil, Trash2, ArrowRight, Loader2, Sparkles, ShieldOff } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Pencil, Trash2, Loader2, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -75,13 +75,13 @@ export function InconsistencyPanel({
 
   const issues: Issue[] = [];
 
-  // Providers without segments
+  // Providers issues
   providers.forEach(p => {
-    // New rule: Admins/Masters shouldn't have a personal store (provider record)
     if (p.user_id) {
       const isPrivileged = userRoles.some(r => r.user_id === p.user_id && ['admin', 'master'].includes(r.role));
       if (isPrivileged) {
         issues.push({ 
+          id: `admin-store-${p.id}`,
           type: 'error', 
           entity: 'Prestador', 
           entityId: p.id, 
@@ -91,10 +91,7 @@ export function InconsistencyPanel({
           tab: 'providers',
           fieldName: 'adminLevel',
           autoFixAction: async () => {
-            const { error } = await supabase
-              .from('providers')
-              .update({ user_id: null })
-              .eq('id', p.id);
+            const { error } = await supabase.from('providers').update({ user_id: null }).eq('id', p.id);
             if (error) throw error;
             if (onRefresh) onRefresh();
           }
@@ -104,6 +101,7 @@ export function InconsistencyPanel({
 
     if (!p.segment || p.segment.length === 0) {
       issues.push({ 
+        id: `provider-no-segment-${p.id}`,
         type: 'error', 
         entity: 'Prestador', 
         entityId: p.id, 
@@ -114,20 +112,18 @@ export function InconsistencyPanel({
         fieldName: 'segments',
         autoFixAction: async () => {
           const defaultSeg = segments.find(s => s.name === 'Negócio')?.name || segments[0]?.name || 'Geral';
-          const { error } = await supabase
-            .from('providers')
-            .update({ segment: [defaultSeg] })
-            .eq('id', p.id);
+          const { error } = await supabase.from('providers').update({ segment: [defaultSeg] }).eq('id', p.id);
           if (error) throw error;
           if (onRefresh) onRefresh();
         }
       });
     } else {
-      p.segment.forEach(seg => {
+      p.segment.forEach((seg, sIdx) => {
         if (!segmentNames.has(seg)) {
           const parts = seg.split(/\s+/).filter(part => segmentNames.has(part));
           const hasFix = parts.length > 0;
           issues.push({ 
+            id: `provider-invalid-segment-${p.id}-${sIdx}`,
             type: 'warning', 
             entity: 'Prestador', 
             entityId: p.id, 
@@ -149,8 +145,10 @@ export function InconsistencyPanel({
         }
       });
     }
+
     if (!p.cpf_cnpj) {
       issues.push({ 
+        id: `provider-no-cpf-${p.id}`,
         type: 'warning', 
         entity: 'Prestador', 
         entityId: p.id, 
@@ -160,17 +158,15 @@ export function InconsistencyPanel({
         tab: 'providers', 
         fieldName: 'cpfCnpj',
         autoFixAction: async () => {
-          const { error } = await supabase
-            .from('providers')
-            .update({ cpf_cnpj: 'ISENTO' })
-            .eq('id', p.id);
+          const { error } = await supabase.from('providers').update({ cpf_cnpj: 'ISENTO' }).eq('id', p.id);
           if (error) throw error;
           if (onRefresh) onRefresh();
         }
       });
     }
+
     if (!p.phone && !p.email) {
-      issues.push({ type: 'warning', entity: 'Prestador', entityId: p.id, entityName: p.name, message: 'Sem telefone e sem email', action: 'edit', tab: 'providers', fieldName: 'phone' });
+      issues.push({ id: `provider-no-contact-${p.id}`, type: 'warning', entity: 'Prestador', entityId: p.id, entityName: p.name, message: 'Sem telefone e sem email', action: 'edit', tab: 'providers', fieldName: 'phone' });
     }
   });
 
@@ -178,11 +174,12 @@ export function InconsistencyPanel({
   services.forEach(s => {
     if (!s.provider_id || !providerIds.has(s.provider_id)) {
       if (!providerNames.has(s.provider)) {
-        issues.push({ type: 'error', entity: 'Serviço', entityId: s.id, entityName: s.name, message: `Prestador "${s.provider}" não encontrado na base`, action: 'edit', tab: 'services', fieldName: 'provider' });
+        issues.push({ id: `service-no-provider-${s.id}`, type: 'error', entity: 'Serviço', entityId: s.id, entityName: s.name, message: `Prestador "${s.provider}" não encontrado na base`, action: 'edit', tab: 'services', fieldName: 'provider' });
       }
     }
     if (!s.segment) {
       issues.push({ 
+        id: `service-no-segment-${s.id}`,
         type: 'error', 
         entity: 'Serviço', 
         entityId: s.id, 
@@ -196,20 +193,19 @@ export function InconsistencyPanel({
           const defaultSeg = (prov?.segment && prov.segment.length > 0) 
             ? prov.segment[0] 
             : (segments.find(seg => seg.name === 'Negócio')?.name || segments[0]?.name || 'Geral');
-          
-          const { error } = await supabase
-            .from('dynamic_services')
-            .update({ segment: defaultSeg })
-            .eq('id', s.id);
+          const { error } = await supabase.from('dynamic_services').update({ segment: defaultSeg }).eq('id', s.id);
           if (error) throw error;
           if (onRefresh) onRefresh();
         }
       });
     } else if (!segmentNames.has(s.segment)) {
-      issues.push({ type: 'warning', entity: 'Serviço', entityId: s.id, entityName: s.name, message: `Segmento "${s.segment}" não existe no cadastro`, action: 'edit', tab: 'services', fieldName: 'segment' });
+      issues.push({ id: `service-invalid-segment-${s.id}`, type: 'warning', entity: 'Serviço', entityId: s.id, entityName: s.name, message: `Segmento "${s.segment}" não existe no cadastro`, action: 'edit', tab: 'services', fieldName: 'segment' });
     }
     if (s.price <= 0) {
-      issues.push({ type: 'warning', entity: 'Serviço', entityId: s.id, entityName: s.name, message: 'Preço zerado ou negativo', action: 'edit', tab: 'services', fieldName: 'labor_cost' });
+      issues.push({ id: `service-invalid-price-${s.id}`, type: 'warning', entity: 'Serviço', entityId: s.id, entityName: s.name, message: 'Preço zerado ou negativo', action: 'edit', tab: 'services', fieldName: 'labor_cost' });
+    }
+    if (s.provider_id && !providerIds.has(s.provider_id)) {
+      issues.push({ id: `service-orphan-${s.id}`, type: 'error', entity: 'Serviço', entityId: s.id, entityName: s.name, message: `provider_id=${s.provider_id} não existe (prestador excluído?)`, action: 'delete', tab: 'services' });
     }
   });
 
@@ -217,11 +213,12 @@ export function InconsistencyPanel({
   products.forEach(p => {
     if (!p.provider_id || !providerIds.has(p.provider_id)) {
       if (!providerNames.has(p.provider)) {
-        issues.push({ type: 'error', entity: 'Produto', entityId: p.id, entityName: p.name, message: `Prestador "${p.provider}" não encontrado na base`, action: 'edit', tab: 'products', fieldName: 'provider' });
+        issues.push({ id: `product-no-provider-${p.id}`, type: 'error', entity: 'Produto', entityId: p.id, entityName: p.name, message: `Prestador "${p.provider}" não encontrado na base`, action: 'edit', tab: 'products', fieldName: 'provider' });
       }
     }
     if (!p.tags || p.tags.length === 0) {
       issues.push({ 
+        id: `product-no-tags-${p.id}`,
         type: 'warning', 
         entity: 'Produto', 
         entityId: p.id, 
@@ -233,31 +230,17 @@ export function InconsistencyPanel({
         autoFixAction: async () => {
           const prov = providers.find(prov => prov.id === p.provider_id);
           const defaultTags = prov?.segment && prov.segment.length > 0 ? prov.segment : ['Geral'];
-          const { error } = await supabase
-            .from('dynamic_products')
-            .update({ tags: defaultTags })
-            .eq('id', p.id);
+          const { error } = await supabase.from('dynamic_products').update({ tags: defaultTags }).eq('id', p.id);
           if (error) throw error;
           if (onRefresh) onRefresh();
         }
       });
     }
     if (p.price <= 0) {
-      issues.push({ type: 'warning', entity: 'Produto', entityId: p.id, entityName: p.name, message: 'Preço zerado ou negativo', action: 'edit', tab: 'products', fieldName: 'price' });
+      issues.push({ id: `product-invalid-price-${p.id}`, type: 'warning', entity: 'Produto', entityId: p.id, entityName: p.name, message: 'Preço zerado ou negativo', action: 'edit', tab: 'products', fieldName: 'price' });
     }
-  });
-
-  // Orphan services (provider_id points to non-existent provider)
-  services.forEach(s => {
-    if (s.provider_id && !providerIds.has(s.provider_id)) {
-      issues.push({ type: 'error', entity: 'Serviço', entityId: s.id, entityName: s.name, message: `provider_id=${s.provider_id} não existe (prestador excluído?)`, action: 'delete', tab: 'services' });
-    }
-  });
-
-  // Orphan products
-  products.forEach(p => {
     if (p.provider_id && !providerIds.has(p.provider_id)) {
-      issues.push({ type: 'error', entity: 'Produto', entityId: p.id, entityName: p.name, message: `provider_id=${p.provider_id} não existe (prestador excluído?)`, action: 'delete', tab: 'products' });
+      issues.push({ id: `product-orphan-${p.id}`, type: 'error', entity: 'Produto', entityId: p.id, entityName: p.name, message: `provider_id=${p.provider_id} não existe (prestador excluído?)`, action: 'delete', tab: 'products' });
     }
   });
 
@@ -268,8 +251,7 @@ export function InconsistencyPanel({
 
   const handleAction = async (issue: Issue) => {
     if (issue.action === 'auto_fix' && issue.autoFixAction) {
-      const id = `${issue.entity}-${issue.entityId}`;
-      setFixingId(id);
+      setFixingId(issue.id);
       try {
         await issue.autoFixAction();
         toast.success(`Correção automática aplicada para: ${issue.entityName}`);
@@ -326,8 +308,7 @@ export function InconsistencyPanel({
       </CardHeader>
       <CardContent className="p-0 overflow-hidden">
         <div className="admin-scroll-area max-h-[60vh] p-6 space-y-2 border-t">
-        {/* Errors first, then warnings */}
-        {[...errors, ...warnings].map((issue, idx) => (
+        {[...errors, ...warnings].map((issue) => (
           <div
             key={issue.id}
             className={`flex items-center gap-3 p-3 rounded-lg border ${
@@ -353,9 +334,9 @@ export function InconsistencyPanel({
               size="sm"
               className="flex-shrink-0 gap-1 text-xs h-7"
               onClick={() => handleAction(issue)}
-              disabled={fixingId === `${issue.entity}-${issue.entityId}`}
+              disabled={fixingId === issue.id}
             >
-              {fixingId === `${issue.entity}-${issue.entityId}` ? (
+              {fixingId === issue.id ? (
                 <><Loader2 className="w-3 h-3 animate-spin" /> Processando</>
               ) : issue.action === 'delete' ? (
                 <><Trash2 className="w-3 h-3" /> Excluir</>
