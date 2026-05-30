@@ -84,10 +84,11 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
   }, [open, service]);
   const [imageBusy, setImageBusy] = useState(false);
   
-  const handleImageUrlChange = (url: string | null) => {
+  const handleImageUrlChange = useCallback((url: string | null) => {
+    console.log('[ServiceForm] handleImageUrlChange updating state to:', url);
     setImageUrl(url);
     lastSetImageUrl.current = url;
-  };
+  }, []);
   const { suggestions, loading: sugLoading, suggest, clear: clearSuggestions } = useNameSuggestion();
 
   useEffect(() => {

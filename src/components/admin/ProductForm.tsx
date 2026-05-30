@@ -98,9 +98,8 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
   }, [open, product]);
   
   const handleImageUrlChange = useCallback((url: string | null) => {
-    console.log('[ProductForm] handleImageUrlChange called with:', url);
+    console.log('[ProductForm] handleImageUrlChange updating state to:', url);
     setImageUrl(url);
-    // Explicitly update ref to prevent the sync useEffect from reverting this change
     lastSetImageUrl.current = url;
   }, []);
   const { suggestions, loading: sugLoading, suggest, clear: clearSuggestions } = useNameSuggestion();
