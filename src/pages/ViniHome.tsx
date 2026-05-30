@@ -854,6 +854,8 @@ const ViniHome = () => {
   };
   const handlePerfil = () => navigate(user ? '/carteira' : '/auth');
   const handleDemos = () => navigate('/demos');
+  const handleAdmin = () => navigate('/admin');
+
 
   const handleReiniciar = () => {
     // Limpa carrinho, conversa, radar e histórico — volta ao estado inicial
@@ -947,10 +949,11 @@ const ViniHome = () => {
     { key: 'buscar', icon: Search, label: 'Buscar', onClick: handleHome },
     { key: 'urgencia', icon: Radar, label: 'Urgência', onClick: handleRadar, active: radarActive, badge: totalCartItems > 0 ? totalCartItems : undefined },
     { key: 'reiniciar', icon: RotateCcw, label: 'Reiniciar', onClick: handleReiniciar },
-    { key: 'perfil', icon: UserIcon, label: 'Perfil', onClick: handlePerfil },
+    ...(isAdmin ? [{ key: 'gestao', icon: ShieldCheck, label: 'Gestão', onClick: handleAdmin }] : [{ key: 'perfil', icon: UserIcon, label: 'Perfil', onClick: handlePerfil }]),
     { key: 'favoritos', icon: Heart, label: 'Favoritos', onClick: () => setFavoritesOpen(true), iconClassName: favoritesCount > 0 ? 'text-rose-400 fill-rose-400 drop-shadow-[0_0_6px_rgba(244,63,94,0.75)]' : undefined },
     { key: 'indica', icon: Gift, label: 'Indicação', onClick: handleIndicacao, highlight: 'R$ 5,00' },
   ];
+
 
   return (
     <div 
