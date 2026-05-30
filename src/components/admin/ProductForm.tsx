@@ -145,17 +145,10 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
         }
         setSelectedSegments(initialSegs);
         loadSegmentTags(initialSegs);
-      } else {
-        // We are already editing this item. Only sync image if it changed externally 
-        // AND we are not currently busy generating one.
-        const externalUrl = (product as any).image_url || null;
-        if (!imageBusy && externalUrl !== lastSetImageUrl.current) {
-          console.log('[ProductForm] External sync (imageBusy:', imageBusy, ') external:', externalUrl, 'last:', lastSetImageUrl.current);
-          console.log('[ProductForm] External image change detected, updating state:', externalUrl);
-          setImageUrl(externalUrl);
-          lastSetImageUrl.current = externalUrl;
-        }
       }
+      // Note: We removed the external sync logic here because it was causing 
+      // newly generated AI images to be reverted to the old DB values before saving.
+
     } else if (!open && isClosingRef.current) {
       // Reset form ONLY when fully closing to avoid race conditions during re-renders
       setForm({ name: '', price: 0, provider: '', provider_id: null, stock_type: 'fisico', rating: 4.5, distance: '2 km', product_id: Math.floor(Math.random() * 9000) + 1000, unit: 'un', quantity: 0 });
@@ -276,8 +269,8 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
         }
       }
 
-      onSaved();
       onClose();
+      onSaved();
     } catch (error: any) {
       console.error('[ProductForm] Error saving product:', error);
       toast.error('Erro ao salvar produto: ' + (error.message || 'Erro desconhecido'));

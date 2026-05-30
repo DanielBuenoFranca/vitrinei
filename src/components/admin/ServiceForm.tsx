@@ -126,16 +126,10 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
         setImageUrl(currentUrl);
         lastSetImageUrl.current = currentUrl;
         hasLoadedRef.current = service.id;
-      } else if (!imageBusy) {
-        // Sync external changes
-        const currentUrl = (service as any).image_url || null;
-        if (!imageBusy && currentUrl !== lastSetImageUrl.current) {
-          console.log('[ServiceForm] External sync (imageBusy:', imageBusy, ') external:', currentUrl, 'last:', lastSetImageUrl.current);
-          console.log('[ServiceForm] External image change detected:', currentUrl);
-          setImageUrl(currentUrl);
-          lastSetImageUrl.current = currentUrl;
-        }
       }
+      // Note: We removed the external sync logic here to prevent 
+      // newly generated images from being reverted to old values before saving.
+
     } else if (!open) {
       // Reset form when closed
       setForm({ name: '', segment: segments[0]?.name || '', provider: '', provider_id: null, labor_cost: 0, rating: 4.5, distance: '2 km', time: '45 min', service_id: Math.floor(Math.random() * 9000) + 1000, unit: 'hr', quantity: 0 });
@@ -223,8 +217,8 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
       } catch {}
     }
     setSaving(false);
-    onSaved();
     onClose();
+    onSaved();
   };
 
   useEffect(() => {
