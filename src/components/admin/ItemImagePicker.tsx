@@ -97,7 +97,7 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
           kind,
           id: id || 0,
           name: name.trim(),
-          currentImageUrl: imageUrl,
+          currentImageUrl: imageUrl || undefined,
           segment,
           tags: (tags || []).filter(Boolean),
           description,
@@ -132,6 +132,7 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
     } finally {
       clearTimeout(timeoutId);
       setBusy(false);
+      busyRef.current = false; // Double guard
       setStep('idle');
       console.log('[ItemImagePicker] Generation finished');
     }
