@@ -43,28 +43,34 @@ export function ImageSanitizationPanel() {
       const list: Item[] = [];
       (provs.data || []).forEach((p: any) => {
         if (isMissing(p.logo_url))
-          list.push({ kind: 'provider', id: p.id, name: p.name, segment: Array.isArray(p.segment) ? p.segment[0] : p.segment, current: p.logo_url });
+          list.push({ kind: 'provider', id: p.id, name: p.name, segment: Array.isArray(p.segment) ? p.segment[0] : p.segment, current: p.logo_url, type: p.type });
       });
       (prods.data || []).forEach((p: any) => {
         if (isMissing(p.image_url))
-          list.push({ kind: 'product', id: p.id, name: p.name, segment: p.provider, current: p.image_url });
+          list.push({ kind: 'product', id: p.id, name: p.name, segment: p.segments?.[0] || p.provider, current: p.image_url, type: p.stock_type, tags: p.tags });
       });
       (kits.data || []).forEach((k: any) => {
         if (isMissing(k.image_url))
-          list.push({ kind: 'kit', id: k.id, name: k.name, current: k.image_url });
+          list.push({ kind: 'kit', id: k.id, name: k.name, current: k.image_url, description: k.description });
       });
       (svcs.data || []).forEach((s: any) => {
         if (isMissing(s.image_url))
-          list.push({ kind: 'service', id: s.id, name: s.name, segment: s.segment || s.provider, current: s.image_url });
+          list.push({ kind: 'service', id: s.id, name: s.name, segment: s.segment || s.segments?.[0] || s.provider, current: s.image_url });
       });
       (segs.data || []).forEach((s: any) => {
         if (isMissing(s.image_url))
-          list.push({ kind: 'segment', id: s.id, name: s.name, current: s.image_url });
+          list.push({ kind: 'segment', id: s.id, name: s.name, current: s.image_url, tags: s.suggested_tags });
       });
       (profs.data || []).forEach((p: any) => {
-        // Considera vazio se não houver avatar nem logo
         if (isMissing(p.avatar_url) && isMissing(p.logo_url))
-          list.push({ kind: 'profile', id: p.user_id, name: p.display_name || 'Usuário sem nome', current: p.avatar_url });
+          list.push({ 
+            kind: 'profile', 
+            id: p.user_id, 
+            name: p.display_name || 'Usuário sem nome', 
+            current: p.avatar_url,
+            segment: p.provider_segments?.[0],
+            type: p.is_provider ? 'provider' : 'user'
+          });
       });
       setItems(list);
       toast.success(`${list.length} registros sem imagem encontrados`);
