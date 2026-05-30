@@ -166,6 +166,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
   };
 
   const handleSave = async () => {
+    console.log('[ProductForm] handleSave triggered, saving:', saving);
     if (!form.name.trim()) { toast.error('Nome é obrigatório'); return; }
     if (!form.provider.trim()) { toast.error('Fornecedor é obrigatório'); return; }
     if (selectedSegments.length === 0) { toast.error('Selecione pelo menos um segmento'); return; }

@@ -36,6 +36,7 @@ interface Props {
  */
 export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, bucket, tags, description, providerName, providerType, linkedNames, unit, price }: Props) {
   const [busy, setBusy] = useState(false);
+  const [step, setStep] = useState<'idle' | 'enriching' | 'searching' | 'generating' | 'saving'>('idle');
   const [uploading, setUploading] = useState(false);
 
   const targetBucket = bucket || 'storefront-assets';
@@ -66,7 +67,12 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
     }
 
     setBusy(true);
+    setStep('enriching');
     try {
+      // Pequeno delay visual para o usuário perceber as etapas
+      await new Promise(r => setTimeout(r, 600));
+      setStep('generating');
+      
       const { data, error } = await supabase.functions.invoke('sanitize-images', {
         body: {
           kind,
@@ -83,6 +89,8 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
           price,
         },
       });
+      
+      setStep('saving');
       const url = (data as any)?.imageUrl;
       if (error || !url) {
         toast.warning('Não foi possível obter imagem agora');
@@ -90,10 +98,23 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
         onChange(url);
         toast.success((data as any)?.source === 'ai' ? 'Imagem gerada pela IA com base no contexto do item' : 'Imagem aplicada (sem custo de créditos)');
       }
-    } catch {
+    } catch (err) {
+      console.error('Error generating image:', err);
       toast.warning('Falha ao gerar imagem');
+    } finally {
+      setBusy(false);
+      setStep('idle');
     }
-    setBusy(false);
+  };
+
+  const getStepLabel = () => {
+    switch (step) {
+      case 'enriching': return 'Analisando contexto...';
+      case 'searching': return 'Buscando referências...';
+      case 'generating': return 'IA gerando imagem...';
+      case 'saving': return 'Finalizando...';
+      default: return 'Gerando...';
+    }
   };
 
   return (
@@ -118,9 +139,12 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
           )}
         </div>
         <div className="flex-1 grid gap-2">
-          <Button type="button" size="sm" variant="outline" onClick={generate} disabled={busy} className="gap-1">
+          <Button type="button" size="sm" variant="outline" onClick={generate} disabled={busy} className="gap-1 relative overflow-hidden">
             {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-primary" />}
-            {busy ? 'Gerando...' : 'Trocar Imagem'}
+            {busy ? getStepLabel() : 'Trocar Imagem'}
+            {busy && (
+              <div className="absolute bottom-0 left-0 h-0.5 bg-primary animate-pulse w-full" />
+            )}
           </Button>
           <label className="inline-flex">
             <Button type="button" size="sm" variant="ghost" disabled={uploading} asChild className="gap-1 cursor-pointer">
