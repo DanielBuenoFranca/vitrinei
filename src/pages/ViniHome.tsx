@@ -81,9 +81,9 @@ const CHAT_STORAGE_KEY = 'vini:chat-history';
 
 const ViniHome = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading, signOut, displayName, isAdmin: isContextAdmin, isMaster: isContextMaster, profile } = useAuth();
-  const isAdmin = isContextAdmin || (roles.includes('admin' as any) || roles.includes('master' as any));
-  const isMaster = isContextMaster || roles.includes('master' as any);
+  const { user, loading: authLoading, signOut, displayName, isAdmin: isContextAdmin, isMaster: isContextMaster, profile, roles: authRoles } = useAuth();
+  const isAdmin = isContextAdmin || (authRoles?.includes('admin' as any) || authRoles?.includes('master' as any));
+  const isMaster = isContextMaster || authRoles?.includes('master' as any);
   const { profileLabel } = usePermissions();
   const { session, update: updateAiSession, setIsThinking: setGlobalThinking } = useAiSession();
   const { totalCartItems, totalCartValue, productCart, serviceCart, clearCart } = useCart();
