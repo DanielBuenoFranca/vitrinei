@@ -59,6 +59,12 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
 
   const generate = async () => {
     if (!name.trim()) { toast.error('Informe o nome do item antes de gerar a imagem'); return; }
+    
+    if (imageUrl) {
+      const proceed = window.confirm('Este item já possui uma imagem. Deseja realmente trocá-la por uma nova imagem buscada via IA/Banco de Imagens?');
+      if (!proceed) return;
+    }
+
     setBusy(true);
     try {
       const { data, error } = await supabase.functions.invoke('sanitize-images', {
