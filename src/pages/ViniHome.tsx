@@ -1053,10 +1053,12 @@ const ViniHome = () => {
           variant="ghost"
           size="icon"
           onClick={() => setShowPlusMenu((v) => !v)}
-          className="glass w-9 h-9 rounded-xl"
+          className="glass w-9 h-9 rounded-xl active:scale-95"
           aria-label="Mais opções"
         >
-          {showPlusMenu ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+          <span className="flex items-center justify-center w-full h-full">
+            {showPlusMenu ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+          </span>
         </Button>
         <AnimatePresence>
           {showPlusMenu && (
@@ -1114,9 +1116,11 @@ const ViniHome = () => {
                       setShowPlusMenu(false); 
                       navigate('/admin'); 
                     }}
-                    className="w-full text-left px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/10 rounded-md transition-colors flex items-center gap-2"
+                    className="w-full text-left px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/10 rounded-md transition-colors flex items-center gap-2 active:scale-95"
                   >
-                    <Settings className="w-3.5 h-3.5" /> Administrador
+                    <span className="flex items-center gap-2 w-full">
+                      <Settings className="w-3.5 h-3.5" /> Administrador
+                    </span>
                   </button>
                 </>
               )}
@@ -1729,11 +1733,17 @@ const ViniHome = () => {
                 {(isAdmin || isMaster) && (
                   <Badge 
                     variant="outline" 
-                    className="h-4 px-1 text-[8px] bg-primary/10 text-primary border-primary/20 flex items-center gap-0.5 cursor-pointer hover:bg-primary/20 transition-colors"
-                    onClick={handleAdmin}
+                    className="h-4 px-1 text-[8px] bg-primary/10 text-primary border-primary/20 flex items-center gap-0.5 cursor-pointer hover:bg-primary/20 transition-colors active:scale-95"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleAdmin();
+                    }}
                   >
-                    <ShieldCheck className="w-2 h-2" />
-                    {isMaster ? 'MASTER' : 'ADMIN'}
+                    <span className="flex items-center gap-0.5 w-full h-full">
+                      <ShieldCheck className="w-2 h-2" />
+                      {isMaster ? 'MASTER' : 'ADMIN'}
+                    </span>
                   </Badge>
                 )}
               </div>
@@ -1779,7 +1789,7 @@ const ViniHome = () => {
               <Button 
                 variant="outline" 
                 size="lg" 
-                className="h-11 text-[11px] px-3 gap-1 glass cursor-pointer z-[110] relative"
+                className="h-11 text-[11px] px-3 gap-1 glass cursor-pointer z-[110] relative hover:opacity-80 active:scale-95"
                 onClick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -1795,13 +1805,15 @@ const ViniHome = () => {
                   }
                 }}
               >
-                Sair
+                <span className="flex items-center justify-center w-full h-full gap-1">
+                  Sair
+                </span>
               </Button>
             ) : (
               <Button 
                 variant="outline" 
                 size="lg" 
-                className="h-11 text-[11px] px-3 gap-1 glass cursor-pointer z-[110] relative"
+                className="h-11 text-[11px] px-3 gap-1 glass cursor-pointer z-[110] relative hover:opacity-80 active:scale-95"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -1809,7 +1821,9 @@ const ViniHome = () => {
                   navigate('/auth');
                 }}
               >
-                <LogIn className="w-3 h-3" /> Entrar
+                <span className="flex items-center justify-center w-full h-full gap-1">
+                  <LogIn className="w-3 h-3" /> Entrar
+                </span>
               </Button>
             )}
           </div>
