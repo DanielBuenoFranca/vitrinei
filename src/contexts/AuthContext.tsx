@@ -119,12 +119,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     } else {
-              console.log('AuthContext: Roles recovered on retry:', retryRoles);
-            }
-          }, 2000);
-        }
-      }
-    } else {
       if (mounted) {
         setRoles([]);
         setDisplayName(null);
