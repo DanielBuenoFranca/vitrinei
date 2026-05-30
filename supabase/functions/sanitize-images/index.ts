@@ -286,7 +286,7 @@ Deno.serve(async (req) => {
     // Adiciona um fator de variação temporal para evitar repetições do modelo
     prompt += ` [Variation ID: ${Date.now() % 10000}]`;
     
-    console.log("[sanitize-images] prompt:", prompt.slice(0, 300));
+    console.log(`[sanitize-images] prompt for "${name}" (id:${id}):`, prompt.slice(0, 500));
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

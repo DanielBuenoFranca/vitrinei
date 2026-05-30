@@ -114,6 +114,9 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
       setStep('saving');
       const url = (data as any)?.imageUrl;
       
+      // Pequeno delay para garantir que o estado 'saving' seja visível
+      await new Promise(r => setTimeout(r, 500));
+      
       if (!url) {
         console.warn('[ItemImagePicker] No URL returned from function');
         toast.warning('Não foi possível obter imagem agora');

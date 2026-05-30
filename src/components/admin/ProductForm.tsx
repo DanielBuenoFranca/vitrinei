@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -81,6 +81,13 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
   const [saving, setSaving] = useState(false);
   const [allProductNames, setAllProductNames] = useState<string[]>([]);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const lastSetImageUrl = useRef<string | null>(null);
+  
+  const handleImageUrlChange = useCallback((url: string | null) => {
+    console.log('[ProductForm] handleImageUrlChange called with:', url);
+    setImageUrl(url);
+    lastSetImageUrl.current = url;
+  }, []);
   const { suggestions, loading: sugLoading, suggest, clear: clearSuggestions } = useNameSuggestion();
   const [imageBusy, setImageBusy] = useState(false);
 
@@ -103,7 +110,10 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
         quantity: (product as any).quantity ?? 0,
       });
       setSelectedTags(product.tags || []);
-      setImageUrl((product as any).image_url || null);
+      if (!imageBusy) {
+        setImageUrl((product as any).image_url || null);
+        console.log('[ProductForm] Initial image URL from product:', (product as any).image_url);
+      }
       // Fonte da verdade: product.segments. Fallback: segmentos do prestador (legado).
       const productSegs: string[] = Array.isArray((product as any).segments) ? (product as any).segments : [];
       let initialSegs = productSegs;
@@ -284,7 +294,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
             unit={form.unit}
             price={form.price}
             imageUrl={imageUrl}
-            onChange={setImageUrl}
+            onChange={handleImageUrlChange}
             onBusy={setImageBusy}
           />
           <div className="grid grid-cols-3 gap-3">
