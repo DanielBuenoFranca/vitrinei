@@ -144,7 +144,10 @@ const ResetPasswordPage = () => {
             >
               {loading ? 'Atualizando...' : 'Atualizar Senha'}
             </Button>
-            <Button variant="ghost" className="w-full text-xs" onClick={() => navigate('/auth')}>
+            <Button variant="ghost" className="w-full text-xs" onClick={async () => {
+              await supabase.auth.signOut();
+              navigate('/auth');
+            }}>
               Cancelar e voltar
             </Button>
           </div>
