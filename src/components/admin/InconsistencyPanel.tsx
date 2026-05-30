@@ -108,9 +108,18 @@ export function InconsistencyPanel({
         entityId: p.id, 
         entityName: p.name, 
         message: 'Sem segmento vinculado. É obrigatório selecionar ao menos um segmento.', 
-        action: 'edit', 
+        action: 'auto_fix', 
         tab: 'providers', 
         fieldName: 'segments',
+        autoFixAction: async () => {
+          const defaultSeg = segments.find(s => s.name === 'Negócio')?.name || segments[0]?.name || 'Geral';
+          const { error } = await supabase
+            .from('providers')
+            .update({ segment: [defaultSeg] })
+            .eq('id', p.id);
+          if (error) throw error;
+          if (onRefresh) onRefresh();
+        }
       });
     } else {
       p.segment.forEach(seg => {
@@ -152,7 +161,29 @@ export function InconsistencyPanel({
       }
     }
     if (!s.segment) {
-      issues.push({ type: 'error', entity: 'Serviço', entityId: s.id, entityName: s.name, message: 'Sem segmento definido. É obrigatório vincular a um segmento.', action: 'edit', tab: 'services', fieldName: 'segment' });
+      issues.push({ 
+        type: 'error', 
+        entity: 'Serviço', 
+        entityId: s.id, 
+        entityName: s.name, 
+        message: 'Sem segmento definido. É obrigatório vincular a um segmento.', 
+        action: 'auto_fix', 
+        tab: 'services', 
+        fieldName: 'segment',
+        autoFixAction: async () => {
+          const prov = providers.find(p => p.id === s.provider_id);
+          const defaultSeg = (prov?.segment && prov.segment.length > 0) 
+            ? prov.segment[0] 
+            : (segments.find(seg => seg.name === 'Negócio')?.name || segments[0]?.name || 'Geral');
+          
+          const { error } = await supabase
+            .from('dynamic_services')
+            .update({ segment: defaultSeg })
+            .eq('id', s.id);
+          if (error) throw error;
+          if (onRefresh) onRefresh();
+        }
+      });
     } else if (!segmentNames.has(s.segment)) {
       issues.push({ type: 'warning', entity: 'Serviço', entityId: s.id, entityName: s.name, message: `Segmento "${s.segment}" não existe no cadastro`, action: 'edit', tab: 'services', fieldName: 'segment' });
     }
