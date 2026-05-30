@@ -57,9 +57,10 @@ interface ServiceFormProps {
   service?: DynamicService | null;
   providers: Provider[];
   segments: Segment[];
+  highlightField?: string;
 }
 
-export function ServiceForm({ open, onClose, onSaved, service, providers, segments }: ServiceFormProps) {
+export function ServiceForm({ open, onClose, onSaved, service, providers, segments, highlightField }: ServiceFormProps) {
   const isEdit = !!service;
   const [form, setForm] = useState({
     name: '', segment: '', provider: '', provider_id: null as number | null,
@@ -182,6 +183,24 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
     onClose();
   };
 
+  useEffect(() => {
+    if (open && highlightField) {
+      setTimeout(() => {
+        const el = document.getElementsByName(highlightField)[0] || 
+                   document.getElementById(highlightField) ||
+                   document.querySelector(`[data-fieldname="${highlightField}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+            el.focus();
+          }
+          el.classList.add('ring-2', 'ring-destructive', 'ring-offset-2');
+          setTimeout(() => el.classList.remove('ring-2', 'ring-destructive', 'ring-offset-2'), 3000);
+        }
+      }, 300);
+    }
+  }, [open, highlightField]);
+
   // Group products: provider's own stock, dropship, other providers
   const providerProducts = availableProducts.filter(p => p.provider_id === form.provider_id && p.stock_type !== 'drop');
   const dropProducts = availableProducts.filter(p => p.stock_type === 'drop');
@@ -232,7 +251,7 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
             onChange={setImageUrl}
           />
           <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-2">
+            <div className="grid gap-2" data-fieldname="segment">
               <Label>Segmento *</Label>
               <Select value={form.segment} onValueChange={v => setForm(f => ({ ...f, segment: v }))}>
                 <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
@@ -241,7 +260,7 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-2">
+            <div className="grid gap-2" data-fieldname="provider">
               <Label>Prestador *</Label>
               {providers.length > 0 ? (
                 <Select value={form.provider_id ? String(form.provider_id) : ''} onValueChange={handleProviderSelect}>
@@ -286,7 +305,7 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
           <div className="grid grid-cols-3 gap-3">
             <div className="grid gap-2">
               <Label>Mão de Obra (R$)</Label>
-              <Input type="number" step="0.01" value={form.labor_cost} onChange={e => setForm(f => ({ ...f, labor_cost: parseFloat(e.target.value) || 0 }))} />
+              <Input name="labor_cost" type="number" step="0.01" value={form.labor_cost} onChange={e => setForm(f => ({ ...f, labor_cost: parseFloat(e.target.value) || 0 }))} />
             </div>
             <div className="grid gap-2">
               <Label>Produtos (R$)</Label>
