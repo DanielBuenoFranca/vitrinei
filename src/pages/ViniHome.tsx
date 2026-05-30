@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, Wallet, User as UserIcon, Sparkles, Mic, Plus,
   Bot, LogIn, Settings, X, Send, Radar, Gift, MapPin, ShoppingBag, Store, RotateCcw, Heart,
-  Search, LifeBuoy, Loader2, Sliders, ZapOff, Sun, Contrast, MessageCircle, KeyRound, ShieldCheck, AlertTriangle
+  Search, LifeBuoy, Loader2, Sliders, ZapOff, Sun, Contrast, MessageCircle, KeyRound, ShieldCheck
 } from 'lucide-react';
 
 import { FavoritesModal } from '@/components/FavoritesModal';
@@ -1726,7 +1726,7 @@ const ViniHome = () => {
             <div className="min-w-0 leading-tight flex-1">
               <div className="flex items-center gap-1.5">
                 <p className="text-[12.5px] font-semibold truncate">{displayName || (user ? user.email?.split('@')[0] : 'Anônimo')}</p>
-                {(isAdmin || isMaster) ? (
+                {(isAdmin || isMaster) && (
                   <Badge 
                     variant="outline" 
                     className="h-4 px-1 text-[8px] bg-primary/10 text-primary border-primary/20 flex items-center gap-0.5 cursor-pointer hover:bg-primary/20 transition-colors"
@@ -1734,16 +1734,6 @@ const ViniHome = () => {
                   >
                     <ShieldCheck className="w-2 h-2" />
                     {isMaster ? 'MASTER' : 'ADMIN'}
-                  </Badge>
-                ) : user?.email?.includes('danielbuenofranca2') && (
-                  <Badge 
-                    variant="destructive" 
-                    className="h-4 px-1 text-[8px] flex items-center gap-0.5 cursor-pointer"
-                    onClick={() => window.location.reload()}
-                    title="Clique para recarregar permissões"
-                  >
-                    <AlertTriangle className="w-2 h-2" />
-                    ERRO PERMISSÃO
                   </Badge>
                 )}
               </div>
