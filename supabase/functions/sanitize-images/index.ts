@@ -99,7 +99,7 @@ async function enrichContext(supabase: any, kind: string, id: number, base: any)
         .select("name, segment, price, provider, provider_id, linked_product_ids, products, unit, segments")
         .eq("id", id).maybeSingle();
       if (data) {
-        ctx.segment = ctx.segment || data.segment;
+        ctx.segment = ctx.segment || data.segment || (Array.isArray(data.segments) ? data.segments[0] : undefined);
         ctx.unit = ctx.unit || data.unit;
         ctx.price = ctx.price ?? Number(data.price);
         ctx.providerName = ctx.providerName || data.provider;
