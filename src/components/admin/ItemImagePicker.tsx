@@ -28,16 +28,23 @@ interface Props {
   unit?: string;
   /** Preço estimado */
   price?: number;
+  /** Callback para o componente pai monitorar se está processando */
+  onBusy?: (isBusy: boolean) => void;
 }
 
 /**
  * Bloco reutilizável: mostra a imagem do item em tamanho normal,
  * permite upload manual e geração via sanitize-images (respeita modo economia).
  */
-export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, bucket, tags, description, providerName, providerType, linkedNames, unit, price }: Props) {
-  const [busy, setBusy] = useState(false);
+export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, bucket, tags, description, providerName, providerType, linkedNames, unit, price, onBusy }: Props) {
+  const [busy, _setBusy] = useState(false);
   const [step, setStep] = useState<'idle' | 'enriching' | 'searching' | 'generating' | 'saving'>('idle');
   const [uploading, setUploading] = useState(false);
+
+  const setBusy = (val: boolean) => {
+    _setBusy(val);
+    if (onBusy) onBusy(val);
+  };
 
   const targetBucket = bucket || 'storefront-assets';
   const folder = `${kind}-images/`;
