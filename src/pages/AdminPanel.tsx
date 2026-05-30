@@ -353,13 +353,18 @@ const AdminPanel = () => {
       if (error || data?.error) {
         toast.error('Erro: ' + (data?.error || error?.message || 'desconhecido'));
       } else {
-        toast.success('Usuário criado e ativado com sucesso!');
+        const newUserId = data.user_id;
+        
+        // Marcamos como não ativado e salvamos a senha temporária como código de ativação
+        await supabase.from('profiles').update({ 
+          is_activated: false,
+          activation_code: newUserPassword,
+          status: 'lead'
+        }).eq('user_id', newUserId);
+
+        toast.success('Usuário criado e pronto para o primeiro acesso!');
         setNewUserDialog(false);
         setNewUserEmail(''); setNewUserPassword(''); setNewUserName(''); setNewUserPhone(''); setNewUserRole('client');
-        setNewUserPassword('');
-        setNewUserName('');
-        setNewUserPhone('');
-        setNewUserRole('client');
         fetchUsers();
       }
     } catch (e: any) {
@@ -474,6 +479,13 @@ const AdminPanel = () => {
           setActivatingUser(null); return;
         }
         const newUserId = createRes.user_id;
+
+        // Marcamos como não ativado e salvamos a senha temporária
+        await supabase.from('profiles').update({ 
+          is_activated: false,
+          activation_code: tmpPwd,
+          status: 'lead'
+        }).eq('user_id', newUserId);
 
         // 2) Vincula provider importado ao novo user_id (preserva loja/produtos)
         if (lead.__providerId) {
