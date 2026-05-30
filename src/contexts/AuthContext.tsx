@@ -119,10 +119,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('AuthContext: onAuthStateChange', event);
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-        setLoading(true);
-        await initializeAuth(session);
-      } else if (event === 'SIGNED_OUT') {
+      
+      // If the session is lost or user is signed out, we should reflect that immediately
+      // to avoid inconsistent UI states where logic thinks user is logged in but tokens are gone
+      if (event === 'SIGNED_OUT') {
         setSession(null);
         setUser(null);
         setRoles([]);
@@ -131,13 +131,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setMustResetPassword(false);
         setUserStatus(null);
         setLoading(false);
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        setLoading(true);
+        await initializeAuth(session);
       }
     });
 
     // Initial session check
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      initializeAuth(session);
-    });
+    const checkInitialSession = async () => {
+      try {
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        console.log('AuthContext: Initial session check', !!initialSession);
+        await initializeAuth(initialSession);
+      } catch (err) {
+        console.error('AuthContext: Error getting initial session', err);
+        setLoading(false);
+      }
+    };
+
+    checkInitialSession();
 
     return () => {
       subscription.unsubscribe();
