@@ -288,6 +288,28 @@ const AuthPage = () => {
         setLoading(false);
         return;
       }
+
+      // Check for first access activation (for users created by admin)
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('is_activated')
+        .eq('user_id', data.user.id)
+        .single();
+
+      if (profileData && profileData.is_activated === false) {
+        // User is logged in but profile is not activated.
+        // We show a simplified activation modal or trigger activation logic.
+        // For now, let's just activate the profile automatically since they logged in successfully with the credentials.
+        // This matches the requirement: "senha criada pelo painel do administrador deve ser ativada no processo no primeiro acesso"
+        const { error: activateError } = await supabase
+          .from('profiles')
+          .update({ is_activated: true })
+          .eq('user_id', data.user.id);
+
+        if (!activateError) {
+          toast.success('Primeiro acesso detectado. Conta ativada com sucesso!');
+        }
+      }
       
       toast.success('Login realizado com sucesso!');
       navigate('/');
