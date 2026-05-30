@@ -174,11 +174,12 @@ async function enrichContext(supabase: any, kind: string, id: number, base: any)
 function buildPrompt(kind: string, ctx: EnrichedContext): string {
   const tagsStr = ctx.tags.length ? ` Keywords: ${ctx.tags.join(", ")}.` : "";
   const linkedStr = ctx.linkedNames.length ? ` Related items: ${ctx.linkedNames.join(", ")}.` : "";
-  const segStr = ctx.segment ? ` Category: ${ctx.segment}.` : "";
+  const segStr = ctx.segment ? ` Category/Segment: ${ctx.segment}.` : "";
   const descStr = ctx.description ? ` Description: ${ctx.description}.` : "";
-  const provStr = ctx.providerName ? ` Provider: ${ctx.providerName}${ctx.providerType ? ` (${ctx.providerType})` : ""}.` : "";
+  const provStr = ctx.providerName ? ` Provider: ${ctx.providerName}.` : "";
+  const typeStr = ctx.itemType ? ` Type: ${ctx.itemType}.` : (ctx.providerType ? ` Type: ${ctx.providerType}.` : "");
 
-  const base = `Subject: "${ctx.name}".${segStr}${tagsStr}${linkedStr}${descStr}${provStr}`;
+  const base = `Subject: "${ctx.name}".${segStr}${typeStr}${tagsStr}${linkedStr}${descStr}${provStr}`;
 
   if (kind === "provider") {
     return `Create a modern, minimalist BRAND LOGO ICON for the small business "${ctx.name}".${segStr}${tagsStr} ` +
