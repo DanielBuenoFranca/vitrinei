@@ -1753,7 +1753,7 @@ const AdminPanel = () => {
       {/* Dialogs */}
       <UserForm
         open={userForm.open}
-        onClose={() => setUserForm({ open: false, profile: null, role: null, email: null })}
+        onClose={() => setUserForm(prev => ({ ...prev, open: false }))}
         onSaved={async () => { 
           await fetchUsers(); 
           await fetchData(); 
