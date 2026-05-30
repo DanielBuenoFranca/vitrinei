@@ -41,18 +41,22 @@ interface Props {
 export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, bucket, tags, description, providerName, providerType, linkedNames, unit, price, onBusy, quantity }: Props) {
   const [busy, _setBusy] = useState(false);
   const busyRef = useRef(false);
+  const isMounted = useRef(true);
   const [step, setStep] = useState<'idle' | 'enriching' | 'searching' | 'generating' | 'saving'>('idle');
   const [uploading, setUploading] = useState(false);
 
+  useEffect(() => {
+    isMounted.current = true;
+    return () => { isMounted.current = false; };
+  }, []);
+
   const setBusy = (val: boolean) => {
-    // Only update if state actually changes to avoid unnecessary re-renders
+    if (!isMounted.current) return;
     if (busyRef.current === val) return;
     
     console.log(`[ItemImagePicker] Setting busy to ${val}`);
     busyRef.current = val;
     _setBusy(val);
-    // Use a small delay to ensure state has propagated before parent re-renders
-    // though this is mostly to avoid "Update while rendering" warnings if called too early
     if (onBusy) onBusy(val);
   };
 
