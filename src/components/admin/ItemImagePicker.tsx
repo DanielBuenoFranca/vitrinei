@@ -79,14 +79,15 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
     setBusy(true);
     setStep('enriching');
     
-    // Fallback timer: se a função demorar mais de 45s, destravamos a tela
+    // Fallback timer: se a função demorar mais de 60s, destravamos a tela
     const timeoutId = setTimeout(() => {
+      console.log('[ItemImagePicker] Timeout reached, forcing unlock');
       if (busyRef.current) {
         setBusy(false);
         setStep('idle');
-        toast.error('A geração da imagem demorou demais. Tente novamente.');
+        toast.error('A geração da imagem demorou demais. A tela foi destravada.');
       }
-    }, 45000);
+    }, 60000);
 
     try {
       console.log('[ItemImagePicker] Starting generation for:', name);
@@ -97,7 +98,7 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
           kind,
           id: id || 0,
           name: name.trim(),
-          currentImageUrl: imageUrl,
+          currentImageUrl: imageUrl || undefined,
           segment,
           tags: (tags || []).filter(Boolean),
           description,
@@ -132,6 +133,7 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
     } finally {
       clearTimeout(timeoutId);
       setBusy(false);
+      busyRef.current = false; // Double guard
       setStep('idle');
       console.log('[ItemImagePicker] Generation finished');
     }

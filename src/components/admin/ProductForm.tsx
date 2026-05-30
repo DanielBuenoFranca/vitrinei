@@ -110,7 +110,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
         quantity: (product as any).quantity ?? 0,
       });
       setSelectedTags(product.tags || []);
-      if (!imageBusy) {
+      if (!imageBusy && !imageUrl) {
         setImageUrl((product as any).image_url || null);
         console.log('[ProductForm] Initial image URL from product:', (product as any).image_url);
       }
@@ -130,7 +130,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
       setSegmentTags([]);
       setImageUrl(null);
     }
-  }, [product, open]); // Removed providers from deps to avoid resets on parent re-render
+  }, [product, open, providers]); // Restored providers to ensure we have the list when editing
 
   const loadSegmentTags = useCallback(async (segNames: string[]) => {
     if (segNames.length === 0) { setSegmentTags([]); return; }
