@@ -82,8 +82,23 @@ const CHAT_STORAGE_KEY = 'vini:chat-history';
 const ViniHome = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading, signOut, displayName, isAdmin: isContextAdmin, isMaster: isContextMaster, profile, roles: authRoles } = useAuth();
-  const isAdmin = isContextAdmin || (authRoles?.includes('admin' as any) || authRoles?.includes('master' as any));
-  const isMaster = isContextMaster || authRoles?.includes('master' as any);
+  
+  // Robust check for master/admin roles - checking both context and raw roles list
+  const isAdmin = isContextAdmin || authRoles?.some(r => ['admin', 'master'].includes(String(r).toLowerCase()));
+  const isMaster = isContextMaster || authRoles?.some(r => String(r).toLowerCase() === 'master');
+  
+  // Debug log to trace why master tools might not be showing
+  useEffect(() => {
+    if (user) {
+      console.log('[ViniHome] Master check:', { 
+        email: user.email, 
+        isMaster, 
+        isAdmin, 
+        authRoles, 
+        isContextMaster 
+      });
+    }
+  }, [user, isMaster, isAdmin, authRoles, isContextMaster]);
   const { profileLabel } = usePermissions();
   const { session, update: updateAiSession, setIsThinking: setGlobalThinking } = useAiSession();
   const { totalCartItems, totalCartValue, productCart, serviceCart, clearCart } = useCart();
