@@ -205,6 +205,17 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
     }
   }, [open, profile, currentRole, currentRoles, currentEmail, segments, defaultPlanId]);
 
+  // Force business profile to 'client' for privileged accounts (Master/Admin)
+  useEffect(() => {
+    if (adminLevel !== 'none' && (profileType === 'provider' || profileType === 'mixed')) {
+      setProfileType('client');
+      // Only toast if it was a manual change or initial load of a provider promoted to admin
+      if (open) {
+        toast.info('Admins/Master não possuem loja pessoal; perfil ajustado para Consumidor.');
+      }
+    }
+  }, [adminLevel, profileType, open]);
+
   const isProviderRole = (profileType === 'provider' || profileType === 'mixed') && adminLevel === 'none';
   const docValidation = validateDoc(cpfCnpj);
   const rawDoc = cpfCnpj.replace(/\D/g, '');
