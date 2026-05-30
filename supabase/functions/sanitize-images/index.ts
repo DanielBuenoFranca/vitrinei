@@ -96,7 +96,7 @@ async function enrichContext(supabase: any, kind: string, id: number, base: any)
       }
     } else if (kind === "service" && id) {
       const { data } = await supabase.from("dynamic_services")
-        .select("name, segment, price, provider, provider_id, linked_product_ids, products, unit")
+        .select("name, segment, price, provider, provider_id, linked_product_ids, products, unit, segments")
         .eq("id", id).maybeSingle();
       if (data) {
         ctx.segment = ctx.segment || data.segment;
