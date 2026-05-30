@@ -113,9 +113,16 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
       setSelectedTags(product.tags || []);
       
       // Update image URL if not busy
+      // Update image URL if not busy and not recently manually cleared
       if (!imageBusy) {
-        setImageUrl((product as any).image_url || null);
-        lastSetImageUrl.current = (product as any).image_url || null;
+        const currentUrl = (product as any).image_url || null;
+        if (imageUrl === null && currentUrl !== null && lastSetImageUrl.current === null) {
+          // It was explicitly cleared by the user (imageUrl is null, lastSetImageUrl is null, but DB has a value)
+          console.log('[ProductForm] Image was cleared by user, not restoring from DB');
+        } else {
+          setImageUrl(currentUrl);
+          lastSetImageUrl.current = currentUrl;
+        }
       }
       // Fonte da verdade: product.segments. Fallback: segmentos do prestador (legado).
       const productSegs: string[] = Array.isArray((product as any).segments) ? (product as any).segments : [];
