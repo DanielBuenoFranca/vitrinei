@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, Wallet, User as UserIcon, Sparkles, Mic, Plus,
   Bot, LogIn, Settings, X, Send, Radar, Gift, MapPin, ShoppingBag, Store, RotateCcw, Heart,
-  Search, LifeBuoy, Loader2, Sliders, ZapOff, Sun, Contrast, MessageCircle, KeyRound
+  Search, LifeBuoy, Loader2, Sliders, ZapOff, Sun, Contrast, MessageCircle, KeyRound, ShieldCheck
 } from 'lucide-react';
 
 import { FavoritesModal } from '@/components/FavoritesModal';
@@ -41,6 +41,7 @@ import { getGreeting } from '@/lib/viniBrain';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { semanticSearch } from '@/data/searchData';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAiSession } from '@/contexts/AiSessionContext';
 import { useConversion } from '@/contexts/ConversionContext';
@@ -1680,7 +1681,15 @@ const ViniHome = () => {
               <span className="absolute bottom-0 right-0 w-2 h-2 bg-success rounded-full ring-2 ring-background" />
             </div>
             <div className="min-w-0 leading-tight flex-1">
-              <p className="text-[12.5px] font-semibold truncate">{displayName || (user ? user.email?.split('@')[0] : 'Anônimo')}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-[12.5px] font-semibold truncate">{displayName || (user ? user.email?.split('@')[0] : 'Anônimo')}</p>
+                {isAdmin && (
+                  <Badge variant="outline" className="h-4 px-1 text-[8px] bg-primary/10 text-primary border-primary/20 flex items-center gap-0.5">
+                    <ShieldCheck className="w-2 h-2" />
+                    MASTER
+                  </Badge>
+                )}
+              </div>
               <div className="flex items-center gap-1.5 text-[9.5px] text-muted-foreground/90 truncate">
                 {city && (
                   <span className="inline-flex items-center gap-0.5 truncate">
@@ -1689,9 +1698,11 @@ const ViniHome = () => {
                   </span>
                 )}
                 {city && <span className="opacity-40">·</span>}
-                <span className="text-[hsl(var(--text-accent))] truncate">
+                <span className={cn(
+                  "truncate font-medium",
+                  isAdmin ? "text-primary" : "text-[hsl(var(--text-accent))]"
+                )}>
                   {user ? (accessLevel === 'lead' ? `Lead (${profileLabel})` : profileLabel) : 'Visitante'}
-
                 </span>
                 {planLabel && (
                   <>
