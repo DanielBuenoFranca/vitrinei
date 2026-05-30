@@ -1053,10 +1053,12 @@ const ViniHome = () => {
           variant="ghost"
           size="icon"
           onClick={() => setShowPlusMenu((v) => !v)}
-          className="glass w-9 h-9 rounded-xl"
+          className="glass w-9 h-9 rounded-xl active:scale-95"
           aria-label="Mais opções"
         >
-          {showPlusMenu ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+          <span className="flex items-center justify-center w-full h-full">
+            {showPlusMenu ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+          </span>
         </Button>
         <AnimatePresence>
           {showPlusMenu && (
