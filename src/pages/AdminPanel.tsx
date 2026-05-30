@@ -204,19 +204,25 @@ const AdminPanel = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const [provRes, svcRes, prodRes, segRes, unitRes] = await Promise.all([
-      supabase.from('providers').select('*').order('created_at', { ascending: false }),
-      supabase.from('dynamic_services').select('*').order('created_at', { ascending: false }),
-      supabase.from('dynamic_products').select('*').order('created_at', { ascending: false }),
-      supabase.from('segments').select('*').order('name'),
-      supabase.from('units').select('*').order('name'),
-    ]);
-    setProviders((provRes.data as Provider[]) || []);
-    setServices((svcRes.data as DynamicService[]) || []);
-    setProducts((prodRes.data as DynamicProduct[]) || []);
-    setSegments((segRes.data as Segment[]) || []);
-    setUnits((unitRes.data as Unit[]) || []);
-    setLoading(false);
+    try {
+      const [provRes, svcRes, prodRes, segRes, unitRes] = await Promise.all([
+        supabase.from('providers').select('*').order('created_at', { ascending: false }),
+        supabase.from('dynamic_services').select('*').order('created_at', { ascending: false }),
+        supabase.from('dynamic_products').select('*').order('created_at', { ascending: false }),
+        supabase.from('segments').select('*').order('name'),
+        supabase.from('units').select('*').order('name'),
+      ]);
+      setProviders((provRes.data as Provider[]) || []);
+      setServices((svcRes.data as DynamicService[]) || []);
+      setProducts((prodRes.data as DynamicProduct[]) || []);
+      setSegments((segRes.data as Segment[]) || []);
+      setUnits((unitRes.data as Unit[]) || []);
+    } catch (error) {
+      console.error('Error fetching admin data:', error);
+      toast.error('Erro ao carregar dados do painel');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchData(); fetchUsers(); fetchMarquee(); }, []);
@@ -1759,7 +1765,8 @@ const AdminPanel = () => {
       <ProductForm 
         open={productForm.open} 
         onClose={() => setProductForm({ open: false, item: null })} 
-        onSaved={() => { reloadDynamicEntries(); fetchData(); }} 
+        onSaved={async () => { await reloadDynamicEntries(); await fetchData(); }} 
+
         product={productForm.item} 
         providers={providerList} 
         segments={segmentList} 

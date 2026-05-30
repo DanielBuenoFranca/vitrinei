@@ -65,7 +65,7 @@ const UNIT_OPTIONS = [
 ];
 
 export function ProductForm({ open, onClose, onSaved, product, providers, segments = [], highlightField }: ProductFormProps) {
-  const isEdit = !!product;
+  const isEdit = !!product && !!product.id;
   const [form, setForm] = useState({
     name: '', price: 0, provider: '', provider_id: null as number | null,
     stock_type: 'fisico', rating: 4.5, distance: '2 km',
@@ -196,11 +196,12 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
   };
 
   const handleSave = async () => {
-    console.log('[ProductForm] handleSave initiated. States:', { name: form.name, imageBusy, saving });
+    console.log('[ProductForm] handleSave initiated. States:', { name: form.name, imageBusy, saving, isEdit });
     
-    if (!form.name.trim()) { toast.error('Nome é obrigatório'); return; }
-    if (!form.provider.trim()) { toast.error('Fornecedor é obrigatório'); return; }
+    if (!form.name || !form.name.trim()) { toast.error('Nome é obrigatório'); return; }
+    if (!form.provider || !form.provider.trim()) { toast.error('Fornecedor é obrigatório'); return; }
     if (selectedSegments.length === 0) { toast.error('Selecione pelo menos um segmento'); return; }
+
     
     if (imageBusy) {
       toast.warning('Aguarde a conclusão da imagem antes de salvar');
