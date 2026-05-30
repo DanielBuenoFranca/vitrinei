@@ -182,27 +182,27 @@ function buildPrompt(kind: string, ctx: EnrichedContext): string {
   const base = `Subject: "${ctx.name}".${segStr}${typeStr}${tagsStr}${linkedStr}${descStr}${provStr}`;
 
   if (kind === "provider") {
-    return `Create a modern, minimalist BRAND LOGO ICON for the small business "${ctx.name}".${segStr}${tagsStr} ` +
+    return `Create a modern, minimalist BRAND LOGO ICON for the small business "${ctx.name}".${segStr}${typeStr}${tagsStr}${descStr} ` +
       `Style: bold geometric mark, flat vector, 2-3 brand colors, professional, memorable, suitable as circular avatar. ` +
       `Clean solid white background, NO TEXT, NO LETTERS, NO WORDS, no watermarks, no photo realism. ` +
       `The icon must visually represent the business sector and feel trustworthy and professional. Square format, centered.`;
   }
   if (kind === "product") {
     return `Photorealistic professional studio PRODUCT PHOTO of: "${ctx.name}". ${base} ` +
-      `Make sure the object shown is exactly this product (use the keywords and category to disambiguate). ` +
+      `Make sure the object shown is exactly this item (use the description, category and type to disambiguate precisely). ` +
       `High-end e-commerce catalog style: clean seamless white background, soft studio lighting, sharp focus, ` +
       `accurate proportions and materials, realistic textures, subtle shadow, centered composition, square framing. ` +
       `NO text, NO labels with brand names, NO watermarks, NO collages, single hero subject, ultra detailed 8k.`;
   }
   if (kind === "kit") {
     return `Photorealistic studio photo of a PRODUCT KIT / BUNDLE named "${ctx.name}". ${base} ` +
-      `Show the related items grouped together as a curated set, neatly arranged, true to the listed components. ` +
+      `Use the description to understand each component. Show the related items grouped together as a curated set, neatly arranged. ` +
       `Clean white background, professional e-commerce styling, accurate materials, soft shadow, centered, square. ` +
       `NO text, NO watermarks, NO logos.`;
   }
   if (kind === "service") {
     return `Premium 3D illustrated ICON representing the SERVICE "${ctx.name}". ${base} ` +
-      `Show tools, scene or symbolic objects that clearly communicate this exact service (use keywords/related items). ` +
+      `Show tools, scene or symbolic objects that clearly communicate this exact service (use description and category). ` +
       `Style: glossy 3D render, vibrant brand-friendly colors, soft realistic lighting, ambient occlusion, ` +
       `subtle reflections, beveled edges, app-icon framing, clean white background, soft drop shadow, centered. ` +
       `NO text, NO watermarks. The icon must be instantly recognizable as this specific service.`;
