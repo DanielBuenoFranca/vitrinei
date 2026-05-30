@@ -1692,9 +1692,26 @@ const AdminPanel = () => {
         currentRoles={(userForm.allRoles || []) as any}
         currentEmail={userForm.email}
         segments={segmentList}
+        highlightField={userForm.highlightField}
       />
-      <ProductForm open={productForm.open} onClose={() => setProductForm({ open: false, item: null })} onSaved={() => { reloadDynamicEntries(); fetchData(); }} product={productForm.item} providers={providerList} segments={segmentList} />
-      <ServiceForm open={serviceForm.open} onClose={() => setServiceForm({ open: false, item: null })} onSaved={() => { reloadDynamicEntries(); fetchData(); }} service={serviceForm.item} providers={providerList} segments={segmentList} />
+      <ProductForm 
+        open={productForm.open} 
+        onClose={() => setProductForm({ open: false, item: null })} 
+        onSaved={() => { reloadDynamicEntries(); fetchData(); }} 
+        product={productForm.item} 
+        providers={providerList} 
+        segments={segmentList} 
+        highlightField={productForm.highlightField}
+      />
+      <ServiceForm 
+        open={serviceForm.open} 
+        onClose={() => setServiceForm({ open: false, item: null })} 
+        onSaved={() => { reloadDynamicEntries(); fetchData(); }} 
+        service={serviceForm.item} 
+        providers={providerList} 
+        segments={segmentList} 
+        highlightField={serviceForm.highlightField}
+      />
       <SegmentForm open={segmentForm.open} onClose={() => setSegmentForm({ open: false, item: null })} onSaved={fetchData} segment={segmentForm.item} />
       <UnitForm open={unitForm.open} onClose={() => setUnitForm({ open: false, item: null })} onSaved={fetchData} unit={unitForm.item} />
       <ClearDataDialog open={clearDialog} onClose={() => setClearDialog(false)} onCleared={async () => { await reloadDynamicEntries(); await fetchData(); await fetchUsers(); }} counts={{ providers: providers.length, services: services.length, products: products.length, segments: segments.length }} />
