@@ -1764,9 +1764,12 @@ const AdminPanel = () => {
       />
       <ProductForm 
         open={productForm.open} 
-        onClose={() => setProductForm({ open: false, item: null })} 
-        onSaved={async () => { await reloadDynamicEntries(); await fetchData(); }} 
-
+        onClose={() => setProductForm(prev => ({ ...prev, open: false }))} 
+        onSaved={async () => { 
+          await reloadDynamicEntries(); 
+          await fetchData(); 
+          setProductForm({ open: false, item: null });
+        }} 
         product={productForm.item} 
         providers={providerList} 
         segments={segmentList} 
