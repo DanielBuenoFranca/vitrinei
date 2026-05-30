@@ -1199,6 +1199,7 @@ const AdminPanel = () => {
               onEditProduct={(p, field) => setProductForm({ open: true, item: p, highlightField: field })}
               onDeleteService={deleteService}
               onDeleteProduct={deleteProduct}
+              onRefresh={() => { fetchData(); fetchUsers(); }}
             />
           </TabsContent>
 
