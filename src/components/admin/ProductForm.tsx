@@ -46,6 +46,7 @@ interface ProductFormProps {
   product?: DynamicProduct | null;
   providers: Provider[];
   segments?: Segment[];
+  highlightField?: string;
 }
 
 const UNIT_OPTIONS = [
@@ -63,7 +64,7 @@ const UNIT_OPTIONS = [
   { value: 'kit', label: 'Kit' },
 ];
 
-export function ProductForm({ open, onClose, onSaved, product, providers, segments = [] }: ProductFormProps) {
+export function ProductForm({ open, onClose, onSaved, product, providers, segments = [], highlightField }: ProductFormProps) {
   const isEdit = !!product;
   const [form, setForm] = useState({
     name: '', price: 0, provider: '', provider_id: null as number | null,
@@ -222,6 +223,24 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
     onClose();
   };
 
+  useEffect(() => {
+    if (open && highlightField) {
+      setTimeout(() => {
+        const el = document.getElementsByName(highlightField)[0] || 
+                   document.getElementById(highlightField) ||
+                   document.querySelector(`[data-fieldname="${highlightField}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+            el.focus();
+          }
+          el.classList.add('ring-2', 'ring-destructive', 'ring-offset-2');
+          setTimeout(() => el.classList.remove('ring-2', 'ring-destructive', 'ring-offset-2'), 3000);
+        }
+      }, 300);
+    }
+  }, [open, highlightField]);
+
   // Tags from segments that are NOT yet selected
   const availableSegmentTags = segmentTags.filter(t => !selectedTags.includes(t));
 
@@ -255,7 +274,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
           <div className="grid grid-cols-3 gap-3">
             <div className="grid gap-2">
               <Label>Preço (R$)</Label>
-              <Input type="number" step="0.01" value={form.price} onChange={e => setForm(f => ({ ...f, price: parseFloat(e.target.value) || 0 }))} />
+              <Input name="price" type="number" step="0.01" value={form.price} onChange={e => setForm(f => ({ ...f, price: parseFloat(e.target.value) || 0 }))} />
             </div>
             <div className="grid gap-2">
               <Label>Unidade</Label>
@@ -279,7 +298,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
               </Select>
             </div>
           </div>
-          <div className="grid gap-2">
+          <div className="grid gap-2" data-fieldname="provider">
             <Label>Prestador / Fornecedor *</Label>
             {providers.length > 0 ? (
               <Select value={form.provider_id ? String(form.provider_id) : ''} onValueChange={handleProviderSelect}>
@@ -294,7 +313,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
           </div>
 
           {/* Segment selection */}
-          <div className="grid gap-2">
+          <div className="grid gap-2" data-fieldname="segments">
             <Label>Segmento(s) *</Label>
             <div className="flex flex-wrap gap-1.5">
               {segments.map(seg => (
@@ -315,7 +334,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
           </div>
 
           {/* Tags section */}
-          <div className="grid gap-2">
+          <div className="grid gap-2" data-fieldname="tags">
             <Label className="flex items-center gap-2">
               Tags do Produto
               {loadingTags && <Loader2 className="w-3 h-3 animate-spin text-primary" />}
