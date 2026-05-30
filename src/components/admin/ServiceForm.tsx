@@ -71,10 +71,17 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
   const [linkedProductIds, setLinkedProductIds] = useState<number[]>([]);
   const [availableProducts, setAvailableProducts] = useState<AvailableProduct[]>([]);
   const [saving, setSaving] = useState(false);
+  const [localIsEdit, setLocalIsEdit] = useState(false);
   const [allServiceNames, setAllServiceNames] = useState<string[]>([]);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const lastSetImageUrl = useRef<string | null>(null);
   const hasLoadedRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setLocalIsEdit(!!service && !!service.id);
+    }
+  }, [open, service]);
   const [imageBusy, setImageBusy] = useState(false);
   
   const handleImageUrlChange = (url: string | null) => {
@@ -256,7 +263,7 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
       <DialogContent className="max-w-lg p-0 flex flex-col max-h-[90vh] overflow-hidden">
         <div className="p-6 pb-2 shrink-0">
           <DialogHeader>
-            <DialogTitle>{isEdit ? 'Editar Serviço' : 'Novo Serviço'}</DialogTitle>
+            <DialogTitle>{localIsEdit ? 'Editar Serviço' : 'Novo Serviço'}</DialogTitle>
           </DialogHeader>
         </div>
         <ScrollArea className="flex-1 px-6 admin-scroll-area">
@@ -368,7 +375,7 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
         </ScrollArea>
         <DialogFooter className="p-6 pt-2 shrink-0 border-t">
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : isEdit ? 'Salvar' : 'Criar'}</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : localIsEdit ? 'Salvar' : 'Criar'}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
