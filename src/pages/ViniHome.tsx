@@ -1729,11 +1729,17 @@ const ViniHome = () => {
                 {(isAdmin || isMaster) && (
                   <Badge 
                     variant="outline" 
-                    className="h-4 px-1 text-[8px] bg-primary/10 text-primary border-primary/20 flex items-center gap-0.5 cursor-pointer hover:bg-primary/20 transition-colors"
-                    onClick={handleAdmin}
+                    className="h-4 px-1 text-[8px] bg-primary/10 text-primary border-primary/20 flex items-center gap-0.5 cursor-pointer hover:bg-primary/20 transition-colors active:scale-95"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleAdmin();
+                    }}
                   >
-                    <ShieldCheck className="w-2 h-2" />
-                    {isMaster ? 'MASTER' : 'ADMIN'}
+                    <span className="flex items-center gap-0.5 w-full h-full">
+                      <ShieldCheck className="w-2 h-2" />
+                      {isMaster ? 'MASTER' : 'ADMIN'}
+                    </span>
                   </Badge>
                 )}
               </div>
