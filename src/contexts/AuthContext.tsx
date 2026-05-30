@@ -114,6 +114,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('AuthContext: onAuthStateChange', event);
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        // Use functional update to ensure we use the latest loading state
         setLoading(true);
         await initializeAuth(session);
       } else if (event === 'SIGNED_OUT') {
@@ -123,6 +124,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setDisplayName(null);
         setProfile(null);
         setMustResetPassword(false);
+        setUserStatus(null);
         setLoading(false);
       }
     });
