@@ -124,9 +124,8 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
           setImageUrl(currentUrl);
           lastSetImageUrl.current = currentUrl;
           hasLoadedRef.current = service.id;
-        } else if (imageUrl === null && currentUrl !== null && lastSetImageUrl.current === null) {
-          // Explicitly cleared by user
-        } else if (currentUrl !== lastSetImageUrl.current) {
+        } else if (!imageBusy && currentUrl !== lastSetImageUrl.current) {
+          console.log('[ServiceForm] External image change detected, updating state:', currentUrl);
           setImageUrl(currentUrl);
           lastSetImageUrl.current = currentUrl;
         }
