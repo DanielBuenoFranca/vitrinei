@@ -118,7 +118,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('AuthContext: onAuthStateChange', event);
+      console.log('AuthContext: onAuthStateChange event:', event, 'Session:', !!session);
       
       // If the session is lost or user is signed out, we should reflect that immediately
       // to avoid inconsistent UI states where logic thinks user is logged in but tokens are gone
