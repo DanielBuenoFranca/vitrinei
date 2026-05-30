@@ -29,12 +29,12 @@ export function ImageSanitizationPanel() {
     setLoading(true);
     try {
       const [provs, prods, kits, svcs, segs, profs] = await Promise.all([
-        supabase.from('providers').select('id, name, logo_url, segment').order('id'),
-        supabase.from('dynamic_products').select('id, name, image_url, provider').order('id'),
-        supabase.from('kits').select('id, name, image_url').order('id'),
-        supabase.from('dynamic_services').select('id, name, image_url, segment, provider').order('id'),
-        supabase.from('segments').select('id, name, image_url').order('name'),
-        supabase.from('profiles').select('user_id, display_name, avatar_url, logo_url').order('display_name'),
+        supabase.from('providers').select('id, name, logo_url, segment, type').order('id'),
+        supabase.from('dynamic_products').select('id, name, image_url, provider, segments, tags, stock_type').order('id'),
+        supabase.from('kits').select('id, name, image_url, description').order('id'),
+        supabase.from('dynamic_services').select('id, name, image_url, segment, provider, segments').order('id'),
+        supabase.from('segments').select('id, name, image_url, suggested_tags').order('name'),
+        supabase.from('profiles').select('user_id, display_name, avatar_url, logo_url, provider_segments, is_provider').order('display_name'),
       ]);
 
       const list: Item[] = [];
