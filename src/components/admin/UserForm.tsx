@@ -292,7 +292,7 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
     try {
       toast.info('🎨 Gerando arte (modo economia)...');
       const { data, error } = await supabase.functions.invoke('sanitize-images', {
-        body: { kind: 'provider', id: 0, name: n, segment: seg },
+        body: { kind: 'provider', id: profile?.id || 0, name: n, segment: seg, currentImageUrl: logoUrl },
       });
       const url = (data as any)?.imageUrl || (data as any)?.logoUrl;
       if (error || !url) return null;
