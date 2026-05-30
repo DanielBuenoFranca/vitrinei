@@ -374,6 +374,10 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
           setSaving(false); return;
         }
         userId = data.user_id;
+
+        // Marcamos como não ativado para exigir ativação no primeiro login
+        await supabase.from('profiles').update({ is_activated: false }).eq('user_id', userId);
+
         // Aplica papel administrativo se solicitado na criação
         if (adminLevel !== 'none' && userId) {
           await supabase.from('user_roles').insert({ user_id: userId, role: adminLevel });
