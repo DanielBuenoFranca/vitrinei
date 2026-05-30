@@ -90,6 +90,18 @@ const RULES: Rule[] = [
     query: "pain relief medicine pills blister pack pharmacy", must: ["medicine", "pill"], category: "pharmacy" },
   { match: ["pomada"], query: "ointment cream tube pharmacy", must: ["ointment"], category: "pharmacy" },
 
+  // ---- Tecnologia ----
+  { match: ["mouse"], query: "optical computer mouse gadget", must: ["mouse", "computer"], block: ["animal", "rodent"], category: "tech" },
+  { match: ["monitor"], query: "computer monitor screen display", must: ["screen", "monitor"], block: ["person", "instructor"], category: "tech" },
+  { match: ["placa mae", "placa-mae"], query: "computer motherboard circuit board electronics", must: ["motherboard", "electronics"], category: "tech" },
+
+  // ---- Casa / Ferramentas ----
+  { match: ["martelo"], query: "steel hammer tool", must: ["hammer"], category: "tools" },
+  { match: ["escova de dente"], query: "toothbrush dental hygiene", must: ["toothbrush"], category: "hygiene" },
+  { match: ["escova de cabelo"], query: "hair brush beauty salon", must: ["hair brush"], category: "beauty" },
+  { match: ["furadeira"], query: "electric power drill tool", must: ["drill"], category: "tools" },
+  { match: ["filtro de agua", "filtro de água"], query: "water filter purifier kitchen", must: ["filter", "purifier"], category: "home" },
+
   // ---- Beleza / Ferramentas ----
   { match: ["shampoo"], query: "shampoo bottle hair care", must: ["shampoo"], category: "beauty" },
   { match: ["esmalte"], query: "nail polish bottle", must: ["nail polish"], category: "beauty" },
