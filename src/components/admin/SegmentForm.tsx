@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,16 +34,28 @@ export function SegmentForm({ open, onClose, onSaved, segment }: SegmentFormProp
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [editValue, setEditValue] = useState('');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const lastSetImageUrl = useRef<string | null>(null);
+  const hasLoadedRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!open) return;
-    setName(segment?.name || '');
-    setSelectedTags(segment?.suggested_tags || []);
-    setSuggestedTags([]);
-    setLoadingTags(false);
-    setNewTag('');
-    setEditingIdx(null);
-    setImageUrl((segment as any)?.image_url || null);
+    if (!open) {
+      hasLoadedRef.current = null;
+      return;
+    }
+    
+    if (hasLoadedRef.current !== segment?.id) {
+      setName(segment?.name || '');
+      setSelectedTags(segment?.suggested_tags || []);
+      const currentUrl = (segment as any)?.image_url || null;
+      setImageUrl(currentUrl);
+      lastSetImageUrl.current = currentUrl;
+      hasLoadedRef.current = segment?.id || -1;
+      
+      setSuggestedTags([]);
+      setLoadingTags(false);
+      setNewTag('');
+      setEditingIdx(null);
+    }
 
     // Auto-generate tags for new segments when name is provided via edit
     if (segment?.name && (!segment.suggested_tags || segment.suggested_tags.length === 0)) {
@@ -189,7 +201,10 @@ export function SegmentForm({ open, onClose, onSaved, segment }: SegmentFormProp
             name={name}
             tags={selectedTags}
             imageUrl={imageUrl}
-            onChange={setImageUrl}
+            onChange={(url) => {
+              setImageUrl(url);
+              lastSetImageUrl.current = url;
+            }}
           />
 
           {/* Tags selecionadas */}

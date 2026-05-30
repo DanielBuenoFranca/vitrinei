@@ -127,17 +127,20 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
       setStep('saving');
       const url = (data as any)?.imageUrl;
       
-      // Pequeno delay para garantir que o estado 'saving' seja visível
-      await new Promise(r => setTimeout(r, 500));
+      // Delay to ensure the 'saving' state is visible
+      await new Promise(r => setTimeout(r, 600));
       
       if (!url) {
-        console.warn('[ItemImagePicker] No URL returned from function');
-        toast.warning('Não foi possível obter imagem agora');
+        console.warn('[ItemImagePicker] No URL returned from function. Data:', data);
+        if ((data as any)?.error) {
+          toast.error(`Erro na geração: ${(data as any).error}`);
+        } else {
+          toast.warning('A IA não conseguiu encontrar uma imagem adequada agora.');
+        }
       } else {
-        console.log('[ItemImagePicker] New image URL:', url);
-        // Garante que o estado seja atualizado e o componente pai notificado
+        console.log('[ItemImagePicker] New image URL applied:', url);
         onChange(url);
-        toast.success((data as any)?.source === 'ai' ? 'Imagem gerada pela IA' : 'Imagem aplicada com sucesso');
+        toast.success((data as any)?.source === 'ai' ? 'Imagem gerada pela IA' : 'Imagem profissional aplicada');
       }
     } catch (err: any) {
       console.error('[ItemImagePicker] Error generating image:', err);

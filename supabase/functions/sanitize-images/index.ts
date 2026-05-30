@@ -338,8 +338,10 @@ Deno.serve(async (req) => {
     const aiData = await aiRes.json();
     const imageData = aiData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
     if (!imageData?.startsWith("data:image")) {
+      console.warn("[sanitize-images] No valid base64 image from AI, falling back to free search.");
       const r = await callFreeFallback(supabase, freePayload);
-      return new Response(await r.text(), { status: r.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const fallbackData = await r.json();
+      return new Response(JSON.stringify(fallbackData), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const m = imageData.match(/^data:image\/(png|jpeg|jpg|webp);base64,(.+)$/);
