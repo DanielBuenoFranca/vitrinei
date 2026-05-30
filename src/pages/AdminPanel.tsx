@@ -1783,6 +1783,7 @@ const AdminPanel = () => {
         highlightField={productForm.highlightField}
       />
       <ServiceForm 
+        key={serviceForm.item?.id || 'new'}
         open={serviceForm.open} 
         onClose={() => setServiceForm(prev => ({ ...prev, open: false }))} 
         onSaved={async () => { 
