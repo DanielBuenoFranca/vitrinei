@@ -28,6 +28,7 @@ interface ProviderFormProps {
 
 // CPF/CNPJ formatting
 const formatCpfCnpj = (value: string): string => {
+  if (value === 'ISENTO') return 'ISENTO';
   const digits = value.replace(/\D/g, '').slice(0, 14);
   if (digits.length <= 11) {
     return digits.replace(/(\d{3})(\d{3})?(\d{3})?(\d{2})?/, (_, a, b, c, d) =>
@@ -294,12 +295,31 @@ export function ProviderForm({ open, onClose, onSaved, provider, segments }: Pro
                 </Label>
               </div>
             </div>
-            <Input
-              value={formatCpfCnpj(cpfCnpj)}
-              onChange={e => setCpfCnpj(e.target.value.replace(/\D/g, '').slice(0, 14))}
-              placeholder="000.000.000-00 ou 00.000.000/0000-00"
-              maxLength={18}
-            />
+            <div className="flex gap-2">
+              <Input
+                value={formatCpfCnpj(cpfCnpj)}
+                onChange={e => {
+                  const val = e.target.value;
+                  if (val.toUpperCase() === 'ISENTO') {
+                    setCpfCnpj('ISENTO');
+                  } else {
+                    setCpfCnpj(val.replace(/\D/g, '').slice(0, 14));
+                  }
+                }}
+                placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                maxLength={18}
+                className="flex-1"
+              />
+              <Button 
+                type="button"
+                variant={cpfCnpj === 'ISENTO' ? 'default' : 'outline'}
+                size="sm"
+                className="h-10 px-3"
+                onClick={() => setCpfCnpj(cpfCnpj === 'ISENTO' ? '' : 'ISENTO')}
+              >
+                Isento
+              </Button>
+            </div>
             {rawDigits.length > 0 && (
               <p className={`text-xs ${docValidation.valid ? 'text-green-600' : 'text-destructive'}`}>
                 {docValidation.message}
