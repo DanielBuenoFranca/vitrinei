@@ -90,13 +90,18 @@ const RULES: Rule[] = [
     query: "pain relief medicine pills blister pack pharmacy", must: ["medicine", "pill"], category: "pharmacy" },
   { match: ["pomada"], query: "ointment cream tube pharmacy", must: ["ointment"], category: "pharmacy" },
 
-  // ---- Beleza ----
+  // ---- Beleza / Ferramentas ----
   { match: ["shampoo"], query: "shampoo bottle hair care", must: ["shampoo"], category: "beauty" },
   { match: ["esmalte"], query: "nail polish bottle", must: ["nail polish"], category: "beauty" },
+  { match: ["maleta", "kit"], query: "professional storage case organizer toolbox", must: ["case", "storage"], category: "tools" },
+  { match: ["corte cabelo", "barba", "barbearia"], query: "professional barber haircut tools scissors clippers", must: ["barber", "haircut"], category: "beauty-services" },
+  { match: ["tesoura"], query: "professional haircut scissors", must: ["scissors"], category: "beauty-tools" },
+  { match: ["maquina de corte", "maquina cortar"], query: "hair clippers professional trimmer", must: ["clippers", "trimmer"], category: "beauty-tools" },
 
   // ---- Limpeza ----
   { match: ["sabao", "sabão", "detergente"], query: "cleaning detergent soap bottle",
     must: ["detergent"], category: "cleaning" },
+
 ];
 
 // Segment-level English mapping when no specific rule matches.

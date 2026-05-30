@@ -151,6 +151,7 @@ Deno.serve(async (req) => {
     let ct = "image/jpeg";
     let usedSource = "svg-fallback";
     let usedQuery = query;
+    let usedScore = 0;
     for (const c of queue) {
       try {
         const r = await fetch(c.url, { redirect: "follow" });
@@ -160,9 +161,11 @@ Deno.serve(async (req) => {
         buf = new Uint8Array(ab);
         ct = r.headers.get("content-type") || "image/jpeg";
         usedSource = c.source;
+        usedScore = c.score;
         break;
       } catch { /* next */ }
     }
+
 
     // SVG fallback final
     if (!buf) {
@@ -201,9 +204,10 @@ Deno.serve(async (req) => {
       context: { kind, id, query: usedQuery, understanding },
     });
 
-    return new Response(JSON.stringify({ imageUrl: url, source: usedSource, understanding }), {
+    return new Response(JSON.stringify({ imageUrl: url, source: usedSource, score: usedScore, understanding }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (e) {
     console.error("fetch-free-image error", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "unknown" }), {
