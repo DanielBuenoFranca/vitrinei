@@ -59,7 +59,7 @@ async function tryPixabay(query: string, u: SubjectUnderstanding): Promise<Cand[
 
 async function tryOpenverse(query: string, u: SubjectUnderstanding): Promise<Cand[]> {
   try {
-    const page = Math.floor(Math.random() * 4) + 1;
+    const page = ((seed || 0) % 4) + 1;
     const r = await fetch(
       `https://api.openverse.org/v1/images/?q=${encodeURIComponent(query)}&page=${page}&page_size=12&license_type=commercial`,
     );
