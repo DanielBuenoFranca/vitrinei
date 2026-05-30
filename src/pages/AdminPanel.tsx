@@ -1150,9 +1150,9 @@ const AdminPanel = () => {
           {/* ── INCONSISTENCIES TAB ── */}
           <TabsContent value="issues">
             <InconsistencyPanel
-              providers={providers}
-              services={services}
-              products={products}
+              providers={filteredProviders}
+              services={filteredServices}
+              products={filteredProducts}
               segments={segments}
               userRoles={userRoles}
               onEditProvider={(p, field) => {
