@@ -108,17 +108,9 @@ export function InconsistencyPanel({
         entityId: p.id, 
         entityName: p.name, 
         message: 'Sem segmento vinculado. É obrigatório selecionar ao menos um segmento.', 
-        action: segments.length === 1 ? 'auto_fix' : 'edit', 
+        action: 'edit', 
         tab: 'providers', 
         fieldName: 'segments',
-        autoFixAction: segments.length === 1 ? async () => {
-          const { error } = await supabase
-            .from('providers')
-            .update({ segment: [segments[0].name] })
-            .eq('id', p.id);
-          if (error) throw error;
-          if (onRefresh) onRefresh();
-        } : undefined
       });
     } else {
       p.segment.forEach(seg => {
@@ -160,7 +152,7 @@ export function InconsistencyPanel({
       }
     }
     if (!s.segment) {
-      issues.push({ type: 'error', entity: 'Serviço', entityId: s.id, entityName: s.name, message: 'Sem segmento definido', action: 'edit', tab: 'services', fieldName: 'segment' });
+      issues.push({ type: 'error', entity: 'Serviço', entityId: s.id, entityName: s.name, message: 'Sem segmento definido. É obrigatório vincular a um segmento.', action: 'edit', tab: 'services', fieldName: 'segment' });
     } else if (!segmentNames.has(s.segment)) {
       issues.push({ type: 'warning', entity: 'Serviço', entityId: s.id, entityName: s.name, message: `Segmento "${s.segment}" não existe no cadastro`, action: 'edit', tab: 'services', fieldName: 'segment' });
     }
