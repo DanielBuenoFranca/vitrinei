@@ -28,7 +28,7 @@ export function ImageSanitizationPanel() {
   const { startJob, isRunning } = useBackgroundJobs();
   const running = isRunning('sanitize-images') || isRunning('bulk-catalog-images') || isRunning('bulk-catalog-images-force');
 
-  const scan = async () => {
+  const scan = async (includeAll = false) => {
     setLoading(true);
     try {
       const [provs, prods, kits, svcs, segs, profs] = await Promise.all([
@@ -41,39 +41,41 @@ export function ImageSanitizationPanel() {
       ]);
 
       const list: Item[] = [];
+      const check = (url: string | null | undefined) => includeAll || isMissing(url);
+
       (provs.data || []).forEach((p: any) => {
-        if (isMissing(p.logo_url))
+        if (check(p.logo_url))
           list.push({ kind: 'provider', id: p.id, name: p.name, segment: Array.isArray(p.segment) ? p.segment[0] : p.segment, current: p.logo_url, type: p.type });
       });
       (prods.data || []).forEach((p: any) => {
-        if (isMissing(p.image_url))
+        if (check(p.image_url))
           list.push({ kind: 'product', id: p.id, name: p.name, segment: p.segments?.[0] || p.provider, current: p.image_url, type: p.stock_type, tags: p.tags });
       });
       (kits.data || []).forEach((k: any) => {
-        if (isMissing(k.image_url))
+        if (check(k.image_url))
           list.push({ kind: 'kit', id: k.id, name: k.name, current: k.image_url, description: k.description });
       });
       (svcs.data || []).forEach((s: any) => {
-        if (isMissing(s.image_url))
+        if (check(s.image_url))
           list.push({ kind: 'service', id: s.id, name: s.name, segment: s.segment || s.segments?.[0] || s.provider, current: s.image_url });
       });
       (segs.data || []).forEach((s: any) => {
-        if (isMissing(s.image_url))
+        if (check(s.image_url))
           list.push({ kind: 'segment', id: s.id, name: s.name, current: s.image_url, tags: s.suggested_tags });
       });
       (profs.data || []).forEach((p: any) => {
-        if (isMissing(p.avatar_url) && isMissing(p.logo_url))
+        if (includeAll || (isMissing(p.avatar_url) && isMissing(p.logo_url)))
           list.push({ 
             kind: 'profile', 
             id: p.user_id, 
             name: p.display_name || 'Usuário sem nome', 
-            current: p.avatar_url,
+            current: p.avatar_url || p.logo_url,
             segment: p.provider_segments?.[0],
             type: p.is_provider ? 'provider' : 'user'
           });
       });
       setItems(list);
-      toast.success(`${list.length} registros sem imagem encontrados`);
+      toast.success(`${list.length} registros encontrados para saneamento`);
     } catch (e: any) {
       toast.error('Falha no scan: ' + e.message);
     } finally {
@@ -81,7 +83,7 @@ export function ImageSanitizationPanel() {
     }
   };
 
-  useEffect(() => { scan(); }, []);
+  useEffect(() => { scan(false); }, []);
 
   const sanitizeOne = async (item: Item) => {
     const { data, error } = await supabase.functions.invoke('sanitize-images', {
