@@ -120,7 +120,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
       setSegmentTags([]);
       setImageUrl(null);
     }
-  }, [product, open, providers]);
+  }, [product, open]); // Removed providers from deps to avoid resets on parent re-render
 
   const loadSegmentTags = useCallback(async (segNames: string[]) => {
     if (segNames.length === 0) { setSegmentTags([]); return; }
