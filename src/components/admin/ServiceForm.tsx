@@ -73,6 +73,13 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
   const [saving, setSaving] = useState(false);
   const [allServiceNames, setAllServiceNames] = useState<string[]>([]);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const lastSetImageUrl = useRef<string | null>(null);
+  const [imageBusy, setImageBusy] = useState(false);
+  
+  const handleImageUrlChange = (url: string | null) => {
+    setImageUrl(url);
+    lastSetImageUrl.current = url;
+  };
   const { suggestions, loading: sugLoading, suggest, clear: clearSuggestions } = useNameSuggestion();
 
   useEffect(() => {
@@ -101,7 +108,15 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
         quantity: (service as any).quantity ?? 0,
       });
       setLinkedProductIds(service.linked_product_ids || []);
-      setImageUrl((service as any).image_url || null);
+      if (!imageBusy) {
+        const currentUrl = (service as any).image_url || null;
+        if (imageUrl === null && currentUrl !== null && lastSetImageUrl.current === null) {
+          // Explicitly cleared by user
+        } else {
+          setImageUrl(currentUrl);
+          lastSetImageUrl.current = currentUrl;
+        }
+      }
     } else {
       setForm({ name: '', segment: segments[0]?.name || '', provider: '', provider_id: null, labor_cost: 0, rating: 4.5, distance: '2 km', time: '45 min', service_id: Math.floor(Math.random() * 9000) + 1000, unit: 'hr', quantity: 0 });
       setLinkedProductIds([]);
@@ -131,9 +146,8 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
     if (!form.name.trim()) { toast.error('Nome é obrigatório'); return; }
     if (!form.provider.trim()) { toast.error('Prestador é obrigatório'); return; }
     if (!form.segment) { toast.error('Segmento é obrigatório'); return; }
-    // Check if image is still generating
-    const isImageBusy = document.querySelector('[data-busy="true"]');
-    if (isImageBusy) {
+    
+    if (imageBusy) {
       toast.warning('Aguarde a conclusão da imagem antes de salvar');
       return;
     }
@@ -255,7 +269,8 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
             price={form.labor_cost}
             linkedNames={availableProducts.filter(p => linkedProductIds.includes(p.id)).map(p => p.name)}
             imageUrl={imageUrl}
-            onChange={setImageUrl}
+            onChange={handleImageUrlChange}
+            onBusy={setImageBusy}
           />
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2" data-fieldname="segment">
