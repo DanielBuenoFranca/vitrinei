@@ -38,7 +38,9 @@ interface Provider {
   id: number; name: string; type: string; segment: string[];
   phone: string | null; email: string | null; address: string | null; city: string | null;
   distance: string; rating: number; active: boolean; created_at: string;
+  user_id: string | null;
   cpf_cnpj: string | null;
+  logo_url?: string | null;
 }
 
 interface DynamicService {
@@ -74,10 +76,9 @@ const AdminPanel = () => {
   const [loading, setLoading] = useState(true);
   const [clearDialog, setClearDialog] = useState(false);
 
-  const [userForm, setUserForm] = useState<{ open: boolean; profile: any | null; role: any; allRoles?: string[]; email: string | null }>({ open: false, profile: null, role: null, allRoles: [], email: null });
-  
-  const [productForm, setProductForm] = useState<{ open: boolean; item: DynamicProduct | null }>({ open: false, item: null });
-  const [serviceForm, setServiceForm] = useState<{ open: boolean; item: DynamicService | null }>({ open: false, item: null });
+  const [userForm, setUserForm] = useState<{ open: boolean; profile: any | null; role: any; allRoles?: string[]; email: string | null; highlightField?: string }>({ open: false, profile: null, role: null, allRoles: [], email: null });
+  const [productForm, setProductForm] = useState<{ open: boolean; item: DynamicProduct | null; highlightField?: string }>({ open: false, item: null });
+  const [serviceForm, setServiceForm] = useState<{ open: boolean; item: DynamicService | null; highlightField?: string }>({ open: false, item: null });
   const [segmentForm, setSegmentForm] = useState<{ open: boolean; item: Segment | null }>({ open: false, item: null });
   const [unitForm, setUnitForm] = useState<{ open: boolean; item: Unit | null }>({ open: false, item: null });
   const [units, setUnits] = useState<Unit[]>([]);
@@ -93,12 +94,49 @@ const AdminPanel = () => {
   const [showMasterUsers, setShowMasterUsers] = useState(false);
   const [userSubscriptions, setUserSubscriptions] = useState<any[]>([]);
   const [userActivations, setUserActivations] = useState<any[]>([]);
+  const [myReferrals, setMyReferrals] = useState<any[]>([]);
 
   // Confirmation dialog for provider delete
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; provider: Provider | null }>({ open: false, provider: null });
 
   // Edit user dialog
   const [editUserDialog, setEditUserDialog] = useState<{ open: boolean; profile: any | null }>({ open: false, profile: null });
+
+  const isMaster = userRoles.some(r => r.user_id === user?.id && r.role === 'master');
+  const isAdmin = userRoles.some(r => r.user_id === user?.id && r.role === 'admin');
+
+  // Filtragem de registros por hierarquia (Master vê tudo, Admin vê indicados)
+  const myReferredIds = new Set(myReferrals.map(r => r.referred_id).filter(Boolean));
+  
+  const filteredProfiles = userProfiles.filter(p => {
+    if (isMaster) return true;
+    if (isAdmin) return myReferredIds.has(p.user_id) || p.user_id === user?.id;
+    return false;
+  });
+
+  const filteredProviders = providers.filter(p => {
+    if (isMaster) return true;
+    if (isAdmin) return myReferredIds.has(p.user_id);
+    return false;
+  });
+
+  const filteredServices = services.filter(s => {
+    if (isMaster) return true;
+    if (isAdmin) {
+      const prov = providers.find(p => p.id === s.provider_id);
+      return prov && myReferredIds.has(prov.user_id);
+    }
+    return false;
+  });
+
+  const filteredProducts = products.filter(pr => {
+    if (isMaster) return true;
+    if (isAdmin) {
+      const prov = providers.find(p => p.id === pr.provider_id);
+      return prov && myReferredIds.has(prov.user_id);
+    }
+    return false;
+  });
   const [editUserName, setEditUserName] = useState('');
   const [editUserPhone, setEditUserPhone] = useState('');
   const [editUserAvatar, setEditUserAvatar] = useState('');
@@ -182,16 +220,18 @@ const AdminPanel = () => {
   useEffect(() => { fetchData(); fetchUsers(); fetchMarquee(); }, []);
 
   const fetchUsers = async () => {
-    const [profilesRes, rolesRes, subsRes, walletsRes, provLeadsRes, activationsRes] = await Promise.all([
+    const [profilesRes, rolesRes, subsRes, walletsRes, provLeadsRes, activationsRes, referralsRes] = await Promise.all([
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('user_roles').select('*'),
       supabase.from('subscriptions').select('*'),
       supabase.from('wallets').select('*'),
       supabase.from('providers').select('id, name, phone, email, cpf_cnpj, city, address, logo_url, created_at, user_id, segment, type').is('user_id', null),
       supabase.from('user_activations').select('*').eq('is_used', false),
+      supabase.from('referrals').select('referred_id').eq('referrer_id', user?.id || ''),
     ]);
     const profiles = profilesRes.data || [];
     setUserActivations(activationsRes.data || []);
+    setMyReferrals(referralsRes.data || []);
     const profileDocs = new Set(
       profiles.map((p: any) => (p.cpf_cnpj || '').replace(/\D/g, '')).filter(Boolean)
     );
@@ -647,24 +687,29 @@ const AdminPanel = () => {
     setGeneratingUnits(false);
   };
 
-  const providerList = providers.map(p => ({ id: p.id, name: p.name, segment: p.segment }));
+  const providerList = filteredProviders.map(p => ({ id: p.id, name: p.name, segment: p.segment }));
   const segmentList = segments.map(s => ({ id: s.id, name: s.name }));
 
   // Count inconsistencies for tab badge
   const countIssues = () => {
     let count = 0;
+    const providerIds = new Set(filteredProviders.map(p => p.id));
     const segmentNames = new Set(segments.map(s => s.name));
-    const providerIds = new Set(providers.map(p => p.id));
-    const providerNames = new Set(providers.map(p => p.name));
-    providers.forEach(p => {
+    
+    filteredProviders.forEach(p => {
+      // Regra Admin/Master sem loja
+      if (p.user_id) {
+        const isPrivileged = userRoles.some(r => r.user_id === p.user_id && ['admin', 'master'].includes(r.role));
+        if (isPrivileged) count++;
+      }
       if (!p.segment || p.segment.length === 0) count++;
       if (!p.cpf_cnpj) count++;
     });
-    services.forEach(s => {
+    filteredServices.forEach(s => {
       if (s.provider_id && !providerIds.has(s.provider_id)) count++;
       if (!s.segment || !segmentNames.has(s.segment)) count++;
     });
-    products.forEach(p => {
+    filteredProducts.forEach(p => {
       if (p.provider_id && !providerIds.has(p.provider_id)) count++;
       if (!p.tags || p.tags.length === 0) count++;
     });
@@ -1110,11 +1155,12 @@ const AdminPanel = () => {
           {/* ── INCONSISTENCIES TAB ── */}
           <TabsContent value="issues">
             <InconsistencyPanel
-              providers={providers}
-              services={services}
-              products={products}
+              providers={filteredProviders}
+              services={filteredServices}
+              products={filteredProducts}
               segments={segments}
-              onEditProvider={(p) => {
+              userRoles={userRoles}
+              onEditProvider={(p, field) => {
                 // Abre o MESMO formulário da aba Usuários — fonte única da verdade
                 const normDoc = (s: any) => String(s || '').replace(/\D/g, '');
                 const pDoc = normDoc(p.cpf_cnpj);
@@ -1126,18 +1172,30 @@ const AdminPanel = () => {
                 if (prof) {
                   const allRoles = userRoles.filter((x: any) => x.user_id === prof.user_id).map((x: any) => x.role);
                   const r = allRoles.find((x: string) => ['provider','mixed','client','admin','master'].includes(x));
-                  setUserForm({ open: true, profile: prof, role: r || 'mixed', allRoles, email: authUserEmails[prof.user_id] || null });
+                  setUserForm({ 
+                    open: true, 
+                    profile: prof, 
+                    role: r || 'mixed', 
+                    allRoles, 
+                    email: authUserEmails[prof.user_id] || null,
+                    highlightField: field
+                  });
                 } else if ((p as any).__isLead) {
                    // Fallback for leads not yet linked but showing in inconsistency panel
-                   setUserForm({ open: true, profile: p, role: 'mixed', allRoles: [], email: (p as any).email || null });
+                   setUserForm({ 
+                    open: true, 
+                    profile: p, 
+                    role: 'mixed', 
+                    allRoles: [], 
+                    email: (p as any).email || null,
+                    highlightField: field
+                   });
                 } else {
                   toast.info('Prestador legado sem usuário vinculado. Cadastre/ajuste o usuário com o mesmo CPF/CNPJ — a vinculação é automática.');
                 }
-
-
               }}
-              onEditService={(s) => setServiceForm({ open: true, item: s })}
-              onEditProduct={(p) => setProductForm({ open: true, item: p })}
+              onEditService={(s, field) => setServiceForm({ open: true, item: s, highlightField: field })}
+              onEditProduct={(p, field) => setProductForm({ open: true, item: p, highlightField: field })}
               onDeleteService={deleteService}
               onDeleteProduct={deleteProduct}
             />
@@ -1168,7 +1226,7 @@ const AdminPanel = () => {
                 </div>
               </CardHeader>
               <CardContent className="flex-1 p-0 overflow-hidden">
-                {userProfiles.length === 0 ? (
+                {filteredProfiles.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">Nenhum usuário cadastrado ainda.</p>
                 ) : (
                   <Table wrapperClassName="admin-scroll-area max-h-[70vh] border-t">
@@ -1190,7 +1248,7 @@ const AdminPanel = () => {
                       </TableRow>
                     </TableHeader>
                       <TableBody>
-                        {userProfiles
+                        {filteredProfiles
                           .filter((profile: any) => {
                             const isMaster = userRoles.some(r => r.user_id === profile.user_id && r.role === 'master');
                             return showMasterUsers ? true : !isMaster;
@@ -1680,9 +1738,26 @@ const AdminPanel = () => {
         currentRoles={(userForm.allRoles || []) as any}
         currentEmail={userForm.email}
         segments={segmentList}
+        highlightField={userForm.highlightField}
       />
-      <ProductForm open={productForm.open} onClose={() => setProductForm({ open: false, item: null })} onSaved={() => { reloadDynamicEntries(); fetchData(); }} product={productForm.item} providers={providerList} segments={segmentList} />
-      <ServiceForm open={serviceForm.open} onClose={() => setServiceForm({ open: false, item: null })} onSaved={() => { reloadDynamicEntries(); fetchData(); }} service={serviceForm.item} providers={providerList} segments={segmentList} />
+      <ProductForm 
+        open={productForm.open} 
+        onClose={() => setProductForm({ open: false, item: null })} 
+        onSaved={() => { reloadDynamicEntries(); fetchData(); }} 
+        product={productForm.item} 
+        providers={providerList} 
+        segments={segmentList} 
+        highlightField={productForm.highlightField}
+      />
+      <ServiceForm 
+        open={serviceForm.open} 
+        onClose={() => setServiceForm({ open: false, item: null })} 
+        onSaved={() => { reloadDynamicEntries(); fetchData(); }} 
+        service={serviceForm.item} 
+        providers={providerList} 
+        segments={segmentList} 
+        highlightField={serviceForm.highlightField}
+      />
       <SegmentForm open={segmentForm.open} onClose={() => setSegmentForm({ open: false, item: null })} onSaved={fetchData} segment={segmentForm.item} />
       <UnitForm open={unitForm.open} onClose={() => setUnitForm({ open: false, item: null })} onSaved={fetchData} unit={unitForm.item} />
       <ClearDataDialog open={clearDialog} onClose={() => setClearDialog(false)} onCleared={async () => { await reloadDynamicEntries(); await fetchData(); await fetchUsers(); }} counts={{ providers: providers.length, services: services.length, products: products.length, segments: segments.length }} />

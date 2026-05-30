@@ -38,6 +38,7 @@ interface UserFormProps {
   currentRole?: AppRole | null;
   currentEmail?: string | null;
   segments: Segment[];
+  highlightField?: string;
 }
 
 // ── Validações CPF/CNPJ (algoritmo oficial) ─────────────────────
@@ -90,7 +91,7 @@ const ADMIN_OPTIONS: { id: AdminLevel; label: string; icon: any; desc: string }[
   { id: 'master', label: 'Master', icon: Crown,        desc: 'Controle total do ecossistema' },
 ];
 
-export function UserForm({ open, onClose, onSaved, profile, currentRoles, currentRole, currentEmail, segments }: UserFormProps) {
+export function UserForm({ open, onClose, onSaved, profile, currentRoles, currentRole, currentEmail, segments, highlightField }: UserFormProps) {
   const isEdit = !!profile;
 
   // ── Estado: campos básicos ────────────────────────────────────
@@ -204,6 +205,25 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
       setSelectedPlanId(defaultPlanId);
     }
   }, [open, profile, currentRole, currentRoles, currentEmail, segments, defaultPlanId]);
+
+  // ── Destaque de campo (inconsistências) ─────────────────────────
+  useEffect(() => {
+    if (open && highlightField) {
+      setTimeout(() => {
+        const el = document.getElementsByName(highlightField)[0] || 
+                   document.getElementById(highlightField) ||
+                   document.querySelector(`[data-fieldname="${highlightField}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+            el.focus();
+          }
+          el.classList.add('ring-2', 'ring-destructive', 'ring-offset-2');
+          setTimeout(() => el.classList.remove('ring-2', 'ring-destructive', 'ring-offset-2'), 3000);
+        }
+      }, 300);
+    }
+  }, [open, highlightField]);
 
   // Force business profile to 'client' for privileged accounts (Master/Admin)
   useEffect(() => {
@@ -540,7 +560,7 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
           </div>
 
           {/* ── Papel administrativo ── */}
-          <div>
+          <div data-fieldname="adminLevel">
             <Label className="text-sm font-semibold mb-2 block">Papel Administrativo</Label>
             <p className="text-[11px] text-muted-foreground mb-2">Permissões de gestão — independente do Perfil. Padrão: Comum.</p>
             <div className="grid grid-cols-3 gap-2">
@@ -608,7 +628,7 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
             )}
             <div>
               <Label>Telefone</Label>
-              <Input value={phone} onChange={e => setPhone(maskPhone(e.target.value))} placeholder="(00) 00000-0000" />
+              <Input name="phone" value={phone} onChange={e => setPhone(maskPhone(e.target.value))} placeholder="(00) 00000-0000" />
             </div>
             <div>
               <Label>CEP</Label>
@@ -656,6 +676,7 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
               </div>
             </div>
             <Input
+              name="cpfCnpj"
               value={skipDocValidation ? 'ISENTO' : maskCPFCNPJ(cpfCnpj)}
               onChange={e => setCpfCnpj(unmask(e.target.value).slice(0, 14))}
               placeholder="000.000.000-00 ou 00.000.000/0000-00"
@@ -717,7 +738,7 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
+                <div data-fieldname="segments">
                   <Label>Segmentos * <span className="text-xs text-muted-foreground">(múltiplos)</span></Label>
                   <div className="flex flex-wrap gap-1.5 p-2 border rounded-md min-h-[40px] bg-background">
                     {segments.length === 0 && <span className="text-xs text-muted-foreground">Cadastre segmentos primeiro</span>}
