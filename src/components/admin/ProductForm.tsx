@@ -170,6 +170,14 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
     if (!form.name.trim()) { toast.error('Nome é obrigatório'); return; }
     if (!form.provider.trim()) { toast.error('Fornecedor é obrigatório'); return; }
     if (selectedSegments.length === 0) { toast.error('Selecione pelo menos um segmento'); return; }
+    
+    // Check if image is still generating
+    const isImageBusy = document.querySelector('[data-busy="true"]');
+    if (isImageBusy) {
+      toast.warning('Aguarde a conclusão da imagem antes de salvar');
+      return;
+    }
+
     setSaving(true);
     // Anti-duplicidade no estoque do prestador
     if (form.provider_id) {

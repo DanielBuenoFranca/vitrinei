@@ -118,7 +118,7 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
   };
 
   return (
-    <div className="grid gap-2">
+    <div className="grid gap-2" data-busy={busy}>
       <Label className="flex items-center gap-2"><ImageIcon className="w-3.5 h-3.5 text-primary" /> Imagem do item</Label>
       <div className="flex items-start gap-3">
         <div className="relative w-28 h-28 shrink-0 rounded-lg border bg-muted/30 overflow-hidden flex items-center justify-center">
