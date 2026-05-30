@@ -693,18 +693,23 @@ const AdminPanel = () => {
   // Count inconsistencies for tab badge
   const countIssues = () => {
     let count = 0;
+    const providerIds = new Set(filteredProviders.map(p => p.id));
     const segmentNames = new Set(segments.map(s => s.name));
-    const providerIds = new Set(providers.map(p => p.id));
-    const providerNames = new Set(providers.map(p => p.name));
-    providers.forEach(p => {
+    
+    filteredProviders.forEach(p => {
+      // Regra Admin/Master sem loja
+      if (p.user_id) {
+        const isPrivileged = userRoles.some(r => r.user_id === p.user_id && ['admin', 'master'].includes(r.role));
+        if (isPrivileged) count++;
+      }
       if (!p.segment || p.segment.length === 0) count++;
       if (!p.cpf_cnpj) count++;
     });
-    services.forEach(s => {
+    filteredServices.forEach(s => {
       if (s.provider_id && !providerIds.has(s.provider_id)) count++;
       if (!s.segment || !segmentNames.has(s.segment)) count++;
     });
-    products.forEach(p => {
+    filteredProducts.forEach(p => {
       if (p.provider_id && !providerIds.has(p.provider_id)) count++;
       if (!p.tags || p.tags.length === 0) count++;
     });
