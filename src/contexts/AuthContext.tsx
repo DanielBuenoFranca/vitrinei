@@ -84,7 +84,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
           
           if (rolesRes.data) {
-            setRoles(rolesRes.data.map(r => r.role as AppRole));
+            const userRoles = rolesRes.data.map(r => r.role as AppRole);
+            console.log('AuthContext: Roles fetched for', currentSession.user.id, userRoles);
+            setRoles(userRoles);
+          } else if (rolesRes.error) {
+            console.error('AuthContext: Error fetching roles:', rolesRes.error);
+            setRoles([]);
+          } else {
+            console.log('AuthContext: No roles found for', currentSession.user.id);
+            setRoles([]);
           }
         }
       } else {
