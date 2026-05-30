@@ -41,7 +41,8 @@ type EnrichedContext = {
   tags: string[];
   description?: string;
   providerName?: string;
-  providerType?: string;
+  providerType?: string; // "mei", "user", "empresa", etc.
+  itemType?: string;     // "fisico", "digital", etc.
   linkedNames: string[];
   unit?: string;
   price?: number;
@@ -54,7 +55,8 @@ async function enrichContext(supabase: any, kind: string, id: number, base: any)
     tags: Array.isArray(base.tags) ? base.tags.filter(Boolean) : [],
     description: base.description,
     providerName: base.providerName,
-    providerType: base.providerType,
+    providerType: base.type || base.providerType,
+    itemType: base.type || base.stock_type,
     linkedNames: [],
     unit: base.unit,
     price: base.price,
@@ -63,14 +65,17 @@ async function enrichContext(supabase: any, kind: string, id: number, base: any)
   try {
     if (kind === "product" && id) {
       const { data } = await supabase.from("dynamic_products")
-        .select("name, tags, unit, price, provider, provider_id, related_service_ids")
+        .select("name, tags, unit, price, provider, provider_id, related_service_ids, segments, stock_type")
         .eq("id", id).maybeSingle();
       if (data) {
         ctx.tags = Array.from(new Set([...(ctx.tags || []), ...((data.tags as string[]) || [])]));
         ctx.unit = ctx.unit || data.unit;
         ctx.price = ctx.price ?? Number(data.price);
         ctx.providerName = ctx.providerName || data.provider;
-        // segmento: pega do prestador
+        ctx.itemType = ctx.itemType || data.stock_type;
+        if (!ctx.segment && Array.isArray(data.segments) && data.segments.length) {
+          ctx.segment = data.segments[0];
+        }
         if (data.provider_id) {
           const { data: prov } = await supabase.from("providers")
             .select("name, type, segment").eq("id", data.provider_id).maybeSingle();
@@ -91,10 +96,10 @@ async function enrichContext(supabase: any, kind: string, id: number, base: any)
       }
     } else if (kind === "service" && id) {
       const { data } = await supabase.from("dynamic_services")
-        .select("name, segment, price, provider, provider_id, linked_product_ids, products, unit")
+        .select("name, segment, price, provider, provider_id, linked_product_ids, products, unit, segments")
         .eq("id", id).maybeSingle();
       if (data) {
-        ctx.segment = ctx.segment || data.segment;
+        ctx.segment = ctx.segment || data.segment || (Array.isArray(data.segments) ? data.segments[0] : undefined);
         ctx.unit = ctx.unit || data.unit;
         ctx.price = ctx.price ?? Number(data.price);
         ctx.providerName = ctx.providerName || data.provider;
@@ -169,34 +174,35 @@ async function enrichContext(supabase: any, kind: string, id: number, base: any)
 function buildPrompt(kind: string, ctx: EnrichedContext): string {
   const tagsStr = ctx.tags.length ? ` Keywords: ${ctx.tags.join(", ")}.` : "";
   const linkedStr = ctx.linkedNames.length ? ` Related items: ${ctx.linkedNames.join(", ")}.` : "";
-  const segStr = ctx.segment ? ` Category: ${ctx.segment}.` : "";
+  const segStr = ctx.segment ? ` Category/Segment: ${ctx.segment}.` : "";
   const descStr = ctx.description ? ` Description: ${ctx.description}.` : "";
-  const provStr = ctx.providerName ? ` Provider: ${ctx.providerName}${ctx.providerType ? ` (${ctx.providerType})` : ""}.` : "";
+  const provStr = ctx.providerName ? ` Provider: ${ctx.providerName}.` : "";
+  const typeStr = ctx.itemType ? ` Type: ${ctx.itemType}.` : (ctx.providerType ? ` Type: ${ctx.providerType}.` : "");
 
-  const base = `Subject: "${ctx.name}".${segStr}${tagsStr}${linkedStr}${descStr}${provStr}`;
+  const base = `Subject: "${ctx.name}".${segStr}${typeStr}${tagsStr}${linkedStr}${descStr}${provStr}`;
 
   if (kind === "provider") {
-    return `Create a modern, minimalist BRAND LOGO ICON for the small business "${ctx.name}".${segStr}${tagsStr} ` +
+    return `Create a modern, minimalist BRAND LOGO ICON for the small business "${ctx.name}".${segStr}${typeStr}${tagsStr}${descStr} ` +
       `Style: bold geometric mark, flat vector, 2-3 brand colors, professional, memorable, suitable as circular avatar. ` +
       `Clean solid white background, NO TEXT, NO LETTERS, NO WORDS, no watermarks, no photo realism. ` +
       `The icon must visually represent the business sector and feel trustworthy and professional. Square format, centered.`;
   }
   if (kind === "product") {
     return `Photorealistic professional studio PRODUCT PHOTO of: "${ctx.name}". ${base} ` +
-      `Make sure the object shown is exactly this product (use the keywords and category to disambiguate). ` +
+      `Make sure the object shown is exactly this item (use the description, category and type to disambiguate precisely). ` +
       `High-end e-commerce catalog style: clean seamless white background, soft studio lighting, sharp focus, ` +
       `accurate proportions and materials, realistic textures, subtle shadow, centered composition, square framing. ` +
       `NO text, NO labels with brand names, NO watermarks, NO collages, single hero subject, ultra detailed 8k.`;
   }
   if (kind === "kit") {
     return `Photorealistic studio photo of a PRODUCT KIT / BUNDLE named "${ctx.name}". ${base} ` +
-      `Show the related items grouped together as a curated set, neatly arranged, true to the listed components. ` +
+      `Use the description to understand each component. Show the related items grouped together as a curated set, neatly arranged. ` +
       `Clean white background, professional e-commerce styling, accurate materials, soft shadow, centered, square. ` +
       `NO text, NO watermarks, NO logos.`;
   }
   if (kind === "service") {
     return `Premium 3D illustrated ICON representing the SERVICE "${ctx.name}". ${base} ` +
-      `Show tools, scene or symbolic objects that clearly communicate this exact service (use keywords/related items). ` +
+      `Show tools, scene or symbolic objects that clearly communicate this exact service (use description and category). ` +
       `Style: glossy 3D render, vibrant brand-friendly colors, soft realistic lighting, ambient occlusion, ` +
       `subtle reflections, beveled edges, app-icon framing, clean white background, soft drop shadow, centered. ` +
       `NO text, NO watermarks. The icon must be instantly recognizable as this specific service.`;
@@ -237,6 +243,7 @@ Deno.serve(async (req) => {
     const understanding = await understandSubject({
       name: ctx.name, segment: ctx.segment, tags: ctx.tags,
       description: ctx.description, linkedNames: ctx.linkedNames, kind,
+      providerType: ctx.providerType || ctx.itemType,
     });
     const freePayload = {
       kind, id, name,

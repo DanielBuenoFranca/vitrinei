@@ -14,6 +14,9 @@ type Item = {
   name: string;
   segment?: string;
   current?: string | null;
+  description?: string;
+  type?: string;
+  tags?: string[];
 };
 
 const isMissing = (url: string | null | undefined) =>
@@ -29,39 +32,45 @@ export function ImageSanitizationPanel() {
     setLoading(true);
     try {
       const [provs, prods, kits, svcs, segs, profs] = await Promise.all([
-        supabase.from('providers').select('id, name, logo_url, segment').order('id'),
-        supabase.from('dynamic_products').select('id, name, image_url, provider').order('id'),
-        supabase.from('kits').select('id, name, image_url').order('id'),
-        supabase.from('dynamic_services').select('id, name, image_url, segment, provider').order('id'),
-        supabase.from('segments').select('id, name, image_url').order('name'),
-        supabase.from('profiles').select('user_id, display_name, avatar_url, logo_url').order('display_name'),
+        supabase.from('providers').select('id, name, logo_url, segment, type').order('id'),
+        supabase.from('dynamic_products').select('id, name, image_url, provider, segments, tags, stock_type').order('id'),
+        supabase.from('kits').select('id, name, image_url, description').order('id'),
+        supabase.from('dynamic_services').select('id, name, image_url, segment, provider, segments').order('id'),
+        supabase.from('segments').select('id, name, image_url, suggested_tags').order('name'),
+        supabase.from('profiles').select('user_id, display_name, avatar_url, logo_url, provider_segments, is_provider').order('display_name'),
       ]);
 
       const list: Item[] = [];
       (provs.data || []).forEach((p: any) => {
         if (isMissing(p.logo_url))
-          list.push({ kind: 'provider', id: p.id, name: p.name, segment: Array.isArray(p.segment) ? p.segment[0] : p.segment, current: p.logo_url });
+          list.push({ kind: 'provider', id: p.id, name: p.name, segment: Array.isArray(p.segment) ? p.segment[0] : p.segment, current: p.logo_url, type: p.type });
       });
       (prods.data || []).forEach((p: any) => {
         if (isMissing(p.image_url))
-          list.push({ kind: 'product', id: p.id, name: p.name, segment: p.provider, current: p.image_url });
+          list.push({ kind: 'product', id: p.id, name: p.name, segment: p.segments?.[0] || p.provider, current: p.image_url, type: p.stock_type, tags: p.tags });
       });
       (kits.data || []).forEach((k: any) => {
         if (isMissing(k.image_url))
-          list.push({ kind: 'kit', id: k.id, name: k.name, current: k.image_url });
+          list.push({ kind: 'kit', id: k.id, name: k.name, current: k.image_url, description: k.description });
       });
       (svcs.data || []).forEach((s: any) => {
         if (isMissing(s.image_url))
-          list.push({ kind: 'service', id: s.id, name: s.name, segment: s.segment || s.provider, current: s.image_url });
+          list.push({ kind: 'service', id: s.id, name: s.name, segment: s.segment || s.segments?.[0] || s.provider, current: s.image_url });
       });
       (segs.data || []).forEach((s: any) => {
         if (isMissing(s.image_url))
-          list.push({ kind: 'segment', id: s.id, name: s.name, current: s.image_url });
+          list.push({ kind: 'segment', id: s.id, name: s.name, current: s.image_url, tags: s.suggested_tags });
       });
       (profs.data || []).forEach((p: any) => {
-        // Considera vazio se não houver avatar nem logo
         if (isMissing(p.avatar_url) && isMissing(p.logo_url))
-          list.push({ kind: 'profile', id: p.user_id, name: p.display_name || 'Usuário sem nome', current: p.avatar_url });
+          list.push({ 
+            kind: 'profile', 
+            id: p.user_id, 
+            name: p.display_name || 'Usuário sem nome', 
+            current: p.avatar_url,
+            segment: p.provider_segments?.[0],
+            type: p.is_provider ? 'provider' : 'user'
+          });
       });
       setItems(list);
       toast.success(`${list.length} registros sem imagem encontrados`);
@@ -76,7 +85,15 @@ export function ImageSanitizationPanel() {
 
   const sanitizeOne = async (item: Item) => {
     const { data, error } = await supabase.functions.invoke('sanitize-images', {
-      body: { kind: item.kind, id: item.id, name: item.name, segment: item.segment },
+      body: { 
+        kind: item.kind, 
+        id: item.id, 
+        name: item.name, 
+        segment: item.segment,
+        description: item.description,
+        type: item.type,
+        tags: item.tags
+      },
     });
     if (error || !data?.imageUrl) throw new Error(error?.message || data?.error || 'falha');
     return data.imageUrl as string;

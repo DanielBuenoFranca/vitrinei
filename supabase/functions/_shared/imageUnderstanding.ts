@@ -160,14 +160,21 @@ async function aiRefine(input: SubjectInput, base: SubjectUnderstanding): Promis
   const key = Deno.env.get("LOVABLE_API_KEY");
   if (!key) return base;
   try {
-    const sys = `You translate Brazilian Portuguese product/service descriptions into precise English STOCK PHOTO search queries. Disambiguate tricky names (e.g. "Couve Flor" = cauliflower, NOT a flower; "Pão Congelado" = frozen raw bread dough, NOT a snowy landscape). Return STRICT JSON: {"query":string,"must":string[],"block":string[],"category":string}. "must" = English nouns the picture MUST depict. "block" = English nouns the picture MUST NOT depict. Keep arrays short (max 4 each), lowercase, single words or short phrases.`;
+    const sys = `You translate Brazilian Portuguese product/service descriptions into precise English STOCK PHOTO search queries. 
+    STRATEGY: Analyze the Name, Segment, Type (kind) and Description together to define with maximum precision what the object is. 
+    Disambiguate tricky names (e.g. "Couve Flor" = cauliflower, NOT a flower; "Pão Congelado" = frozen raw bread dough, NOT a snowy landscape). 
+    Return STRICT JSON: {"query":string,"must":string[],"block":string[],"category":string}. 
+    "must" = English nouns/adjectives the picture MUST depict. 
+    "block" = English nouns/adjectives the picture MUST NOT depict. 
+    Keep arrays short (max 5 each), lowercase, single words or short phrases.`;
     const usr = JSON.stringify({
       name: input.name,
       segment: input.segment,
       tags: (input.tags || []).slice(0, 6),
-      description: (input.description || "").slice(0, 280),
+      description: (input.description || "").slice(0, 400),
       linked: (input.linkedNames || []).slice(0, 4),
       kind: input.kind,
+      providerType: input.providerType,
       heuristic: base,
     });
     const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
