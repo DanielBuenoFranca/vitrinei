@@ -1109,7 +1109,11 @@ const ViniHome = () => {
                 <>
                   <div className="border-t border-border my-1" />
                   <button
-                    onClick={() => { setShowPlusMenu(false); navigate('/admin'); }}
+                    onClick={() => { 
+                      console.log('[ViniHome] Navigating to admin panel');
+                      setShowPlusMenu(false); 
+                      navigate('/admin'); 
+                    }}
                     className="w-full text-left px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/10 rounded-md transition-colors flex items-center gap-2"
                   >
                     <Settings className="w-3.5 h-3.5" /> Administrador
