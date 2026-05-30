@@ -165,8 +165,8 @@ export function ProviderForm({ open, onClose, onSaved, provider, segments }: Pro
     }
   };
 
-  const docValidation = validateCpfCnpj(cpfCnpj);
-  const rawDigits = cpfCnpj.replace(/\D/g, '');
+  const docValidation = validateCpfCnpj(cpfCnpj === 'ISENTO' ? '' : cpfCnpj);
+  const rawDigits = cpfCnpj === 'ISENTO' ? 'ISENTO' : cpfCnpj.replace(/\D/g, '');
 
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Nome é obrigatório'); return; }
