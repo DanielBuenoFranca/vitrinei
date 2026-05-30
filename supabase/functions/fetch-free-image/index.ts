@@ -11,7 +11,7 @@ const corsHeaders = {
 
 type Cand = { url: string; source: string; score: number; meta: string };
 
-async function tryUnsplash(query: string, u: SubjectUnderstanding): Promise<Cand[]> {
+async function tryUnsplash(query: string, u: SubjectUnderstanding, seed?: number): Promise<Cand[]> {
   const key = Deno.env.get("UNSPLASH_ACCESS_KEY");
   if (!key) return [];
   try {
@@ -35,7 +35,7 @@ async function tryUnsplash(query: string, u: SubjectUnderstanding): Promise<Cand
   } catch { return []; }
 }
 
-async function tryPixabay(query: string, u: SubjectUnderstanding): Promise<Cand[]> {
+async function tryPixabay(query: string, u: SubjectUnderstanding, seed?: number): Promise<Cand[]> {
   const key = Deno.env.get("PIXABAY_API_KEY");
   if (!key) return [];
   try {
@@ -57,7 +57,7 @@ async function tryPixabay(query: string, u: SubjectUnderstanding): Promise<Cand[
   } catch { return []; }
 }
 
-async function tryOpenverse(query: string, u: SubjectUnderstanding): Promise<Cand[]> {
+async function tryOpenverse(query: string, u: SubjectUnderstanding, seed?: number): Promise<Cand[]> {
   try {
     const page = ((seed || 0) % 4) + 1;
     const r = await fetch(
@@ -120,9 +120,9 @@ Deno.serve(async (req) => {
 
     // Gather candidates across sources, then rank by score.
     const all: Cand[] = [];
-    all.push(...(await tryUnsplash(query, understanding)));
-    all.push(...(await tryPixabay(query, understanding)));
-    if (all.length < 4) all.push(...(await tryOpenverse(query, understanding)));
+    all.push(...(await tryUnsplash(query, understanding, seed)));
+    all.push(...(await tryPixabay(query, understanding, seed)));
+    if (all.length < 4) all.push(...(await tryOpenverse(query, understanding, seed)));
     if (all.length === 0) all.push(...tryLoremflickr(query));
     all.push(placeholderCand(kind, name));
 

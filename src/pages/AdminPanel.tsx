@@ -65,6 +65,8 @@ interface Unit {
   id: number; name: string; label: string; created_at: string;
 }
 
+import { useMemo } from 'react';
+
 const AdminPanel = () => {
   const navigate = useNavigate();
   const { can, requirePermission } = usePermissions();
@@ -699,8 +701,8 @@ const AdminPanel = () => {
     setGeneratingUnits(false);
   };
 
-  const providerList = filteredProviders.map(p => ({ id: p.id, name: p.name, segment: p.segment }));
-  const segmentList = segments.map(s => ({ id: s.id, name: s.name }));
+  const providerList = useMemo(() => providers.map(p => ({ id: p.id, name: p.name, segment: p.segment })), [providers]);
+  const segmentList = useMemo(() => segments.map(s => ({ id: s.id, name: s.name })), [segments]);
 
   // Count inconsistencies for tab badge
   const countIssues = () => {

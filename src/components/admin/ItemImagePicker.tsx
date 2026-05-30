@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -38,10 +38,12 @@ interface Props {
  */
 export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, bucket, tags, description, providerName, providerType, linkedNames, unit, price, onBusy }: Props) {
   const [busy, _setBusy] = useState(false);
+  const busyRef = useRef(false);
   const [step, setStep] = useState<'idle' | 'enriching' | 'searching' | 'generating' | 'saving'>('idle');
   const [uploading, setUploading] = useState(false);
 
   const setBusy = (val: boolean) => {
+    busyRef.current = val;
     _setBusy(val);
     if (onBusy) onBusy(val);
   };
@@ -79,7 +81,7 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
     
     // Fallback timer: se a função demorar mais de 45s, destravamos a tela
     const timeoutId = setTimeout(() => {
-      if (busy) {
+      if (busyRef.current) {
         setBusy(false);
         setStep('idle');
         toast.error('A geração da imagem demorou demais. Tente novamente.');
@@ -111,6 +113,9 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
 
       setStep('saving');
       const url = (data as any)?.imageUrl;
+      
+      // Pequeno delay para garantir que o estado 'saving' seja visível
+      await new Promise(r => setTimeout(r, 500));
       
       if (!url) {
         console.warn('[ItemImagePicker] No URL returned from function');
