@@ -75,6 +75,7 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const lastSetImageUrl = useRef<string | null>(null);
   const hasLoadedRef = useRef<number | null>(null);
+  const [imageBusy, setImageBusy] = useState(false);
   
   const handleImageUrlChange = (url: string | null) => {
     setImageUrl(url);
