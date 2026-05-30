@@ -119,7 +119,7 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
         <div className="flex-1 grid gap-2">
           <Button type="button" size="sm" variant="outline" onClick={generate} disabled={busy} className="gap-1">
             {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-primary" />}
-            {busy ? 'Gerando...' : 'Gerar com IA / grátis'}
+            {busy ? 'Gerando...' : 'Trocar Imagem'}
           </Button>
           <label className="inline-flex">
             <Button type="button" size="sm" variant="ghost" disabled={uploading} asChild className="gap-1 cursor-pointer">
