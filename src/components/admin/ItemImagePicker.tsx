@@ -170,7 +170,10 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
               {!busy && (
                 <button
                   type="button"
-                  onClick={() => onChange(null)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onChange(null);
+                  }}
                   title="Remover"
                   className="absolute top-1 right-1 bg-background/80 hover:bg-background rounded-full p-0.5 border z-20"
                 >
