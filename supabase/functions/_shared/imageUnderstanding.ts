@@ -169,30 +169,36 @@ async function aiRefine(input: SubjectInput, base: SubjectUnderstanding): Promis
     const sys = `You translate Brazilian Portuguese product/service descriptions into precise English STOCK PHOTO search queries. 
     STRATEGY: Analyze the Name, Segment, Type (kind) and Description together to define with maximum precision what the object is. 
     Disambiguate tricky names (e.g. "Couve Flor" = cauliflower, NOT a flower; "Pão Congelado" = frozen raw bread dough, NOT a snowy landscape). 
+    If it is a physical product, the query should focus on the object itself. 
+    If it is a service, the query should focus on a professional performing it or tools in use.
     Return STRICT JSON: {"query":string,"must":string[],"block":string[],"category":string}. 
     "must" = English nouns/adjectives the picture MUST depict. 
-    "block" = English nouns/adjectives the picture MUST NOT depict. 
+    "block" = English nouns/adjectives the picture MUST NOT depict (e.g. for products, avoid "landscape", "person", "abstract"). 
     Keep arrays short (max 5 each), lowercase, single words or short phrases.`;
     const usr = JSON.stringify({
       name: input.name,
       segment: input.segment,
-      tags: (input.tags || []).slice(0, 6),
-      description: (input.description || "").slice(0, 400),
-      linked: (input.linkedNames || []).slice(0, 4),
+      tags: (input.tags || []).slice(0, 8),
+      description: (input.description || "").slice(0, 500),
+      linked: (input.linkedNames || []).slice(0, 5),
       kind: input.kind,
       providerType: input.providerType,
       heuristic: base,
+      // Add a bit of randomness to the AI's thought process if needed, 
+      // though temperature usually handles this.
+      attempt: Date.now() % 100,
     });
     const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model: "google/gemini-2.0-flash", // Using a slightly better model for reasoning if available
         messages: [
           { role: "system", content: sys },
           { role: "user", content: usr },
         ],
         response_format: { type: "json_object" },
+        temperature: 0.7, // Higher temperature to avoid repetitive reasoning
       }),
     });
     if (!r.ok) return base;
@@ -200,10 +206,17 @@ async function aiRefine(input: SubjectInput, base: SubjectUnderstanding): Promis
     const raw = j?.choices?.[0]?.message?.content;
     if (!raw) return base;
     const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+    
+    // Ensure the query includes product photography keywords if it's a product
+    let finalQuery = String(parsed.query || base.query).trim();
+    if (input.kind === "product" && !finalQuery.toLowerCase().includes("product")) {
+      finalQuery += " professional product photography white background";
+    }
+
     return {
-      query: String(parsed.query || base.query).trim() || base.query,
-      must: Array.isArray(parsed.must) ? parsed.must.map((s: any) => norm(String(s))).filter(Boolean).slice(0, 5) : base.must,
-      block: Array.isArray(parsed.block) ? parsed.block.map((s: any) => norm(String(s))).filter(Boolean).slice(0, 6) : base.block,
+      query: finalQuery || base.query,
+      must: Array.isArray(parsed.must) ? parsed.must.map((s: any) => norm(String(s))).filter(Boolean).slice(0, 6) : base.must,
+      block: Array.isArray(parsed.block) ? parsed.block.map((s: any) => norm(String(s))).filter(Boolean).slice(0, 8) : base.block,
       category: String(parsed.category || base.category),
       rationale: `${base.rationale}+ai`,
     };
