@@ -85,7 +85,15 @@ export function ImageSanitizationPanel() {
 
   const sanitizeOne = async (item: Item) => {
     const { data, error } = await supabase.functions.invoke('sanitize-images', {
-      body: { kind: item.kind, id: item.id, name: item.name, segment: item.segment },
+      body: { 
+        kind: item.kind, 
+        id: item.id, 
+        name: item.name, 
+        segment: item.segment,
+        description: item.description,
+        type: item.type,
+        tags: item.tags
+      },
     });
     if (error || !data?.imageUrl) throw new Error(error?.message || data?.error || 'falha');
     return data.imageUrl as string;
