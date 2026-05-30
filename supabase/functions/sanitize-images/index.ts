@@ -276,6 +276,15 @@ Deno.serve(async (req) => {
     if (understanding.must.length) prompt += ` MUST clearly depict: ${understanding.must.join(", ")}.`;
     if (understanding.block.length) prompt += ` MUST NOT depict: ${understanding.block.join(", ")}.`;
     if (understanding.query) prompt += ` Visual reference query: ${understanding.query}.`;
+    
+    // Se já existe uma imagem, pede explicitamente uma variação ou ângulo diferente
+    if (currentImageUrl) {
+      prompt += " NOTE: This item is being updated. Please provide a fresh, high-quality variation, perhaps from a different professional angle or background, ensuring maximum compatibility with the product description.";
+    }
+    
+    // Adiciona um fator de variação temporal para evitar repetições do modelo
+    prompt += ` [Variation ID: ${Date.now() % 10000}]`;
+    
     console.log("[sanitize-images] prompt:", prompt.slice(0, 300));
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
