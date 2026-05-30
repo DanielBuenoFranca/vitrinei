@@ -1114,7 +1114,8 @@ const AdminPanel = () => {
               services={services}
               products={products}
               segments={segments}
-              onEditProvider={(p) => {
+              userRoles={userRoles}
+              onEditProvider={(p, field) => {
                 // Abre o MESMO formulário da aba Usuários — fonte única da verdade
                 const normDoc = (s: any) => String(s || '').replace(/\D/g, '');
                 const pDoc = normDoc(p.cpf_cnpj);
@@ -1126,18 +1127,30 @@ const AdminPanel = () => {
                 if (prof) {
                   const allRoles = userRoles.filter((x: any) => x.user_id === prof.user_id).map((x: any) => x.role);
                   const r = allRoles.find((x: string) => ['provider','mixed','client','admin','master'].includes(x));
-                  setUserForm({ open: true, profile: prof, role: r || 'mixed', allRoles, email: authUserEmails[prof.user_id] || null });
+                  setUserForm({ 
+                    open: true, 
+                    profile: prof, 
+                    role: r || 'mixed', 
+                    allRoles, 
+                    email: authUserEmails[prof.user_id] || null,
+                    highlightField: field
+                  });
                 } else if ((p as any).__isLead) {
                    // Fallback for leads not yet linked but showing in inconsistency panel
-                   setUserForm({ open: true, profile: p, role: 'mixed', allRoles: [], email: (p as any).email || null });
+                   setUserForm({ 
+                    open: true, 
+                    profile: p, 
+                    role: 'mixed', 
+                    allRoles: [], 
+                    email: (p as any).email || null,
+                    highlightField: field
+                   });
                 } else {
                   toast.info('Prestador legado sem usuário vinculado. Cadastre/ajuste o usuário com o mesmo CPF/CNPJ — a vinculação é automática.');
                 }
-
-
               }}
-              onEditService={(s) => setServiceForm({ open: true, item: s })}
-              onEditProduct={(p) => setProductForm({ open: true, item: p })}
+              onEditService={(s, field) => setServiceForm({ open: true, item: s, highlightField: field })}
+              onEditProduct={(p, field) => setProductForm({ open: true, item: p, highlightField: field })}
               onDeleteService={deleteService}
               onDeleteProduct={deleteProduct}
             />
