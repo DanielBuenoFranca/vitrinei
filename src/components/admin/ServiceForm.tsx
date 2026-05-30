@@ -106,36 +106,44 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
   }, [open]);
 
   useEffect(() => {
-    if (service) {
-      setForm({
-        name: service.name, segment: service.segment, provider: service.provider,
-        provider_id: service.provider_id, labor_cost: service.labor_cost || 0,
-        rating: service.rating, distance: service.distance, time: service.time,
-        service_id: service.service_id,
-        unit: (service as any).unit || 'hr',
-        quantity: (service as any).quantity ?? 0,
-      });
-      setLinkedProductIds(service.linked_product_ids || []);
-      if (!imageBusy) {
-        const currentUrl = (service as any).image_url || null;
-        const isNewItem = hasLoadedRef.current !== service.id;
+    if (service && open) {
+      const isNewItem = hasLoadedRef.current !== service.id;
+      
+      if (isNewItem) {
+        console.log('[ServiceForm] Initial load for service:', service.id, service.name);
+        setForm({
+          name: service.name, segment: service.segment, provider: service.provider,
+          provider_id: service.provider_id, labor_cost: service.labor_cost || 0,
+          rating: service.rating, distance: service.distance, time: service.time,
+          service_id: service.service_id,
+          unit: (service as any).unit || 'hr',
+          quantity: (service as any).quantity ?? 0,
+        });
+        setLinkedProductIds(service.linked_product_ids || []);
         
-        if (isNewItem) {
-          setImageUrl(currentUrl);
-          lastSetImageUrl.current = currentUrl;
-          hasLoadedRef.current = service.id;
-        } else if (!imageBusy && currentUrl !== lastSetImageUrl.current) {
-          console.log('[ServiceForm] External image change detected, updating state:', currentUrl);
+        const currentUrl = (service as any).image_url || null;
+        setImageUrl(currentUrl);
+        lastSetImageUrl.current = currentUrl;
+        hasLoadedRef.current = service.id;
+      } else if (!imageBusy) {
+        // Sync external changes
+        const currentUrl = (service as any).image_url || null;
+        if (currentUrl !== lastSetImageUrl.current) {
+          console.log('[ServiceForm] External image change detected:', currentUrl);
           setImageUrl(currentUrl);
           lastSetImageUrl.current = currentUrl;
         }
       }
-    } else {
+    } else if (!open) {
+      // Reset form when closed
       setForm({ name: '', segment: segments[0]?.name || '', provider: '', provider_id: null, labor_cost: 0, rating: 4.5, distance: '2 km', time: '45 min', service_id: Math.floor(Math.random() * 9000) + 1000, unit: 'hr', quantity: 0 });
       setLinkedProductIds([]);
       setImageUrl(null);
+      lastSetImageUrl.current = null;
+      hasLoadedRef.current = null;
     }
-  }, [service, open, segments]);
+  }, [service, open, segments, imageBusy]);
+
 
   const handleProviderSelect = (providerId: string) => {
     const prov = providers.find(p => p.id === Number(providerId));

@@ -156,16 +156,18 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
           lastSetImageUrl.current = externalUrl;
         }
       }
-    } else if (!open) {
-      // Reset form when closed
+    } else if (!open && isClosingRef.current) {
+      // Reset form ONLY when fully closing to avoid race conditions during re-renders
       setForm({ name: '', price: 0, provider: '', provider_id: null, stock_type: 'fisico', rating: 4.5, distance: '2 km', product_id: Math.floor(Math.random() * 9000) + 1000, unit: 'un', quantity: 0 });
       setSelectedTags([]);
       setSelectedSegments([]);
       setSegmentTags([]);
       setImageUrl(null);
       lastSetImageUrl.current = null;
+      hasLoadedRef.current = null;
     }
-  }, [product, open, providers, imageBusy, imageUrl]); // Added imageBusy and imageUrl to handle sync correctly
+  }, [product, open, providers, imageBusy]); 
+
 
   const loadSegmentTags = useCallback(async (segNames: string[]) => {
     if (segNames.length === 0) { setSegmentTags([]); return; }
