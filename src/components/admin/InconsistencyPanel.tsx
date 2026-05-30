@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, CheckCircle2, Pencil, Trash2, Loader2, Sparkles } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Pencil, Trash2, Loader2, Sparkles, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -69,6 +69,7 @@ export function InconsistencyPanel({
   onEditProvider, onEditService, onEditProduct,
   onDeleteService, onDeleteProduct, onRefresh
 }: InconsistencyPanelProps) {
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'type', direction: 'asc' });
   const segmentNames = new Set(segments.map(s => s.name));
   const providerIds = new Set(providers.map(p => p.id));
   const providerNames = new Set(providers.map(p => p.name));
@@ -283,6 +284,26 @@ export function InconsistencyPanel({
     }
   };
 
+  const handleSort = (key: string) => {
+    setSortConfig((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
+    }));
+  };
+
+  const SortIcon = ({ column }: { column: string }) => {
+    if (sortConfig.key !== column) return <ArrowUpDown className="ml-1 h-3 w-3 opacity-30" />;
+    return sortConfig.direction === 'asc' ? <ArrowUp className="ml-1 h-3 w-3" /> : <ArrowDown className="ml-1 h-3 w-3" />;
+  };
+
+  const sortedIssues = [...issues].sort((a, b) => {
+    const aVal = String(a[sortConfig.key as keyof Issue] || '');
+    const bVal = String(b[sortConfig.key as keyof Issue] || '');
+    
+    const modifier = sortConfig.direction === 'asc' ? 1 : -1;
+    return aVal.localeCompare(bVal) * modifier;
+  });
+
   if (issues.length === 0) {
     return (
       <Card>
@@ -307,8 +328,20 @@ export function InconsistencyPanel({
         </CardDescription>
       </CardHeader>
       <CardContent className="p-0 overflow-hidden">
-        <div className="admin-scroll-area max-h-[60vh] p-6 space-y-2 border-t">
-        {[...errors, ...warnings].map((issue) => (
+        <div className="flex items-center gap-4 px-6 py-2 border-t bg-muted/20">
+          <span className="text-[10px] font-bold uppercase text-muted-foreground">Ordenar por:</span>
+          <button onClick={() => handleSort('type')} className="flex items-center text-[10px] font-bold hover:text-primary transition-colors">
+            Tipo <SortIcon column="type" />
+          </button>
+          <button onClick={() => handleSort('entity')} className="flex items-center text-[10px] font-bold hover:text-primary transition-colors">
+            Entidade <SortIcon column="entity" />
+          </button>
+          <button onClick={() => handleSort('entityName')} className="flex items-center text-[10px] font-bold hover:text-primary transition-colors">
+            Nome <SortIcon column="entityName" />
+          </button>
+        </div>
+        <div className="admin-scroll-area max-h-[60vh] p-6 pt-2 space-y-2 border-t">
+        {sortedIssues.map((issue) => (
           <div
             key={issue.id}
             className={`flex items-center gap-3 p-3 rounded-lg border ${
