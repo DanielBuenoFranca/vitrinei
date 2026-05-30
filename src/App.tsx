@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ConversionProvider } from "@/contexts/ConversionContext";
+import { Loader2 } from "lucide-react";
 import { AiSessionProvider } from "@/contexts/AiSessionContext";
 import { BackgroundJobsProvider } from "@/contexts/BackgroundJobsContext";
 import { FavoritesProvider } from "@/hooks/useFavorites";
@@ -50,10 +51,28 @@ const queryClient = new QueryClient({
 });
 
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading, isAdmin } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Carregando...</div>;
+  const { user, loading, isAdmin, isMaster, roles } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background text-muted-foreground gap-4">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="text-sm font-medium animate-pulse">Carregando permissões administrativas...</div>
+      </div>
+    );
+  }
+
+  // Debug roles in console for admin access troubleshooting
+  console.log('AdminRoute: Access check', { hasUser: !!user, isAdmin, isMaster, roles });
+
   if (!user) return <Navigate to="/auth" replace />;
-  if (!isAdmin) return <Navigate to="/" replace />;
+  
+  // isAdmin should be true if user has 'admin' or 'master' role
+  if (!isAdmin && !isMaster) {
+    console.warn('AdminRoute: Access denied. Roles:', roles);
+    return <Navigate to="/" replace />;
+  }
+  
   return <>{children}</>;
 };
 
