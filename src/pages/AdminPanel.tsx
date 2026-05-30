@@ -204,19 +204,25 @@ const AdminPanel = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const [provRes, svcRes, prodRes, segRes, unitRes] = await Promise.all([
-      supabase.from('providers').select('*').order('created_at', { ascending: false }),
-      supabase.from('dynamic_services').select('*').order('created_at', { ascending: false }),
-      supabase.from('dynamic_products').select('*').order('created_at', { ascending: false }),
-      supabase.from('segments').select('*').order('name'),
-      supabase.from('units').select('*').order('name'),
-    ]);
-    setProviders((provRes.data as Provider[]) || []);
-    setServices((svcRes.data as DynamicService[]) || []);
-    setProducts((prodRes.data as DynamicProduct[]) || []);
-    setSegments((segRes.data as Segment[]) || []);
-    setUnits((unitRes.data as Unit[]) || []);
-    setLoading(false);
+    try {
+      const [provRes, svcRes, prodRes, segRes, unitRes] = await Promise.all([
+        supabase.from('providers').select('*').order('created_at', { ascending: false }),
+        supabase.from('dynamic_services').select('*').order('created_at', { ascending: false }),
+        supabase.from('dynamic_products').select('*').order('created_at', { ascending: false }),
+        supabase.from('segments').select('*').order('name'),
+        supabase.from('units').select('*').order('name'),
+      ]);
+      setProviders((provRes.data as Provider[]) || []);
+      setServices((svcRes.data as DynamicService[]) || []);
+      setProducts((prodRes.data as DynamicProduct[]) || []);
+      setSegments((segRes.data as Segment[]) || []);
+      setUnits((unitRes.data as Unit[]) || []);
+    } catch (error) {
+      console.error('Error fetching admin data:', error);
+      toast.error('Erro ao carregar dados do painel');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchData(); fetchUsers(); fetchMarquee(); }, []);
@@ -1747,8 +1753,14 @@ const AdminPanel = () => {
       {/* Dialogs */}
       <UserForm
         open={userForm.open}
-        onClose={() => setUserForm({ open: false, profile: null, role: null, email: null })}
-        onSaved={() => { fetchUsers(); fetchData(); reloadDynamicEntries(); }}
+        onClose={() => setUserForm(prev => ({ ...prev, open: false }))}
+        onSaved={async () => { 
+          await fetchUsers(); 
+          await fetchData(); 
+          await reloadDynamicEntries(); 
+          setUserForm({ open: false, profile: null, role: null, email: null });
+        }} 
+
         profile={userForm.profile}
         currentRole={userForm.role}
         currentRoles={(userForm.allRoles || []) as any}
@@ -1758,8 +1770,12 @@ const AdminPanel = () => {
       />
       <ProductForm 
         open={productForm.open} 
-        onClose={() => setProductForm({ open: false, item: null })} 
-        onSaved={() => { reloadDynamicEntries(); fetchData(); }} 
+        onClose={() => setProductForm(prev => ({ ...prev, open: false }))} 
+        onSaved={async () => { 
+          await reloadDynamicEntries(); 
+          await fetchData(); 
+          setProductForm({ open: false, item: null });
+        }} 
         product={productForm.item} 
         providers={providerList} 
         segments={segmentList} 
@@ -1767,8 +1783,12 @@ const AdminPanel = () => {
       />
       <ServiceForm 
         open={serviceForm.open} 
-        onClose={() => setServiceForm({ open: false, item: null })} 
-        onSaved={() => { reloadDynamicEntries(); fetchData(); }} 
+        onClose={() => setServiceForm(prev => ({ ...prev, open: false }))} 
+        onSaved={async () => { 
+          await reloadDynamicEntries(); 
+          await fetchData(); 
+          setServiceForm({ open: false, item: null });
+        }} 
         service={serviceForm.item} 
         providers={providerList} 
         segments={segmentList} 
