@@ -687,7 +687,7 @@ const AdminPanel = () => {
     setGeneratingUnits(false);
   };
 
-  const providerList = providers.map(p => ({ id: p.id, name: p.name, segment: p.segment }));
+  const providerList = filteredProviders.map(p => ({ id: p.id, name: p.name, segment: p.segment }));
   const segmentList = segments.map(s => ({ id: s.id, name: s.name }));
 
   // Count inconsistencies for tab badge
