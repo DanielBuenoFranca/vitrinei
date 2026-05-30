@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const body = await req.json();
-    const { kind, id, name, segment, tags, description, linkedNames } = body;
+    const { kind, id, name, segment, tags, description, linkedNames, currentImageUrl } = body;
     if (!kind || !id || !name) {
       return new Response(JSON.stringify({ error: "kind, id and name required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
