@@ -38,6 +38,10 @@ interface Provider {
   id: number; name: string; type: string; segment: string[];
   phone: string | null; email: string | null; address: string | null; city: string | null;
   distance: string; rating: number; active: boolean; created_at: string;
+  user_id: string | null;
+  cpf_cnpj: string | null;
+  logo_url?: string | null;
+}
   cpf_cnpj: string | null;
 }
 
@@ -225,7 +229,7 @@ const AdminPanel = () => {
       supabase.from('wallets').select('*'),
       supabase.from('providers').select('id, name, phone, email, cpf_cnpj, city, address, logo_url, created_at, user_id, segment, type').is('user_id', null),
       supabase.from('user_activations').select('*').eq('is_used', false),
-      supabase.from('referrals').select('referred_id').eq('referrer_id', user?.id),
+      supabase.from('referrals').select('referred_id').eq('referrer_id', user?.id || ''),
     ]);
     const profiles = profilesRes.data || [];
     setUserActivations(activationsRes.data || []);
