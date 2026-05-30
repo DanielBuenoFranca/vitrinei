@@ -92,12 +92,49 @@ const AdminPanel = () => {
   const [showMasterUsers, setShowMasterUsers] = useState(false);
   const [userSubscriptions, setUserSubscriptions] = useState<any[]>([]);
   const [userActivations, setUserActivations] = useState<any[]>([]);
+  const [myReferrals, setMyReferrals] = useState<any[]>([]);
 
   // Confirmation dialog for provider delete
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; provider: Provider | null }>({ open: false, provider: null });
 
   // Edit user dialog
   const [editUserDialog, setEditUserDialog] = useState<{ open: boolean; profile: any | null }>({ open: false, profile: null });
+
+  const isMaster = userRoles.some(r => r.user_id === user?.id && r.role === 'master');
+  const isAdmin = userRoles.some(r => r.user_id === user?.id && r.role === 'admin');
+
+  // Filtragem de registros por hierarquia (Master vê tudo, Admin vê indicados)
+  const myReferredIds = new Set(myReferrals.map(r => r.referred_id).filter(Boolean));
+  
+  const filteredProfiles = userProfiles.filter(p => {
+    if (isMaster) return true;
+    if (isAdmin) return myReferredIds.has(p.user_id) || p.user_id === user?.id;
+    return false;
+  });
+
+  const filteredProviders = providers.filter(p => {
+    if (isMaster) return true;
+    if (isAdmin) return myReferredIds.has(p.user_id);
+    return false;
+  });
+
+  const filteredServices = services.filter(s => {
+    if (isMaster) return true;
+    if (isAdmin) {
+      const prov = providers.find(p => p.id === s.provider_id);
+      return prov && myReferredIds.has(prov.user_id);
+    }
+    return false;
+  });
+
+  const filteredProducts = products.filter(pr => {
+    if (isMaster) return true;
+    if (isAdmin) {
+      const prov = providers.find(p => p.id === pr.provider_id);
+      return prov && myReferredIds.has(prov.user_id);
+    }
+    return false;
+  });
   const [editUserName, setEditUserName] = useState('');
   const [editUserPhone, setEditUserPhone] = useState('');
   const [editUserAvatar, setEditUserAvatar] = useState('');
@@ -181,16 +218,18 @@ const AdminPanel = () => {
   useEffect(() => { fetchData(); fetchUsers(); fetchMarquee(); }, []);
 
   const fetchUsers = async () => {
-    const [profilesRes, rolesRes, subsRes, walletsRes, provLeadsRes, activationsRes] = await Promise.all([
+    const [profilesRes, rolesRes, subsRes, walletsRes, provLeadsRes, activationsRes, referralsRes] = await Promise.all([
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('user_roles').select('*'),
       supabase.from('subscriptions').select('*'),
       supabase.from('wallets').select('*'),
       supabase.from('providers').select('id, name, phone, email, cpf_cnpj, city, address, logo_url, created_at, user_id, segment, type').is('user_id', null),
       supabase.from('user_activations').select('*').eq('is_used', false),
+      supabase.from('referrals').select('referred_id').eq('referrer_id', user?.id),
     ]);
     const profiles = profilesRes.data || [];
     setUserActivations(activationsRes.data || []);
+    setMyReferrals(referralsRes.data || []);
     const profileDocs = new Set(
       profiles.map((p: any) => (p.cpf_cnpj || '').replace(/\D/g, '')).filter(Boolean)
     );
