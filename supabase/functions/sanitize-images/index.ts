@@ -188,25 +188,28 @@ function buildPrompt(kind: string, ctx: EnrichedContext): string {
       `The icon must visually represent the business sector and feel trustworthy and professional. Square format, centered.`;
   }
   if (kind === "product") {
-    return `Photorealistic professional studio PRODUCT PHOTO of: "${ctx.name}". ${base} ` +
+    return `Photorealistic professional studio PRODUCT PHOTO of a real physical object: "${ctx.name}". ${base} ` +
+      `STRICT: This is a commercial product photo for a catalog, NOT a logo, NOT an icon, NOT a graphic illustration. ` +
       `Make sure the object shown is exactly this item (use the description, category and type to disambiguate precisely). ` +
-      `High-end e-commerce catalog style: clean seamless white background, soft studio lighting, sharp focus, ` +
+      `High-end e-commerce style: clean seamless white background, soft studio lighting, sharp focus, ` +
       `accurate proportions and materials, realistic textures, subtle shadow, centered composition, square framing. ` +
-      `NO text, NO labels with brand names, NO watermarks, NO collages, single hero subject, ultra detailed 8k.`;
+      `NO text, NO labels with brand names, NO watermarks, NO collages, NO logos, single hero subject, ultra detailed 8k.`;
   }
   if (kind === "kit") {
-    return `Photorealistic studio photo of a PRODUCT KIT / BUNDLE named "${ctx.name}". ${base} ` +
+    return `Photorealistic studio photo of a real physical PRODUCT KIT / BUNDLE named "${ctx.name}". ${base} ` +
+      `STRICT: This must be a photo of physical objects, NOT a logo or icon. ` +
       `Use the description to understand each component. Show the related items grouped together as a curated set, neatly arranged. ` +
       `Clean white background, professional e-commerce styling, accurate materials, soft shadow, centered, square. ` +
-      `NO text, NO watermarks, NO logos.`;
+      `NO text, NO watermarks, NO logos, NO graphic design.`;
   }
   if (kind === "service") {
-    return `Premium 3D illustrated ICON representing the SERVICE "${ctx.name}". ${base} ` +
-      `Show tools, scene or symbolic objects that clearly communicate this exact service (use description and category). ` +
-      `Style: glossy 3D render, vibrant brand-friendly colors, soft realistic lighting, ambient occlusion, ` +
-      `subtle reflections, beveled edges, app-icon framing, clean white background, soft drop shadow, centered. ` +
-      `NO text, NO watermarks. The icon must be instantly recognizable as this specific service.`;
+    return `High-quality, professional REALISTIC PHOTO representing the SERVICE: "${ctx.name}". ${base} ` +
+      `STRICT: Show a professional person performing the service or the tools of the trade in a realistic environment. ` +
+      `NO LOGOS, NO ICONS, NO 3D ILLUSTRATIONS, NO GRAPHIC DESIGN. ` +
+      `Style: clean, professional, bright lighting, high-end photography, square composition. ` +
+      `NO text, NO watermarks. The photo must instantly communicate this exact service to a customer.`;
   }
+
   if (kind === "segment") {
     return `Hyper-realistic premium 3D APP ICON representing the category "${ctx.name}".${tagsStr} ` +
       `Pixar/Disney style, glossy materials, vibrant colorful objects floating, soft realistic lighting, ` +
