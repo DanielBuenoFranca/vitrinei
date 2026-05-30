@@ -127,15 +127,18 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
         onChange(url);
         toast.success((data as any)?.source === 'ai' ? 'Imagem gerada pela IA' : 'Imagem aplicada com sucesso');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('[ItemImagePicker] Error generating image:', err);
-      toast.error('Falha ao gerar imagem. Tente novamente.');
+      // Se for timeout do Edge Function, já avisamos no timeoutId
+      if (err.message !== 'timeout') {
+        toast.error('Falha ao gerar imagem. A tela foi destravada para permitir salvar.');
+      }
     } finally {
       clearTimeout(timeoutId);
       setBusy(false);
-      busyRef.current = false; // Double guard
+      busyRef.current = false;
       setStep('idle');
-      console.log('[ItemImagePicker] Generation finished');
+      console.log('[ItemImagePicker] Generation finished and UI unlocked');
     }
   };
 
