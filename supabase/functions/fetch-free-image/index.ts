@@ -127,9 +127,21 @@ Deno.serve(async (req) => {
     const order = ["unsplash", "pixabay", "openverse", "loremflickr", "picsum", "ui-avatars"];
     all.sort((a, b) => b.score - a.score || order.indexOf(a.source) - order.indexOf(b.source));
 
-    // Reject any candidate that contains a block term (negative score) UNLESS
-    // it's the only thing left.
-    const safe = all.filter((c) => c.score > -10);
+    // Reject any candidate that contains a block term (negative score) OR matches current image
+    let safe = all.filter((c) => c.score > -10 && c.url !== currentImageUrl);
+    
+    // If we have multiple high-score candidates, pick one semi-randomly from the top 3
+    // to allow the user to "cycle" through images by clicking again.
+    if (safe.length > 1) {
+      const topScore = safe[0].score;
+      const topCandidates = safe.filter(c => c.score >= topScore - 5).slice(0, 3);
+      if (topCandidates.length > 1) {
+        // Shuffle the top few to avoid picking the same one every time
+        topCandidates.sort(() => Math.random() - 0.5);
+        safe = [...topCandidates, ...safe.filter(c => !topCandidates.includes(c))];
+      }
+    }
+
     const queue = safe.length ? safe : all;
 
     let buf: Uint8Array | null = null;
