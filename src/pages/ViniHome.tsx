@@ -854,7 +854,15 @@ const ViniHome = () => {
   };
   const handlePerfil = () => navigate(user ? '/carteira' : '/auth');
   const handleDemos = () => navigate('/demos');
-  const handleAdmin = () => navigate('/admin');
+  const handleAdmin = () => {
+    if (!isAdmin && !isMaster) {
+      toast.error('Acesso restrito', {
+        description: 'Você precisa de perfil administrativo para acessar esta área.'
+      });
+      return;
+    }
+    navigate('/admin');
+  };
 
 
   const handleReiniciar = () => {
