@@ -430,6 +430,11 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
         profileData.is_provider = true;
         profileData.margin_pct = Math.max(0, Math.min(500, Number(marginPct) || 0));
         profileData.profit_pct = Math.max(0, Math.min(500, Number(profitPct) || 0));
+      } else {
+        // Master/Admin users never have provider status or segments linked
+        profileData.is_provider = false;
+        profileData.provider_segments = null;
+        profileData.provider_active = false;
       }
 
       const { data: updRows, error: profErr } = await supabase
