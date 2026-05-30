@@ -65,9 +65,10 @@ const ResetPasswordPage = () => {
           toast.error(error.message);
         }
       } else {
-        clearMustResetPassword();
+        await clearMustResetPassword();
         toast.success('Senha atualizada com sucesso!');
-        navigate('/');
+        // Small delay to ensure state update propagates before navigation
+        setTimeout(() => navigate('/'), 100);
       }
     } catch (err) {
       toast.error('Erro ao atualizar senha');
