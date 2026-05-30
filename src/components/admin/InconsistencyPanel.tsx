@@ -200,7 +200,26 @@ export function InconsistencyPanel({
       }
     }
     if (!p.tags || p.tags.length === 0) {
-      issues.push({ type: 'warning', entity: 'Produto', entityId: p.id, entityName: p.name, message: 'Sem tags (dificulta busca)', action: 'edit', tab: 'products', fieldName: 'tags' });
+      issues.push({ 
+        type: 'warning', 
+        entity: 'Produto', 
+        entityId: p.id, 
+        entityName: p.name, 
+        message: 'Sem tags (dificulta busca)', 
+        action: 'auto_fix', 
+        tab: 'products', 
+        fieldName: 'tags',
+        autoFixAction: async () => {
+          const prov = providers.find(prov => prov.id === p.provider_id);
+          const defaultTags = prov?.segment && prov.segment.length > 0 ? prov.segment : ['Geral'];
+          const { error } = await supabase
+            .from('dynamic_products')
+            .update({ tags: defaultTags })
+            .eq('id', p.id);
+          if (error) throw error;
+          if (onRefresh) onRefresh();
+        }
+      });
     }
     if (p.price <= 0) {
       issues.push({ type: 'warning', entity: 'Produto', entityId: p.id, entityName: p.name, message: 'Preço zerado ou negativo', action: 'edit', tab: 'products', fieldName: 'price' });
