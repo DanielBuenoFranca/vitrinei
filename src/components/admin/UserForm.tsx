@@ -205,7 +205,7 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
     }
   }, [open, profile, currentRole, currentRoles, currentEmail, segments, defaultPlanId]);
 
-  const isProviderRole = profileType === 'provider' || profileType === 'mixed';
+  const isProviderRole = (profileType === 'provider' || profileType === 'mixed') && adminLevel === 'none';
   const docValidation = validateDoc(cpfCnpj);
   const rawDoc = cpfCnpj.replace(/\D/g, '');
 
