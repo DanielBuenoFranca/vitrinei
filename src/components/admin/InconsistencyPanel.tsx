@@ -328,7 +328,7 @@ export function InconsistencyPanel({
         {/* Errors first, then warnings */}
         {[...errors, ...warnings].map((issue, idx) => (
           <div
-            key={`${issue.entity}-${issue.entityId}-${idx}`}
+            key={`${issue.entity}-${issue.entityId}-${issue.fieldName || idx}`}
             className={`flex items-center gap-3 p-3 rounded-lg border ${
               issue.type === 'error'
                 ? 'border-destructive/30 bg-destructive/5'
