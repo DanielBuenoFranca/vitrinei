@@ -1754,7 +1754,13 @@ const AdminPanel = () => {
       <UserForm
         open={userForm.open}
         onClose={() => setUserForm({ open: false, profile: null, role: null, email: null })}
-        onSaved={() => { fetchUsers(); fetchData(); reloadDynamicEntries(); }}
+        onSaved={async () => { 
+          await fetchUsers(); 
+          await fetchData(); 
+          await reloadDynamicEntries(); 
+          setUserForm({ open: false, profile: null, role: null, email: null });
+        }} 
+
         profile={userForm.profile}
         currentRole={userForm.role}
         currentRoles={(userForm.allRoles || []) as any}
