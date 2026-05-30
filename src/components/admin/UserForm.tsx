@@ -38,6 +38,7 @@ interface UserFormProps {
   currentRole?: AppRole | null;
   currentEmail?: string | null;
   segments: Segment[];
+  highlightField?: string;
 }
 
 // ── Validações CPF/CNPJ (algoritmo oficial) ─────────────────────
@@ -204,6 +205,25 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
       setSelectedPlanId(defaultPlanId);
     }
   }, [open, profile, currentRole, currentRoles, currentEmail, segments, defaultPlanId]);
+
+  // ── Destaque de campo (inconsistências) ─────────────────────────
+  useEffect(() => {
+    if (open && highlightField) {
+      setTimeout(() => {
+        const el = document.getElementsByName(highlightField)[0] || 
+                   document.getElementById(highlightField) ||
+                   document.querySelector(`[data-fieldname="${highlightField}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+            el.focus();
+          }
+          el.classList.add('ring-2', 'ring-destructive', 'ring-offset-2');
+          setTimeout(() => el.classList.remove('ring-2', 'ring-destructive', 'ring-offset-2'), 3000);
+        }
+      }, 300);
+    }
+  }, [open, highlightField]);
 
   // Force business profile to 'client' for privileged accounts (Master/Admin)
   useEffect(() => {
