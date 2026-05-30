@@ -46,81 +46,80 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => setMounted(false);
   }, []);
 
+  const initializeAuth = useCallback(async (currentSession: Session | null) => {
+    if (!mounted) return;
+    
+    setSession(currentSession);
+    setUser(currentSession?.user ?? null);
+    
+    if (currentSession?.user) {
+      const mustReset = currentSession.user.user_metadata?.must_reset_password === true;
+      setMustResetPassword(mustReset);
+      
+      // Fetch profile and roles in parallel for efficiency
+      const [profileRes, rolesRes] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', currentSession.user.id)
+          .maybeSingle(),
+        supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', currentSession.user.id)
+      ]);
+
+      if (mounted) {
+        if (profileRes.data) {
+          setDisplayName(profileRes.data.display_name);
+          setUserStatus(profileRes.data.status);
+          setProfile(profileRes.data);
+
+          if (profileRes.data.status === 'inactive' || profileRes.data.status === 'banned') {
+            const msg = profileRes.data.status === 'inactive' 
+              ? 'Sua conta está desativada. Entre em contato com o suporte.' 
+              : 'Sua conta foi banida do sistema.';
+            toast.error(msg);
+            await supabase.auth.signOut();
+            setLoading(false);
+            return;
+          }
+        }
+        
+        if (rolesRes.data) {
+          const userRoles = rolesRes.data.map(r => r.role as AppRole);
+          console.log('AuthContext: Roles fetched for', currentSession.user.id, userRoles);
+          setRoles(userRoles);
+        } else if (rolesRes.error) {
+          console.error('AuthContext: Error fetching roles:', rolesRes.error);
+          setRoles([]);
+        } else {
+          console.log('AuthContext: No roles found for', currentSession.user.id);
+          setRoles([]);
+        }
+      }
+    } else {
+      if (mounted) {
+        setRoles([]);
+        setDisplayName(null);
+        setProfile(null);
+        setUserStatus(null);
+        setMustResetPassword(false);
+      }
+    }
+    
+    if (mounted) {
+      setLoading(false);
+    }
+  }, [mounted]);
+
   useEffect(() => {
     if (!mounted) return;
-
-    const initializeAuth = useCallback(async (currentSession: Session | null) => {
-      if (!mounted) return;
-      
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-      
-      if (currentSession?.user) {
-        const mustReset = currentSession.user.user_metadata?.must_reset_password === true;
-        setMustResetPassword(mustReset);
-        
-        // Fetch profile and roles in parallel for efficiency
-        const [profileRes, rolesRes] = await Promise.all([
-          supabase
-            .from('profiles')
-            .select('*')
-            .eq('user_id', currentSession.user.id)
-            .maybeSingle(),
-          supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', currentSession.user.id)
-        ]);
-
-        if (mounted) {
-          if (profileRes.data) {
-            setDisplayName(profileRes.data.display_name);
-            setUserStatus(profileRes.data.status);
-            setProfile(profileRes.data);
-
-            if (profileRes.data.status === 'inactive' || profileRes.data.status === 'banned') {
-              const msg = profileRes.data.status === 'inactive' 
-                ? 'Sua conta está desativada. Entre em contato com o suporte.' 
-                : 'Sua conta foi banida do sistema.';
-              toast.error(msg);
-              await supabase.auth.signOut();
-              setLoading(false);
-              return;
-            }
-          }
-          
-          if (rolesRes.data) {
-            const userRoles = rolesRes.data.map(r => r.role as AppRole);
-            console.log('AuthContext: Roles fetched for', currentSession.user.id, userRoles);
-            setRoles(userRoles);
-          } else if (rolesRes.error) {
-            console.error('AuthContext: Error fetching roles:', rolesRes.error);
-            setRoles([]);
-          } else {
-            console.log('AuthContext: No roles found for', currentSession.user.id);
-            setRoles([]);
-          }
-        }
-      } else {
-        if (mounted) {
-          setRoles([]);
-          setDisplayName(null);
-          setProfile(null);
-          setUserStatus(null);
-          setMustResetPassword(false);
-        }
-      }
-      
-      if (mounted) {
-        setLoading(false);
-      }
-    }, [mounted]);
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('AuthContext: onAuthStateChange', event);
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-        // Use functional update to ensure we use the latest loading state
         setLoading(true);
         await initializeAuth(session);
       } else if (event === 'SIGNED_OUT') {
@@ -157,35 +156,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     console.log('AuthContext: signOut initiated');
     try {
-      // 1. Limpeza imediata de estado local para resposta instantânea da UI
       setUser(null);
       setSession(null);
       setRoles([]);
       setDisplayName(null);
       setProfile(null);
-
       setMustResetPassword(false);
       setUserStatus(null);
       
-      // 2. Limpeza profunda de storage e cache
       localStorage.clear();
       sessionStorage.clear();
       
-      // Limpeza de cookies (opcional, mas ajuda com Google Login persistente)
       document.cookie.split(";").forEach((c) => {
         document.cookie = c
           .replace(/^ +/, "")
           .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
       });
       
-      // 3. Chamada de signOut do Supabase (não aguardamos para não travar o redirecionamento)
       supabase.auth.signOut().catch(err => console.warn('Supabase signOut error (ignoring):', err));
-      
-      // 4. Redirecionamento forçado imediato
-      console.log('AuthContext: Redirecting to /auth');
       window.location.replace('/auth');
       
-      // Fallback de segurança caso window.location não funcione imediatamente
       setTimeout(() => {
         window.location.href = '/auth';
       }, 500);
