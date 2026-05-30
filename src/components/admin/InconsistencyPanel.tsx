@@ -124,7 +124,27 @@ export function InconsistencyPanel({
     } else {
       p.segment.forEach(seg => {
         if (!segmentNames.has(seg)) {
-          issues.push({ type: 'warning', entity: 'Prestador', entityId: p.id, entityName: p.name, message: `Segmento "${seg}" não existe no cadastro`, action: 'edit', tab: 'providers', fieldName: 'segments' });
+          const parts = seg.split(/\s+/).filter(part => segmentNames.has(part));
+          const hasFix = parts.length > 0;
+          issues.push({ 
+            type: 'warning', 
+            entity: 'Prestador', 
+            entityId: p.id, 
+            entityName: p.name, 
+            message: `Segmento "${seg}" não existe no cadastro`, 
+            action: hasFix ? 'auto_fix' : 'edit', 
+            tab: 'providers', 
+            fieldName: 'segments',
+            autoFixAction: hasFix ? async () => {
+              const newSegments = Array.from(new Set([
+                ...p.segment.filter(s => s !== seg),
+                ...parts
+              ]));
+              const { error } = await supabase.from('providers').update({ segment: newSegments }).eq('id', p.id);
+              if (error) throw error;
+              if (onRefresh) onRefresh();
+            } : undefined
+          });
         }
       });
     }
