@@ -65,7 +65,7 @@ async function enrichContext(supabase: any, kind: string, id: number, base: any)
   try {
     if (kind === "product" && id) {
       const { data } = await supabase.from("dynamic_products")
-        .select("name, tags, unit, price, provider, provider_id, related_service_ids")
+        .select("name, tags, unit, price, provider, provider_id, related_service_ids, segments, stock_type")
         .eq("id", id).maybeSingle();
       if (data) {
         ctx.tags = Array.from(new Set([...(ctx.tags || []), ...((data.tags as string[]) || [])]));
