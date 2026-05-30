@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { User, Session } from '@supabase/supabase-js';
@@ -36,14 +36,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<any | null>(null);
   const [mustResetPassword, setMustResetPassword] = useState(false);
   const [userStatus, setUserStatus] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   const isAdmin = roles.includes('admin') || roles.includes('master');
   const isMaster = roles.includes('master');
 
   useEffect(() => {
-    let mounted = true;
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
-    const initializeAuth = async (currentSession: Session | null) => {
+  useEffect(() => {
+    if (!mounted) return;
+
+    const initializeAuth = useCallback(async (currentSession: Session | null) => {
       if (!mounted) return;
       
       setSession(currentSession);
@@ -108,7 +114,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (mounted) {
         setLoading(false);
       }
-    };
+    }, [mounted]);
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -135,10 +141,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => {
-      mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [mounted, initializeAuth]);
 
   const fetchRoles = async (userId: string) => {
     const { data } = await supabase.from('user_roles').select('role').eq('user_id', userId);
