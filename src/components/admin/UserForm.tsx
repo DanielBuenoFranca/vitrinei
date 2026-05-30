@@ -522,7 +522,7 @@ export function UserForm({ open, onClose, onSaved, profile, currentRoles, curren
       <DialogContent className="max-w-2xl p-0 flex flex-col max-h-[90vh] overflow-hidden">
         <div className="p-6 pb-2 shrink-0">
           <DialogHeader>
-            <DialogTitle>{isEdit ? 'Editar Usuário' : 'Novo Usuário'}</DialogTitle>
+            <DialogTitle>{localIsEdit ? 'Editar Usuário' : 'Novo Usuário'}</DialogTitle>
             <DialogDescription>
               Cadastro unificado: ao escolher perfil <strong>Prestador</strong> ou <strong>Misto</strong>, a vitrine é provisionada automaticamente.
             </DialogDescription>
