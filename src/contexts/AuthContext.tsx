@@ -50,9 +50,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!mounted) return;
     
     setSession(currentSession);
-    setUser(currentSession?.user ?? null);
+    const currentUser = currentSession?.user ?? null;
+    setUser(currentUser);
     
-    if (currentSession?.user) {
+    if (currentUser) {
       const mustReset = currentSession.user.user_metadata?.must_reset_password === true;
       setMustResetPassword(mustReset);
       
