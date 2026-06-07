@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import avatarImg from '@/assets/ai-avatar.png';
 import { useNavigate } from 'react-router-dom';
-import { useAiSession } from '@/contexts/AiSessionContext';
 
 interface Props {
   title: string;
@@ -34,15 +33,10 @@ export function EmptyStateVini({
   onSecondary,
 }: Props) {
   const navigate = useNavigate();
-  const ai = useAiSession();
 
   const askVini = () => {
     if (!viniPrompt) return;
-    try {
-      // best-effort: open Vini chat with a pre-filled question
-      (ai as any).openChat?.(viniPrompt);
-      (ai as any).sendMessage?.(viniPrompt);
-    } catch { /* ignore */ }
+    window.dispatchEvent(new CustomEvent('vini:open', { detail: { prompt: viniPrompt } }));
   };
 
   return (
