@@ -111,10 +111,12 @@ export function CampaignForm() {
       setRewardBuyer(Number(data.reward_buyer).toFixed(2));
       setRewardSeller(Number(data.reward_seller).toFixed(2));
       setRewardMixed(Number(data.reward_mixed_total).toFixed(2));
+      setInviteHours(String((data as any).invite_expiration_hours ?? 24));
       setIsActive(data.is_active);
     }
     setLoading(false);
   };
+
 
   const [bonusGenerated, setBonusGenerated] = useState(0);
   const [totalSubsPaid, setTotalSubsPaid] = useState(0);
