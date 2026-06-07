@@ -847,6 +847,16 @@ const WalletPage = () => {
                     </span>
                   </div>
                 ))}
+                {txHasMore && (
+                  <div className="pt-2 flex justify-center">
+                    <Button variant="outline" size="sm" onClick={loadMoreTransactions} disabled={loadingMore} aria-label="Carregar mais transações">
+                      {loadingMore ? 'Carregando...' : `Carregar mais (${TX_PAGE_SIZE})`}
+                    </Button>
+                  </div>
+                )}
+                {!txHasMore && transactions.length > TX_PAGE_SIZE && (
+                  <p className="text-[10px] text-muted-foreground text-center pt-2">Fim do extrato — {transactions.length} lançamentos.</p>
+                )}
               </div>
             )}
           </CardContent>
