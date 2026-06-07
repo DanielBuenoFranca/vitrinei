@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const body = await req.json();
-    const { kind, id, name, segment, tags, description, linkedNames, currentImageUrl, seed } = body;
+    const { kind, id, name, segment, tags, description, linkedNames, currentImageUrl, seed, excludeUrls } = body;
     if (!kind || !id || !name) {
       return new Response(JSON.stringify({ error: "kind, id and name required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -130,16 +130,17 @@ Deno.serve(async (req) => {
     const order = ["unsplash", "pixabay", "openverse", "loremflickr", "picsum", "ui-avatars"];
     all.sort((a, b) => b.score - a.score || order.indexOf(a.source) - order.indexOf(b.source));
 
-    // Reject any candidate that contains a block term (negative score) OR matches current image
-    // Improve currentImageUrl matching by stripping common query params if possible, 
-    // but at least check for exact match and common prefixes.
+    // Build the exclusion set (current image + recent history sent by client)
     const cleanUrl = (u: string) => u.split('?')[0].split('#')[0];
-    const currentClean = currentImageUrl ? cleanUrl(currentImageUrl) : null;
+    const excludeSet = new Set<string>();
+    if (currentImageUrl) excludeSet.add(cleanUrl(currentImageUrl));
+    if (Array.isArray(excludeUrls)) {
+      for (const u of excludeUrls) if (typeof u === 'string' && u) excludeSet.add(cleanUrl(u));
+    }
 
     let safe = all.filter((c) => {
       if (c.score < -5) return false;
-      if (currentImageUrl && c.url === currentImageUrl) return false;
-      if (currentClean && cleanUrl(c.url) === currentClean) return false;
+      if (excludeSet.has(cleanUrl(c.url))) return false;
       return true;
     });
     

@@ -73,10 +73,17 @@ function providerPrompt(name: string, segments: string[]): string {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  // Hard time budget to stay below the 60s edge timeout
+  const startedAt = Date.now();
+  const TIME_BUDGET_MS = 45_000;
+  const isOutOfBudget = () => Date.now() - startedAt > TIME_BUDGET_MS;
+
   try {
     const body = await req.json().catch(() => ({}));
     const force = !!body.force;
     const target: "all" | "segments" | "providers" = body.target ?? "all";
+    // Batch limit per invocation so the client can iterate without hitting the 60s timeout.
+    const batchLimit = Math.max(1, Math.min(20, Number(body.limit) || 6));
 
     // [Economia de Crédito] Block bulk image generation entirely while saving.
     const { mode } = await getAiMode();
@@ -93,11 +100,22 @@ Deno.serve(async (req) => {
       );
     }
 
-    const result = { segments: { ok: 0, skip: 0, fail: 0 }, providers: { ok: 0, skip: 0, fail: 0 } };
+    const result = {
+      segments: { ok: 0, skip: 0, fail: 0, processed: 0, remaining: 0 },
+      providers: { ok: 0, skip: 0, fail: 0, processed: 0, remaining: 0 },
+      batch_limit: batchLimit,
+      time_budget_hit: false,
+    };
 
     if (target === "all" || target === "segments") {
-      const { data: segs } = await supabase.from("segments").select("id, name, image_url");
-      for (const s of segs ?? []) {
+      const q = supabase.from("segments").select("id, name, image_url");
+      const { data: segs } = force ? await q : await q.is("image_url", null);
+      const pending = segs ?? [];
+      result.segments.remaining = pending.length;
+      for (const s of pending) {
+        if (result.segments.processed >= batchLimit) break;
+        if (isOutOfBudget()) { result.time_budget_hit = true; break; }
+        result.segments.processed++;
         if (!force && s.image_url) { result.segments.skip++; continue; }
         const bytes = await genImage(segmentPrompt(s.name));
         if (!bytes) { result.segments.fail++; continue; }
@@ -106,25 +124,33 @@ Deno.serve(async (req) => {
         await supabase.from("segments").update({ image_url: url }).eq("id", s.id);
         result.segments.ok++;
       }
+      result.segments.remaining = Math.max(0, pending.length - result.segments.processed);
     }
 
     if (target === "all" || target === "providers") {
-      const { data: provs } = await supabase
-        .from("providers")
-        .select("id, name, segment, logo_url")
-        .eq("active", true);
-      for (const p of provs ?? []) {
-        if (!force && p.logo_url) { result.providers.skip++; continue; }
-        const bytes = await genImage(providerPrompt(p.name, p.segment ?? []));
-        if (!bytes) { result.providers.fail++; continue; }
-        const url = await uploadPng("segment-images", `prov-${p.id}-${Date.now()}.png`, bytes);
-        if (!url) { result.providers.fail++; continue; }
-        await supabase.from("providers").update({ logo_url: url }).eq("id", p.id);
-        result.providers.ok++;
+      if (!result.time_budget_hit) {
+        const q = supabase.from("providers").select("id, name, segment, logo_url").eq("active", true);
+        const { data: provs } = force ? await q : await q.is("logo_url", null);
+        const pending = provs ?? [];
+        result.providers.remaining = pending.length;
+        for (const p of pending) {
+          if (result.providers.processed >= batchLimit) break;
+          if (isOutOfBudget()) { result.time_budget_hit = true; break; }
+          result.providers.processed++;
+          if (!force && p.logo_url) { result.providers.skip++; continue; }
+          const bytes = await genImage(providerPrompt(p.name, p.segment ?? []));
+          if (!bytes) { result.providers.fail++; continue; }
+          const url = await uploadPng("segment-images", `prov-${p.id}-${Date.now()}.png`, bytes);
+          if (!url) { result.providers.fail++; continue; }
+          await supabase.from("providers").update({ logo_url: url }).eq("id", p.id);
+          result.providers.ok++;
+        }
+        result.providers.remaining = Math.max(0, pending.length - result.providers.processed);
       }
     }
 
-    return new Response(JSON.stringify({ success: true, result }), {
+    const has_more = result.segments.remaining > 0 || result.providers.remaining > 0;
+    return new Response(JSON.stringify({ success: true, result, has_more }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e: any) {
