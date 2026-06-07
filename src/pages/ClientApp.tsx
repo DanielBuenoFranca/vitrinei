@@ -367,6 +367,7 @@ const ClientApp = () => {
           <div className="flex items-center gap-2">
             <Zap className="w-5 h-5 text-primary" />
             <span className="font-display font-bold text-foreground">Vitrinei</span>
+            <Badge variant="outline" className="text-[9px] px-1 py-0">Demo</Badge>
           </div>
           <div className="flex items-center gap-2">
             {currentPlan && <Badge variant="secondary" className="text-[10px]">{currentPlan.id === 'bronze' ? '🥉' : currentPlan.id === 'prata' ? '🥈' : '🥇'} {currentPlan.name}</Badge>}
