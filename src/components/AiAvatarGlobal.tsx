@@ -340,7 +340,7 @@ export const FloatingAiAvatar = () => {
                   </div>
                 </div>
               </div>
-              <Button variant="ghost" size="icon" className="h-11 w-11 rounded-full p-0" onClick={() => setOpen(false)}>✕</Button>
+              <Button variant="ghost" size="icon" aria-label="Fechar chat do Vini" className="h-11 w-11 rounded-full p-0" onClick={() => setOpen(false)}>✕</Button>
             </div>
 
             {/* Messages */}
@@ -546,7 +546,7 @@ export const FloatingAiAvatar = () => {
                   placeholder="Ex: esgoto, tatuagem, acupuntura..."
                   className="rounded-xl text-xs h-8"
                 />
-                <Button size="icon" className="rounded-xl shrink-0 h-8 w-8" onClick={handleSend}>
+                <Button size="icon" aria-label="Enviar mensagem ao Vini" className="rounded-xl shrink-0 h-8 w-8" onClick={handleSend}>
                   <Send className="w-3.5 h-3.5" />
                 </Button>
               </div>

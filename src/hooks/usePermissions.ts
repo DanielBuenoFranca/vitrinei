@@ -1,99 +1,84 @@
 import { useAuth } from '@/contexts/AuthContext';
+import { useConversion } from '@/contexts/ConversionContext';
 import { toast } from 'sonner';
+import {
+  PERMISSIONS,
+  PROFILE_LABELS,
+  ROLE_LABELS,
+  WRITE_PERMISSIONS,
+  canDo,
+  isWritePermission,
+  resolveProfileType,
+  type AppRole,
+  type ProfileType,
+} from '@/lib/permissions';
 
-export type AppRole = 'master' | 'admin' | 'moderator' | 'user' | 'client' | 'provider' | 'mixed';
-
-export type ProfileType = 'master' | 'admin' | 'provider' | 'client' | 'mixed' | 'visitor';
-
-const PROFILE_LABELS: Record<ProfileType, string> = {
-  master: 'Administrador Geral',
-  admin: 'Administrador',
-  provider: 'Prestador Fornecedor',
-  client: 'Cliente Comprador',
-  mixed: 'Misto (Cliente + Prestador)',
-  visitor: 'Visitante',
-};
-
-const ROLE_LABELS: Record<AppRole, string> = {
-  master: 'Administrador Geral',
-  admin: 'Administrador',
-  moderator: 'Moderador',
-  user: 'Usuário',
-  client: 'Cliente Comprador',
-  provider: 'Prestador Fornecedor',
-  mixed: 'Misto',
-};
+// Re-export from centralized lib so legacy imports keep working.
+export { PERMISSIONS, PROFILE_LABELS, ROLE_LABELS, WRITE_PERMISSIONS };
+export type { AppRole, ProfileType };
 
 /**
- * Permission matrix: which profile can access which features
+ * usePermissions — single authorization hook.
+ *
+ * Combines role-based permission (PERMISSIONS matrix) with the
+ * subscription paywall (ConversionContext.accessLevel). Use:
+ *   - can(perm)              — role/profile check only
+ *   - canWrite(perm)         — role + paywall ( = can && !blockedByPaywall )
+ *   - requirePermission(...) — toast + return false on deny (role only)
+ *   - requireWrite(...)      — toast + return false on deny (role + paywall)
  */
-const PERMISSIONS: Record<string, ProfileType[]> = {
-  // Admin features
-  'admin.panel': ['master', 'admin'],
-  'admin.users': ['master'],
-  'admin.clear_data': ['master'],
-  'admin.crud': ['master', 'admin'],
-
-  // Provider features (Only available for those with a linked store/provider profile)
-  'provider.storefront': ['provider', 'mixed'],
-  'provider.services': ['provider', 'mixed'],
-  'provider.products': ['provider', 'mixed'],
-  'provider.mei': ['provider', 'mixed'],
-
-  // Client features
-  'client.purchase': ['master', 'admin', 'client', 'mixed'],
-  'client.hire': ['master', 'admin', 'client', 'mixed'],
-  'client.wallet': ['master', 'admin', 'client', 'mixed', 'provider'],
-  'client.referrals': ['master', 'admin', 'client', 'mixed', 'provider'],
-
-  // Import
-  'admin.import': ['master', 'admin'],
-};
-
 export function usePermissions() {
   const { user, roles, isMaster, isAdmin } = useAuth();
+  const { accessLevel } = useConversion();
 
-  const getProfileType = (): ProfileType => {
-    if (!user) return 'visitor';
-    if (roles.includes('master')) return 'master';
-    if (roles.includes('admin')) return 'admin';
-    if (roles.includes('mixed')) return 'mixed';
-    if (roles.includes('provider')) return 'provider';
-    if (roles.includes('client')) return 'client';
-    // fallback: 'user' role → client
-    return 'client';
-  };
-
-  const profileType = getProfileType();
+  const profileType = resolveProfileType(roles as AppRole[], !!user);
   const profileLabel = PROFILE_LABELS[profileType];
 
-  const can = (permission: string): boolean => {
-    if (!user) return false;
-    if (isMaster) return true; // master can do everything
-    const allowed = PERMISSIONS[permission];
-    if (!allowed) return false;
-    return allowed.includes(profileType);
+  // Paywall blocks writes when account is a visitor or lead (debt / not activated).
+  // Master always bypasses paywall.
+  const blockedByPaywall = !isMaster && (accessLevel === 'visitor' || accessLevel === 'lead');
+
+  const can = (permission: string): boolean =>
+    !!user && canDo(profileType, permission, isMaster);
+
+  const canWrite = (permission: string): boolean => {
+    if (!can(permission)) return false;
+    if (blockedByPaywall && isWritePermission(permission)) return false;
+    return true;
   };
 
   const requirePermission = (permission: string, featureName?: string): boolean => {
     if (can(permission)) return true;
     const allowed = PERMISSIONS[permission] || [];
-    const neededProfiles = allowed.map(p => PROFILE_LABELS[p]).join(', ');
-    toast.error(
-      `Acesso restrito${featureName ? ` a "${featureName}"` : ''}`,
-      {
-        description: `Perfil necessário: ${neededProfiles}. Seu perfil atual: ${profileLabel}.`,
-        duration: 5000,
-      }
-    );
+    const neededProfiles = allowed.map((p) => PROFILE_LABELS[p]).join(', ');
+    toast.error(`Acesso restrito${featureName ? ` a "${featureName}"` : ''}`, {
+      description: `Perfil necessário: ${neededProfiles}. Seu perfil atual: ${profileLabel}.`,
+      duration: 5000,
+    });
     return false;
+  };
+
+  const requireWrite = (permission: string, featureName?: string): boolean => {
+    if (!requirePermission(permission, featureName)) return false;
+    if (blockedByPaywall && isWritePermission(permission)) {
+      toast.error(`Conta em modo somente leitura${featureName ? ` — "${featureName}" bloqueado` : ''}`, {
+        description: 'Sua assinatura está pendente. Regularize sua carteira para liberar a criação e edição de dados.',
+        duration: 6000,
+        action: { label: 'Ir para Carteira', onClick: () => { window.location.href = '/carteira'; } },
+      });
+      return false;
+    }
+    return true;
   };
 
   return {
     profileType,
     profileLabel,
     can,
+    canWrite,
     requirePermission,
+    requireWrite,
+    blockedByPaywall,
     isMaster,
     isAdmin: isAdmin || isMaster,
     roles,
