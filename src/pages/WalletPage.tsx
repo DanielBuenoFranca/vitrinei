@@ -278,6 +278,24 @@ const WalletPage = () => {
     setContractingCredit(false);
   };
 
+  const loadMoreTransactions = async () => {
+    if (!user || loadingMore || !txHasMore) return;
+    setLoadingMore(true);
+    const from = txOffset;
+    const to = txOffset + TX_PAGE_SIZE - 1;
+    const { data } = await supabase
+      .from('wallet_transactions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .range(from, to);
+    const more = data || [];
+    setTransactions(prev => [...prev, ...more]);
+    setTxOffset(prev => prev + more.length);
+    setTxHasMore(more.length === TX_PAGE_SIZE);
+    setLoadingMore(false);
+  };
+
   const handlePaySubscription = async () => {
     if (!wallet || !subscription) return;
     setPaying(true);
