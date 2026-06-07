@@ -72,7 +72,9 @@ export function CampaignForm() {
   const [rewardBuyer, setRewardBuyer] = useState('5.00');
   const [rewardSeller, setRewardSeller] = useState('15.00');
   const [rewardMixed, setRewardMixed] = useState('25.00');
+  const [inviteHours, setInviteHours] = useState('24');
   const [isActive, setIsActive] = useState(true);
+
 
   // Referrals data
   const [referrals, setReferrals] = useState<ReferralRow[]>([]);
