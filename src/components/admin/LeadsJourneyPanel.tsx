@@ -8,7 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { TrendingUp, RefreshCw, Search, CheckCircle2, Circle, Link2, FileSpreadsheet } from "lucide-react";
+import { TrendingUp, RefreshCw, Search, CheckCircle2, Circle, Link2, FileSpreadsheet, Trash2, Timer, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Lead {
   id: string;
@@ -22,6 +27,8 @@ interface Lead {
   source: string;
   joined_at: string | null;
   created_at: string;
+  expires_at: string | null;
+  consumed_at: string | null;
   buyer_released: boolean;
   seller_released: boolean;
   bonus_released: boolean;
@@ -41,21 +48,52 @@ const Step = ({ done, label, sub }: { done: boolean; label: string; sub?: string
   </div>
 );
 
+// Formata "tempo restante" curto: 23h 12m, 45m, 12s, ou "expirado"
+function formatRemaining(expiresAt: string | null, nowMs: number): { text: string; expired: boolean } {
+  if (!expiresAt) return { text: "—", expired: false };
+  const diff = new Date(expiresAt).getTime() - nowMs;
+  if (diff <= 0) return { text: "expirado", expired: true };
+  const h = Math.floor(diff / 3_600_000);
+  const m = Math.floor((diff % 3_600_000) / 60_000);
+  if (h >= 1) return { text: `${h}h ${m}m`, expired: false };
+  const s = Math.floor((diff % 60_000) / 1000);
+  if (m >= 1) return { text: `${m}m ${s}s`, expired: false };
+  return { text: `${s}s`, expired: false };
+}
+
 export function LeadsJourneyPanel() {
   const [rows, setRows] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState("");
   const [sourceFilter, setSourceFilter] = useState<"all" | "link" | "import">("all");
+  const [now, setNow] = useState(Date.now());
+  const [expiring, setExpiring] = useState(false);
+
+  // Tick every 30s to refresh countdowns
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(t);
+  }, []);
 
   const load = async () => {
     setLoading(true);
+    // Filtra fora os já expirados (status='expired') e os pendentes não consumidos cuja data já passou.
+    const nowIso = new Date().toISOString();
     const { data: refs } = await supabase
       .from("referrals")
-      .select("id, referrer_id, referred_id, referred_name, referred_email, referred_role, status, source, joined_at, created_at, buyer_released, seller_released, bonus_released, total_paid")
+      .select("id, referrer_id, referred_id, referred_name, referred_email, referred_role, status, source, joined_at, created_at, expires_at, consumed_at, buyer_released, seller_released, bonus_released, total_paid")
+      .neq("status", "expired")
       .order("created_at", { ascending: false })
-      .limit(200);
+      .limit(300);
 
-    const list = (refs || []) as any[];
+    // Esconde também os "vencidos" no cliente (ainda não marcados como expired) que nunca viraram cadastro.
+    const visibleRefs = (refs || []).filter((r: any) => {
+      if (r.referred_id) return true; // já cadastrou — mantém histórico
+      if (!r.expires_at) return true;
+      return new Date(r.expires_at).getTime() > Date.now();
+    });
+
+    const list = visibleRefs as any[];
     const referrerIds = [...new Set(list.map((r) => r.referrer_id))];
     const referredIds = list.map((r) => r.referred_id).filter(Boolean) as string[];
 
@@ -91,10 +129,48 @@ export function LeadsJourneyPanel() {
       first_sale_at: r.referred_id ? firstByType[r.referred_id]?.sale ?? null : null,
     }));
     setRows(enriched);
+    setNow(Date.now());
     setLoading(false);
   };
 
   useEffect(() => { load(); }, []);
+
+  const isUnconfirmed = (r: Lead) => !r.referred_id && !r.consumed_at;
+
+  const expireOne = async (lead: Lead) => {
+    const { error } = await supabase
+      .from("referrals")
+      .update({ status: "expired", expires_at: new Date().toISOString() })
+      .eq("id", lead.id);
+    if (error) {
+      toast.error("Erro ao expirar convite: " + error.message);
+      return;
+    }
+    toast.success(`Convite expirado. ${lead.referrer_name} pode gerar um novo link/chave.`);
+    setRows((prev) => prev.filter((r) => r.id !== lead.id));
+  };
+
+  const expireAllPending = async () => {
+    setExpiring(true);
+    try {
+      const ids = rows.filter(isUnconfirmed).map((r) => r.id);
+      if (ids.length === 0) {
+        toast.info("Não há convites pendentes para expirar.");
+        return;
+      }
+      const { error } = await supabase
+        .from("referrals")
+        .update({ status: "expired", expires_at: new Date().toISOString() })
+        .in("id", ids);
+      if (error) throw error;
+      toast.success(`${ids.length} convite(s) expirado(s). Os indicadores podem gerar novos links.`);
+      setRows((prev) => prev.filter((r) => !ids.includes(r.id)));
+    } catch (e: any) {
+      toast.error("Erro: " + (e.message || "desconhecido"));
+    } finally {
+      setExpiring(false);
+    }
+  };
 
   const filtered = rows.filter((r) => {
     if (sourceFilter !== "all" && (r.source || "link") !== sourceFilter) return false;
@@ -103,6 +179,7 @@ export function LeadsJourneyPanel() {
     return [r.referred_name, r.referred_email, r.referrer_name, r.status].some((v) => (v || "").toString().toLowerCase().includes(q));
   });
 
+  const pendingCount = rows.filter(isUnconfirmed).length;
   const fmt = (d: string | null) => (d ? new Date(d).toLocaleDateString("pt-BR") : null);
 
   return (
@@ -110,7 +187,7 @@ export function LeadsJourneyPanel() {
       <CardHeader className="flex flex-row items-center justify-between gap-3 flex-wrap">
         <div>
           <CardTitle className="text-base flex items-center gap-2"><TrendingUp className="h-4 w-4" /> Painel Master de Leads</CardTitle>
-          <CardDescription>Jornada completa: Indicação → Cadastro → Assinatura paga → 1ª compra/venda → Bônus liberado.</CardDescription>
+          <CardDescription>Jornada completa: Indicação → Cadastro → Assinatura paga → 1ª compra/venda → Bônus liberado. Convites expirados são removidos da lista.</CardDescription>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Tabs value={sourceFilter} onValueChange={(v) => setSourceFilter(v as any)}>
@@ -124,7 +201,26 @@ export function LeadsJourneyPanel() {
             <Search className="h-3 w-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Filtrar..." className="pl-7 h-8 w-48" />
           </div>
-          <Button size="sm" variant="outline" onClick={load} disabled={loading}>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" variant="destructive" disabled={expiring || pendingCount === 0} aria-label="Expirar todos os convites pendentes">
+                <Trash2 className="h-3 w-3 mr-1" /> Limpar pendentes ({pendingCount})
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Expirar todos os convites pendentes?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Isso invalidará {pendingCount} convite(s) não confirmado(s) (links, chaves, etc.). Os convidados não poderão mais usar esses convites. Os indicadores precisarão gerar novos convites para retomar a jornada e liberar bônus.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={expireAllPending}>Expirar tudo</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <Button size="sm" variant="outline" onClick={load} disabled={loading} aria-label="Atualizar lista">
             <RefreshCw className={`h-3 w-3 mr-1 ${loading ? "animate-spin" : ""}`} /> Atualizar
           </Button>
         </div>
@@ -137,14 +233,19 @@ export function LeadsJourneyPanel() {
               <TableHead>Indicado</TableHead>
               <TableHead>Origem</TableHead>
               <TableHead>Perfil</TableHead>
+              <TableHead>Expira em</TableHead>
               <TableHead className="min-w-[760px]">Jornada</TableHead>
               <TableHead className="text-right">Pago (R$)</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.map((r) => {
               const profileLabel = r.referred_role === "mixed" ? "Bônus Extra" : r.referred_role === "provider" ? "Prestador" : r.referred_role === "client" ? "Comprador" : (r.referred_role || "—");
               const isMixed = r.referred_role === "mixed" || r.referred_role === "provider";
+              const unconfirmed = isUnconfirmed(r);
+              const remaining = unconfirmed ? formatRemaining(r.expires_at, now) : { text: "—", expired: false };
+              const isUrgent = unconfirmed && r.expires_at && (new Date(r.expires_at).getTime() - now) < 3_600_000;
               return (
                 <TableRow key={r.id}>
                   <TableCell className="text-xs font-medium">{r.referrer_name}</TableCell>
@@ -161,6 +262,16 @@ export function LeadsJourneyPanel() {
                   </TableCell>
                   <TableCell><Badge variant="outline" className="text-[9px]">{profileLabel}</Badge></TableCell>
                   <TableCell>
+                    {unconfirmed ? (
+                      <Badge variant="outline" className={`text-[10px] gap-1 ${isUrgent ? "border-destructive/60 text-destructive" : "border-amber-500/50 text-amber-600 dark:text-amber-400"}`}>
+                        {isUrgent ? <AlertCircle className="h-3 w-3" /> : <Timer className="h-3 w-3" />}
+                        {remaining.text}
+                      </Badge>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
                     <div className="flex gap-4 items-center min-w-[700px]">
                       <Step done={true} label="Indicação" sub={fmt(r.created_at)} />
                       <Step done={!!r.referred_id} label="Cadastro" sub={fmt(r.joined_at)} />
@@ -174,11 +285,36 @@ export function LeadsJourneyPanel() {
                     </div>
                   </TableCell>
                   <TableCell className="text-right tabular-nums text-xs">{Number(r.total_paid || 0).toFixed(2)}</TableCell>
+                  <TableCell className="text-right">
+                    {unconfirmed ? (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" aria-label="Expirar este convite">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Expirar este convite?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              O convite para <strong>{r.referred_name || r.referred_email || "este indicado"}</strong> será invalidado. {r.referrer_name} deverá gerar um novo convite para reabrir a jornada de bonificação.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => expireOne(r)}>Expirar</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
                 </TableRow>
               );
             })}
             {filtered.length === 0 && !loading && (
-              <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">Nenhum lead encontrado.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-8">Nenhum lead ativo encontrado.</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
