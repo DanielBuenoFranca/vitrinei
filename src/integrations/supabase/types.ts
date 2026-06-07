@@ -675,6 +675,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          invite_expiration_hours: number
           is_active: boolean
           min_groups_for_ranking: number
           reward_buyer: number
@@ -687,6 +688,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          invite_expiration_hours?: number
           is_active?: boolean
           min_groups_for_ranking?: number
           reward_buyer?: number
@@ -699,6 +701,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          invite_expiration_hours?: number
           is_active?: boolean
           min_groups_for_ranking?: number
           reward_buyer?: number
