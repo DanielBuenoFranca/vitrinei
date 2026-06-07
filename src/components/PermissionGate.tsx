@@ -14,9 +14,11 @@ interface PermissionGateProps {
 }
 
 export function PermissionGate({ permission, featureName, children, showBlocked = true, readOnly = false }: PermissionGateProps) {
-  const { can, requirePermission, PROFILE_LABELS, profileType } = usePermissions();
+  const { canWrite, can, requireWrite, blockedByPaywall } = usePermissions();
 
-  if (can(permission)) {
+  // For write/action-style features the gate must also respect the paywall.
+  const allowed = canWrite(permission) || (can(permission) && !blockedByPaywall);
+  if (allowed) {
     return <>{children}</>;
   }
 
@@ -33,7 +35,8 @@ export function PermissionGate({ permission, featureName, children, showBlocked 
             variant="outline"
             size="sm"
             className="gap-2 shadow-md"
-            onClick={() => requirePermission(permission, featureName)}
+            aria-label={`Recurso bloqueado: ${featureName || permission}`}
+            onClick={() => requireWrite(permission, featureName)}
           >
             <Lock className="h-4 w-4" />
             {featureName || 'Recurso bloqueado'}
@@ -53,7 +56,8 @@ export function PermissionGate({ permission, featureName, children, showBlocked 
         <Button
           variant="outline"
           size="sm"
-          onClick={() => requirePermission(permission, featureName)}
+          aria-label="Ver requisitos de acesso"
+          onClick={() => requireWrite(permission, featureName)}
         >
           Ver requisitos de acesso
         </Button>
