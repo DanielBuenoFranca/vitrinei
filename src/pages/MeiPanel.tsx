@@ -6,11 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { meiDashboard } from '@/data/mockData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { ArrowLeft, TrendingUp, Package, DollarSign, ShoppingCart, AlertTriangle, CheckCircle, XCircle, Zap, LayoutDashboard, Box, Wallet, Wrench, Users, Lightbulb, Star, ClipboardList } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Package, DollarSign, ShoppingCart, AlertTriangle, CheckCircle, XCircle, Zap, LayoutDashboard, Box, Wallet, Wrench, Users, Lightbulb, Star, ClipboardList, Beaker } from 'lucide-react';
 import { motion } from 'framer-motion';
 import MeiFlowDiagram from '@/components/flows/MeiFlowDiagram';
 import DropshippingFlowDiagram from '@/components/flows/DropshippingFlowDiagram';
 import FinancialFlowDiagram from '@/components/flows/FinancialFlowDiagram';
+import { useAuth } from '@/contexts/AuthContext';
 
 const tabs = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -24,6 +25,7 @@ const tabs = [
 const MeiPanel = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { displayName } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
 
   useEffect(() => {
@@ -33,6 +35,7 @@ const MeiPanel = () => {
     }
   }, [searchParams]);
   const d = meiDashboard;
+  const userName = displayName?.split(' ')[0] || 'João';
 
   const statusBadge = (status: string) => {
     const map: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
@@ -107,16 +110,20 @@ const MeiPanel = () => {
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">
-              {activeTab === 'dashboard' && 'Dashboard'}
-              {activeTab === 'gestao' && 'Gestão de Chamados'}
-              {activeTab === 'stock' && 'Estoque Drop-shipping'}
-              {activeTab === 'financial' && 'Gestão Financeira'}
-              {activeTab === 'services' && 'Serviços Prestados'}
-              {activeTab === 'insights' && 'Insights & Sugestões'}
-            </h1>
-            <p className="text-muted-foreground mt-1">Bem-vindo, João — MEI Tecnologia & Acessórios</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">
+                {activeTab === 'dashboard' && 'Dashboard'}
+                {activeTab === 'gestao' && 'Gestão de Chamados'}
+                {activeTab === 'stock' && 'Estoque Drop-shipping'}
+                {activeTab === 'financial' && 'Gestão Financeira'}
+                {activeTab === 'services' && 'Serviços Prestados'}
+                {activeTab === 'insights' && 'Insights & Sugestões'}
+              </h1>
+              <Badge variant="outline" className="gap-1 text-[10px]"><Beaker className="w-3 h-3" /> Demo</Badge>
+            </div>
+            <p className="text-muted-foreground mt-1">Bem-vindo, {userName} — MEI Tecnologia & Acessórios <span className="text-xs">(dados simulados)</span></p>
           </div>
+
 
           {/* Gestão Tab */}
           {activeTab === 'gestao' && (
