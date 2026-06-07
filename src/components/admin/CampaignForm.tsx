@@ -16,8 +16,10 @@ interface Campaign {
   reward_seller: number;
   reward_mixed_total: number;
   is_active: boolean;
+  invite_expiration_hours: number;
   updated_at: string;
 }
+
 
 interface ReferralSummary {
   total: number;
