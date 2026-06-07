@@ -62,8 +62,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  // Debug roles in console for admin access troubleshooting
-  console.log('AdminRoute: Access check', { hasUser: !!user, isAdmin, isMaster, roles });
+  if (import.meta.env.DEV) console.log('AdminRoute: Access check', { hasUser: !!user, isAdmin, isMaster, roles });
 
   if (!user) return <Navigate to="/auth" replace />;
   

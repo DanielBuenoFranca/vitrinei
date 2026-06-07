@@ -244,6 +244,7 @@ export function CampaignForm() {
   };
 
   const handleSavePlan = async () => {
+    if (!requireWrite('admin.campaigns', editPlan ? 'Editar plano' : 'Novo plano')) return;
     if (!planForm.name.trim() || !planForm.price) {
       toast.error('Nome e preço são obrigatórios');
       return;
@@ -280,6 +281,7 @@ export function CampaignForm() {
   };
 
   const saveCampaign = async () => {
+    if (!requireWrite('admin.campaigns', 'Salvar campanha')) return;
     const buyer = parseFloat(rewardBuyer);
     const seller = parseFloat(rewardSeller);
     const mixed = parseFloat(rewardMixed);
