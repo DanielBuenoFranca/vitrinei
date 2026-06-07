@@ -283,9 +283,14 @@ export function CampaignForm() {
     const buyer = parseFloat(rewardBuyer);
     const seller = parseFloat(rewardSeller);
     const mixed = parseFloat(rewardMixed);
+    const hours = parseInt(inviteHours, 10);
 
     if (isNaN(buyer) || isNaN(seller) || isNaN(mixed)) {
       toast.error('Preencha todos os valores corretamente');
+      return;
+    }
+    if (isNaN(hours) || hours < 1 || hours > 720) {
+      toast.error('Tempo de expiração do convite deve estar entre 1 e 720 horas');
       return;
     }
     if (mixed < buyer + seller) {
@@ -302,8 +307,9 @@ export function CampaignForm() {
             reward_buyer: buyer,
             reward_seller: seller,
             reward_mixed_total: mixed,
+            invite_expiration_hours: hours,
             is_active: isActive,
-          })
+          } as any)
           .eq('id', campaign.id);
         if (error) throw error;
       } else {
@@ -313,8 +319,9 @@ export function CampaignForm() {
             reward_buyer: buyer,
             reward_seller: seller,
             reward_mixed_total: mixed,
+            invite_expiration_hours: hours,
             is_active: isActive,
-          });
+          } as any);
         if (error) throw error;
       }
       toast.success('Campanha atualizada — valores refletidos em todo o sistema');
@@ -324,6 +331,7 @@ export function CampaignForm() {
     }
     setSaving(false);
   };
+
 
   const roleLabel = (role: string | null) => {
     switch (role) {
