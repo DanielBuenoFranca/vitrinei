@@ -179,17 +179,14 @@ export function useClientCatalog(): ClientCatalog {
     return providers.map((p: any) => {
       const segs = Array.isArray(p.segment) ? p.segment : (p.segment ? [p.segment] : []);
       const segment = segs[0] || 'Geral';
-      const own = products.filter((prod) => {
-        const provIdMatch = (prod as any).providerId === p.id;
-        return provIdMatch || prod.supplier === p.name;
-      });
+      const own = products.filter((prod) => prod.supplier === p.name);
       return {
         id: p.id,
         name: p.name,
         segment,
-        specialty: p.specialty || segs.join(' / ') || 'Multi-serviços',
+        specialty: segs.join(' / ') || 'Multi-serviços',
         rating: Number(p.rating) || 4.5,
-        completedJobs: Number(p.completed_jobs) || 0,
+        completedJobs: Number(p.total_sales_rated) || 0,
         city: p.city || 'Brasil',
         avatar: SEGMENT_ICON[segment] || '🏪',
         ownProducts: own,

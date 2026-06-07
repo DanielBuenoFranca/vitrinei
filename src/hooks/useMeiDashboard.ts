@@ -59,7 +59,7 @@ export function useMeiDashboard() {
       const { data: prov } = await supabase
         .from('providers')
         .select('id, name')
-        .or(`owner_id.eq.${authUser.id},name.eq.${profile?.display_name || ''}`)
+        .eq('user_id', authUser.id)
         .limit(1)
         .maybeSingle();
       const providerId = prov?.id ?? null;
@@ -68,7 +68,7 @@ export function useMeiDashboard() {
       const stockQuery = supabase.from('dynamic_products').select('id,name,quantity,price,provider,provider_id');
       const { data: stockRaw } = providerId
         ? await stockQuery.eq('provider_id', providerId)
-        : await stockQuery.limit(0);
+        : { data: [] as any[] };
 
       const stock: StockRow[] = (stockRaw || []).map((r: any) => {
         const qty = Number(r.quantity) || 0;
@@ -81,20 +81,17 @@ export function useMeiDashboard() {
         ? await supabase.from('dynamic_services').select('id,name,price,rating').eq('provider_id', providerId)
         : { data: [] as any[] };
 
-      // 4) Wallet (balance + transactions for revenue/cashflow).
+      // 4) Wallet + transactions for revenue/cashflow.
       const { data: wallet } = await supabase
         .from('wallets').select('id,balance,total_earned,total_spent,pending_balance')
         .eq('user_id', authUser.id).maybeSingle();
 
-      const walletId = wallet?.id || '';
-      const { data: tx } = walletId
-        ? await supabase
-            .from('wallet_transactions')
-            .select('amount,type,created_at,description')
-            .eq('wallet_id', walletId)
-            .order('created_at', { ascending: false })
-            .limit(180)
-        : { data: [] as any[] };
+      const { data: tx } = await supabase
+        .from('wallet_transactions')
+        .select('amount,type,created_at,description')
+        .eq('user_id', authUser.id)
+        .order('created_at', { ascending: false })
+        .limit(180);
 
       // Aggregate revenue chart (last 6 months) + cashflow (last 6 days).
       const now = new Date();
