@@ -83,15 +83,18 @@ export function useMeiDashboard() {
 
       // 4) Wallet (balance + transactions for revenue/cashflow).
       const { data: wallet } = await supabase
-        .from('wallets').select('balance,total_earned,total_spent,pending_balance')
+        .from('wallets').select('id,balance,total_earned,total_spent,pending_balance')
         .eq('user_id', authUser.id).maybeSingle();
 
-      const { data: tx } = await supabase
-        .from('wallet_transactions')
-        .select('amount,type,created_at,description')
-        .eq('wallet_id', wallet ? (await supabase.from('wallets').select('id').eq('user_id', authUser.id).maybeSingle()).data?.id : '')
-        .order('created_at', { ascending: false })
-        .limit(180);
+      const walletId = wallet?.id || '';
+      const { data: tx } = walletId
+        ? await supabase
+            .from('wallet_transactions')
+            .select('amount,type,created_at,description')
+            .eq('wallet_id', walletId)
+            .order('created_at', { ascending: false })
+            .limit(180)
+        : { data: [] as any[] };
 
       // Aggregate revenue chart (last 6 months) + cashflow (last 6 days).
       const now = new Date();
