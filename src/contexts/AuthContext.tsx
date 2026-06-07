@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { User, Session } from '@supabase/supabase-js';
@@ -36,69 +36,62 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<any | null>(null);
   const [mustResetPassword, setMustResetPassword] = useState(false);
   const [userStatus, setUserStatus] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
 
   const isAdmin = roles.includes('admin') || roles.includes('master');
   const isMaster = roles.includes('master');
 
   useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
+    let isActive = true;
 
-  const initializeAuth = useCallback(async (currentSession: Session | null) => {
-    if (!mounted) return;
-    
-    setSession(currentSession);
-    const currentUser = currentSession?.user ?? null;
-    setUser(currentUser);
-    
-    if (currentUser) {
+    // Hydrates profile + roles for a given user. Runs OUTSIDE the auth callback
+    // (deferred via setTimeout) to avoid the well-known Supabase deadlock where
+    // calling supabase from inside onAuthStateChange blocks the auth lock and
+    // freezes subsequent requests — that was the root cause of "master roles
+    // not loaded" in the preview iframe.
+    const hydrate = async (currentUser: User | null) => {
+      if (!currentUser) {
+        if (!isActive) return;
+        setRoles([]);
+        setDisplayName(null);
+        setProfile(null);
+        setUserStatus(null);
+        setMustResetPassword(false);
+        setLoading(false);
+        return;
+      }
+
       const mustReset = currentUser.user_metadata?.must_reset_password === true;
-      setMustResetPassword(mustReset);
-      
-      // Fetch profile and roles in parallel for efficiency
-      const [profileRes, rolesRes] = await Promise.all([
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', currentUser.id)
-          .maybeSingle(),
-        supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', currentUser.id)
-      ]);
+      if (isActive) setMustResetPassword(mustReset);
 
-      if (mounted) {
+      try {
+        const [profileRes, rolesRes] = await Promise.all([
+          supabase.from('profiles').select('*').eq('user_id', currentUser.id).maybeSingle(),
+          supabase.from('user_roles').select('role').eq('user_id', currentUser.id),
+        ]);
+
+        if (!isActive) return;
+
         if (profileRes.data) {
           setDisplayName(profileRes.data.display_name);
           setUserStatus(profileRes.data.status);
           setProfile(profileRes.data);
 
           if (profileRes.data.status === 'inactive' || profileRes.data.status === 'banned') {
-            const msg = profileRes.data.status === 'inactive' 
-              ? 'Sua conta está desativada. Entre em contato com o suporte.' 
+            const msg = profileRes.data.status === 'inactive'
+              ? 'Sua conta está desativada. Entre em contato com o suporte.'
               : 'Sua conta foi banida do sistema.';
             toast.error(msg);
-            await supabase.auth.signOut();
+            // Defer signOut so we don't recurse into the auth callback synchronously.
+            setTimeout(() => { supabase.auth.signOut(); }, 0);
             setLoading(false);
             return;
           }
         }
-        
-        if (rolesRes.data) {
+
+        if (rolesRes.data && rolesRes.data.length > 0) {
           const userRoles = rolesRes.data.map(r => r.role as AppRole);
           console.log('AuthContext: Roles fetched for', currentUser.id, userRoles);
           setRoles(userRoles);
-          
-          // Debug toast for special user to help troubleshoot preview
-          if (currentUser.email?.includes('danielbuenofranca2')) {
-            toast.success(`Sessão Master identificada: ${userRoles.join(', ')}`, {
-              id: 'auth-debug-success',
-              duration: 3000
-            });
-          }
         } else if (rolesRes.error) {
           console.error('AuthContext: Error fetching roles:', rolesRes.error);
           setRoles([]);
@@ -106,42 +99,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } else {
           console.log('AuthContext: No roles found for', currentUser.id);
           setRoles([]);
-          
-          // Auto-retry once after 2 seconds if roles are empty but user is signed in
+          // One retry after 1.5s in case of transient timing (e.g. trigger still inserting role)
           setTimeout(async () => {
+            if (!isActive) return;
             const retryRes = await supabase.from('user_roles').select('role').eq('user_id', currentUser.id);
-            if (retryRes.data && retryRes.data.length > 0) {
+            if (isActive && retryRes.data && retryRes.data.length > 0) {
               const retryRoles = retryRes.data.map(r => r.role as AppRole);
               setRoles(retryRoles);
               console.log('AuthContext: Roles recovered on retry:', retryRoles);
             }
-          }, 2000);
+          }, 1500);
         }
+      } catch (err) {
+        console.error('AuthContext: hydrate error', err);
+      } finally {
+        if (isActive) setLoading(false);
       }
-    } else {
-      if (mounted) {
-        setRoles([]);
-        setDisplayName(null);
-        setProfile(null);
-        setUserStatus(null);
-        setMustResetPassword(false);
-      }
-    }
-    
-    if (mounted) {
-      setLoading(false);
-    }
-  }, [mounted]);
+    };
 
-  useEffect(() => {
-    if (!mounted) return;
+    // 1) Subscribe FIRST — never await/use supabase inside this callback.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+      console.log('AuthContext: onAuthStateChange event:', event, 'Session:', !!newSession);
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('AuthContext: onAuthStateChange event:', event, 'Session:', !!session);
-      
-      // If the session is lost or user is signed out, we should reflect that immediately
-      // to avoid inconsistent UI states where logic thinks user is logged in but tokens are gone
       if (event === 'SIGNED_OUT') {
         setSession(null);
         setUser(null);
@@ -151,30 +130,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setMustResetPassword(false);
         setUserStatus(null);
         setLoading(false);
-      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        return;
+      }
+
+      // Synchronous state updates only here.
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
+
+      // Defer ALL Supabase calls to escape the auth lock.
+      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
         setLoading(true);
-        await initializeAuth(session);
+        setTimeout(() => { hydrate(newSession?.user ?? null); }, 0);
       }
     });
 
-    // Initial session check
-    const checkInitialSession = async () => {
-      try {
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
-        console.log('AuthContext: Initial session check', !!initialSession);
-        await initializeAuth(initialSession);
-      } catch (err) {
-        console.error('AuthContext: Error getting initial session', err);
-        setLoading(false);
-      }
-    };
-
-    checkInitialSession();
+    // 2) THEN check existing session (covers cases where INITIAL_SESSION doesn't fire fast enough).
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      console.log('AuthContext: Initial session check', !!initialSession);
+      setSession(initialSession);
+      setUser(initialSession?.user ?? null);
+      setTimeout(() => { hydrate(initialSession?.user ?? null); }, 0);
+    }).catch((err) => {
+      console.error('AuthContext: Error getting initial session', err);
+      setLoading(false);
+    });
 
     return () => {
+      isActive = false;
       subscription.unsubscribe();
     };
-  }, [mounted, initializeAuth]);
+  }, []);
 
   const fetchRoles = async (userId: string) => {
     const { data } = await supabase.from('user_roles').select('role').eq('user_id', userId);
