@@ -850,7 +850,7 @@ const AdminPanel = () => {
                   <CardTitle className="text-base">Cadastro de Segmentos</CardTitle>
                   <CardDescription>Segmentos vinculados obrigatoriamente a prestadores, produtos e serviços</CardDescription>
                 </div>
-                <Button size="sm" onClick={() => setSegmentForm({ open: true, item: null })}>
+                <Button size="sm" onClick={() => { if (requireWrite('admin.crud', 'Novo Segmento')) setSegmentForm({ open: true, item: null }); }}>
                   <Plus className="h-4 w-4 mr-1" /> Novo Segmento
                 </Button>
               </CardHeader>
@@ -934,7 +934,7 @@ const AdminPanel = () => {
                   <CardTitle className="text-base">Serviços Dinâmicos</CardTitle>
                   <CardDescription>Serviços = Mão de Obra + Produtos vinculados</CardDescription>
                 </div>
-                <Button size="sm" onClick={() => setServiceForm({ open: true, item: null })}>
+                <Button size="sm" onClick={() => { if (requireWrite('admin.crud', 'Novo Serviço')) setServiceForm({ open: true, item: null }); }}>
                   <Plus className="h-4 w-4 mr-1" /> Novo Serviço
                 </Button>
               </CardHeader>
@@ -1027,7 +1027,7 @@ const AdminPanel = () => {
                   <CardTitle className="text-base">Produtos de Estoque</CardTitle>
                   <CardDescription>Produtos vinculados ao estoque de cada prestador</CardDescription>
                 </div>
-                <Button size="sm" onClick={() => setProductForm({ open: true, item: null })}>
+                <Button size="sm" onClick={() => { if (requireWrite('admin.crud', 'Novo Produto')) setProductForm({ open: true, item: null }); }}>
                   <Plus className="h-4 w-4 mr-1" /> Novo Produto
                 </Button>
               </CardHeader>
@@ -1128,7 +1128,7 @@ const AdminPanel = () => {
                     {generatingUnits ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                     {generatingUnits ? 'Gerando...' : 'Gerar com IA'}
                   </Button>
-                  <Button size="sm" onClick={() => setUnitForm({ open: true, item: null })}>
+                  <Button size="sm" onClick={() => { if (requireWrite('admin.crud', 'Nova Unidade')) setUnitForm({ open: true, item: null }); }}>
                     <Plus className="h-4 w-4 mr-1" /> Nova Unidade
                   </Button>
                 </div>
@@ -1242,7 +1242,7 @@ const AdminPanel = () => {
                       className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                     />
                   </div>
-                  <Button size="sm" onClick={() => setUserForm({ open: true, profile: null, role: null, email: null })}>
+                  <Button size="sm" onClick={() => { if (requireWrite('admin.users', 'Novo Usuário')) setUserForm({ open: true, profile: null, role: null, email: null }); }}>
                     <Plus className="h-4 w-4 mr-1" /> Novo Usuário
                   </Button>
                 </div>
