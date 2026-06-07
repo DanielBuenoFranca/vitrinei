@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { meiDashboard } from '@/data/mockData';
+import { useMeiDashboard } from '@/hooks/useMeiDashboard';
+import { EmptyStateVini } from '@/components/EmptyStateVini';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { ArrowLeft, TrendingUp, Package, DollarSign, ShoppingCart, AlertTriangle, CheckCircle, XCircle, Zap, LayoutDashboard, Box, Wallet, Wrench, Users, Lightbulb, Star, ClipboardList, Beaker } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -27,6 +28,7 @@ const MeiPanel = () => {
   const [searchParams] = useSearchParams();
   const { displayName } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const { data: d, isEmpty: dashboardEmpty } = useMeiDashboard();
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -34,8 +36,7 @@ const MeiPanel = () => {
       setActiveTab(tab);
     }
   }, [searchParams]);
-  const d = meiDashboard;
-  const userName = displayName?.split(' ')[0] || 'João';
+  const userName = displayName?.split(' ')[0] || 'Prestador';
 
   const statusBadge = (status: string) => {
     const map: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {

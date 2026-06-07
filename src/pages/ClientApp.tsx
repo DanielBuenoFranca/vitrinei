@@ -535,6 +535,17 @@ const ClientApp = () => {
           </div>
         </div>
 
+        {/* Empty state — produção sem dados reais */}
+        {catalogEmpty && (
+          <EmptyStateVini
+            title="Nenhum serviço ou produto cadastrado ainda"
+            description="Estamos em modo produção — sem dados simulados. Cadastre seus primeiros itens no painel administrativo para começar a vender, ou peça ajuda ao Vini para gerar sugestões iniciais com IA."
+            primaryLabel="Abrir painel admin"
+            primaryTo="/admin"
+            viniPrompt="Me ajude a cadastrar os primeiros serviços e produtos para este sistema. Quais sugiro começar?"
+          />
+        )}
+
         {/* Filter Pills (Segments + Providers) */}
         <div className="px-3 pb-2 flex gap-1.5 admin-scroll-area shrink-0 no-scrollbar">
           {/* Segments */}
