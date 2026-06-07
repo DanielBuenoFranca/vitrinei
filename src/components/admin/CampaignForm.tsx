@@ -16,8 +16,10 @@ interface Campaign {
   reward_seller: number;
   reward_mixed_total: number;
   is_active: boolean;
+  invite_expiration_hours: number;
   updated_at: string;
 }
+
 
 interface ReferralSummary {
   total: number;
@@ -70,7 +72,9 @@ export function CampaignForm() {
   const [rewardBuyer, setRewardBuyer] = useState('5.00');
   const [rewardSeller, setRewardSeller] = useState('15.00');
   const [rewardMixed, setRewardMixed] = useState('25.00');
+  const [inviteHours, setInviteHours] = useState('24');
   const [isActive, setIsActive] = useState(true);
+
 
   // Referrals data
   const [referrals, setReferrals] = useState<ReferralRow[]>([]);
@@ -107,10 +111,12 @@ export function CampaignForm() {
       setRewardBuyer(Number(data.reward_buyer).toFixed(2));
       setRewardSeller(Number(data.reward_seller).toFixed(2));
       setRewardMixed(Number(data.reward_mixed_total).toFixed(2));
+      setInviteHours(String((data as any).invite_expiration_hours ?? 24));
       setIsActive(data.is_active);
     }
     setLoading(false);
   };
+
 
   const [bonusGenerated, setBonusGenerated] = useState(0);
   const [totalSubsPaid, setTotalSubsPaid] = useState(0);
@@ -277,9 +283,14 @@ export function CampaignForm() {
     const buyer = parseFloat(rewardBuyer);
     const seller = parseFloat(rewardSeller);
     const mixed = parseFloat(rewardMixed);
+    const hours = parseInt(inviteHours, 10);
 
     if (isNaN(buyer) || isNaN(seller) || isNaN(mixed)) {
       toast.error('Preencha todos os valores corretamente');
+      return;
+    }
+    if (isNaN(hours) || hours < 1 || hours > 720) {
+      toast.error('Tempo de expiração do convite deve estar entre 1 e 720 horas');
       return;
     }
     if (mixed < buyer + seller) {
@@ -296,8 +307,9 @@ export function CampaignForm() {
             reward_buyer: buyer,
             reward_seller: seller,
             reward_mixed_total: mixed,
+            invite_expiration_hours: hours,
             is_active: isActive,
-          })
+          } as any)
           .eq('id', campaign.id);
         if (error) throw error;
       } else {
@@ -307,8 +319,9 @@ export function CampaignForm() {
             reward_buyer: buyer,
             reward_seller: seller,
             reward_mixed_total: mixed,
+            invite_expiration_hours: hours,
             is_active: isActive,
-          });
+          } as any);
         if (error) throw error;
       }
       toast.success('Campanha atualizada — valores refletidos em todo o sistema');
@@ -318,6 +331,7 @@ export function CampaignForm() {
     }
     setSaving(false);
   };
+
 
   const roleLabel = (role: string | null) => {
     switch (role) {
@@ -531,6 +545,15 @@ export function CampaignForm() {
               <p className="text-[10px] text-muted-foreground mt-1">Compra + Venda + Bônus Extra restante (perfil Prestador que também compra)</p>
             </div>
           </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">⏱️ Expiração do convite (horas)</label>
+              <Input type="number" min="1" max="720" step="1" value={inviteHours} onChange={e => setInviteHours(e.target.value)} placeholder="24" />
+              <p className="text-[10px] text-muted-foreground mt-1">Tempo máximo para o lead se ativar e gerar bonificação. Padrão: 24h.</p>
+            </div>
+          </div>
+
 
           <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
             <p><strong>Indicado Prestador (régua de mérito):</strong> 1) libera R$ {rewardBuyer} na 1ª compra → 2) libera R$ {rewardSeller} na 1ª venda → 3) libera Bônus Extra de R$ {(parseFloat(rewardMixed || '0') - parseFloat(rewardBuyer || '0') - parseFloat(rewardSeller || '0')).toFixed(2)} ao concluir ambas.</p>
