@@ -80,6 +80,18 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
     toast.success('Imagem enviada');
   };
 
+  const historyKey = `imgHistory:${kind}:${id || name}`;
+  const readHistory = (): string[] => {
+    try { return JSON.parse(localStorage.getItem(historyKey) || '[]'); } catch { return []; }
+  };
+  const pushHistory = (url: string) => {
+    try {
+      const h = readHistory();
+      const next = [url, ...h.filter(u => u !== url)].slice(0, 8);
+      localStorage.setItem(historyKey, JSON.stringify(next));
+    } catch {}
+  };
+
   const generate = async () => {
     console.log('[ItemImagePicker] generate() called. Current busyRef:', busyRef.current);
     if (busyRef.current) return;
@@ -106,13 +118,16 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
     try {
       console.log('[ItemImagePicker] Starting generation for:', name);
       setStep('generating');
-      
+
+      const excludeUrls = Array.from(new Set([imageUrl, ...readHistory()].filter(Boolean))) as string[];
+
       const { data, error } = await supabase.functions.invoke('sanitize-images', {
         body: {
           kind,
           id: id || 0,
           name: name.trim(),
           currentImageUrl: imageUrl || undefined,
+          excludeUrls,
           segment,
           tags: (tags || []).filter(Boolean),
           description,
@@ -143,6 +158,7 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
       } else {
         console.log('[ItemImagePicker] New image URL applied:', url);
         onChange(url);
+        pushHistory(url);
         toast.success((data as any)?.source === 'ai' ? 'Imagem gerada pela IA' : 'Imagem profissional aplicada');
       }
     } catch (err: any) {
