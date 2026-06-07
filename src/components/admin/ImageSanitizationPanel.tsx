@@ -240,38 +240,67 @@ export function ImageSanitizationPanel() {
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[60vh] overflow-y-auto">
-          {items.map((it) => (
-            <div
-              key={`${it.kind}-${it.id}`}
-              className="flex items-center justify-between gap-2 p-2 rounded-md border bg-card"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="h-10 w-10 rounded bg-muted flex items-center justify-center shrink-0">
-                  <ImageOff className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-sm font-medium truncate">{it.name}</div>
-                  <div className="flex items-center gap-1">
-                    <Badge variant={kindColor(it.kind) as any} className="text-[10px] px-1 py-0 h-4">
-                      {kindLabel(it.kind)}
-                    </Badge>
-                    {it.segment && (
-                      <span className="text-[10px] text-muted-foreground truncate">{it.segment}</span>
+          {items.map((it) => {
+            const hasImage = !isMissing(it.current);
+            return (
+              <div
+                key={`${it.kind}-${it.id}`}
+                className="flex items-center justify-between gap-2 p-2 rounded-md border bg-card"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="relative h-12 w-12 rounded bg-muted flex items-center justify-center shrink-0 overflow-hidden border">
+                    {hasImage && (
+                      <img
+                        src={it.current as string}
+                        alt={it.name}
+                        loading="lazy"
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display = 'none';
+                          const sib = e.currentTarget.nextElementSibling as HTMLElement | null;
+                          if (sib) sib.style.display = 'flex';
+                        }}
+                      />
                     )}
+                    <div
+                      className="absolute inset-0 flex items-center justify-center bg-destructive/10"
+                      style={{ display: hasImage ? 'none' : 'flex' }}
+                      aria-label="Sem imagem"
+                    >
+                      <AlertTriangle className="h-4 w-4 text-destructive" />
+                    </div>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium truncate">{it.name}</div>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <Badge variant={kindColor(it.kind) as any} className="text-[10px] px-1 py-0 h-4">
+                        {kindLabel(it.kind)}
+                      </Badge>
+                      {!hasImage && (
+                        <Badge variant="destructive" className="text-[10px] px-1 py-0 h-4">
+                          sem imagem
+                        </Badge>
+                      )}
+                      {it.segment && (
+                        <span className="text-[10px] text-muted-foreground truncate">{it.segment}</span>
+                      )}
+                    </div>
                   </div>
                 </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => sanitizeSingle(it)}
+                  disabled={running}
+                  className="shrink-0"
+                  aria-label={hasImage ? `Regerar imagem de ${it.name}` : `Gerar imagem para ${it.name}`}
+                  title={hasImage ? 'Regerar imagem' : 'Gerar imagem'}
+                >
+                  <Sparkles className="h-3 w-3" />
+                </Button>
               </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => sanitizeSingle(it)}
-                disabled={running}
-                className="shrink-0"
-              >
-                <Sparkles className="h-3 w-3" />
-              </Button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </CardContent>
     </Card>
