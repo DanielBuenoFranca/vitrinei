@@ -546,6 +546,14 @@ export function CampaignForm() {
             </div>
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">⏱️ Expiração do convite (horas)</label>
+              <Input type="number" min="1" max="720" step="1" value={inviteHours} onChange={e => setInviteHours(e.target.value)} placeholder="24" />
+              <p className="text-[10px] text-muted-foreground mt-1">Tempo máximo para o lead se ativar e gerar bonificação. Padrão: 24h.</p>
+
+          </div>
+
           <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
             <p><strong>Indicado Prestador (régua de mérito):</strong> 1) libera R$ {rewardBuyer} na 1ª compra → 2) libera R$ {rewardSeller} na 1ª venda → 3) libera Bônus Extra de R$ {(parseFloat(rewardMixed || '0') - parseFloat(rewardBuyer || '0') - parseFloat(rewardSeller || '0')).toFixed(2)} ao concluir ambas.</p>
             <p><strong>Indicado Comprador:</strong> 100% (R$ {rewardBuyer}) após a 1ª compra confirmada.</p>
