@@ -90,14 +90,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (rolesRes.data && rolesRes.data.length > 0) {
           const userRoles = rolesRes.data.map(r => r.role as AppRole);
-          console.log('AuthContext: Roles fetched for', currentUser.id, userRoles);
+          if (import.meta.env.DEV) console.log('AuthContext: Roles fetched for', currentUser.id, userRoles);
           setRoles(userRoles);
         } else if (rolesRes.error) {
           console.error('AuthContext: Error fetching roles:', rolesRes.error);
           setRoles([]);
           toast.error('Erro ao carregar permissões: ' + rolesRes.error.message);
         } else {
-          console.log('AuthContext: No roles found for', currentUser.id);
+          if (import.meta.env.DEV) console.log('AuthContext: No roles found for', currentUser.id);
           setRoles([]);
           // One retry after 1.5s in case of transient timing (e.g. trigger still inserting role)
           setTimeout(async () => {
@@ -106,7 +106,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             if (isActive && retryRes.data && retryRes.data.length > 0) {
               const retryRoles = retryRes.data.map(r => r.role as AppRole);
               setRoles(retryRoles);
-              console.log('AuthContext: Roles recovered on retry:', retryRoles);
+              if (import.meta.env.DEV) console.log('AuthContext: Roles recovered on retry:', retryRoles);
             }
           }, 1500);
         }
@@ -119,8 +119,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // 1) Subscribe FIRST — never await/use supabase inside this callback.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
-      console.log('AuthContext: onAuthStateChange event:', event, 'Session:', !!newSession);
-
+      if (import.meta.env.DEV) console.log('AuthContext: onAuthStateChange event:', event, 'Session:', !!newSession);
       if (event === 'SIGNED_OUT') {
         setSession(null);
         setUser(null);
@@ -146,7 +145,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // 2) THEN check existing session (covers cases where INITIAL_SESSION doesn't fire fast enough).
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      console.log('AuthContext: Initial session check', !!initialSession);
+      if (import.meta.env.DEV) console.log('AuthContext: Initial session check', !!initialSession);
       setSession(initialSession);
       setUser(initialSession?.user ?? null);
       setTimeout(() => { hydrate(initialSession?.user ?? null); }, 0);
@@ -171,7 +170,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    console.log('AuthContext: signOut initiated');
+    if (import.meta.env.DEV) console.log('AuthContext: signOut initiated');
     try {
       setUser(null);
       setSession(null);

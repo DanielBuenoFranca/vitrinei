@@ -39,7 +39,7 @@ interface Props {
  * permite upload manual e geração via sanitize-images (respeita modo economia).
  */
 export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, bucket, tags, description, providerName, providerType, linkedNames, unit, price, onBusy, quantity }: Props) {
-  console.log('[ItemImagePicker] Rendered with imageUrl:', imageUrl);
+  if (import.meta.env.DEV) console.log('[ItemImagePicker] Rendered with imageUrl:', imageUrl);
   const [busy, _setBusy] = useState(false);
   const busyRef = useRef(false);
   const isMounted = useRef(true);
@@ -55,7 +55,7 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
     if (!isMounted.current) return;
     if (busyRef.current === val) return;
     
-    console.log(`[ItemImagePicker] Setting busy to ${val}`);
+    if (import.meta.env.DEV) console.log(`[ItemImagePicker] Setting busy to ${val}`);
     busyRef.current = val;
     _setBusy(val);
     if (onBusy) onBusy(val);
@@ -93,7 +93,7 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
   };
 
   const generate = async () => {
-    console.log('[ItemImagePicker] generate() called. Current busyRef:', busyRef.current);
+    if (import.meta.env.DEV) console.log('[ItemImagePicker] generate() called. Current busyRef:', busyRef.current);
     if (busyRef.current) return;
     
     if (!name.trim()) {
@@ -101,13 +101,13 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
       return;
     }
     
-    console.log('[ItemImagePicker] Setting busy true and starting...');
+    if (import.meta.env.DEV) console.log('[ItemImagePicker] Setting busy true and starting...');
     setBusy(true);
     setStep('enriching');
     
     // Fallback timer: se a função demorar mais de 30s, destravamos a tela
     const timeoutId = setTimeout(() => {
-      console.log('[ItemImagePicker] Timeout reached, forcing unlock');
+      if (import.meta.env.DEV) console.log('[ItemImagePicker] Timeout reached, forcing unlock');
       if (busyRef.current) {
         setBusy(false);
         setStep('idle');
@@ -116,7 +116,7 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
     }, 30000);
 
     try {
-      console.log('[ItemImagePicker] Starting generation for:', name);
+      if (import.meta.env.DEV) console.log('[ItemImagePicker] Starting generation for:', name);
       setStep('generating');
 
       const excludeUrls = Array.from(new Set([imageUrl, ...readHistory()].filter(Boolean))) as string[];
@@ -149,14 +149,14 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
       await new Promise(r => setTimeout(r, 600));
       
       if (!url) {
-        console.warn('[ItemImagePicker] No URL returned from function. Data:', data);
+        if (import.meta.env.DEV) console.warn('[ItemImagePicker] No URL returned from function. Data:', data);
         if ((data as any)?.error) {
           toast.error(`Erro na geração: ${(data as any).error}`);
         } else {
           toast.warning('A IA não conseguiu encontrar uma imagem adequada agora.');
         }
       } else {
-        console.log('[ItemImagePicker] New image URL applied:', url);
+        if (import.meta.env.DEV) console.log('[ItemImagePicker] New image URL applied:', url);
         onChange(url);
         pushHistory(url);
         toast.success((data as any)?.source === 'ai' ? 'Imagem gerada pela IA' : 'Imagem profissional aplicada');
@@ -175,7 +175,7 @@ export function ItemImagePicker({ kind, id, name, segment, imageUrl, onChange, b
       _setBusy(false);
       if (onBusy) onBusy(false);
       setStep('idle');
-      console.log('[ItemImagePicker] Generation finished and UI unlocked');
+      if (import.meta.env.DEV) console.log('[ItemImagePicker] Generation finished and UI unlocked');
     }
   };
 

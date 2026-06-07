@@ -85,7 +85,7 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
   const [imageBusy, setImageBusy] = useState(false);
   
   const handleImageUrlChange = useCallback((url: string | null) => {
-    console.log('[ServiceForm] handleImageUrlChange updating state to:', url);
+    if (import.meta.env.DEV) console.log('[ServiceForm] handleImageUrlChange updating state to:', url);
     setImageUrl(url);
     lastSetImageUrl.current = url;
   }, []);
@@ -111,7 +111,7 @@ export function ServiceForm({ open, onClose, onSaved, service, providers, segmen
       const isNewItem = hasLoadedRef.current !== service.id;
       
       if (isNewItem) {
-        console.log('[ServiceForm] Initial load for service:', service.id, service.name);
+        if (import.meta.env.DEV) console.log('[ServiceForm] Initial load for service:', service.id, service.name);
         setForm({
           name: service.name, segment: service.segment, provider: service.provider,
           provider_id: service.provider_id, labor_cost: service.labor_cost || 0,
