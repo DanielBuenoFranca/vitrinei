@@ -69,7 +69,7 @@ import { useMemo } from 'react';
 
 const AdminPanel = () => {
   const navigate = useNavigate();
-  const { can, requirePermission } = usePermissions();
+  const { can, requirePermission, requireWrite } = usePermissions();
   const { user } = useAuth();
   const [providers, setProviders] = useState<Provider[]>([]);
   const [services, setServices] = useState<DynamicService[]>([]);
