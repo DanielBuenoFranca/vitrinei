@@ -189,6 +189,19 @@ export const FloatingAiAvatar = () => {
   useEffect(() => {
     setGlobalThinking(thinking);
   }, [thinking, setGlobalThinking]);
+
+  // Listen for global `vini:open` events emitted by empty states / other components.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail || {};
+      setOpen(true);
+      if (detail.prompt) {
+        setTimeout(() => setMessage(String(detail.prompt)), 250);
+      }
+    };
+    window.addEventListener('vini:open', handler as EventListener);
+    return () => window.removeEventListener('vini:open', handler as EventListener);
+  }, []);
   const [expandedProducts, setExpandedProducts] = useState<number | null>(null);
   const [expandedServices, setExpandedServices] = useState<number | null>(null);
   const [pendingSuggestions, setPendingSuggestions] = useState<Map<number, Set<string>>>(new Map());

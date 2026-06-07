@@ -4,7 +4,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { plans, clientProducts, clientServices, mockUser, checkEligibility, meiProfessionals, getContextualProducts, type ServiceItem, type ProductItem } from '@/data/mockData';
+import { checkEligibility, getContextualProducts, type ServiceItem, type ProductItem } from '@/data/mockData';
+import { useClientCatalog } from '@/hooks/useClientCatalog';
+import { EmptyStateVini } from '@/components/EmptyStateVini';
 import {
   ArrowLeft, Star, ShoppingBag, Wrench, CreditCard, Zap, CheckCircle2, Lock,
   Clock, ArrowUpCircle, Coins, ShieldCheck, Package, ChevronRight, X, Search,
@@ -79,10 +81,14 @@ const ClientApp = () => {
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedSegments, setSelectedSegments] = useState<string[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [favorites, setFavorites] = useState<number[]>([1, 20, 25]);
+  const [favorites, setFavorites] = useState<number[]>([]);
   const [showCart, setShowCart] = useState(false);
   const [expandedSegment, setExpandedSegment] = useState<string | null>(null);
-  
+
+  // Real data loaded from Supabase (no mocks in production)
+  const catalog = useClientCatalog();
+  const { services: clientServices, products: clientProducts, plans, meiProfessionals, user: mockUser, isEmpty: catalogEmpty } = catalog;
+
   const { supported, listening, transcript, start, stop } = useSpeechRecognition();
 
   // Handle voice transcript auto-submit
@@ -528,6 +534,17 @@ const ClientApp = () => {
             </div>
           </div>
         </div>
+
+        {/* Empty state — produção sem dados reais */}
+        {catalogEmpty && (
+          <EmptyStateVini
+            title="Nenhum serviço ou produto cadastrado ainda"
+            description="Estamos em modo produção — sem dados simulados. Cadastre seus primeiros itens no painel administrativo para começar a vender, ou peça ajuda ao Vini para gerar sugestões iniciais com IA."
+            primaryLabel="Abrir painel admin"
+            primaryTo="/admin"
+            viniPrompt="Me ajude a cadastrar os primeiros serviços e produtos para este sistema. Quais sugiro começar?"
+          />
+        )}
 
         {/* Filter Pills (Segments + Providers) */}
         <div className="px-3 pb-2 flex gap-1.5 admin-scroll-area shrink-0 no-scrollbar">
