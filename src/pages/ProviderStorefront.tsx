@@ -171,14 +171,16 @@ const ProviderStorefront = () => {
       try {
         await Promise.all([reloadDynamicEntries(), loadSegmentTagsCache()]);
 
-        // Load specific provider by slug
-        const { data: providers, error: provError } = await supabase
+        // Load specific provider by slug — tolerate accidental duplicates by picking the lowest id.
+        const { data: matches, error: provError } = await supabase
           .from('providers')
           .select('*')
           .eq('slug', slug)
-          .maybeSingle();
+          .order('id', { ascending: true })
+          .limit(1);
 
         if (provError) throw provError;
+        const providers = matches && matches.length ? matches[0] : null;
 
         if (providers) {
           const provData = providers as ProviderData;

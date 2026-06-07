@@ -137,6 +137,10 @@ const WalletPage = () => {
   const planOptions = activePlans.map(p => ({ id: p.id, name: p.name, price: p.price, badge: p.badge }));
   const [wallet, setWallet] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [txOffset, setTxOffset] = useState(0);
+  const [txHasMore, setTxHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const TX_PAGE_SIZE = 100;
   const [referralCode, setReferralCode] = useState('');
   const [referrals, setReferrals] = useState<any[]>([]);
   const [subscription, setSubscription] = useState<any>(null);
@@ -209,14 +213,17 @@ const WalletPage = () => {
     setLoading(true);
     const [walletRes, txRes, refRes, subRes, campRes, profileRes] = await Promise.all([
       supabase.from('wallets').select('*').eq('user_id', user.id).maybeSingle(),
-      supabase.from('wallet_transactions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
+      supabase.from('wallet_transactions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).range(0, TX_PAGE_SIZE),
       supabase.from('referrals').select('*').eq('referrer_id', user.id).order('created_at', { ascending: false }),
       supabase.from('subscriptions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
       supabase.from('referral_campaigns').select('*').eq('is_active', true).limit(1).maybeSingle(),
       supabase.from('profiles').select('*').eq('user_id', user.id).maybeSingle(),
     ]);
     setWallet(walletRes.data);
-    setTransactions(txRes.data || []);
+    const allTx = txRes.data || [];
+    setTransactions(allTx.slice(0, TX_PAGE_SIZE));
+    setTxOffset(Math.min(allTx.length, TX_PAGE_SIZE));
+    setTxHasMore(allTx.length > TX_PAGE_SIZE);
     setReferrals(refRes.data || []);
     setSubscription(subRes.data);
     setProfile(profileRes.data);
@@ -269,6 +276,24 @@ const WalletPage = () => {
       toast.error('Erro: ' + (e.message || 'desconhecido'));
     }
     setContractingCredit(false);
+  };
+
+  const loadMoreTransactions = async () => {
+    if (!user || loadingMore || !txHasMore) return;
+    setLoadingMore(true);
+    const from = txOffset;
+    const to = txOffset + TX_PAGE_SIZE - 1;
+    const { data } = await supabase
+      .from('wallet_transactions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .range(from, to);
+    const more = data || [];
+    setTransactions(prev => [...prev, ...more]);
+    setTxOffset(prev => prev + more.length);
+    setTxHasMore(more.length === TX_PAGE_SIZE);
+    setLoadingMore(false);
   };
 
   const handlePaySubscription = async () => {
@@ -822,6 +847,16 @@ const WalletPage = () => {
                     </span>
                   </div>
                 ))}
+                {txHasMore && (
+                  <div className="pt-2 flex justify-center">
+                    <Button variant="outline" size="sm" onClick={loadMoreTransactions} disabled={loadingMore} aria-label="Carregar mais transações">
+                      {loadingMore ? 'Carregando...' : `Carregar mais (${TX_PAGE_SIZE})`}
+                    </Button>
+                  </div>
+                )}
+                {!txHasMore && transactions.length > TX_PAGE_SIZE && (
+                  <p className="text-[10px] text-muted-foreground text-center pt-2">Fim do extrato — {transactions.length} lançamentos.</p>
+                )}
               </div>
             )}
           </CardContent>

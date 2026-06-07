@@ -144,16 +144,32 @@ const TrackingMap = ({ progress }: { progress: number }) => (
 );
 
 /* ─── MAIN COMPONENT ─── */
+const DEMO_STATE_KEY = 'serviceManagementDemo:v1';
+const readDemoState = () => {
+  try { return JSON.parse(localStorage.getItem(DEMO_STATE_KEY) || '{}'); } catch { return {}; }
+};
+
 const ServiceManagementDemo = () => {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(0);
+  const persisted = readDemoState();
+  const [currentStep, setCurrentStep] = useState<number>(typeof persisted.currentStep === 'number' ? persisted.currentStep : 0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
-  const [trackingProgress, setTrackingProgress] = useState(0);
-  const [codeInput, setCodeInput] = useState('');
-  const [codeVerified, setCodeVerified] = useState(false);
-  const [photosUploaded, setPhotosUploaded] = useState(0);
-  const [qualityApproved, setQualityApproved] = useState(false);
-  const [creditReleased, setCreditReleased] = useState(false);
+  const [trackingProgress, setTrackingProgress] = useState<number>(persisted.trackingProgress ?? 0);
+  const [codeInput, setCodeInput] = useState<string>(persisted.codeInput ?? '');
+  const [codeVerified, setCodeVerified] = useState<boolean>(!!persisted.codeVerified);
+  const [photosUploaded, setPhotosUploaded] = useState<number>(persisted.photosUploaded ?? 0);
+  const [qualityApproved, setQualityApproved] = useState<boolean>(!!persisted.qualityApproved);
+  const [creditReleased, setCreditReleased] = useState<boolean>(!!persisted.creditReleased);
+
+  // Persist demo progress so the simulation survives reloads/navigation.
+  useEffect(() => {
+    try {
+      localStorage.setItem(DEMO_STATE_KEY, JSON.stringify({
+        currentStep, trackingProgress, codeInput, codeVerified,
+        photosUploaded, qualityApproved, creditReleased,
+      }));
+    } catch {}
+  }, [currentStep, trackingProgress, codeInput, codeVerified, photosUploaded, qualityApproved, creditReleased]);
 
   const step = steps[currentStep];
   const o = serviceOrder;
