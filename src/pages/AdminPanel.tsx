@@ -743,7 +743,7 @@ const AdminPanel = () => {
       <header className="border-b bg-card/80 backdrop-blur sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+            <Button variant="ghost" size="icon" aria-label="Voltar para a Home" onClick={() => navigate('/')}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <Database className="h-5 w-5 text-primary" />
@@ -905,10 +905,10 @@ const AdminPanel = () => {
                               </TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-1">
-                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSegmentForm({ open: true, item: seg })}>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Editar segmento ${seg.name}`} onClick={() => setSegmentForm({ open: true, item: seg })}>
                                     <Pencil className="h-4 w-4" />
                                   </Button>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteSegment(seg.id)}>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label={`Excluir segmento ${seg.name}`} onClick={() => deleteSegment(seg.id)}>
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </div>
@@ -1002,10 +1002,10 @@ const AdminPanel = () => {
                             <TableCell>{svc.time}</TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setServiceForm({ open: true, item: svc })}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Editar serviço ${svc.name}`} onClick={() => setServiceForm({ open: true, item: svc })}>
                                   <Pencil className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteService(svc.id)}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label={`Excluir serviço ${svc.name}`} onClick={() => deleteService(svc.id)}>
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
@@ -1098,10 +1098,10 @@ const AdminPanel = () => {
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setProductForm({ open: true, item: prod })}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Editar produto ${prod.name}`} onClick={() => setProductForm({ open: true, item: prod })}>
                                   <Pencil className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteProduct(prod.id)}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label={`Excluir produto ${prod.name}`} onClick={() => deleteProduct(prod.id)}>
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
@@ -1156,10 +1156,10 @@ const AdminPanel = () => {
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setUnitForm({ open: true, item: u })}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Editar unidade ${u.name}`} onClick={() => setUnitForm({ open: true, item: u })}>
                                   <Pencil className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteUnit(u.id)}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label={`Excluir unidade ${u.name}`} onClick={() => deleteUnit(u.id)}>
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
@@ -1367,6 +1367,7 @@ const AdminPanel = () => {
                                        <Button 
                                          variant="ghost" 
                                          size="icon" 
+                                         aria-label="Copiar PIN de ativação"
                                          className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity"
                                          onClick={() => {
                                            navigator.clipboard.writeText(activation.code);
@@ -1498,7 +1499,7 @@ const AdminPanel = () => {
                                     if (!prov) return null;
                                     const slug = (prov.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
                                     return (
-                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:text-primary" title="Abrir Loja do prestador"
+                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:text-primary" title="Abrir Loja do prestador" aria-label={`Abrir loja do prestador ${prov.name}`}
                                         onClick={() => navigate(`/loja/${slug}`)}>
                                         <Store className="h-4 w-4" />
                                       </Button>
@@ -1509,11 +1510,12 @@ const AdminPanel = () => {
                                     size="icon" 
                                     className={`h-8 w-8 ${profile.status === 'active' ? 'text-destructive' : 'text-green-600'}`}
                                     title={profile.status === 'active' ? 'Desativar usuário' : 'Ativar usuário'}
+                                    aria-label={profile.status === 'active' ? `Desativar usuário ${profile.display_name || ''}` : `Ativar usuário ${profile.display_name || ''}`}
                                     onClick={() => toggleUserStatus(profile.user_id, profile.status)}
                                   >
                                     {profile.status === 'active' ? <Lock className="h-4 w-4" /> : <ShieldCheck className="h-4 w-4" />}
                                   </Button>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Editar usuário ${profile.display_name || ''}`} onClick={() => {
                                     if (profile.__isLead) {
                                       // Lead importado: força Perfil = Misto + Papel = Comum (sem roles em user_roles)
                                       setUserForm({ open: true, profile, role: 'mixed', allRoles: [], email: profile.__leadEmail || null });
@@ -1525,7 +1527,7 @@ const AdminPanel = () => {
                                   }}>
                                     <Pencil className="h-4 w-4" />
                                   </Button>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-600 hover:text-amber-700" title="Redefinir senha"
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-600 hover:text-amber-700" title="Redefinir senha" aria-label={`Redefinir senha de ${profile.display_name || ''}`}
                                     onClick={() => { 
                                       const randomCode = Math.random().toString(36).slice(-8).toUpperCase();
                                       setResetPwdDialog({ open: true, userId: profile.user_id, userName: profile.display_name || 'Usuário' }); 
@@ -1533,7 +1535,7 @@ const AdminPanel = () => {
                                     }}>
                                     <KeyRound className="h-4 w-4" />
                                   </Button>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteUserProfile(profile.user_id)}>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label={`Excluir usuário ${profile.display_name || ''}`} onClick={() => deleteUserProfile(profile.user_id)}>
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </div>
@@ -1572,7 +1574,7 @@ const AdminPanel = () => {
                         <div key={idx} className="flex items-start gap-2 p-3 border rounded-lg bg-muted/30">
                           <Badge variant="outline" className="mt-0.5 shrink-0">{idx + 1}</Badge>
                           <p className="text-sm flex-1 break-words">{msg}</p>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-destructive hover:text-destructive" onClick={() => removeMarqueeMsg(idx)} disabled={savingMarquee}>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-destructive hover:text-destructive" aria-label={`Remover mensagem ${idx + 1} do marquee`} onClick={() => removeMarqueeMsg(idx)} disabled={savingMarquee}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -2052,6 +2054,7 @@ const AdminPanel = () => {
                 <Button 
                   variant="outline" 
                   size="icon" 
+                  aria-label="Copiar código de redefinição"
                   onClick={() => {
                     navigator.clipboard.writeText(resetPwdValue);
                     toast.success('Código copiado!');
