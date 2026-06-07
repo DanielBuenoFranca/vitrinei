@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Gift, Loader2, Save, Users, TrendingUp, DollarSign, Clock, Crown, Plus, Pencil, Trash2, CreditCard } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface Campaign {
   id: string;
@@ -66,6 +67,7 @@ const DEFAULT_PLANS: SubscriptionPlan[] = [
 ];
 
 export function CampaignForm() {
+  const { requireWrite } = usePermissions();
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -244,6 +246,7 @@ export function CampaignForm() {
   };
 
   const handleSavePlan = async () => {
+    if (!requireWrite('admin.campaigns', editPlan ? 'Editar plano' : 'Novo plano')) return;
     if (!planForm.name.trim() || !planForm.price) {
       toast.error('Nome e preço são obrigatórios');
       return;
@@ -280,6 +283,7 @@ export function CampaignForm() {
   };
 
   const saveCampaign = async () => {
+    if (!requireWrite('admin.campaigns', 'Salvar campanha')) return;
     const buyer = parseFloat(rewardBuyer);
     const seller = parseFloat(rewardSeller);
     const mixed = parseFloat(rewardMixed);

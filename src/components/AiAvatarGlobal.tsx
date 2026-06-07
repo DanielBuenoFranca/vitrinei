@@ -18,10 +18,11 @@ interface AiAvatarProps {
   className?: string;
 }
 
-export const AiAvatar = ({ size = 64, speaking = false, thinking = false, onClick, className = '' }: AiAvatarProps) => {
+export const AiAvatar = ({ size = 64, speaking = false, thinking = false, onClick, className = '', ariaLabel }: AiAvatarProps & { ariaLabel?: string }) => {
   return (
     <motion.button
       onClick={onClick}
+      aria-label={ariaLabel || 'Abrir assistente Vini'}
       className={`relative cursor-pointer select-none border-0 p-0 bg-transparent outline-none ${className}`}
       style={{ width: size, height: size }}
       whileHover={{ scale: 1.08 }}
@@ -314,7 +315,7 @@ export const FloatingAiAvatar = () => {
               <p className="text-xs text-foreground font-medium">Precisa de ajuda? 💡</p>
               <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1 w-2 h-2 bg-card border-r border-t border-border rotate-45" />
             </motion.div>
-            <AiAvatar size={56} speaking={speaking} thinking={thinking} onClick={() => setOpen(true)} />
+            <AiAvatar size={56} speaking={speaking} thinking={thinking} onClick={() => setOpen(true)} ariaLabel="Abrir chat com Vini, assistente IA da Vitrinei" />
           </motion.div>
         )}
       </motion.div>

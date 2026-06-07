@@ -115,21 +115,50 @@ const RadarUrgencyFlow = () => {
   // Sequência: searching -> found -> zooming -> enroute
   useEffect(() => {
     if (!locReady) return;
-    const mocks = generateMockProviders(userLoc);
-    setProviders(mocks);
+    let cancelled = false;
 
-    const t1 = setTimeout(() => setFoundCount(1), 1400);
-    const t2 = setTimeout(() => setFoundCount(2), 2300);
-    const t3 = setTimeout(() => setFoundCount(3), 3100);
-    const t4 = setTimeout(() => setPhase('found'), 3300);
-    const t5 = setTimeout(() => {
-      // escolhe automaticamente o mais bem avaliado
-      const best = [...mocks].sort((a, b) => b.rating - a.rating)[0];
-      setChosen(best);
-      setPhase('zooming');
-    }, 4800);
+    (async () => {
+      // Try to use REAL providers from DB; fallback to mocks if none.
+      let realMocks: MockProvider[] = [];
+      try {
+        const { data } = await supabase
+          .from('providers')
+          .select('id, name, segment, rating')
+          .order('rating', { ascending: false })
+          .limit(3);
+        if (data && data.length > 0) {
+          const vehicles = ['🏍️', '🚗', '🚐'];
+          realMocks = data.map((p: any, i: number) => ({
+            id: typeof p.id === 'number' ? p.id : 100 + i,
+            name: p.name || `Prestador ${i + 1}`,
+            segment: Array.isArray(p.segment) ? p.segment[0] : (p.segment || 'Serviço'),
+            rating: Number(p.rating) || 4.7,
+            vehicle: vehicles[i % vehicles.length],
+            eta: 8 + i * 2,
+            lat: userLoc[0] + (Math.random() - 0.5) * 0.018,
+            lng: userLoc[1] + (Math.random() - 0.5) * 0.018,
+          }));
+        }
+      } catch { /* fallback */ }
 
-    return () => { [t1, t2, t3, t4, t5].forEach(clearTimeout); };
+      const mocks = realMocks.length ? realMocks : generateMockProviders(userLoc);
+      if (cancelled) return;
+      setProviders(mocks);
+
+      const t1 = setTimeout(() => setFoundCount(1), 1400);
+      const t2 = setTimeout(() => setFoundCount(2), 2300);
+      const t3 = setTimeout(() => setFoundCount(3), 3100);
+      const t4 = setTimeout(() => setPhase('found'), 3300);
+      const t5 = setTimeout(() => {
+        const best = [...mocks].sort((a, b) => b.rating - a.rating)[0];
+        setChosen(best);
+        setPhase('zooming');
+      }, 4800);
+
+      return () => { [t1, t2, t3, t4, t5].forEach(clearTimeout); };
+    })();
+
+    return () => { cancelled = true; };
   }, [locReady, userLoc]);
 
   // Animação de zoom 3D -> map

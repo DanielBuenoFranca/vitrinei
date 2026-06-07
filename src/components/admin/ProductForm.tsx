@@ -98,7 +98,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
   }, [open, product]);
   
   const handleImageUrlChange = useCallback((url: string | null) => {
-    console.log('[ProductForm] handleImageUrlChange updating state to:', url);
+    if (import.meta.env.DEV) console.log('[ProductForm] handleImageUrlChange updating state to:', url);
     setImageUrl(url);
     lastSetImageUrl.current = url;
   }, []);
@@ -119,7 +119,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
       
       // Update basic form fields
       if (isNewItem) {
-        console.log('[ProductForm] Initial load for product:', product.id, product.name);
+        if (import.meta.env.DEV) console.log('[ProductForm] Initial load for product:', product.id, product.name);
         setForm({
           name: product.name, price: product.price, provider: product.provider,
           provider_id: product.provider_id, stock_type: product.stock_type,
@@ -207,8 +207,7 @@ export function ProductForm({ open, onClose, onSaved, product, providers, segmen
   };
 
   const handleSave = async () => {
-    console.log('[ProductForm] handleSave initiated. States:', { name: form.name, imageBusy, saving, isEdit });
-    
+    if (import.meta.env.DEV) console.log('[ProductForm] handleSave initiated. States:', { name: form.name, imageBusy, saving, isEdit });
     if (!form.name || !form.name.trim()) { toast.error('Nome é obrigatório'); return; }
     if (!form.provider || !form.provider.trim()) { toast.error('Fornecedor é obrigatório'); return; }
     if (selectedSegments.length === 0) { toast.error('Selecione pelo menos um segmento'); return; }
