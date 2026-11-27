@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { checkEligibility, getContextualProducts, type ServiceItem, type ProductItem } from '@/data/mockData';
 import { useClientCatalog } from '@/hooks/useClientCatalog';
-import { EmptyStateVini } from '@/components/EmptyStateVini';
+import { EmptyStateVini } from '@/components/vini/EmptyStateVini';
 import {
   ArrowLeft, Star, ShoppingBag, Wrench, CreditCard, Zap, CheckCircle2, Lock,
   Clock, ArrowUpCircle, Coins, ShieldCheck, Package, ChevronRight, X, Search,
@@ -111,7 +111,6 @@ const ClientApp = () => {
   useEffect(() => {
     if (!listening && transcript && transcript.trim()) {
       const q = transcript.toLowerCase().trim();
-      console.log('[Search] Voice search finished:', q);
       setSearchQuery(q);
       
       // Aciona a lógica de inteligência também para voz
@@ -183,7 +182,6 @@ const ClientApp = () => {
     }
 
     const q = searchQuery.toLowerCase().trim();
-    console.log('[Search] Filtering services with query:', q, 'and segments:', selectedSegments);
     
     // 1. Se não houver busca nem segmentos, retorna TUDO (Estado inicial: Mostrar todos os itens)
     if (!q && selectedSegments.length === 0) {
@@ -471,10 +469,8 @@ const ClientApp = () => {
                   e.preventDefault();
                   e.stopPropagation();
                   if (listening) {
-                    console.log("[Search] Manual voice stop");
                     stop();
                   } else {
-                    console.log("[Search] Manual voice start");
                     start();
                   }
                 }}
@@ -489,7 +485,6 @@ const ClientApp = () => {
                   e.preventDefault();
                   e.stopPropagation();
                   const q = searchQuery.trim().toLowerCase();
-                  console.log("[Search] Manual search trigger:", q);
                   
                   if (q) {
                     toast.success(`Buscando por: ${searchQuery}`);

@@ -148,7 +148,6 @@ const AuthPage = () => {
     }
 
     if (currentCode) {
-      console.log("Found referral code:", currentCode);
       setRefCode(currentCode);
       localStorage.setItem('ecomei_ref', currentCode);
       
@@ -176,7 +175,6 @@ const AuthPage = () => {
             
             if (pError) console.error("Error fetching profile:", pError);
             if (profile?.display_name) {
-              console.log("Referrer found:", profile.display_name);
               setReferrerName(profile.display_name);
             }
           }
@@ -478,7 +476,6 @@ const AuthPage = () => {
       const validationResult = valData || (valError as any)?.context;
       
       if (valError || (validationResult && !validationResult.ok)) {
-        console.log('Validation conflict detected:', validationResult);
         
         if (validationResult?.conflicts && Array.isArray(validationResult.conflicts)) {
           setConflicts(validationResult.conflicts);

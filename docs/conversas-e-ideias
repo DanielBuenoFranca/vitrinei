@@ -1,0 +1,330 @@
+# VITRINEI
+## Documento inicial de alinhamento e planejamento tecnológico
+
+**Objetivo da reunião:** iniciar o planejamento técnico para transformar o protótipo experimental do Vitrinei em uma plataforma comercial real, funcional, segura e escalável.
+
+## 1. Visão e proposta do produto
+
+**O que queremos construir?**
+
+Uma plataforma marketplace que conecta consumidores a produtores, microempreendedores, autônomos e comerciantes locais.
+
+O Vitrinei será uma ferramenta de divulgação, comercialização, gestão e conexão entre quem produz e quem consome, utilizando inteligência artificial para facilitar buscas, atendimento e oportunidades de negócios.
+
+## 2. Público-alvo e estratégia de entrada no mercado
+
+**Quem queremos atingir inicialmente?**
+
+A primeira fase será direcionada principalmente a pessoas que produzem em pequena escala e desejam vender seus produtos, mas não possuem estrutura ou facilidade para encontrar clientes.
+
+Exemplos:
+- Pessoas que fazem pães recheados, bolos, doces e salgados.
+- Produtores de farofas, alimentos artesanais e produtos caseiros.
+- Pessoas que produzem alimentos congelados.
+- Pequenos produtores de verduras, plantas e hortaliças.
+- Pessoas que fabricam produtos próprios e desejam comercializá-los.
+
+**Qual será o papel do Vitrinei?**
+
+- Divulgar os produtos e encontrar potenciais clientes.
+- Conectar diretamente produtores e consumidores.
+- Facilitar pedidos, vendas e comunicação.
+- Oferecer ferramentas de gestão financeira ao produtor.
+- Ajudar no acompanhamento de vendas, recebimentos e resultados.
+- Criar oportunidades comerciais para pessoas que desejam indicar produtos e produtores.
+
+A proposta é permitir que qualquer pessoa com um produto de qualidade tenha a oportunidade de comercializá-lo utilizando o Vitrinei.
+
+## 3. Modelo de utilização e dispositivos
+
+**Onde cada público utilizará a ferramenta principalmente?**
+
+| Perfil | Dispositivo principal | Finalidade |
+|---|---|---|
+| Cliente consumidor | Celular | Pesquisar, comprar, conversar e acompanhar pedidos |
+| Produtores e fornecedores | Celular | Cadastrar produtos, divulgar, vender e controlar finanças |
+| Representantes comerciais | Celular | Indicar produtores, divulgar produtos e acompanhar resultados |
+| Gestor do Vitrinei | Computador | Acompanhar operação, indicadores e desempenho |
+| Administração geral | Computador | Gerenciar usuários, parâmetros, regras comerciais e configurações |
+
+**Diretriz técnica:** desenvolver uma experiência mobile-first para consumidores, produtores e representantes, mantendo um painel administrativo completo e otimizado para computadores.
+
+## 4. Análise do protótipo existente
+
+**O que aproveitar e o que reconstruir?**
+
+O protótipo foi desenvolvido para testar ideias, funcionalidades, experiências de navegação e possibilidades comerciais.
+
+- Avaliar telas e recursos já experimentados.
+- Identificar funcionalidades que devem ser preservadas.
+- Identificar recursos que precisam ser reconstruídos.
+- Evitar aproveitar estruturas tecnicamente inadequadas.
+
+## 5. Viabilidade tecnológica
+
+**É possível construir tudo o que foi idealizado?**
+
+Avaliar a viabilidade de cada funcionalidade, suas limitações, complexidade, custos e dependências tecnológicas.
+
+Priorizar soluções estáveis, modernas e que permitam evolução.
+
+## 6. Arquitetura do sistema
+
+**Como organizar a plataforma?**
+
+Estruturar o Vitrinei em módulos integrados, com responsabilidades independentes:
+
+- Clientes.
+- Produtores, fornecedores e comerciantes.
+- Marketplace de produtos e serviços.
+- Gestão financeira dos produtores.
+- Vini IA.
+- Comunicação e pedidos.
+- Assinaturas e benefícios.
+- Programa de indicações e representantes.
+- Administração.
+
+## 7. Banco de dados
+
+**Como armazenar e relacionar as informações?**
+
+Definir uma estrutura centralizada para usuários, produtores, empresas, produtos, serviços, pedidos, conversas, avaliações, assinaturas, indicações, comissões e transações.
+
+Garantir integridade, segurança e possibilidade de expansão.
+
+## 8. Marketplace
+
+**Como conectar clientes e fornecedores?**
+
+Criar um ambiente de divulgação, pesquisa e comercialização de produtos e serviços, considerando:
+
+- Categorias de produtos.
+- Localização e proximidade.
+- Disponibilidade.
+- Preços.
+- Fotos e descrições.
+- Avaliações.
+- Pedidos e acompanhamento de vendas.
+
+O foco inicial será atender às necessidades da cidade do usuário e região, especialmente conectando pequenos produtores a consumidores locais.
+
+## 9. Gestão financeira dos produtores
+
+**Como ajudar quem vende a administrar seu negócio?**
+
+Disponibilizar ferramentas simples para que o produtor consiga acompanhar:
+
+- Vendas realizadas.
+- Pedidos recebidos.
+- Valores a receber.
+- Despesas e custos.
+- Lucro e resultados.
+- Histórico financeiro.
+
+O objetivo é transformar o Vitrinei também em uma ferramenta de organização e gestão para pequenos negócios.
+
+## 10. Vini IA
+
+**Como transformar o Vini em um assistente realmente inteligente?**
+
+Integrar inteligência artificial para interpretar necessidades, conversar por texto e voz, pesquisar produtos e serviços, recomendar fornecedores e auxiliar na criação de solicitações.
+
+O Vini deverá ser integrado aos recursos reais do sistema, respeitando permissões e custos de utilização.
+
+## 11. Comunicação e histórico
+
+**Como serão realizadas as interações?**
+
+Implementar comunicação entre clientes e fornecedores, histórico persistente de conversas, notificações e integração com o atendimento do Vini.
+
+## 12. Geolocalização
+
+**Como identificar oportunidades próximas?**
+
+Utilizar localização do usuário, cidade e bairro para apresentar fornecedores e produtos próximos.
+
+Permitir pesquisa manual e expansão para cidades vizinhas.
+
+## 13. Assinaturas e benefícios
+
+**Como incentivar a utilização recorrente da plataforma?**
+
+Criar opções de assinatura para consumidores, oferecendo vantagens comerciais, descontos e benefícios na compra de produtos e serviços participantes.
+
+Avaliar também planos específicos para produtores e fornecedores.
+
+Definir:
+- Planos gratuitos e pagos.
+- Benefícios por categoria de assinatura.
+- Regras de descontos.
+- Controle de assinaturas e pagamentos.
+- Gestão de benefícios e validade.
+
+## 14. Programa de indicações e representantes comerciais
+
+**Como fazer o Vitrinei crescer por meio de indicações?**
+
+Criar um sistema de indicações no qual pessoas possam divulgar o Vitrinei, atrair novos clientes e cadastrar produtores e fornecedores.
+
+A proposta é desenvolver uma rede de representantes comerciais e afiliados, permitindo que participantes obtenham renda por meio de indicações válidas e resultados comerciais.
+
+Funcionalidades esperadas:
+
+- Link ou código individual de indicação.
+- Cadastro de novos representantes.
+- Identificação de quem indicou cada usuário ou fornecedor.
+- Rede de indicações e afiliados.
+- Acompanhamento de resultados.
+- Apuração de comissões e premiações.
+- Extrato de valores e pagamentos.
+- Regras comerciais configuráveis pela administração.
+
+**Diretriz:** estruturar regras transparentes de remuneração, priorizando indicações e resultados comerciais reais, sem remuneração baseada apenas no recrutamento de novos participantes. Avaliar os aspectos jurídicos, tributários e regulatórios do modelo.
+
+## 15. Painel administrativo
+
+**Como controlar toda a operação?**
+
+Criar um ambiente administrativo centralizado para gerenciar usuários, fornecedores, anúncios, pedidos, categorias, assinaturas, representantes, comissões, indicadores e configurações.
+
+## 16. Monetização
+
+**Como o Vitrinei vai gerar receita?**
+
+Avaliar diferentes modelos comerciais:
+
+- Assinaturas de consumidores.
+- Assinaturas de produtores e fornecedores.
+- Anúncios patrocinados.
+- Destaques comerciais.
+- Comissões sobre transações.
+- Serviços adicionais.
+
+Definir quais modelos entrarão na primeira versão.
+
+## 17. Segurança e LGPD
+
+**Como proteger usuários e informações?**
+
+Implementar autenticação, controle de permissões, proteção de dados, políticas de privacidade, registros de atividades e mecanismos de segurança compatíveis com a LGPD.
+
+## 18. Experiência visual e navegação
+
+**Como entregar a experiência idealizada?**
+
+Preservar a identidade visual do Vitrinei, incluindo o escritório 3D do Vini, a navegação interativa e o painel de conversas.
+
+Garantir qualidade visual, responsividade, acessibilidade e facilidade de utilização.
+
+## 19. Escalabilidade
+
+**Como preparar o sistema para crescer?**
+
+Construir uma estrutura que permita aumentar usuários, produtores, representantes, cidades, volume de dados e funcionalidades sem exigir reconstruções constantes.
+
+## 20. Infraestrutura e custos
+
+**Quais recursos tecnológicos serão necessários?**
+
+Definir hospedagem, banco de dados, armazenamento, serviços de IA, APIs externas, mapas, notificações, pagamentos e monitoramento.
+
+Apresentar estimativa de implantação e custo mensal de operação.
+
+## 21. Metodologia de desenvolvimento
+
+**Como organizar a construção?**
+
+Adotar uma metodologia ágil, preferencialmente com etapas de Discovery, arquitetura, desenvolvimento por módulos, testes e homologação.
+
+Definir entregas, responsáveis e critérios de conclusão.
+
+## 22. Cronograma e investimento
+
+**Qual será o planejamento de execução?**
+
+Apresentar estimativa de equipe, prazo, investimento, custos recorrentes e etapas de implantação.
+
+Priorizar a construção de um MVP funcional antes da expansão completa da plataforma.
+
+---
+
+# 23. Direcionamentos estratégicos para a equipe técnica
+
+### Aproveitamento do protótipo
+O protótipo deve ser utilizado como referência funcional e visual, não como arquitetura obrigatória. A equipe deverá avaliar o que pode ser aproveitado tecnicamente.
+
+### Independência tecnológica
+Evitar dependência excessiva de ferramentas de prototipação. Garantir acesso ao código-fonte, banco de dados, integrações, documentação e infraestrutura.
+
+### Construção modular
+Desenvolver os módulos de forma organizada, permitindo manutenção, evolução e integração sem comprometer o funcionamento geral.
+
+### Inteligência artificial integrada
+O Vini deve ser parte funcional do negócio, e não apenas um elemento visual ou uma interface de conversação isolada.
+
+### Experiência por perfil de usuário
+Cada perfil deverá ter funcionalidades e interfaces adequadas à sua rotina, priorizando o celular para consumidores, produtores e representantes e o computador para gestão e administração.
+
+### Validação antes da expansão
+Cada módulo deverá passar por testes funcionais e validação antes de ser considerado concluído.
+
+---
+
+# 24. Entregáveis esperados após o diagnóstico técnico
+
+Solicitamos à equipe o desenvolvimento de uma proposta contendo:
+
+1. Diagnóstico do protótipo atual.
+2. Arquitetura tecnológica recomendada.
+3. Tecnologias e ferramentas indicadas.
+4. Mapeamento de riscos e gargalos.
+5. Estrutura inicial do banco de dados.
+6. Estratégia de integração dos módulos.
+7. Escopo recomendado para o MVP.
+8. Metodologia de desenvolvimento.
+9. Cronograma preliminar.
+10. Estimativa de investimento e custos operacionais.
+11. Plano de testes e homologação.
+12. Estratégia de evolução e escalabilidade.
+13. Proposta de implementação do programa de indicações e comissões.
+
+---
+
+# DIRETRIZ DO PROPRIETÁRIO DO PRODUTO
+
+O objetivo não é simplesmente reproduzir as telas do protótipo, mas transformar as ideias e funcionalidades experimentadas em um produto tecnológico consistente.
+
+O Vitrinei nasce com a proposta de democratizar oportunidades comerciais, permitindo que pequenos produtores e pessoas que fabricam seus próprios produtos encontrem consumidores, organizem suas vendas e desenvolvam seus negócios.
+
+A plataforma também deverá estimular o crescimento por meio de assinaturas, benefícios e uma rede de representantes que ajude a conectar cada vez mais pessoas e oportunidades.
+
+A equipe técnica terá autonomia para recomendar as melhores soluções de engenharia, desde que preserve a proposta comercial, a experiência idealizada e os objetivos estratégicos do Vitrinei.
+
+**RESULTADO ESPERADO : Na primeira versão, pessoas que produzem alimentos , congelados ou itens simples e querem vender de forma fácil**
+Na maioria das vezes a pessoa busca ou a própria pessoa entrega, mas precisa disponibilizar a opção de entrega facilitada por algum entregador.
+
+
+
+Bom dia 
+Desculpa mandar no hr de trabalho...
+
+Mas preciso acelerar a primeira versão do App,  colocar isso no ar mesmo que seja sem nada, sem recursos ....
+
+Avalie para mim a questão da IA , se conseguimos liberar ao menos o assistente na primeira versão e qnt custaria essa primeira versão...
+
+Oq pensei Itens:
+
+Ambiente Cliente 
+-E-commerc ( serviços e produtos ), financeiro
+
+Fornecedor 
+-E-commerc, Financeiro
+
+Assitente IA 
+-Conversação e Texto
+
+Financeiro
+-Controle de Cashback, extrato financeiro Adm 
+
+Rede afiliados
+-Assinaturas, Afiliados

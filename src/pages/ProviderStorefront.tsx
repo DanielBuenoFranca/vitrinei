@@ -17,8 +17,8 @@ import {
   Image as ImageIcon, Send, Undo2, RotateCcw, ChevronLeft, ChevronRight,
   MessageCircle, Download, RefreshCw, Upload
 } from 'lucide-react';
-import { FavoriteButton } from '@/components/FavoriteButton';
-import { ThemeSwitcher } from '@/components/ThemeSwitcher';
+import { FavoriteButton } from '@/components/favorites/FavoriteButton';
+import { ThemeSwitcher } from '@/components/layout/ThemeSwitcher';
 import { segments as staticSegments, getAllServices, getAllProducts, reloadDynamicEntries, loadSegmentTagsCache, type ProductItem } from '@/data/searchData';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart, type ServiceCartItem } from '@/contexts/CartContext';
@@ -27,7 +27,7 @@ import { ServiceForm } from '@/components/admin/ServiceForm';
 import { ProviderForm } from '@/components/admin/ProviderForm';
 import { KitBuilder } from '@/components/storefront/KitBuilder';
 import { toast } from 'sonner';
-import { MaskedPrice, AccessBanner, useAccessLevel } from '@/components/AccessGate';
+import { MaskedPrice, AccessBanner, useAccessLevel } from '@/components/access/AccessGate';
 import { useConversion } from '@/contexts/ConversionContext';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,

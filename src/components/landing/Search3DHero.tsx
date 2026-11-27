@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import viniAvatar from '@/assets/vini-avatar.png';
 import { supabase } from '@/integrations/supabase/client';
-import { TopProviderBadge } from '@/components/TopProviderBadge';
+import { TopProviderBadge } from '@/components/landing/TopProviderBadge';
 
 interface SegmentItem { id: string; label: string; name: string; image_url?: string | null }
 
