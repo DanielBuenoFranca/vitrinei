@@ -86,19 +86,7 @@ const ViniHome = () => {
   // Robust check for master/admin roles - checking both context and raw roles list
   const isAdmin = isContextAdmin || authRoles?.some(r => ['admin', 'master'].includes(String(r).toLowerCase()));
   const isMaster = isContextMaster || authRoles?.some(r => String(r).toLowerCase() === 'master');
-  
-  // Debug log to trace why master tools might not be showing
-  useEffect(() => {
-    if (user) {
-      console.log('[ViniHome] Master check:', { 
-        email: user.email, 
-        isMaster, 
-        isAdmin, 
-        authRoles, 
-        isContextMaster 
-      });
-    }
-  }, [user, isMaster, isAdmin, authRoles, isContextMaster]);
+
   const { profileLabel } = usePermissions();
   const { session, update: updateAiSession, setIsThinking: setGlobalThinking } = useAiSession();
   const { totalCartItems, totalCartValue, productCart, serviceCart, clearCart } = useCart();
@@ -263,7 +251,6 @@ const ViniHome = () => {
       if (final && final !== lastSubmittedVoiceRef.current) {
         lastSubmittedVoiceRef.current = final;
         try { stop(); } catch {}
-        console.log('[Vini] Voice auto-submit:', final);
         sendQuery(final);
         setText('');
       }
@@ -280,7 +267,6 @@ const ViniHome = () => {
     if (autoSubmitTimerRef.current) window.clearTimeout(autoSubmitTimerRef.current);
     lastSubmittedVoiceRef.current = final;
     // Tela principal: voz finaliza → vai para o vendedor (busca)
-    console.log('[Vini] Voice final capture:', final);
     sendQuery(final);
     setText('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -616,7 +602,6 @@ const ViniHome = () => {
   const safetyTimerRef = useRef<number | null>(null);
 
   const sendQuery = (q: string, skipHistoryBubble = false) => {
-    console.log('[Vini] sendQuery starting for:', q);
     const query = q.trim();
     if (!query) {
       console.warn('[Vini] Empty query, ignoring');
@@ -642,7 +627,6 @@ const ViniHome = () => {
     emitEmotion('thinking');
 
     const finalize = () => {
-      console.log('[Vini] Finalizing interaction...');
       isThinkingRef.current = false;
       setIsThinking(false);
       setGlobalThinking(false);
@@ -650,7 +634,6 @@ const ViniHome = () => {
       // Drena fila: se o usuário falou/escreveu enquanto pensávamos, processa agora
       const next = pendingQueryRef.current;
       if (next) {
-        console.log('[Vini] Processing pending query:', next);
         pendingQueryRef.current = null;
         setTimeout(() => sendQuery(next), 150);
       }
@@ -684,7 +667,6 @@ const ViniHome = () => {
         let routed: any = null;
         let invokeError: any = null;
         try {
-          console.log('[Vini] Invoking ai-router with query:', query);
           const invokePromise = supabase.functions.invoke('ai-router', { body: { message: query, session } });
           const timeoutPromise = new Promise<{ data: null; error: any }>((resolve) =>
             setTimeout(() => {
@@ -738,7 +720,6 @@ const ViniHome = () => {
             pushBubble({ role: 'vini', text: routed.transition_message || `Entendi. Já estou abrindo a busca com o que conversamos.` });
             setTimeout(() => { 
               const searchPath = `/buscar?${params.toString()}`;
-              console.log('[Vini] Navigating to:', searchPath);
               navigate(searchPath); 
               finalize(); 
             }, 900);
@@ -752,7 +733,6 @@ const ViniHome = () => {
           pushBubble({ role: 'vini', text: routed.transition_message || `Entendi o que você precisa. Já estou abrindo a busca filtrada.` });
           setTimeout(() => { 
             const searchPath = `/buscar?${params.toString()}`;
-            console.log('[Vini] Navigating to:', searchPath);
             navigate(searchPath); 
             finalize(); 
           }, 900);
@@ -772,7 +752,6 @@ const ViniHome = () => {
           });
           setTimeout(() => { 
             const searchPath = `/buscar?q=${encodeURIComponent(query)}`;
-            console.log('[Vini] Navigating to fallback search:', searchPath);
             navigate(searchPath); 
             finalize(); 
           }, 1000);
@@ -784,7 +763,6 @@ const ViniHome = () => {
           });
           setTimeout(() => { 
             const searchPath = `/buscar?q=${encodeURIComponent(query)}&force_support=1`;
-            console.log('[Vini] Navigating to support search:', searchPath);
             navigate(searchPath); 
             finalize(); 
           }, 1200);
@@ -806,7 +784,6 @@ const ViniHome = () => {
     e.preventDefault();
     // Texto digitado na barra principal → super vendedor (busca)
     if (text.trim()) {
-      console.log('[Vini] Text submit:', text.trim());
       sendQuery(text);
     }
     setText('');
@@ -1112,7 +1089,6 @@ const ViniHome = () => {
                   <div className="border-t border-border my-1" />
                   <button
                     onClick={() => { 
-                      console.log('[ViniHome] Navigating to admin panel');
                       setShowPlusMenu(false); 
                       navigate('/admin'); 
                     }}
@@ -1207,7 +1183,6 @@ const ViniHome = () => {
                   onTap={() => {
                     if (isMain) {
                       if (b.action) {
-                        console.log("[Vini] Card tapped - executing action:", b.action.label);
                         runAction(b.action);
                       } else {
                         emitEmotion("happy");
@@ -1793,7 +1768,6 @@ const ViniHome = () => {
                 onClick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log('Logout button clicked');
                   const t = toast.loading('Saindo...');
                   // Dismiss immediately to avoid lingering on screen during redirect
                   setTimeout(() => toast.dismiss(t), 1000);
@@ -1817,7 +1791,6 @@ const ViniHome = () => {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log('Navigation to /auth initiated from header');
                   navigate('/auth');
                 }}
               >

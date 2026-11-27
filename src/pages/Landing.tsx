@@ -235,7 +235,6 @@ const Landing = () => {
     
     if (!q) return;
     
-    console.log('[Landing] Search params detected:', { q, type, segs, forceSupport });
     
     setSearchQuery(q);
     if (type === 'service' || type === 'product') setTypeFilter(type);
@@ -288,7 +287,6 @@ const Landing = () => {
 
   const executeSearch = () => {
     const q = searchQuery.trim();
-    console.log('[Landing] executeSearch called for:', q);
 
     // Desmarca todos os filtros
     setActiveSegments([]);
@@ -312,7 +310,6 @@ const Landing = () => {
   };
 
   const handleSmartSearch = () => {
-    console.log('[Landing] handleSmartSearch called');
     executeSearch();
     const q = searchQuery.trim();
     if (!q) return;
