@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useMeiDashboard } from '@/hooks/useMeiDashboard';
-import { EmptyStateVini } from '@/components/EmptyStateVini';
+import { EmptyStateVini } from '@/components/vini/EmptyStateVini';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { ArrowLeft, TrendingUp, Package, DollarSign, ShoppingCart, AlertTriangle, CheckCircle, XCircle, Zap, LayoutDashboard, Box, Wallet, Wrench, Users, Lightbulb, Star, ClipboardList, Beaker } from 'lucide-react';
 import { motion } from 'framer-motion';

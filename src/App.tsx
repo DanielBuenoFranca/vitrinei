@@ -13,11 +13,11 @@ import { Loader2 } from "lucide-react";
 import { AiSessionProvider } from "@/contexts/AiSessionContext";
 import { BackgroundJobsProvider } from "@/contexts/BackgroundJobsContext";
 import { FavoritesProvider } from "@/hooks/useFavorites";
-import CartBar from "@/components/CartBar";
-import { AttentionFooterBar } from "@/components/AttentionFooterBar";
-import { SystemStatusIndicator } from "@/components/SystemStatusIndicator";
-import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
-import { DefaultRouteSkeleton, RadarSkeleton, CardexSkeleton } from "@/components/RouteSkeletons";
+import CartBar from "@/components/cart/CartBar";
+import { AttentionFooterBar } from "@/components/layout/AttentionFooterBar";
+import { SystemStatusIndicator } from "@/components/layout/SystemStatusIndicator";
+import { RouteErrorBoundary } from "@/components/layout/RouteErrorBoundary";
+import { DefaultRouteSkeleton, RadarSkeleton, CardexSkeleton } from "@/components/layout/RouteSkeletons";
 import { loadDynamicEntries } from "@/data/searchData";
 import { GlobalThinkingIndicator } from "@/components/vini/GlobalThinkingIndicator";
 

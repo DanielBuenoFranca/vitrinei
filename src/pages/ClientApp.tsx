@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { checkEligibility, getContextualProducts, type ServiceItem, type ProductItem } from '@/data/mockData';
 import { useClientCatalog } from '@/hooks/useClientCatalog';
-import { EmptyStateVini } from '@/components/EmptyStateVini';
+import { EmptyStateVini } from '@/components/vini/EmptyStateVini';
 import {
   ArrowLeft, Star, ShoppingBag, Wrench, CreditCard, Zap, CheckCircle2, Lock,
   Clock, ArrowUpCircle, Coins, ShieldCheck, Package, ChevronRight, X, Search,

@@ -16,20 +16,20 @@ import {
   ChevronDown, ChevronRight, ChevronLeft, ShoppingBag, Wrench as WrenchIcon, Store, Plus, CheckCircle2, X, Trash2, Settings, CreditCard, AlertTriangle, Minus, Home, Layers, Loader2,
   Scissors, Droplets, Sprout, Truck, Hammer, Stethoscope, GraduationCap, Car, Brush, Cpu, Heart, PawPrint, PartyPopper, Leaf, Monitor, Gem, Shirt, Music
 } from 'lucide-react';
-import { AiAvatar } from '@/components/AiAvatarGlobal';
-import { ThemeSwitcher } from '@/components/ThemeSwitcher';
-import HeaderMarquee from '@/components/HeaderMarquee';
-import { AccessBanner, MaskedPrice, ActionGate, useAccessLevel } from '@/components/AccessGate';
+import { AiAvatar } from '@/components/vini/AiAvatarGlobal';
+import { ThemeSwitcher } from '@/components/layout/ThemeSwitcher';
+import HeaderMarquee from '@/components/layout/HeaderMarquee';
+import { AccessBanner, MaskedPrice, ActionGate, useAccessLevel } from '@/components/access/AccessGate';
 import { Search3DHero } from '@/components/landing/Search3DHero';
-import { TopProviderBadge } from '@/components/TopProviderBadge';
+import { TopProviderBadge } from '@/components/landing/TopProviderBadge';
 import { useAiSession } from '@/contexts/AiSessionContext';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { segments as staticSegments, mockResults, semanticSearch, buildSupportSummary, generateContextualSuggestions, getAllServices, getAllProducts, loadDynamicEntries, reloadDynamicEntries, loadSegmentTagsCache, type ProductItem, type SearchResult, type ContextualSuggestion } from '@/data/searchData';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
-import { FavoriteButton } from '@/components/FavoriteButton';
-import { FavoritesModal } from '@/components/FavoritesModal';
+import { FavoriteButton } from '@/components/favorites/FavoriteButton';
+import { FavoritesModal } from '@/components/favorites/FavoritesModal';
 import { useFavorites } from '@/hooks/useFavorites';
 
 

@@ -14,7 +14,7 @@ import {
   Database, Globe, Server, Activity, Terminal, Wifi, Plus, Save
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AiAvatar } from '@/components/AiAvatarGlobal';
+import { AiAvatar } from '@/components/vini/AiAvatarGlobal';
 import { addDynamicEntries, segments, type DynamicEntry } from '@/data/searchData';
 import { supabase } from '@/integrations/supabase/client';
 import {

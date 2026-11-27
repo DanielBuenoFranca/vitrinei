@@ -7,7 +7,7 @@ import {
   Search, LifeBuoy, Loader2, Sliders, ZapOff, Sun, Contrast, MessageCircle, KeyRound, ShieldCheck
 } from 'lucide-react';
 
-import { FavoritesModal } from '@/components/FavoritesModal';
+import { FavoritesModal } from '@/components/favorites/FavoritesModal';
 import { useFavorites } from '@/hooks/useFavorites';
 import { toast } from 'sonner';
 import { Label } from '@/components/ui/label';
@@ -23,14 +23,14 @@ import {
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ThemeSwitcher } from '@/components/ThemeSwitcher';
+import { ThemeSwitcher } from '@/components/layout/ThemeSwitcher';
 import { ViniScene } from '@/components/vini/ViniScene';
 
 import { ViniBottomGrid, type GridItem } from '@/components/vini/ViniBottomGrid';
 import { ViniStoryCard } from '@/components/vini/ViniStoryCard';
 import { RadarPulse } from '@/components/vini/RadarPulse';
 import { ViniConversationModal } from '@/components/vini/ViniConversationModal';
-import { ReferralRulesModal } from '@/components/ReferralRulesModal';
+import { ReferralRulesModal } from '@/components/referral/ReferralRulesModal';
 import viniMini from '@/assets/vini-avatar.png';
 import { useAuth } from '@/contexts/AuthContext';
 import { AddressCollectionModal } from '@/components/vini/AddressCollectionModal';
@@ -45,7 +45,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAiSession } from '@/contexts/AiSessionContext';
 import { useConversion } from '@/contexts/ConversionContext';
-import { SystemStatusIndicator } from '@/components/SystemStatusIndicator';
+import { SystemStatusIndicator } from '@/components/layout/SystemStatusIndicator';
 
 /**
  * Toda sugestão do Vini pode carregar uma `action` clicável.

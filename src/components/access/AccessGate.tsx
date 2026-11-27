@@ -5,7 +5,7 @@ import { Lock, UserPlus, Mail, AlertTriangle, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { useConversion } from '@/contexts/ConversionContext';
-import { SignupModal } from '@/components/SignupModal';
+import { SignupModal } from '@/components/access/SignupModal';
 
 /**
  * Re-export access level from ConversionContext for backward compatibility.
